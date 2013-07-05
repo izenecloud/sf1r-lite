@@ -69,7 +69,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         ProductPrice pp;
         pp.Parse(uprice);
-        doc.property("Price") = ustr_to_propstr(pp.ToUString());
+        doc.property("Price") = pp.ToPropString();
     }
 
     //set mobile tag

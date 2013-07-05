@@ -962,14 +962,14 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             }
 
         }
-        UString brand;
+        Document::doc_prop_value_strtype brand;
         std::string sbrand;
         for(uint32_t i=0;i<product.attributes.size();i++)
         {
             if(product.attributes[i].name=="品牌")
             {
                 sbrand = product.attributes[i].GetValue();
-                brand = UString(sbrand, UString::UTF_8);
+                brand = str_to_propstr(sbrand, UString::UTF_8);
                 break;
             }
         }
@@ -1331,8 +1331,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         //Document doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
-        UString title;
-        UString category;
+        Document::doc_prop_value_strtype title;
+        Document::doc_prop_value_strtype category;
         for(; p!=scddoc.end(); ++p)
         {
             const std::string& property_name = p->first;
@@ -1346,8 +1346,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
             }
         }
         if(category.empty()||title.empty()) continue;
-        std::string scategory;
-        category.convertString(scategory, UString::UTF_8);
+        std::string scategory = propstr_to_str(category);
         CategoryIndex::const_iterator cit = category_index_.find(scategory);;
         if(cit==category_index_.end()) continue;
 #ifdef B5M_DEBUG
@@ -1967,7 +1966,7 @@ void ProductMatcher::Test(const std::string& scd_path)
 bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_value)
 {
     const static std::string isbn_name = "isbn";
-    UString attrib_ustr;
+    Document::doc_prop_value_strtype attrib_ustr;
     doc.getProperty("Attribute", attrib_ustr);
     std::vector<Attribute> attributes;
     ParseAttributes(attrib_ustr, attributes);
@@ -2042,8 +2041,8 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         result_products.resize(1, pbook);
         return true;
     }
-    izenelib::util::UString title;
-    izenelib::util::UString category;
+    Document::doc_prop_value_strtype title;
+    Document::doc_prop_value_strtype category;
     doc.getProperty("Category", category);
     doc.getProperty("Title", title);
 
@@ -2079,7 +2078,7 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     if(limit==0) return;
     if(text.length()==0) return;
     Document doc;
-    doc.property("Title") = text;
+    doc.property("Title") = ustr_to_propstr(text);
     const UString& title = text;
 
     std::vector<Term> term_list;
@@ -2847,7 +2846,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, false);
     Document doc;
-    doc.property("Title") = text;
+    doc.property("Title") = ustr_to_propstr(text);
     std::vector<Product> result_products;
 #ifdef B5M_DEBUGgi
     std::cout<<"[BEFORE COMPUTE]"<<clocker.elapsed()<<std::endl;

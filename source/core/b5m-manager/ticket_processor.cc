@@ -62,7 +62,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -71,32 +71,30 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                     doc[property_name] = p->second;
                 }
                 //if(doc["uuid"].length()>0) continue;
-                UString category = doc["Category"];
-                UString city = doc["PlayCity"];
-                UString address = doc["PlayAddress"];
-                UString time = doc["PlayTime"];
-                UString name = doc["PlayName"];
+                Document::doc_prop_value_strtype category = doc["Category"];
+                Document::doc_prop_value_strtype city = doc["PlayCity"];
+                Document::doc_prop_value_strtype address = doc["PlayAddress"];
+                Document::doc_prop_value_strtype time = doc["PlayTime"];
+                Document::doc_prop_value_strtype name = doc["PlayName"];
                 if(category.empty()||city.empty()||address.empty()||time.empty()||name.empty())
                 {
                     continue;
                 }
-                std::string scategory;
-                category.convertString(scategory, izenelib::util::UString::UTF_8);
+                std::string scategory = propstr_to_str(category);
                 std::string soid;
-                doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
+                soid = propstr_to_str(doc["DOCID"]);
                 const DocIdType& id = soid;
 
                 TicketProcessorAttach attach;
-                UString sid_str = category;
+                UString sid_str = propstr_to_ustr(category);
                 sid_str.append(UString("|", UString::UTF_8));
                 sid_str.append(city);
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
-                std::string stime;
-                time.convertString(stime, UString::UTF_8);
+                std::string stime = propstr_to_str(time);
                 boost::algorithm::split(attach.time_array, stime, boost::is_any_of(",;"));
                 std::sort(attach.time_array.begin(), attach.time_array.end());
 
-                UString text = name;
+                UString text = propstr_to_ustr(name);
                 //text.append(UString(" ", UString::UTF_8));
                 //text.append(address);
                 //text.append(UString(" ", UString::UTF_8));
@@ -169,10 +167,10 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            UString oid;
+            Document::doc_prop_value_strtype oid;
             std::string soid;
             doc.getProperty("DOCID", oid);
-            oid.convertString(soid, UString::UTF_8);
+            soid = propstr_to_str(oid);
             std::string spid;
             MatchResult::const_iterator it = match_result.find(soid);
             if(it==match_result.end())
@@ -183,7 +181,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
             {
                 spid = it->second;
             }
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
             writer.Append(doc);
         }
     }
@@ -253,7 +251,7 @@ void TicketProcessor::ProductMerge_(SValueType& value, const SValueType& another
     ProductProperty another;
     another.Parse(another_value.doc);
     pp += another;
-    if(value.empty() || another.oid==another.pid )
+    if(value.empty() || another.oid==another.productid)
     {
         value.doc.copyPropertiesFromDocument(another_value.doc, true);
     }

@@ -103,7 +103,7 @@ bool SimpleDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const
         uint32_t docid = docid_list[i];
         PMDocumentType doc;
         if (!GetDocument(docid, doc)) return false;
-        (*document_list_)[docid - 1].property(config_.uuid_property_name) = uuid;
+        (*document_list_)[docid - 1].property(config_.uuid_property_name) = ustr_to_propstr(uuid);
     }
     RebuildIndex_();
     return true;

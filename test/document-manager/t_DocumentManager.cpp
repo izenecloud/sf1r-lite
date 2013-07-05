@@ -119,7 +119,7 @@ createDocumentManager1()
     return ret;
 }
 
-void buildProperty(izenelib::util::UString& string, int iLength)
+void buildProperty(Document::doc_prop_value_strtype& string, int iLength)
 {
     for( int i = 0 ; i < iLength ; ++i )
         string += alpha[r()];//random
@@ -133,7 +133,7 @@ void buildDOCID(izenelib::util::UString& string, int iLength)
 void prepareDocument(unsigned int docId, Document& document)
 {
     document.setId(docId);
-    izenelib::util::UString property;
+    Document::doc_prop_value_strtype property;
     buildProperty(property, 5);
     document.property("DOCID") = property;
     property.clear();
@@ -153,7 +153,7 @@ void prepareDocument(unsigned int docId, Document& document)
 void prepareDefinedDocument(unsigned int docId, Document& document, const string& value )
 {
     document.setId(docId);
-    izenelib::util::UString property;
+    Document::doc_prop_value_strtype property;
     buildProperty(property, 5);
     document.property("DOCID") = property;
     property.clear();

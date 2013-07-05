@@ -33,7 +33,7 @@ public:
 
     std::string ToString() const;
 
-    izenelib::util::UString ToUString() const;
+    Document::doc_prop_value_strtype ToPropString() const;
 
     bool Valid() const;
 

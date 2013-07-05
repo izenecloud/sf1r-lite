@@ -783,13 +783,12 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
 
                 std::string key_str;
                 key_str = Utilities::uint128ToUuid(result.key);
-                UString key_ustr(key_str, UString::UTF_8);
 
                 if (opinion_scd_writer_)
                 {
                     Document doc;
-                    doc.property("DOCID") = key_ustr;
-                    doc.property(schema_.opinionPropName) = final_opinion_str;
+                    doc.property("DOCID") = str_to_propstr(key_str);
+                    doc.property(schema_.opinionPropName) = ustr_to_propstr(final_opinion_str);
                     opinion_scd_writer_->Append(doc);
                 }
 
@@ -827,7 +826,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
-    UString key_ustr(key_str, UString::UTF_8);
 
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
@@ -848,10 +846,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         if (score_scd_writer_)
         {
             Document doc;
-            doc.property("DOCID") = key_ustr;
-            doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            doc.property("DOCID") = str_to_propstr(key_str);
+            doc.property(schema_.scorePropName) = str_to_propstr(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
             if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
+                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(count));
             score_scd_writer_->Append(doc);
         }
         if (total_Score_Scd_.good())

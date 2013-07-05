@@ -2542,7 +2542,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         ProductMatcher::Product result_product;
         if (matcher->Process(doc, result_product))
         {
@@ -2582,7 +2582,7 @@ bool MiningManager::GetProductFrontendCategory(
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         std::vector<ProductMatcher::Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {

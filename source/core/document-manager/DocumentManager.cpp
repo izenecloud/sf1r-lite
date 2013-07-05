@@ -125,8 +125,8 @@ bool DocumentManager::insertDocument(const Document& document)
             continue;
         }
 
-        const izenelib::util::UString* stringValue =
-            get<izenelib::util::UString>(&it->second);
+        const Document::doc_prop_value_strtype* stringValue =
+            get<Document::doc_prop_value_strtype>(&it->second);
         if (stringValue)
         {
             if (propertyLengthDb_.size() <= *pid)
@@ -281,7 +281,7 @@ bool DocumentManager::getPropertyValue(
         {
 //          return false;
         }
-        result = izenelib::util::UString(tempStr, encodingType_);
+        result = str_to_propstr(tempStr, encodingType_);
         return true;
     }
 
@@ -290,7 +290,7 @@ bool DocumentManager::getPropertyValue(
     {
         std::string tempStr;
         rtype_table_cit->second->getRTypeString(docId, tempStr);
-        result = izenelib::util::UString(tempStr, encodingType_);
+        result = str_to_propstr(tempStr, encodingType_);
         return true;
     }
 
@@ -323,14 +323,14 @@ void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& doc
     {
         std::string tempStr;
         if (it->second->getStringValue(docId, tempStr))
-            document.property(it->first) = izenelib::util::UString(tempStr, encodingType_);
+            document.property(it->first) = str_to_propstr(tempStr, encodingType_);
     }
     for(RTypeStringPropTableMap::const_iterator cit = rtype_string_proptable_.begin();
         cit != rtype_string_proptable_.end(); ++cit)
     {
         std::string tempStr;
         if(cit->second->getRTypeString(docId, tempStr))
-            document.property(cit->first) = izenelib::util::UString(tempStr, encodingType_);
+            document.property(cit->first) = str_to_propstr(tempStr, encodingType_);
     }
 }
 
@@ -540,7 +540,8 @@ bool DocumentManager::getRawTextOfDocuments(
         std::vector<izenelib::util::UString> rawSummaryList(docListSize);
         std::vector<izenelib::util::UString> fullTextList(docListSize);
 
-        izenelib::util::UString rawText; // raw text
+        Document::doc_prop_value_strtype rawText; // raw text
+        izenelib::util::UString rawUText; // raw text
         izenelib::util::UString result; // output variable to store return value
 
         bool ret = false;
@@ -552,7 +553,8 @@ bool DocumentManager::getRawTextOfDocuments(
             if (!getPropertyValue(docId, propertyName, rawText))
                 continue;
 
-            fullTextList[listId] = rawText;
+            rawUText = propstr_to_ustr(rawText, encodingType_);
+            fullTextList[listId] = rawUText;
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
             std::vector<CharacterOffset> sentenceOffsets;
@@ -562,20 +564,20 @@ bool DocumentManager::getRawTextOfDocuments(
             ret = true;
 
             maxSnippetLength_ = getDisplayLength_(propertyName);
-            processOptionForRawText(option, queryTerms, rawText,
+            processOptionForRawText(option, queryTerms, rawUText,
                                     sentenceOffsets, result);
 
             if (result.size() > 0)
                 snippetList[listId] = result;
             else
-                snippetList[listId] = rawText;
+                snippetList[listId] = rawUText;
 
             //process only if summary is ON
             unsigned int numSentences = summaryNum <= 0 ? 1 : summaryNum;
             if (summaryOn)
             {
                 izenelib::util::UString summary;
-                getSummary(rawText, sentenceOffsets, numSentences,
+                getSummary(rawUText, sentenceOffsets, numSentences,
                            option, queryTerms, summary);
 
                 rawSummaryList[listId] = summary;
@@ -623,9 +625,9 @@ bool DocumentManager::getRawTextOfOneDocument(
     }
     else
     {
-        izenelib::util::UString propValue;
+        Document::doc_prop_value_strtype propValue;
         if(document.getProperty(propertyName,propValue))
-            std::swap(rawText, propValue);
+            rawText = propstr_to_ustr(propValue);
     }
 
     if (rawText.empty())

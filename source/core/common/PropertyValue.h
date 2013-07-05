@@ -44,13 +44,13 @@ public:
 * default, we should make it locate at first position
 ******************************************/
     typedef boost::variant<
-        izenelib::util::UString,
+        //izenelib::util::UString,
         std::string,
         int32_t,
         int64_t,
         float,
         double,
-        std::vector<izenelib::util::UString>,
+        //std::vector<izenelib::util::UString>,
         std::vector<uint32_t>
     > variant_type;
 
@@ -415,7 +415,7 @@ inline sf1r::PropertyValue& operator>>(object o, sf1r::PropertyValue& v)
         {
             std::string str = s.substr(1);
             izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
-            v = ustr;
+            //v = ustr;
         }
         else
         {

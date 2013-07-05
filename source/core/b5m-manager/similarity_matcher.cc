@@ -92,7 +92,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::map<std::string, UString> doc;
+            std::map<std::string, Document::doc_prop_value_strtype> doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)
@@ -105,17 +105,12 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             {
                 continue;
             }
-            std::string scategory;
-            doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
-            if( category_matcher.Match(scategory) )
+            if( category_matcher.Match(propstr_to_str(doc["Category"])) )
             {
-                //std::cout<<"ignore category "<<scategory<<std::endl;
                 continue;
             }
-            //std::cout<<"valid category "<<scategory<<std::endl;
             std::string soid;
-            doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
-            //DocIdType id = B5MHelper::StringToUint128(soid);
+            soid = propstr_to_str(doc["DOCID"]);
             const DocIdType& id = soid;
             ProductPrice price;
             price.Parse(doc["Price"]);
@@ -128,15 +123,15 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             SimilarityMatcherAttach attach;
             attach.category = doc["Category"];
             attach.price = price;
-            UString id_str = doc["Source"];
-            id_str.append(UString("|", UString::UTF_8));
+            Document::doc_prop_value_strtype id_str = doc["Source"];
+            id_str.append(Document::doc_prop_value_strtype("|"));
             id_str.append(doc["Title"]);
-            id_str.append(UString("|", UString::UTF_8));
-            id_str.append(price.ToUString());
+            id_str.append(Document::doc_prop_value_strtype("|"));
+            id_str.append(price.ToPropString());
             attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
 
             std::vector<std::pair<std::string, double> > doc_vector;
-            analyzer.Analyze(doc["Title"], doc_vector);
+            analyzer.Analyze(propstr_to_ustr(doc["Title"]), doc_vector);
 
             if( doc_vector.empty() )
             {

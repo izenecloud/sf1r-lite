@@ -88,7 +88,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::map<std::string, UString> doc;
+            std::map<std::string, Document::doc_prop_value_strtype> doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)
@@ -222,7 +222,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -304,7 +304,7 @@ bool PsmIndexer::DoMatch(const std::string& scd_path, const std::string& knowled
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::map<std::string, UString> doc;
+            std::map<std::string, Document::doc_prop_value_strtype> doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)

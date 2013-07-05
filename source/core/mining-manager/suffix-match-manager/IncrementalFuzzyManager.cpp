@@ -207,9 +207,8 @@ namespace sf1r
                         continue;
                     }
 
-                    const izenelib::util::UString& text = it->second.get<UString>();
-                    std::string textStr;
-                    text.convertString(textStr, izenelib::util::UString::UTF_8);
+                    const Document::doc_prop_value_strtype& text = it->second.getPropertyStrValue();
+                    std::string textStr = propstr_to_str(text);
                     if (!indexForDoc(i, textStr, j))
                     {
                         LOG(INFO) << "Add index error";

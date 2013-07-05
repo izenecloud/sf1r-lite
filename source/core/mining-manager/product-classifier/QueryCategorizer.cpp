@@ -63,11 +63,11 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     if(query.empty()) return false;
 
     Document doc;
-    UString queryU(query, UString::UTF_8);
-    doc.property("Title") = queryU;
+    doc.property("Title") = str_to_propstr(query);
 
     std::vector<ProductMatcher::Product> result_products;
     ProductMatcher* matcher = ProductMatcherInstance::get();
+    UString queryU(query, UString::UTF_8);
     matcher->GetFrontendCategory(queryU, (uint32_t)limit, frontends);
 
     return frontends.empty() ? false : true;
