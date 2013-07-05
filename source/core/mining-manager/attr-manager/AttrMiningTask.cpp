@@ -42,7 +42,12 @@ bool AttrMiningTask::processCollection_forTest()
 
 bool AttrMiningTask::preProcess()
 {
+    const docid_t startDocId = attrTable_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
+
+    if (startDocId > endDocId)
+        return false;
+
     attrTable_.reserveDocIdNum(endDocId + 1);
     return true;
 }
