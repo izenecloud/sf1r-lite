@@ -102,7 +102,7 @@ namespace sf1r {
         void set_source(const StringType& brand, const BidType& bid)
         {
             std::vector<std::string> text_list;
-            B5MHelper::SplitAttributeValue(brand, text_list);
+            B5MHelper::SplitAttributeValue(propstr_to_str(brand), text_list);
             for(uint32_t i=0;i<text_list.size();i++)
             {
                 source_[text_list[i]].push_back(bid);
@@ -121,16 +121,17 @@ namespace sf1r {
 
         bool get_source(const StringType& input, StringType& output)
         {
+            std::string sinput = propstr_to_str(input);
             uint32_t begin = 0;
             BidScore bid_score;
-            while(begin<input.length())
+            while(begin<sinput.length())
             {
                 std::string found;
                 uint32_t length = 1;
                 while(true)
                 {
-                    if(begin+length>input.length()) break;
-                    std::string sub = input.substr(begin, length);
+                    if(begin+length>sinput.length()) break;
+                    std::string sub = sinput.substr(begin, length);
 
                     SourceType::const_iterator it = source_.lower_bound(sub);
                     if(it==source_.end())

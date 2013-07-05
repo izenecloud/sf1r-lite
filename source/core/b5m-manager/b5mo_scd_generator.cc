@@ -115,8 +115,9 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                     soldpid = p->second;
                 }
             }
-            std::string sdocid;
-            doc.getString("DOCID", sdocid);
+            Document::doc_prop_value_strtype pdocid;
+            doc.getString("DOCID", pdocid);
+            std::string sdocid = propstr_to_str(pdocid);
             //doc.property("lastmodified") = UString(ts_, UString::UTF_8);
             std::string spid;
             if(!odb_->get(sdocid, spid))
@@ -189,8 +190,10 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                         const std::string& property_name = p->first;
                         doc.property(property_name) = p->second;
                     }
+                    Document::doc_prop_value_strtype pdocid;
                     std::string sdocid;
-                    doc.getString("DOCID", sdocid);
+                    doc.getString("DOCID", pdocid);
+                    sdocid = propstr_to_str(pdocid);
                     uint128_t oid = B5MHelper::StringToUint128(sdocid);
                     if(pid_changed_oid.find(oid)!=pid_changed_oid.end())
                     {

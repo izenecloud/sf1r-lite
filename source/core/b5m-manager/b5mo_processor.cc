@@ -86,8 +86,10 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     //set color tag
     if(img_server_cfg_)
     {
+        Document::doc_prop_value_strtype propvalue;
         std::string img_file;
-        doc.getString("Picture", img_file);
+        doc.getString("Picture", propvalue);
+        img_file = propstr_to_str(propvalue);
         if(!img_file.empty())
         {
             std::string color_str;

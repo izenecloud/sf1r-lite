@@ -172,10 +172,10 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1","");
     processor.Process(doc,type);
     Document doc4;
-    doc4.property("Title") ="SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版";
+    doc4.property("Title") = str_to_propstr("SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版");
     doc4.property("DOCID") = str_to_propstr("04", UString::UTF_8);
     doc4.property("Price") = str_to_propstr("1324.0", UString::UTF_8);
-    doc4.property("Category") ="平板电脑/MID";
+    doc4.property("Category") = str_to_propstr("平板电脑/MID");
     type=INSERT_SCD;
     processor.Process(doc,type);
 
