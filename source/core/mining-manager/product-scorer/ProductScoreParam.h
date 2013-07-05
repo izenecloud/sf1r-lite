@@ -9,6 +9,7 @@
 #define SF1R_PRODUCT_SCORE_PARAM_H
 
 #include "../group-manager/GroupParam.h"
+#include <query-manager/SearchingEnumerator.h>
 #include <string>
 
 namespace sf1r
@@ -33,17 +34,21 @@ struct ProductScoreParam
     /** the relevance scorer, it could be NULL if not existed */
     ProductScorer* relevanceScorer_;
 
+    SearchingMode::SearchingModeType searchMode_;
+
     ProductScoreParam(
         const std::string& query,
         const std::string& querySource,
         const faceted::GroupParam::GroupPathVec& boostGroupLabels,
         PropSharedLockSet& propSharedLockSet,
-        ProductScorer* relevanceScorer)
+        ProductScorer* relevanceScorer,
+        SearchingMode::SearchingModeType searchMode)
         : query_(query)
         , querySource_(querySource)
         , boostGroupLabels_(boostGroupLabels)
         , propSharedLockSet_(propSharedLockSet)
         , relevanceScorer_(relevanceScorer)
+        , searchMode_(searchMode)
     {}
 };
 

@@ -20,6 +20,7 @@ class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
 class ProductScoreManager;
+class CategoryClassifyTable;
 struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
@@ -40,6 +41,9 @@ public:
     ProductScorer* createScorer(const ProductScoreParam& scoreParam);
 
 private:
+    ProductScorer* createFuzzyModeScorer_(
+        const ProductScoreParam& scoreParam);
+
     ProductScorer* createScorerImpl_(
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);
@@ -49,6 +53,10 @@ private:
         const std::string& query);
 
     ProductScorer* createCategoryScorer_(
+        const ProductScoreConfig& scoreConfig,
+        const ProductScoreParam& scoreParam);
+
+    ProductScorer* createCategoryClassifyScorer_(
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);
 
@@ -69,6 +77,8 @@ private:
     boost::scoped_ptr<BoostLabelSelector> labelSelector_;
 
     ProductScoreManager* productScoreManager_;
+
+    CategoryClassifyTable* categoryClassifyTable_;
 };
 
 } // namespace sf1r

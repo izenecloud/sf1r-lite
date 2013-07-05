@@ -3,14 +3,18 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
+#include "CategoryClassifyScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../product-score-manager/ProductScoreManager.h"
+#include "../category-classify/CategoryClassifyTable.h"
 #include <common/PropSharedLockSet.h>
 #include <common/QueryNormalizer.h>
 #include <configuration-manager/ProductRankingConfig.h>
-#include <memory> // auto_ptr
+#include <la-manager/KNlpWrapper.h>
 #include <glog/logging.h>
+#include <memory> // auto_ptr
+#include <sstream>
 
 using namespace sf1r;
 
@@ -30,6 +34,7 @@ ProductScorerFactory::ProductScorerFactory(
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryValueTable_(NULL)
     , productScoreManager_(miningManager.GetProductScoreManager())
+    , categoryClassifyTable_(miningManager.GetCategoryClassifyTable())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -55,22 +60,46 @@ ProductScorer* ProductScorerFactory::createScorer(
 {
     std::auto_ptr<ProductScoreSum> scoreSum(new ProductScoreSum);
 
-    bool isany = false;
-    for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
+    if (scoreParam.searchMode_ == SearchingMode::SUFFIX_MATCH)
     {
-        ProductScorer* scorer = createScorerImpl_(config_.scores[i],
-                                                  scoreParam);
+        ProductScorer* scorer = createFuzzyModeScorer_(scoreParam);
         if (scorer)
         {
             scoreSum->addScorer(scorer);
-            isany = true;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
+        {
+            ProductScorer* scorer = createScorerImpl_(config_.scores[i],
+                                                      scoreParam);
+            if (scorer)
+            {
+                scoreSum->addScorer(scorer);
+            }
         }
     }
 
-    if(!isany)
+    if(scoreSum->empty())
         return NULL;
 
     return scoreSum.release();
+}
+
+ProductScorer* ProductScorerFactory::createFuzzyModeScorer_(
+    const ProductScoreParam& scoreParam)
+{
+    if (categoryClassifyTable_)
+    {
+        return createCategoryClassifyScorer_(config_.scores[CATEGORY_CLASSIFY_SCORE],
+                                             scoreParam);
+    }
+    else
+    {
+        return createCategoryScorer_(config_.scores[CATEGORY_SCORE],
+                                     scoreParam);
+    }
 }
 
 ProductScorer* ProductScorerFactory::createScorerImpl_(
@@ -126,14 +155,56 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
 
     std::vector<category_id_t> boostLabels;
-    if (labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
+    if (!labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
+        return NULL;
+
+    return new CategoryScorer(scoreConfig,
+                              *categoryValueTable_,
+                              boostLabels);
+}
+
+ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
+    const ProductScoreConfig& scoreConfig,
+    const ProductScoreParam& scoreParam)
+{
+    if (!categoryClassifyTable_)
+        return NULL;
+
+    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+    const std::string& query(scoreParam.query_);
+    KNlpWrapper::string_t queryKStr(query);
+    KNlpWrapper::token_score_list_t tokenScores;
+    knlpWrapper->fmmTokenize(queryKStr, tokenScores);
+
+    KNlpWrapper::category_score_map_t categoryKStrMap =
+        knlpWrapper->classifyToMultiCategories(tokenScores);
+
+    LOG(INFO) << "for query [" << query << "]";
+
+    if (categoryKStrMap.empty())
     {
-        return new CategoryScorer(scoreConfig,
-                                  *categoryValueTable_,
-                                  boostLabels);
+        LOG(INFO) << "no classified category";
+        return NULL;
     }
 
-    return NULL;
+    std::ostringstream oss;
+    oss << "classified category:";
+    CategoryClassifyScorer::CategoryScoreMap categoryScoreMap;
+    for (KNlpWrapper::category_score_map_t::const_iterator it =
+             categoryKStrMap.begin(); it != categoryKStrMap.end(); ++it)
+    {
+        std::string category = it->first.get_bytes("utf-8");
+        double score = it->second;
+
+        categoryScoreMap[category] = score;
+        oss << " " << category << "/" << std::setprecision(2) << score;
+    }
+    LOG(INFO) << oss.str();
+
+    scoreParam.propSharedLockSet_.insertSharedLock(categoryClassifyTable_);
+    return new CategoryClassifyScorer(scoreConfig,
+                                      *categoryClassifyTable_,
+                                      categoryScoreMap);
 }
 
 ProductScorer* ProductScorerFactory::createRelevanceScorer_(

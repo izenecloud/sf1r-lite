@@ -24,6 +24,11 @@ public:
 
     void setFuzzyScoreWeight(const ProductRankingConfig& rankConfig);
 
+    void enableCategoryClassify(bool isEnable)
+    {
+        isCategoryClassify_ = isEnable;
+    }
+
     void rank(
             const SearchKeywordOperation& actionOperation,
             uint32_t start,
@@ -35,6 +40,8 @@ private:
     SearchManagerPreProcessor& preprocessor_;
 
     score_t fuzzyScoreWeight_;
+
+    bool isCategoryClassify_;
 };
 
 } // namespace sf1r

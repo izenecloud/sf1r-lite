@@ -17,6 +17,7 @@ using namespace sf1r;
 FuzzySearchRanker::FuzzySearchRanker(SearchManagerPreProcessor& preprocessor)
     : preprocessor_(preprocessor)
     , fuzzyScoreWeight_(0)
+    , isCategoryClassify_(false)
 {
 }
 
@@ -89,7 +90,11 @@ void FuzzySearchRanker::rank(
         }
         else
         {
-            tmpdoc.score += fuzzyScore * fuzzyScoreWeight_;
+            if (isCategoryClassify_)
+            {
+                fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
+            }
+            tmpdoc.score += fuzzyScore;
         }
 
         scoreItemQueue->insert(tmpdoc);

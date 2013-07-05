@@ -311,7 +311,8 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
                                  actionItem.env_.querySource_,
                                  actionItem.groupParam_.boostGroupLabels_,
                                  propSharedLockSet,
-                                 relevanceScorerPtr.release());
+                                 relevanceScorerPtr.release(),
+                                 actionItem.searchingMode_.mode_);
     return productScorerFactory_->createScorer(scoreParam);
 }
 
