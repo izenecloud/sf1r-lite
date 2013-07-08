@@ -67,9 +67,8 @@ int main(int argc, char * argv[])
                     {
                         try
                         {
-                            izenelib::util::UString propU = doc.property(it->first).get<izenelib::util::UString>();
-                            std::string propstr;
-                            propU.convertString(propstr, izenelib::util::UString::UTF_8);
+                            Document::doc_prop_value_strtype propU = doc.property(it->first).getPropertyStrValue();
+                            std::string propstr = propstr_to_str(propU);
                             ofs << it->first << "==" << propstr << std::endl;
                             newdoc.property(it->first) = propstr;
                         }

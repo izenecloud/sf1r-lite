@@ -30,25 +30,23 @@ void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
 
 string getTitle(Document doc)
 {
-    UString utitle;
+    Document::doc_prop_value_strtype utitle;
     doc.getProperty("Title", utitle);
-    return toString(utitle);
+    return propstr_to_str(utitle);
 }
 
 string getSource(Document doc)
 {
-
-    UString usource;
+    Document::doc_prop_value_strtype usource;
     doc.getProperty("Source", usource);
-    return toString(usource);
+    return propstr_to_str(usource);
 }
 
 string get(Document doc,string prop)
 {
-
-    UString ustr;
+    Document::doc_prop_value_strtype ustr;
     doc.getProperty(prop, ustr);
-    return toString(ustr);
+    return propstr_to_str(ustr);
 }
 void check(Document doc,string source,string price,string title,string category,string attrubute,string mobile)//,uint128_t docid,uint128_t uuid
 {

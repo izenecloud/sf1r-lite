@@ -211,8 +211,8 @@ void ItemManagerTestFixture::checkItem_(const Document& doc, const ItemInput& it
         BOOST_REQUIRE_MESSAGE(doc.hasProperty(propName), propName);
 
         const PropertyValue propValue = doc.property(propName);
-        const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
-        BOOST_CHECK_EQUAL(ustr, it->second);
+        const Document::doc_prop_value_strtype& ustr = propValue.getPropertyStrValue();
+        BOOST_CHECK_EQUAL(propstr_to_ustr(ustr), it->second);
     }
 }
 

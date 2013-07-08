@@ -36,6 +36,20 @@ MAKE_FEBIRD_SERIALIZATION(sf1r::PropertyValue)
 
 namespace sf1r {
 
+namespace inner {
+template <typename T>
+struct test_string_type
+{
+    enum {check = true};
+};
+template <>
+struct test_string_type<izenelib::util::UString>
+{
+    enum {check = false};
+};
+
+}
+
 class PropertyValue {
 public:
 /*****************************************
@@ -82,21 +96,25 @@ public:
     template<typename T>
     T& get()
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(data_);
     }
     template<typename T>
     const T& get() const
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(data_);
     }
     template<typename T>
     T* getPointer()
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(&data_);
     }
     template<typename T>
     const T* getPointer() const
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(&data_);
     }
 

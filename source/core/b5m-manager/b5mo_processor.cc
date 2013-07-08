@@ -64,11 +64,11 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     if(type==NOT_SCD) return;
 
     //format Price property
-    UString uprice;
+    Document::doc_prop_value_strtype uprice;
     if(doc.getProperty("Price", uprice))
     {
         ProductPrice pp;
-        pp.Parse(uprice);
+        pp.Parse(propstr_to_ustr(uprice));
         doc.property("Price") = pp.ToPropString();
     }
 

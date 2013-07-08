@@ -136,9 +136,9 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, std::string& suuid)
 
 bool SimpleDataSource::GetPrice(const PMDocumentType& doc, ProductPrice& price) const
 {
-    izenelib::util::UString price_ustr;
+    Document::doc_prop_value_strtype price_ustr;
     if (!doc.getProperty(config_.price_property_name, price_ustr)) return false;
-    return price.Parse(price_ustr);
+    return price.Parse(propstr_to_ustr(price_ustr));
 }
 
 bool SimpleDataSource::GetPrice(const uint32_t& docid, ProductPrice& price) const

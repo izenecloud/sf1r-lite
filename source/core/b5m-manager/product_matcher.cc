@@ -831,10 +831,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             category.has_spu = true;
         }
         ProductPrice price;
-        UString uprice;
+        Document::doc_prop_value_strtype uprice;
         if(doc.getProperty("Price", uprice))
         {
-            price.Parse(uprice);
+            price.Parse(propstr_to_ustr(uprice));
         }
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);
@@ -899,23 +899,23 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
                 }
             }
         if(product.attributes.size()<2) continue;
-        UString dattribute_ustr;
+        Document::doc_prop_value_strtype dattribute_ustr;
         doc.getProperty("DAttribute", dattribute_ustr);
-        UString display_attribute_ustr;
+        Document::doc_prop_value_strtype display_attribute_ustr;
         doc.getProperty("DisplayAttribute", display_attribute_ustr);
-        UString filter_attribute_ustr;
+        Document::doc_prop_value_strtype filter_attribute_ustr;
         doc.getProperty("FilterAttribute", filter_attribute_ustr);
         if(!filter_attribute_ustr.empty())
         {
-            ParseAttributes(filter_attribute_ustr, product.dattributes);
+            ParseAttributes(propstr_to_ustr(filter_attribute_ustr), product.dattributes);
         }
         else if(!display_attribute_ustr.empty())
         {
-            ParseAttributes(display_attribute_ustr, product.dattributes);
+            ParseAttributes(propstr_to_ustr(display_attribute_ustr), product.dattributes);
         }
         else if(!dattribute_ustr.empty())
         {
-            ParseAttributes(dattribute_ustr, product.dattributes);
+            ParseAttributes(propstr_to_ustr(dattribute_ustr), product.dattributes);
             MergeAttributes(product.dattributes, product.attributes);
         }
         product.tweight = 0.0;
@@ -3797,24 +3797,24 @@ void ProductMatcher::ComputeT_(const Document& doc, const std::vector<Term>& ter
 
 void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
 {
-    UString title;
+    Document::doc_prop_value_strtype title;
     doc.getProperty("Title", title);
     std::string stitle;
-    title.convertString(stitle, UString::UTF_8);
+    stitle = propstr_to_str(title);
 #ifdef B5M_DEBUG
     std::cout<<"[TITLE]"<<stitle<<std::endl;
 #endif
     ProductPrice price;
-    UString uprice;
+    Document::doc_prop_value_strtype uprice;
     if(doc.getProperty("Price", uprice))
     {
-        price.Parse(uprice);
+        price.Parse(propstr_to_ustr(uprice));
     }
     uint32_t given_cid = 0;
-    UString given_category;
+    Document::doc_prop_value_strtype given_category;
     doc.getProperty("Category", given_category);
     std::string sgiven_category;
-    given_category.convertString(sgiven_category, UString::UTF_8);
+    sgiven_category = propstr_to_str(given_category);
     if(!given_category.empty())
     {
         CategoryIndex::const_iterator it = category_index_.find(sgiven_category);
@@ -4128,29 +4128,27 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 
 void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& result_products)
 {
-    UString title;
+    Document::doc_prop_value_strtype title;
     doc.getProperty("Title", title);
-    std::string stitle;
-    title.convertString(stitle, UString::UTF_8);
+    std::string stitle = propstr_to_str(title);
 #ifdef B5M_DEBUG
     std::cout<<"[TITLE]"<<stitle<<std::endl;
 #endif
     double price = 0.0;
-    UString uprice;
+    Document::doc_prop_value_strtype uprice;
     if(doc.getProperty("Price", uprice))
     {
         ProductPrice pp;
-        pp.Parse(uprice);
+        pp.Parse(propstr_to_ustr(uprice));
         pp.GetMid(price);
     }
     SimObject title_obj;
     string_similarity_.Convert(title, title_obj);
     bool matcher_only = matcher_only_;
     uint32_t given_cid = 0;
-    UString given_category;
+    Document::doc_prop_value_strtype given_category;
     doc.getProperty("Category", given_category);
-    std::string sgiven_category;
-    given_category.convertString(sgiven_category, UString::UTF_8);
+    std::string sgiven_category = propstr_to_str(given_category);
     if(!given_category.empty())
     {
         CategoryIndex::const_iterator it = category_index_.find(sgiven_category);

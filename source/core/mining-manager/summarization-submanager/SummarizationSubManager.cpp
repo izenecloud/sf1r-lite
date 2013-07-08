@@ -273,16 +273,14 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         {
             disadvantage.append(advantagepair.second);
         }
-        UString  usa(ait->second.get<AdvantageType>());
-        usa.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(ait->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
         if(advantage.find(advantagepair.first) == UString::npos)
         {
             advantage.append(advantagepair.first);
         }
 
-        UString  usd(dit->second.get<DisadvantageType>());
-        usd.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(dit->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
         if(disadvantage.find(advantagepair.second) == UString::npos)
         disadvantage.append(advantagepair.second);

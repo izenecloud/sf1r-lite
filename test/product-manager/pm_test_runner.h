@@ -84,8 +84,7 @@ public:
             while( it!=doc.propertyEnd())
             {
                 std::cout<<it->first<<":";
-                std::string str;
-                it->second.get<izenelib::util::UString>().convertString(str, izenelib::util::UString::UTF_8);
+                std::string str = propstr_to_str(it->second.getPropertyStrValue());
                 std::cout<<str<<",";
                 ++it;
             }
@@ -150,7 +149,7 @@ private:
         PMDocumentType& doc = (*document_list_)[docid-1];
         PMDocumentType::property_iterator it = doc.findProperty(pm_config_.uuid_property_name);
         BOOST_CHECK( it != doc.propertyEnd());
-        uuid = it->second.get<izenelib::util::UString>();
+        uuid = propstr_to_ustr(it->second.getPropertyStrValue());
     }
 
     void ResultCheck_(const PMTestResultItem& item, const std::pair<SCD_TYPE, PMDocumentType>& result)
@@ -161,18 +160,17 @@ private:
         {
             PMDocumentType::property_const_iterator it = result_doc.findProperty(pm_config_.price_property_name);
             BOOST_CHECK( it != result_doc.propertyEnd());
-            izenelib::util::UString uprice = it->second.get<izenelib::util::UString>();
+            Document::doc_prop_value_strtype uprice = it->second.getPropertyStrValue();
             ProductPrice price;
-            price.Parse(uprice);
+            price.Parse(propstr_to_ustr(uprice));
             BOOST_CHECK( item.price == price );
         }
         if(item.itemcount>0)
         {
             PMDocumentType::property_const_iterator it = result_doc.findProperty(pm_config_.itemcount_property_name);
             BOOST_CHECK( it != result_doc.propertyEnd());
-            izenelib::util::UString uic = it->second.get<izenelib::util::UString>();
-            std::string sic;
-            uic.convertString(sic, izenelib::util::UString::UTF_8);
+            Document::doc_prop_value_strtype uic = it->second.getPropertyStrValue();
+            std::string sic = propstr_to_str(uic);
             uint32_t ic = boost::lexical_cast<uint32_t>(sic);
             BOOST_CHECK( item.itemcount == ic );
         }
@@ -180,18 +178,18 @@ private:
         if(item.uuid_docid>0)
         {
             BOOST_CHECK( document_list_->size()>=item.uuid_docid);
-            izenelib::util::UString source_uuid;
-            izenelib::util::UString uuid;
+            Document::doc_prop_value_strtype source_uuid;
+            Document::doc_prop_value_strtype uuid;
             {
                 PMDocumentType::property_const_iterator it = result_doc.findProperty(pm_config_.docid_property_name);
                 BOOST_CHECK( it != result_doc.propertyEnd());
-                source_uuid = it->second.get<izenelib::util::UString>();
+                source_uuid = it->second.getPropertyStrValue();
             }
             {
                 PMDocumentType& doc = (*document_list_)[item.uuid_docid-1];
                 PMDocumentType::property_const_iterator it = doc.findProperty(pm_config_.uuid_property_name);
                 BOOST_CHECK( it != doc.propertyEnd());
-                uuid = it->second.get<izenelib::util::UString>();
+                uuid = it->second.getPropertyStrValue();
             }
 //             std::cout<<"check uuid "<<item.uuid_docid<<","<<uuid<<","<<source_uuid<<std::endl;
             BOOST_CHECK( uuid == source_uuid );

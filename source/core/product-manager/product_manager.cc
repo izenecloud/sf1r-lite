@@ -72,11 +72,10 @@ bool ProductManager::HookInsert(const PMDocumentType& doc, time_t timestamp)
         ProductPrice price;
         if (util_->GetPrice(doc, price))
         {
-            UString docid;
+            Document::doc_prop_value_strtype docid;
             if (doc.getProperty(config_.docid_property_name, docid))
             {
-                std::string docid_str;
-                docid.convertString(docid_str, UString::UTF_8);
+                std::string docid_str = propstr_to_str(docid);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 uint128_t num_docid = Utilities::md5ToUint128(docid_str);
                 task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
@@ -99,7 +98,7 @@ bool ProductManager::HookUpdate(const PMDocumentType& to, docid_t oldid, time_t 
         inhook_ = false;
         return false;
     }
-    UString from_uuid;
+    Document::doc_prop_value_strtype from_uuid;
     if (!from.getProperty(config_.uuid_property_name, from_uuid) )
     {
         inhook_ = false;
@@ -112,11 +111,11 @@ bool ProductManager::HookUpdate(const PMDocumentType& to, docid_t oldid, time_t 
 
     if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
-        UString docid;
+        Document::doc_prop_value_strtype docid;
         if (to.getProperty(config_.docid_property_name, docid ) )
         {
             std::string docid_str;
-            docid.convertString(docid_str, UString::UTF_8);
+            docid_str = propstr_to_str(docid);
             if (timestamp == -1) GetTimestamp_(to, timestamp);
             uint128_t num_docid = Utilities::md5ToUint128(docid_str);
             std::map<std::string, std::string> group_prop_map;
