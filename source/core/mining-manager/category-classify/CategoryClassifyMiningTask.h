@@ -8,6 +8,7 @@
 
 #include "../MiningTask.h"
 #include <fstream>
+#include <string>
 
 namespace sf1r
 {
@@ -19,7 +20,8 @@ class CategoryClassifyMiningTask : public MiningTask
 public:
     CategoryClassifyMiningTask(
         DocumentManager& documentManager,
-        CategoryClassifyTable& categoryTable,
+        CategoryClassifyTable& classifyTable,
+        const std::string& categoryPropName,
         bool isDebug);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
@@ -31,9 +33,20 @@ public:
     virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
+    void classifyByCategory_(
+        const std::string& category,
+        std::string& classifyCategory);
+
+    void classifyByTitle_(
+        const std::string& title,
+        std::string& classifyCategory);
+
+private:
     DocumentManager& documentManager_;
 
-    CategoryClassifyTable& categoryTable_;
+    CategoryClassifyTable& classifyTable_;
+
+    const std::string categoryPropName_;
 
     docid_t startDocId_;
 

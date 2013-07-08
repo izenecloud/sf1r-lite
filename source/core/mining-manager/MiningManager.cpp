@@ -2643,8 +2643,12 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
         return false;
     }
 
+    const std::string& categoryPropName =
+        rankConfig.scores[CATEGORY_SCORE].propName;
+
     miningTaskBuilder_->addTask(new CategoryClassifyMiningTask(*document_manager_,
                                                                *categoryClassifyTable_,
+                                                               categoryPropName,
                                                                classifyConfig.isDebug));
     return true;
 }

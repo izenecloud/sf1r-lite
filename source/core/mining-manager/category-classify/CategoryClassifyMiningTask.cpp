@@ -12,20 +12,33 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const std::string kDebugFileName = "debug.txt";
+
+void getDocPropValue(
+    const Document& doc,
+    const std::string& propName,
+    std::string& propValue)
+{
+    izenelib::util::UString ustr;
+    doc.getProperty(propName, ustr);
+    ustr.convertString(propValue, izenelib::util::UString::UTF_8);
+}
+
 }
 
 CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     DocumentManager& documentManager,
-    CategoryClassifyTable& categoryTable,
+    CategoryClassifyTable& classifyTable,
+    const std::string& categoryPropName,
     bool isDebug)
     : documentManager_(documentManager)
-    , categoryTable_(categoryTable)
+    , classifyTable_(classifyTable)
+    , categoryPropName_(categoryPropName)
     , startDocId_(0)
     , isDebug_(isDebug)
 {
     if (isDebug_)
     {
-        const bfs::path dirPath(categoryTable.dirPath());
+        const bfs::path dirPath(classifyTable.dirPath());
         const bfs::path debugPath(dirPath / kDebugFileName);
 
         debugStream_.open(debugPath.string().c_str(), std::ofstream::app);
@@ -34,36 +47,62 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
 
 bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
-    izenelib::util::UString propValueUStr;
-    doc.getProperty(categoryTable_.propName(), propValueUStr);
+    std::string title;
+    getDocPropValue(doc, classifyTable_.propName(), title);
 
-    if (propValueUStr.empty())
+    if (title.empty())
         return true;
 
-    std::string propValue;
-    propValueUStr.convertString(propValue, izenelib::util::UString::UTF_8);
+    std::string classifyCategory;
+    std::string category;
+    if (!categoryPropName_.empty())
+    {
+        getDocPropValue(doc, categoryPropName_, category);
+        classifyByCategory_(category, classifyCategory);
+    }
 
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    KNlpWrapper::string_t propValueKStr(propValue);
-    KNlpWrapper::token_score_list_t tokenScores;
-    knlpWrapper->fmmTokenize(propValueKStr, tokenScores);
+    if (classifyCategory.empty())
+    {
+        classifyByTitle_(title, classifyCategory);
+    }
 
-    KNlpWrapper::string_t categoryKStr = knlpWrapper->classifyToBestCategory(tokenScores);
-    std::string category = categoryKStr.get_bytes("utf-8");
-    categoryTable_.setCategory(docID, category);
+    classifyTable_.setCategory(docID, classifyCategory);
 
     if (isDebug_)
     {
-        debugStream_ << docID << " [" << category << "] "
-                     << propValue << std::endl;
+        debugStream_ << docID << " [" << classifyCategory << "] "
+                     << title << std::endl;
     }
 
     return true;
 }
 
+void CategoryClassifyMiningTask::classifyByCategory_(
+    const std::string& category,
+    std::string& classifyCategory)
+{
+    if (category.find("图书音像") != std::string::npos)
+    {
+        classifyCategory = "R>文娱>书籍杂志";
+    }
+}
+
+void CategoryClassifyMiningTask::classifyByTitle_(
+    const std::string& title,
+    std::string& classifyCategory)
+{
+    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+    KNlpWrapper::string_t titleKStr(title);
+    KNlpWrapper::token_score_list_t tokenScores;
+    knlpWrapper->fmmTokenize(titleKStr, tokenScores);
+
+    KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
+    classifyCategory = classifyKStr.get_bytes("utf-8");
+}
+
 bool CategoryClassifyMiningTask::preProcess()
 {
-    startDocId_ = categoryTable_.docIdNum();
+    startDocId_ = classifyTable_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
 
     LOG(INFO) << "category classify mining task"
@@ -73,13 +112,13 @@ bool CategoryClassifyMiningTask::preProcess()
     if (startDocId_ > endDocId)
         return false;
 
-    categoryTable_.resize(endDocId + 1);
+    classifyTable_.resize(endDocId + 1);
     return true;
 }
 
 bool CategoryClassifyMiningTask::postProcess()
 {
-    if (!categoryTable_.flush())
+    if (!classifyTable_.flush())
     {
         LOG(ERROR) << "failed in CategoryClassifyTable::flush()";
         return false;
