@@ -87,8 +87,10 @@ KNlpWrapper::string_t KNlpWrapper::classifyToBestCategory(const token_score_list
 KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
     const token_score_list_t& tokenScores)
 {
-    return ilplib::knlp::DocNaiveBayes::classify(cateDict_.get(),
-                                                 termCateDict_.get(),
-                                                 termMultiCatesDict_.get(),
-                                                 tokenScores);
+    std::stringstream ss;
+    return ilplib::knlp::DocNaiveBayes::classify_multi_level(cateDict_.get(),
+                                                             termCateDict_.get(),
+                                                             termMultiCatesDict_.get(),
+                                                             tokenScores,
+                                                             ss);
 }
