@@ -24,7 +24,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-//#define B5M_DEBUG
+#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130620000000");
 
@@ -901,19 +901,19 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         if(product.attributes.size()<2) continue;
         UString dattribute_ustr;
         doc.getProperty("DAttribute", dattribute_ustr);
-        UString display_attribute_ustr;
-        doc.getProperty("DisplayAttribute", display_attribute_ustr);
-        UString filter_attribute_ustr;
-        doc.getProperty("FilterAttribute", filter_attribute_ustr);
-        if(!filter_attribute_ustr.empty())
-        {
-            ParseAttributes(filter_attribute_ustr, product.dattributes);
-        }
-        else if(!display_attribute_ustr.empty())
-        {
-            ParseAttributes(display_attribute_ustr, product.dattributes);
-        }
-        else if(!dattribute_ustr.empty())
+        //UString display_attribute_ustr;
+        doc.getProperty("DisplayAttribute", product.display_attributes);
+        //UString filter_attribute_ustr;
+        doc.getProperty("FilterAttribute", product.filter_attributes);
+        //if(!filter_attribute_ustr.empty())
+        //{
+            //ParseAttributes(filter_attribute_ustr, product.dattributes);
+        //}
+        //else if(!display_attribute_ustr.empty())
+        //{
+            //ParseAttributes(display_attribute_ustr, product.dattributes);
+        //}
+        if(!dattribute_ustr.empty())
         {
             ParseAttributes(dattribute_ustr, product.dattributes);
             MergeAttributes(product.dattributes, product.attributes);
@@ -4079,7 +4079,11 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
-        if(!IsPriceSim_(price, p.price)) continue;
+        bool pricesim = IsPriceSim_(price, p.price);
+#ifdef B5M_DEBUG
+        LOG(ERROR)<<p.stitle<<",["<<price<<","<<p.price<<"],"<<(int)pricesim<<std::endl;
+#endif
+        if(!pricesim) continue;
         //if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
         SpuContributorValue& scv = it->second;
 #ifdef B5M_DEBUG

@@ -656,6 +656,8 @@ namespace sf1r {
             ProductPrice price;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
+            UString display_attributes;
+            UString filter_attributes;
             std::string sbrand;
             //WeightType weight;
             double aweight;
@@ -666,7 +668,14 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+                try
+                {
+                    ar & spid & stitle & scategory & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+                }
+                catch(std::exception& ex)
+                {
+                    ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+                }
             }
 
             static bool FCategoryCompare(const Product& p1, const Product& p2)
