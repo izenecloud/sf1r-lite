@@ -1344,6 +1344,7 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         if (is_real_time_)
         {
+            LOG(INFO) << "indexing in single thread while in real time mode";
             // real time can not using multi thread because of the inverted index in 
             // the real time can not handle the out-of-order docid list.
             std::string source = "";
