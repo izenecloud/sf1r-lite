@@ -256,6 +256,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -268,6 +269,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -280,6 +282,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -292,6 +295,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -304,6 +308,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         if (detail::split_numeric(value, data_[pos]))
         {
             dirty_ = true;
@@ -321,6 +326,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = value;
         dirty_ = true;
     }

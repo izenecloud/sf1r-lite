@@ -496,8 +496,8 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             UString(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
     }
 
-    DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
-    bool ret = false;
+    const DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
+    bool ret = true;
     for (DocumentManager::NumericPropertyTableMap::const_iterator it = numericPropertyTables.begin();
             it != numericPropertyTables.end(); ++it)
     {
@@ -525,7 +525,10 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 std::pair<int32_t, int32_t> value;
                 NumericRangePropertyTable<int32_t>* numericPropertyTable = static_cast<NumericRangePropertyTable<int32_t> *>(it->second.get());
                 if (!numericPropertyTable->getValue(docId, value))
+                {
+                    ret = false;
                     break;
+                }
 
                 if (value.first == value.second)
                 {
@@ -544,7 +547,10 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             {
                 int32_t value;
                 if (!it->second->getInt32Value(docId, value))
+                {
+                    ret = false;
                     break;
+                }
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
@@ -554,7 +560,10 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 std::pair<float, float> value;
                 NumericRangePropertyTable<float>* numericPropertyTable = static_cast<NumericRangePropertyTable<float> *>(it->second.get());
                 if (!numericPropertyTable->getValue(docId, value))
+                {
+                    ret = false;
                     break;
+                }
 
                 if (value.first == value.second)
                 {
@@ -573,7 +582,10 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             {
                 float value;
                 if (!it->second->getFloatValue(docId, value))
+                {
+                    ret = false;
                     break;
+                }
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
@@ -584,7 +596,10 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 std::pair<int64_t, int64_t> value;
                 NumericRangePropertyTable<int64_t>* numericPropertyTable = static_cast<NumericRangePropertyTable<int64_t> *>(it->second.get());
                 if (!numericPropertyTable->getValue(docId, value))
+                {
+                    ret = false;
                     break;
+                }
 
                 if (value.first == value.second)
                 {
@@ -603,12 +618,19 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             {
                 int64_t value;
                 if (!it->second->getInt64Value(docId, value))
+                {
+                    ret = false;
                     break;
+                }
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
         default:
             break;
+        }
+        if (!ret)
+        {
+            LOG(ERROR) << "get number property failed.";
         }
         ret = true;
     }
