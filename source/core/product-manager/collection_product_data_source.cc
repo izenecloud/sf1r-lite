@@ -47,7 +47,7 @@ void CollectionProductDataSource::GetRTypePropertiesForDocument(uint32_t docid, 
     document_manager_->getRTypePropertiesForDocument(docid, doc);
 }
 
-void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
+void CollectionProductDataSource::GetDocIdList(const Document::doc_prop_value_strtype& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
 {
     PropertyType value(uuid);
     index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
@@ -130,7 +130,8 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
     return true;
 }
 
-bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid)
+bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc,
+    const Document::doc_prop_value_strtype& uuid)
 {
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
@@ -195,9 +196,9 @@ bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
         return false;
     }
     uuid = it->second.getPropertyStrValue();
-    PropertyValue::PropertyValueStrType olduuid;
+    Document::doc_prop_value_strtype olduuid;
     doc.getProperty(config_.olduuid_property_name, olduuid);
-    if(olduuid.find(uuid) != UString::npos)
+    if(olduuid.find(uuid) != Document::doc_prop_value_strtype::npos)
     {
         // already in history
         std::cout << "warning: current uuid already in history while adding to history" << endl;

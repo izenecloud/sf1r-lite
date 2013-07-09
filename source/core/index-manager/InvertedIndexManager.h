@@ -64,12 +64,12 @@ struct PropertyValue2IndexPropertyType
     void operator()(const std::string& value)
     {
         izenelib::util::Trim(const_cast<std::string&>(value));
-        out_ = izenelib::util::UString(value,izenelib::util::UString::UTF_8);
+        out_ = str_to_propstr(value);
     }
     void operator()(const izenelib::util::UString& value)
     {
         izenelib::util::Trim(const_cast<izenelib::util::UString&>(value));
-        out_ = value;
+        out_ = ustr_to_propstr(value);
     }
 
 private:
@@ -170,7 +170,7 @@ private:
     bool prepareIndexDocumentStringProperty_(
             docid_t docId,
             const std::string& property_name,
-            const izenelib::util::UString& propertyValueU,
+            const IndexPropString& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 

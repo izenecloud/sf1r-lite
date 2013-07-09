@@ -44,12 +44,12 @@ void split_string(const izenelib::util::UString& szText, std::list<PropertyType>
         if (n != izenelib::util::UString::npos)
         {
             if (n != nOld)
-                out.push_back(str.substr(nOld, n - nOld));
+                out.push_back(sf1r::ustr_to_propstr(str.substr(nOld, n - nOld)));
             n += sep.length();
             nOld = n;
         }
     }
-    out.push_back(str.substr(nOld));
+    out.push_back(sf1r::ustr_to_propstr(str.substr(nOld)));
 }
 
 void split_int32(const std::string& str, std::list<PropertyType>& out, const char* sep)
@@ -455,7 +455,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             index_it->getType() == SUBDOC_PROPERTY_TYPE)
         {
             prepareIndexDocumentStringProperty_(docId, it->first, 
-                propstr_to_ustr(it->second.getPropertyStrValue()), index_it, indexDocument);
+                it->second.getPropertyStrValue(), index_it, indexDocument);
         }
         else
         {
@@ -484,7 +484,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         std::string s_propvalue;
         rtype_it->second->getRTypeString(docId, s_propvalue);
         prepareIndexDocumentStringProperty_(docId, rtype_it->first, 
-            UString(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
+            str_to_propstr(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
     }
 
     const DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
@@ -660,7 +660,7 @@ bool InvertedIndexManager::makeForwardIndex_(
 bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
         docid_t docId,
         const std::string& property_name,
-        const izenelib::util::UString& propertyValueU,
+        const IndexPropString& propertyValueU,
         IndexBundleSchema::const_iterator iter,
         IndexerDocument& indexDocument)
 {
@@ -686,7 +686,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
             if (iter->getIsFilter() && iter->getIsMultiValue())
             {
                 MultiValuePropertyType props;
-                split_string(propertyValueU, props, encoding, ',');
+                split_string(propstr_to_ustr(propertyValueU), props, encoding, ',');
                 indexDocument.insertProperty(indexerPropertyConfig, props);
             }
             else
@@ -705,7 +705,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
                 if (iter->getIsMultiValue())
                 {
                     MultiValuePropertyType props;
-                    split_string(propertyValueU, props, encoding,',');
+                    split_string(propstr_to_ustr(propertyValueU), props, encoding,',');
 
                     MultiValueIndexPropertyType indexData =
                         std::make_pair(laInput, props);
@@ -993,7 +993,7 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
             case STRING_PROPERTY_TYPE:
             case SUBDOC_PROPERTY_TYPE:
                 {
-                    prepareIndexDocumentStringProperty_(docId, propertyName, propstr_to_ustr(propValue), iter, indexdoc);
+                    prepareIndexDocumentStringProperty_(docId, propertyName, propValue, iter, indexdoc);
                 }
                 break;
             case INT32_PROPERTY_TYPE:
@@ -1127,7 +1127,7 @@ bool InvertedIndexManager::mergeDocument_(
                 if (iter->getType() == STRING_PROPERTY_TYPE ||
                     iter->getType() == SUBDOC_PROPERTY_TYPE)
                 {
-                    prepareIndexDocumentStringProperty_(newid, it->first, propstr_to_ustr(propValue), iter, indexDocument);
+                    prepareIndexDocumentStringProperty_(newid, it->first, propValue, iter, indexDocument);
                 }
                 else
                     prepareIndexDocumentNumericProperty_(newid, propValue, iter, indexDocument);
