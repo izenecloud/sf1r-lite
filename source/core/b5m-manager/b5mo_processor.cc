@@ -228,13 +228,13 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                     {
                         if(!dattributes.empty())
                         {
-                            doc.property("Attribute") = ProductMatcher::AttributesText(dattributes);
-                            doc.property("FilterAttribute") = ProductMatcher::AttributesText(dattributes);
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
                         }
                         else if(!attributes.empty())
                         {
-                            doc.property("Attribute") = ProductMatcher::AttributesText(attributes);
-                            doc.property("FilterAttribute") = ProductMatcher::AttributesText(attributes);
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
                         }
                         //else
                         //{
