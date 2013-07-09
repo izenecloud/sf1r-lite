@@ -217,6 +217,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                     }
                     if(!product.filter_attributes.empty())
                     {
+                        doc.property("Attribute") = product.filter_attributes;
                         doc.property("FilterAttribute") = product.filter_attributes;
                     }
                 }
