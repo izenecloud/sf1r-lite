@@ -633,7 +633,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
 bool InvertedIndexManager::makeForwardIndex_(
         docid_t docId,
-        const izenelib::util::UString& text,
+        const Document::doc_prop_value_strtype& text,
         const std::string& propertyName,
         unsigned int propertyId,
         const AnalysisInfo& analysisInfo,
@@ -652,7 +652,7 @@ bool InvertedIndexManager::makeForwardIndex_(
         }
     }
 
-    if (!laManager_->getTermIdList(idManager_.get(), text, analysisInfo, *laInput, indexingLevel))
+    if (!laManager_->getTermIdList(idManager_.get(), propstr_to_ustr(text), analysisInfo, *laInput, indexingLevel))
         return false;
     return true;
 }

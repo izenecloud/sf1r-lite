@@ -856,7 +856,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                     if (tg_properties.find(property_it->first))
                     {
                         const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
-                        tgInfo_->addDocument(docid, content);
+                        tgInfo_->addDocument(docid, propstr_to_ustr(content));
                     }
                     property_it++;
                 }

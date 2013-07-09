@@ -149,7 +149,7 @@ private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);
     bool makeForwardIndex_(
             docid_t docId,
-            const izenelib::util::UString& text,
+            const Document::doc_prop_value_strtype& text,
             const std::string& propertyName,
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo,
