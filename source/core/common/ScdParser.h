@@ -32,7 +32,7 @@ class ScdParser
 
     /// @brief  Reads a document from the loaded SCD file, when given a DOCID value.
     //          prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
-    bool getDoc(const PropertyValueType & docId, SCDDoc& doc);
+    bool getDoc(const ScdPropertyValueType & docId, SCDDoc& doc);
 
 public:
     ScdParser();
@@ -64,7 +64,7 @@ public:
     }
 
     /// @brief  A utility function to get all the DOCID values from an SCD
-    bool getDocIdList(std::vector<PropertyValueType> & list);
+    bool getDocIdList(std::vector<ScdPropertyValueType> & list);
 
     bool getDocIdList(std::vector<DocIdPair > & list);
 
@@ -166,7 +166,7 @@ private:
 
     long size_;
 
-    izenelib::am::rde_hash<PropertyValueType, long> docOffsetList_;
+    izenelib::am::rde_hash<ScdPropertyValueType, long> docOffsetList_;
 
     const std::string docDelimiter_; /// the boundary between each docs
 };

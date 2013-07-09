@@ -136,18 +136,18 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         const std::string& propName = it->first;
-        const PropertyValueType & propValueU = it->second;
+        const ScdPropertyValueType & propValue = it->second;
 
         if (propName == PROP_USERID)
         {
-            user.idStr_ = propValueU;
+            user.idStr_ = propValue;
         }
         else
         {
             sf1r::RecommendProperty recommendProperty;
             if (schema.getUserProperty(propName, recommendProperty))
             {
-                user.propValueMap_[propName] = propValueU;
+                user.propValueMap_[propName] = izenelib::util::UString(propValue, DEFAULT_ENCODING);
             }
             else
             {

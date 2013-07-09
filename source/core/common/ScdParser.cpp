@@ -429,7 +429,7 @@ bool ScdParser::load(const string& path)
     return true;
 }
 
-bool ScdParser::getDocIdList(std::vector<PropertyValueType> & list)
+bool ScdParser::getDocIdList(std::vector<ScdPropertyValueType> & list)
 {
     if ( !fs_.is_open() )
         return false;
@@ -510,7 +510,7 @@ ScdParser::cached_iterator ScdParser::cend()
     return cached_iterator(-1);
 }
 
-bool ScdParser::getDoc(const PropertyValueType & docId, SCDDoc& doc)
+bool ScdParser::getDoc(const ScdPropertyValueType & docId, SCDDoc& doc)
 {
     long * val = docOffsetList_.find( docId );
     if ( val == NULL )

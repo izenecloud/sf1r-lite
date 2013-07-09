@@ -186,12 +186,12 @@ BOOST_AUTO_TEST_CASE(testGetDocIdList)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<PropertyValueType> idList;
+    std::vector<ScdPropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
     BOOST_CHECK_EQUAL(10, idList.size());
 
-    PropertyValueType one("1");
-    PropertyValueType ten("10");
+    ScdPropertyValueType one("1");
+    ScdPropertyValueType ten("10");
 
     BOOST_CHECK(idList.front() == one);
     BOOST_CHECK(idList.back() == ten);
@@ -229,8 +229,8 @@ BOOST_AUTO_TEST_CASE(testIterator)
     BOOST_CHECK_EQUAL(doc->size(), 3);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    PropertyValueType titleUStr("Title " + idStr);
-    PropertyValueType contentUStr("Content " + idStr);
+    ScdPropertyValueType titleUStr("Title " + idStr);
+    ScdPropertyValueType contentUStr("Content " + idStr);
 
     // <DOCID>
     BOOST_CHECK((*doc)[0].first == docid);
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(testEmptySCD)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<PropertyValueType> idList;
+    std::vector<ScdPropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
 
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<PropertyValueType> idList;
+    std::vector<ScdPropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
     std::string docid("DOCID");
@@ -330,16 +330,16 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDoc)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<PropertyValueType> idList;
+    std::vector<ScdPropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
     std::string docid("DOCID");
     std::string title("Title");
     std::string content("Content");
 
-    PropertyValueType one("1");
-    PropertyValueType titleOne("Title 1");
-    PropertyValueType contentOne("Content 1");
+    ScdPropertyValueType one("1");
+    ScdPropertyValueType titleOne("Title 1");
+    ScdPropertyValueType contentOne("Content 1");
 
     BOOST_CHECK(idList.size() == 1);
     BOOST_CHECK_EQUAL(one, idList.front());
@@ -388,9 +388,9 @@ BOOST_AUTO_TEST_CASE(testNoTrailingNewLine)
     std::string title("Title");
     std::string content("Content");
 
-    PropertyValueType one("1");
-    PropertyValueType titleOne("Title 1");
-    PropertyValueType contentOne("Content 1");
+    ScdPropertyValueType one("1");
+    ScdPropertyValueType titleOne("Title 1");
+    ScdPropertyValueType contentOne("Content 1");
 
     for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
     {
@@ -442,9 +442,9 @@ BOOST_AUTO_TEST_CASE(testCarriageReturn)
         BOOST_CHECK_EQUAL(doc->size(), 3);
 
         std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-        PropertyValueType idUStr(idStr);
-        PropertyValueType titleUStr("Title " + idStr);
-        PropertyValueType contentUStr("Content \r ABC " + idStr);
+        ScdPropertyValueType idUStr(idStr);
+        ScdPropertyValueType titleUStr("Title " + idStr);
+        ScdPropertyValueType contentUStr("Content \r ABC " + idStr);
 
         // <DOCID>
         BOOST_CHECK((*doc)[0].first == docid);
@@ -497,10 +497,10 @@ BOOST_AUTO_TEST_CASE(testUserId)
     BOOST_CHECK(doc->size() == 4);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    PropertyValueType idUStr("user_" + idStr);
-    PropertyValueType genderUStr("gender_" + idStr);
-    PropertyValueType ageUStr("age_" + idStr);
-    PropertyValueType areaUStr("area_" + idStr);
+    ScdPropertyValueType idUStr("user_" + idStr);
+    ScdPropertyValueType genderUStr("gender_" + idStr);
+    ScdPropertyValueType ageUStr("age_" + idStr);
+    ScdPropertyValueType areaUStr("area_" + idStr);
 
     // <UESRID>
     BOOST_CHECK((*doc)[0].first == userid);
@@ -559,11 +559,11 @@ BOOST_AUTO_TEST_CASE(testItemId)
     BOOST_CHECK(doc->size() == 5);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    PropertyValueType idUStr("item_" + idStr);
-    PropertyValueType nameUStr("名字_" + idStr);
-    PropertyValueType priceUStr("price_" + idStr);
-    PropertyValueType linkUStr("www.shop.com/product/item_" + idStr);
-    PropertyValueType categoryUStr("分类_" + idStr);
+    ScdPropertyValueType idUStr("item_" + idStr);
+    ScdPropertyValueType nameUStr("名字_" + idStr);
+    ScdPropertyValueType priceUStr("price_" + idStr);
+    ScdPropertyValueType linkUStr("www.shop.com/product/item_" + idStr);
+    ScdPropertyValueType categoryUStr("分类_" + idStr);
 
     // <UESRID>
     BOOST_CHECK((*doc)[0].first == userid);
@@ -630,10 +630,10 @@ BOOST_AUTO_TEST_CASE(testBracketInPropertyValue)
         BOOST_CHECK(doc->size() == 4);
 
         std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-        PropertyValueType idUStr("<user_>" + idStr);
-        PropertyValueType genderUStr("<gender_>" + idStr);
-        PropertyValueType ageUStr("<age_>" + idStr);
-        PropertyValueType areaUStr("<area_>" + idStr);
+        ScdPropertyValueType idUStr("<user_>" + idStr);
+        ScdPropertyValueType genderUStr("<gender_>" + idStr);
+        ScdPropertyValueType ageUStr("<age_>" + idStr);
+        ScdPropertyValueType areaUStr("<area_>" + idStr);
 
         // <UESRID>
         BOOST_CHECK((*doc)[0].first == userid);

@@ -74,7 +74,7 @@ int main(int ac, char** av)
 
             if(verbose)
             {
-                std::vector<std::pair<std::string, PropertyValueType> >::iterator p;
+                std::vector<std::pair<std::string, ScdPropertyValueType> >::iterator p;
 
                 for (p = doc.begin(); p != doc.end(); p++)
                 {

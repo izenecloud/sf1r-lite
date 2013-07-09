@@ -537,7 +537,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         documentManager->getRTypePropertiesForDocument(curDocId, document);
         // update docid
         std::string docidName("DOCID");
-        PropertyValueType docidValueU;
+        Document::doc_prop_value_strtype docidValueU;
         if (!document.getProperty(docidName, docidValueU))
         {
             //LOG(WARNING) << "skip doc which has no DOCID property: " << curDocId;
@@ -545,7 +545,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         docid_t newDocId;
-        std::string& docid_str = docidValueU;
+        std::string docid_str = propstr_to_str(docidValueU);
         if (createInsertDocId_(Utilities::md5ToUint128(docid_str), newDocId))
         {
             //LOG(INFO) << document.getId() << " -> " << newDocId;
@@ -780,7 +780,7 @@ IndexWorker::UpdateType IndexWorker::getUpdateType_(
     for (; p != doc.end(); ++p)
     {
         const string& fieldName = p->first;
-        const PropertyValueType& propertyValueU = p->second;
+        const ScdPropertyValueType& propertyValueU = p->second;
         if (boost::iequals(fieldName, DOCID))
             continue;
         if (propertyValueU.empty())
@@ -987,7 +987,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             {
                 std::string new_propvalue;
                 std::string oldvalue_str;
-                PropertyValueType& propertyValueU = oldvalue.get<PropertyValueType>();
+                PropertyValue::PropertyValueStrType& propertyValueU = oldvalue.getPropertyStrValue();
                 oldvalue_str = propertyValueU;
                 ///if a numeric property does not contain valid value, suppose it to be zero
                 if (oldvalue_str.empty()) oldvalue_str = "0";
@@ -1141,9 +1141,9 @@ bool IndexWorker::getPropertyValue_(const PropertyValue& value, std::string& val
 {
     try
     {
-        const PropertyValueType& sourceFieldValue = value.get<PropertyValueType>();
+        const PropertyValue::PropertyValueStrType& sourceFieldValue = value.getPropertyStrValue();
         if (sourceFieldValue.empty()) return false;
-        valueStr = sourceFieldValue ;
+        valueStr = propstr_to_str(sourceFieldValue);
         return true;
     }
     catch (boost::bad_get& e)
@@ -1441,7 +1441,7 @@ bool IndexWorker::createInsertDocId_(
 
 bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 {
-    std::vector<PropertyValueType> rawDocIDList;
+    std::vector<ScdPropertyValueType> rawDocIDList;
     if (!parser.getDocIdList(rawDocIDList))
     {
         LOG(WARNING) << "SCD File not valid.";
@@ -1453,7 +1453,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     docIdList.reserve(rawDocIDList.size());
     indexProgress_.currentFileSize_ =rawDocIDList.size();
     indexProgress_.currentFilePos_ = 0;
-    for (std::vector<PropertyValueType>::iterator iter = rawDocIDList.begin();
+    for (std::vector<ScdPropertyValueType>::iterator iter = rawDocIDList.begin();
             iter != rawDocIDList.end(); ++iter)
     {
         docid_t docId;
@@ -1854,7 +1854,7 @@ bool IndexWorker::prepareDocument_(
         IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 		
-        const PropertyValueType & propertyValueU = p->second; // preventing copy
+        const ScdPropertyValueType & propertyValueU = p->second; // preventing copy
 
         if (boost::iequals(fieldStr, DOCID) && isIndexSchema)
         {
@@ -1895,7 +1895,7 @@ bool IndexWorker::prepareDocument_(
                     if (iter->isRTypeString())
                     {
                         boost::shared_ptr<RTypeStringPropTable>& rtypeprop = documentManager_->getRTypeStringPropTable(iter->getName());
-                        const std::string& fieldValue = propertyValueU;
+                        const std::string fieldValue = propstr_to_str(propertyValueU);
 
                         std::string rtypevalue;
                         rtypeprop->getRTypeString(docId, rtypevalue);
@@ -1922,7 +1922,7 @@ bool IndexWorker::prepareDocument_(
                                         numOfSummary = 1; //atleast one sentence required for summary
                                 }
 
-                                if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
+                                if (!makeSentenceBlocks_(propstr_to_ustr(propertyValueU), iter->getDisplayLength(),
                                         numOfSummary, sentenceOffsetList))
                                 {
                                     LOG(ERROR) << "Make Sentence Blocks Failes ";
@@ -1950,7 +1950,7 @@ bool IndexWorker::prepareDocument_(
                 if (iter->getIsFilter() && !iter->getIsMultiValue())
                 {
                     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = documentManager_->getNumericPropertyTable(iter->getName());
-                    const std::string& fieldValue = propertyValueU;
+                    const std::string fieldValue = propstr_to_str(propertyValueU);
 
                     std::string rtypevalue;
                     numericPropertyTable->getStringValue(docId, rtypevalue);
@@ -2057,7 +2057,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
     for (; p != doc.end(); ++p)
     {
         const string& fieldName = p->first;
-        const PropertyValueType& propertyValueU = p->second;
+        const ScdPropertyValueType& propertyValueU = p->second;
         if (boost::iequals(fieldName, DOCID))
             continue;
         if (propertyValueU.empty())
@@ -2093,7 +2093,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
 }
 
 bool IndexWorker::makeSentenceBlocks_(
-        const PropertyValueType & text,
+        const izenelib::util::UString& text,
         const unsigned int maxDisplayLength,
         const unsigned int numOfSummary,
         vector<CharacterOffset>& sentenceOffsetList)
@@ -2157,7 +2157,7 @@ void IndexWorker::document2SCDDoc(const Document& document, SCDDoc& scddoc)
 
         try
         {
-            const PropertyValueType& propValue = document.property(it->first).get<PropertyValueType>();
+            const Document::doc_prop_value_strtype& propValue = document.property(it->first).getPropertyStrValue();
             if (boost::iequals(propertyName, DOCID))
             {
                 insertto = 0;
