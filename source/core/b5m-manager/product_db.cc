@@ -196,7 +196,7 @@ bool ProductProperty::Parse(const Document& doc)
         }
     }
     std::vector<AttrPair> attrib_list;
-    split_attr_pair(uattribute, attrib_list);
+    split_attr_pair(propstr_to_ustr(uattribute), attrib_list);
     for(std::size_t i=0;i<attrib_list.size();i++)
     {
         std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
