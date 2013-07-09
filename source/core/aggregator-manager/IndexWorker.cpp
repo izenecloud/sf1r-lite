@@ -53,7 +53,7 @@ const std::string DOCID("DOCID");
 const std::string DATE("DATE");
 const size_t UPDATE_BUFFER_CAPACITY = 8192;
 //PropertyConfig tempPropertyConfig;
-const std::size_t INDEX_THREAD = 4;
+const std::size_t INDEX_THREAD = 1;
 const std::size_t INDEX_THREAD_QUEUE = UPDATE_BUFFER_CAPACITY*10;
 
 }
