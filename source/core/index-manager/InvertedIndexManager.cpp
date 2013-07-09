@@ -455,7 +455,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             index_it->getType() == SUBDOC_PROPERTY_TYPE)
         {
             prepareIndexDocumentStringProperty_(docId, it->first, 
-                it->second.getPropertyStrValue(), index_it, indexDocument);
+                propstr_to_ustr(it->second.getPropertyStrValue()), index_it, indexDocument);
         }
         else
         {
@@ -484,7 +484,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         std::string s_propvalue;
         rtype_it->second->getRTypeString(docId, s_propvalue);
         prepareIndexDocumentStringProperty_(docId, rtype_it->first, 
-            str_to_propstr(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
+            UString(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
     }
 
     const DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
@@ -633,7 +633,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
 /// You have to get a proper AnalysisInfo value from the configuration. (Currently not implemented.)
 bool InvertedIndexManager::makeForwardIndex_(
         docid_t docId,
-        const Document::doc_prop_value_strtype& text,
+        const izenelib::util::UString& text,
         const std::string& propertyName,
         unsigned int propertyId,
         const AnalysisInfo& analysisInfo,
@@ -652,7 +652,7 @@ bool InvertedIndexManager::makeForwardIndex_(
         }
     }
 
-    if (!laManager_->getTermIdList(idManager_.get(), propstr_to_ustr(text), analysisInfo, *laInput, indexingLevel))
+    if (!laManager_->getTermIdList(idManager_.get(), text, analysisInfo, *laInput, indexingLevel))
         return false;
     return true;
 }
@@ -660,7 +660,7 @@ bool InvertedIndexManager::makeForwardIndex_(
 bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
         docid_t docId,
         const std::string& property_name,
-        const Document::doc_prop_value_strtype& propertyValueU,
+        const izenelib::util::UString& propertyValueU,
         IndexBundleSchema::const_iterator iter,
         IndexerDocument& indexDocument)
 {
@@ -686,7 +686,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
             if (iter->getIsFilter() && iter->getIsMultiValue())
             {
                 MultiValuePropertyType props;
-                split_string(propstr_to_ustr(propertyValueU, encoding), props, encoding, ',');
+                split_string(propertyValueU, props, encoding, ',');
                 indexDocument.insertProperty(indexerPropertyConfig, props);
             }
             else
@@ -705,7 +705,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
                 if (iter->getIsMultiValue())
                 {
                     MultiValuePropertyType props;
-                    split_string(propstr_to_ustr(propertyValueU, encoding), props, encoding,',');
+                    split_string(propertyValueU, props, encoding,',');
 
                     MultiValueIndexPropertyType indexData =
                         std::make_pair(laInput, props);
@@ -993,7 +993,7 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
             case STRING_PROPERTY_TYPE:
             case SUBDOC_PROPERTY_TYPE:
                 {
-                    prepareIndexDocumentStringProperty_(docId, propertyName, propValue, iter, indexdoc);
+                    prepareIndexDocumentStringProperty_(docId, propertyName, propstr_to_ustr(propValue), iter, indexdoc);
                 }
                 break;
             case INT32_PROPERTY_TYPE:
@@ -1127,7 +1127,7 @@ bool InvertedIndexManager::mergeDocument_(
                 if (iter->getType() == STRING_PROPERTY_TYPE ||
                     iter->getType() == SUBDOC_PROPERTY_TYPE)
                 {
-                    prepareIndexDocumentStringProperty_(newid, it->first, propValue, iter, indexDocument);
+                    prepareIndexDocumentStringProperty_(newid, it->first, propstr_to_ustr(propValue), iter, indexDocument);
                 }
                 else
                     prepareIndexDocumentNumericProperty_(newid, propValue, iter, indexDocument);

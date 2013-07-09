@@ -149,7 +149,7 @@ private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);
     bool makeForwardIndex_(
             docid_t docId,
-            const Document::doc_prop_value_strtype& text,
+            const izenelib::util::UString& text,
             const std::string& propertyName,
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo,
@@ -170,7 +170,7 @@ private:
     bool prepareIndexDocumentStringProperty_(
             docid_t docId,
             const std::string& property_name,
-            const Document::doc_prop_value_strtype& propertyValueU,
+            const izenelib::util::UString& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 
