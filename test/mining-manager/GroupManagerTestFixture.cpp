@@ -84,9 +84,8 @@ void checkProperty(
     BOOST_REQUIRE(it != doc.propertyEnd());
 
     const PropertyValue& value = it->second;
-    const izenelib::util::UString& ustr = value.get<izenelib::util::UString>();
-    std::string utf8Str;
-    ustr.convertString(utf8Str, ENCODING_TYPE);
+    const Document::doc_prop_value_strtype& ustr = value.getPropertyStrValue();
+    std::string utf8Str = propstr_to_str(ustr);
     BOOST_CHECK_EQUAL(utf8Str, propValue);
 }
 
@@ -97,17 +96,17 @@ void prepareDocument(
 {
     document.setId(docInput.docId_);
 
-    izenelib::util::UString property;
-    property.assign(lexical_cast<string>(docInput.docId_), ENCODING_TYPE);
+    Document::doc_prop_value_strtype property;
+    property = str_to_propstr(lexical_cast<string>(docInput.docId_), ENCODING_TYPE);
     document.property("DOCID") = property;
 
-    property.assign(docInput.title_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.title_, ENCODING_TYPE);
     document.property("Title") = property;
 
-    property.assign(docInput.groupStr_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.groupStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_STR) = property;
 
-    property.assign(docInput.dateStr_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.dateStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_DATETIME) = property;
 
     document.property(PROP_NAME_GROUP_INT) = lexical_cast<int32_t>(docInput.groupInt_);

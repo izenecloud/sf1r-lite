@@ -124,15 +124,14 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            UString title;
-            UString category;
+            Document::doc_prop_value_strtype title;
+            Document::doc_prop_value_strtype category;
             doc.getProperty("Title", title);
             doc.getProperty("Category", category);
             if( title.length()==0 || category.length()==0) continue;
-            UString pid;
+            Document::doc_prop_value_strtype pid;
             if(doc.getProperty("uuid", pid)) continue;
-            std::string scategory;
-            category.convertString(scategory, UString::UTF_8);
+            std::string scategory = propstr_to_str(category);
             for(uint32_t i=0;i<values_.size();i++)
             {
                 if(boost::regex_match(scategory, values_[i].regex))

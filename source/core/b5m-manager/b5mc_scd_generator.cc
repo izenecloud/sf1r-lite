@@ -155,7 +155,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             }
             if(!spid.empty())
             {
-                doc.property("uuid") = UString(spid, UString::UTF_8);
+                doc.property("uuid") = str_to_propstr(spid);
             }
             //std::cerr<<is_new_cid<<","<<pid_changed<<","<<spid<<std::endl;
             bool need_process = is_new_cid || pid_changed;
@@ -185,13 +185,13 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
         if(ProductMatcher::GetIsbnAttribute(doc, isbn))
         {
             Document book_doc;
-            book_doc.property("Category") = UString(B5MHelper::BookCategoryName(), UString::UTF_8);
+            book_doc.property("Category") = str_to_propstr(B5MHelper::BookCategoryName());
             book_doc.property("Attribute") = doc.property("Attribute");
             ProductMatcher::ProcessBook(book_doc, product);
         }
         else
         {
-            UString title;
+            Document::doc_prop_value_strtype title;
             doc.getProperty(title_property_name, title);
             if(!title.empty())
             {
@@ -212,7 +212,7 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
     if(!spid.empty() && bdb_!=NULL)
     {
         uint128_t pid = B5MHelper::StringToUint128(spid);
-        izenelib::util::UString brand;
+        Document::doc_prop_value_strtype brand;
         bdb_->get(pid, brand);
         if(brand.length()>0)
         {
@@ -221,7 +221,7 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
     }
     if(!spid.empty())
     {
-        doc.property("uuid") = UString(spid, UString::UTF_8);
+        doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
     }
 }
 

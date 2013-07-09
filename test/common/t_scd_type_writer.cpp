@@ -35,9 +35,9 @@ BOOST_AUTO_TEST_CASE(SCDTypeWirter_Append)
     SCD_TYPE type=INSERT_SCD;
     for(unsigned i=0; i<10000; i++)
     {
-        doc.property("Title") = UString(boost::lexical_cast<string>(rand()), UString::UTF_8);
-        doc.property("DOCID") = UString(boost::lexical_cast<string>(rand()),  UString::UTF_8);
-        doc.property("Content") =UString(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        doc.property("DOCID") = str_to_propstr(boost::lexical_cast<string>(rand()),  UString::UTF_8);
+        doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
         int itype=rand()%4;
         if(itype==0)
         {

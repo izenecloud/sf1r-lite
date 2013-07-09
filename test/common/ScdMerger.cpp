@@ -98,14 +98,13 @@ public:
                 value.type = type;
                 SCDDocPtr doc = (*doc_iter);
                 value.doc = getDoc_(*doc);
-                izenelib::util::UString docname = value.doc.property("DOCID").get<izenelib::util::UString>();
+                Document::doc_prop_value_strtype docname = value.doc.property("DOCID").getPropertyStrValue();
                 if(docname.length()==0) continue;
                 
                 uint64_t hash = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(docname);
                 
                 writer.Append(hash, value);
-                std::string str_docname;
-                docname.convertString(str_docname, izenelib::util::UString::UTF_8);
+                std::string str_docname = propstr_to_str(docname);
             }
         }
         

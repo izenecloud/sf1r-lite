@@ -365,9 +365,8 @@ bool ProductPriceTrend::MigratePriceHistory(
         if (kit == doc.propertyEnd())
             continue;
 
-        const UString& key = kit->second.get<UString>();
-        string str_docid;
-        key.convertString(str_docid, UString::UTF_8);
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
+        string str_docid = propstr_to_str(key);
         docid_list.push_back(Utilities::md5ToUint128(str_docid));
         if (docid_list.size() == 1000)
         {

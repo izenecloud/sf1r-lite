@@ -65,16 +65,16 @@ namespace sf1r {
         void WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
         static bool PidCompare_(const Value& doc1, const Value& doc2)
         {
-            UString pid1;
-            UString pid2;
+            Document::doc_prop_value_strtype pid1;
+            Document::doc_prop_value_strtype pid2;
             doc1.doc.getProperty("uuid", pid1);
             doc2.doc.getProperty("uuid", pid2);
             return pid1<pid2;
         }
         static bool OCompare_(const Value& doc1, const Value& doc2)
         {
-            UString oid1;
-            UString oid2;
+            Document::doc_prop_value_strtype oid1;
+            Document::doc_prop_value_strtype oid2;
             doc1.doc.getProperty("DOCID", oid1);
             doc2.doc.getProperty("DOCID", oid2);
             int c = oid1.compare(oid2);

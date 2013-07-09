@@ -29,25 +29,23 @@ string toString(UString us)
 }
 string getTitle(Document doc)
 {
-    UString utitle;
-    doc.getProperty("Title", utitle);
-    return toString(utitle);
+    std::string title;
+    doc.getProperty("Title", title);
+    return title;
 }
 
 string getSource(Document doc)
 {
-
-    UString usource;
-    doc.getProperty("Source", usource);
-    return toString(usource);
+    std::string source;
+    doc.getProperty("Source", source);
+    return source;
 }
 
 string get(Document doc,string prop)
 {
-
-    UString ustr;
-    doc.getProperty(prop, ustr);
-    return toString(ustr);
+    std::string str;
+    doc.getString(prop, str);
+    return str;
 }
 UCS2Char getUcs2Char(int iRange1 ,int iRange2)
 {
@@ -172,12 +170,12 @@ string rand_id()
 Document rand_doc()
 {
     Document doc;
-    doc.property("DATE") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(rand_id(),izenelib::util::UString::UTF_8);
-    doc.property("Title") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("DATE") = str_to_propstr(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("DOCID") =     str_to_propstr(rand_id(),izenelib::util::UString::UTF_8);
+    doc.property("Title") = str_to_propstr(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("Price") = str_to_propstr(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Source") = str_to_propstr(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr(rand_str(),izenelib::util::UString::UTF_8);
     return doc;
 }
 
@@ -203,12 +201,12 @@ bool checkProduct(ProductMatcher::Product &product,string &fcategory,string &sca
 bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source,string date,string price,string attribute,string title,string fcategory,string scategory,string sbrand)
 {
     Document doc;
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
-    doc.property("Title") = izenelib::util::UString(title, izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
+    doc.property("DATE") =   str_to_propstr(date, izenelib::util::UString::UTF_8);
+    doc.property("DOCID") =  str_to_propstr(spid,izenelib::util::UString::UTF_8);
+    doc.property("Title") =  str_to_propstr(title, izenelib::util::UString::UTF_8);
+    doc.property("Price") =  str_to_propstr(price,izenelib::util::UString::UTF_8);
+    doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);
 
     ProductMatcher::Product result_product;
     matcher.Process(doc,result_product,true);

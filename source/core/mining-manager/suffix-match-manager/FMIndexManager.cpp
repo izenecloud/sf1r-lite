@@ -387,7 +387,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                 }
                 else
                 {
-                    UString text = dit->second.get<UString>();
+                    UString text = propstr_to_ustr(dit->second.getPropertyStrValue());
                     Algorithm<UString>::to_lower(text);
                     text = Algorithm<UString>::padForAlphaNum(text);
                     for(size_t c_i = 0; c_i < text.length(); ++c_i)

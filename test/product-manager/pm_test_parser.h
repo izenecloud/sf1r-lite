@@ -95,10 +95,8 @@ public:
         uint32_t docid = boost::lexical_cast<uint32_t>(vec[1]);
         doc.setId(docid);
         std::string sdocid = "docid"+boost::lexical_cast<std::string>(docid);
-        izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-        doc.property("DOCID") = udocid;
-        izenelib::util::UString uprice(vec[2], izenelib::util::UString::UTF_8);
-        doc.property("Price") = uprice;
+        doc.property("DOCID") = str_to_propstr(sdocid);
+        doc.property("Price") = str_to_propstr(vec[2]);
     }
 };
 
@@ -114,10 +112,8 @@ public:
         uint32_t docid = boost::lexical_cast<uint32_t>(vec[1]);
         doc.setId(docid);
         std::string sdocid = "docid"+boost::lexical_cast<std::string>(docid);
-        izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
-        doc.property("DOCID") = udocid;
-        izenelib::util::UString uprice(vec[2], izenelib::util::UString::UTF_8);
-        doc.property("Price") = uprice;
+        doc.property("DOCID") = str_to_propstr(sdocid);
+        doc.property("Price") = str_to_propstr(vec[2]);
         uint32_t oldid = boost::lexical_cast<uint32_t>(vec[3]);
         index_document.setOldId(oldid);
         int ir = boost::lexical_cast<int>(vec[4]);

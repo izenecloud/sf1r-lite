@@ -59,14 +59,14 @@ bool UueGenerator::Generate(const std::string& mdb_instance)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            UString docid;
-            UString pid;
+            Document::doc_prop_value_strtype docid;
+            Document::doc_prop_value_strtype pid;
             std::string sdocid;
             std::string spid;
             doc.getProperty("DOCID", docid);
             doc.getProperty("uuid", pid);
-            docid.convertString(sdocid, izenelib::util::UString::UTF_8);
-            pid.convertString(spid, izenelib::util::UString::UTF_8);
+            sdocid = propstr_to_str(docid);
+            spid = propstr_to_str(pid);
             if( sdocid.empty() || spid.empty() ) continue;
             UueItem uue;
             uue.docid = sdocid;

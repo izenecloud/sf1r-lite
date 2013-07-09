@@ -66,7 +66,7 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
     std::vector<int> docidSet;
     for(unsigned i=0; i<docnum; i++)
     {
-        doc.property("Title") = UString(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
         int docid=rand()%100000;
         int itype=rand()%3;
         if(docidSet.size()<docnum*1/2)
@@ -115,9 +115,9 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
         }
         docidSet.push_back(docid);
         existdocidSet.push_back(docid);
-        doc.property("DOCID") = UString(boost::lexical_cast<string>(docid),  UString::UTF_8);
-        doc.property("uuid") = UString(boost::lexical_cast<string>(docid%3000),  UString::UTF_8);
-        doc.property("Content") =UString(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        doc.property("DOCID") = str_to_propstr(boost::lexical_cast<string>(docid),  UString::UTF_8);
+        doc.property("uuid") = str_to_propstr(boost::lexical_cast<string>(docid%3000),  UString::UTF_8);
+        doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
 
         if(itype==0)
         {

@@ -111,8 +111,7 @@ bool ProductController::maybe_doc_(bool must)
              it != objectValue.end(); ++it)
         {
             std::string pname = it->first;
-            izenelib::util::UString pvalue(asString(it->second), izenelib::util::UString::UTF_8);
-            doc_.property(pname) = pvalue;
+            doc_.property(pname) = str_to_propstr(asString(it->second));
         }
     }
     if( doc_.getPropertySize()==0 ) //empty resource doc
