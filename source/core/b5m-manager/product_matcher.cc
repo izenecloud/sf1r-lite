@@ -24,7 +24,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-#define B5M_DEBUG
+//#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130620000000");
 

@@ -33,7 +33,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     UString spu_title;
     UString url;
     ProductPrice min_price;
-    std::vector<ProductMatcher::Attribute> pattributes;
+    //std::vector<ProductMatcher::Attribute> pattributes;
     bool independent=true;
     UString pid;
     odocs.front().getProperty("uuid", pid);
@@ -68,12 +68,12 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         itemcount+=1;
         UString usource;
         UString uprice;
-        UString uattribute;
+        //UString uattribute;
         UString udate;
         UString uurl;
         doc.getProperty("Source", usource);
         doc.getProperty("Price", uprice);
-        doc.getProperty("Attribute", uattribute);
+        //doc.getProperty("Attribute", uattribute);
         doc.getProperty("DATE", udate);
         doc.getProperty("Url", uurl);
         if(udate.compare(pdate)>0) pdate=udate;
@@ -99,12 +99,12 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             usource.convertString(ssource, UString::UTF_8);
             psource.insert(ssource);
         }
-        if(!uattribute.empty())
-        {
-            std::vector<ProductMatcher::Attribute> attributes;
-            ProductMatcher::ParseAttributes(uattribute, attributes);
-            ProductMatcher::MergeAttributes(pattributes, attributes);
-        }
+        //if(!uattribute.empty())
+        //{
+            //std::vector<ProductMatcher::Attribute> attributes;
+            //ProductMatcher::ParseAttributes(uattribute, attributes);
+            //ProductMatcher::MergeAttributes(pattributes, attributes);
+        //}
     }
     if(!spu_title.empty())
     {
@@ -133,7 +133,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         ssource+=*it;
     }
     if(!ssource.empty()) pdoc.property("Source") = UString(ssource, UString::UTF_8);
-    if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
+    //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
     {
         pdoc.type=DELETE_SCD;
@@ -180,10 +180,10 @@ bool ProductProperty::Parse(const Document& doc)
     //LOG(INFO)<<"find oid "<<oid<<std::endl;
     UString usource;
     UString uprice;
-    UString uattribute;
+    //UString uattribute;
     doc.getProperty("Source", usource);
     doc.getProperty("Price", uprice);
-    doc.getProperty("Attribute", uattribute);
+    //doc.getProperty("Attribute", uattribute);
     price.Parse(uprice);
     if(usource.length()>0)
     {
@@ -197,27 +197,27 @@ bool ProductProperty::Parse(const Document& doc)
             source.insert(s_vector[i]);
         }
     }
-    std::vector<AttrPair> attrib_list;
-    split_attr_pair(uattribute, attrib_list);
-    for(std::size_t i=0;i<attrib_list.size();i++)
-    {
-        std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
-        std::vector<std::string> attrib_value_str_list;
-        //do duplicate remove
-        boost::unordered_set<std::string> value_set;
-        for(uint32_t j=0;j<attrib_value_list.size();j++)
-        {
-            std::string svalue;
-            attrib_value_list[j].convertString(svalue, UString::UTF_8);
-            if(value_set.find(svalue)!=value_set.end()) continue;
-            attrib_value_str_list.push_back(svalue);
-            value_set.insert(svalue);
-        }
-        izenelib::util::UString attrib_name = attrib_list[i].first;
-        std::string sname;
-        attrib_name.convertString(sname, UString::UTF_8);
-        attribute[sname] = attrib_value_str_list;
-    }
+    //std::vector<AttrPair> attrib_list;
+    //split_attr_pair(uattribute, attrib_list);
+    //for(std::size_t i=0;i<attrib_list.size();i++)
+    //{
+        //std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+        //std::vector<std::string> attrib_value_str_list;
+        ////do duplicate remove
+        //boost::unordered_set<std::string> value_set;
+        //for(uint32_t j=0;j<attrib_value_list.size();j++)
+        //{
+            //std::string svalue;
+            //attrib_value_list[j].convertString(svalue, UString::UTF_8);
+            //if(value_set.find(svalue)!=value_set.end()) continue;
+            //attrib_value_str_list.push_back(svalue);
+            //value_set.insert(svalue);
+        //}
+        //izenelib::util::UString attrib_name = attrib_list[i].first;
+        //std::string sname;
+        //attrib_name.convertString(sname, UString::UTF_8);
+        //attribute[sname] = attrib_value_str_list;
+    //}
  
     return true;
 }
@@ -241,11 +241,11 @@ void ProductProperty::Set(Document& doc) const
         doc.property("Source") = usource;
     }
 
-    UString uattribute = GetAttributeUString();
-    if(!uattribute.empty())
-    {
-        doc.property("Attribute") = uattribute;
-    }
+    //UString uattribute = GetAttributeUString();
+    //if(!uattribute.empty())
+    //{
+        //doc.property("Attribute") = uattribute;
+    //}
  
     doc.property("itemcount") = itemcount;
     if(independent)
@@ -322,10 +322,10 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
     {
         source.insert(*oit);
     }
-    for(AttributeType::const_iterator oit = other.attribute.begin(); oit!=other.attribute.end(); ++oit)
-    {
-        attribute[oit->first] = oit->second;
-    }
+    //for(AttributeType::const_iterator oit = other.attribute.begin(); oit!=other.attribute.end(); ++oit)
+    //{
+        //attribute[oit->first] = oit->second;
+    //}
     itemcount+=other.itemcount;
     SetIndependent();
     return *this;
