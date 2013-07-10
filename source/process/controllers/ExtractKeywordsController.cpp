@@ -33,7 +33,7 @@
  		uspage.assign(page, izenelib::util::UString::UTF_8);
  		std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > > res_ca, res_brand, res_model;
  		std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >::iterator it;
- 		LOG(INFO)<<"content: "<<page<<endl;
+// 		LOG(INFO)<<"content: "<<page<<endl;
  		matcher_->ExtractKeywordsFromPage(uspage, res_ca, res_brand, res_model);
  		LOG(INFO)<<"keywords count: "<<res_ca.size() + res_brand.size() + res_model.size()<<endl;
 
