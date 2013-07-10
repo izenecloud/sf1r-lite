@@ -41,50 +41,43 @@ int main(int argc, char * argv[])
         std::string col_data_base = argv[1];
         std::cout << "begin migrate the collection data : " << col_data_base << std::endl;
         std::string docdata_path = col_data_base + "/default-collection-dir/dm/";
-        std::string docdata_dumppath = col_data_base + "/default-collection-dir/dm_dump";
-        std::string docdata_newpath = col_data_base + "/default-collection-dir/dm_new/";
+        std::string docdata_newpath = col_data_base + "/default-collection-dir/dm_dump";
         {
             DocContainer tmpDocMgr(docdata_path);
-            bf::create_directories(docdata_newpath);
-            DocContainer newDocMgr(docdata_newpath);
 
             if (!tmpDocMgr.open())
             {
                 std::cout << "open old data failed." << std::endl;
                 return -1;
             }
-            newDocMgr.open();
-            ofstream ofs(docdata_dumppath.c_str());
+            ofstream ofs(docdata_newpath.c_str());
             Document doc;
             for (size_t i = 0; i <= tmpDocMgr.getMaxDocId(); ++i)
             {
                 if( tmpDocMgr.get(i, doc) )
                 {
-                    Document newdoc;
                     ofs << "id: " << i << std::endl;
                     Document::property_const_iterator it = doc.propertyBegin();
                     for(; it != doc.propertyEnd(); ++it)
                     {
                         try
                         {
-                            Document::doc_prop_value_strtype propU = doc.property(it->first).getPropertyStrValue();
-                            std::string propstr = propstr_to_str(propU);
+                            izenelib::util::UString propU = doc.property(it->first).get<izenelib::util::UString>();
+                            std::string propstr;
+                            propU.convertString(propstr, izenelib::util::UString::UTF_8);
                             ofs << it->first << "==" << propstr << std::endl;
-                            newdoc.property(it->first) = propstr;
                         }
                         catch(const boost::bad_get& e)
                         {
                             std::cerr << "get doc property failed : " << e.what();
                         }
                     }
-                    newDocMgr.insert(i, newdoc);
                 }
                 if (i%10000==0)
                 {
                     std::cout << " converted doc : " << i << std::endl;
                 }
             }
-            newDocMgr.flush();
         }
 
         std::cout << "convert finished." << std::endl;

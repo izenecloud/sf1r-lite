@@ -314,7 +314,7 @@ void LogDispatchHandler::UpdateDocuments()
         {
             const std::string& fieldName = p->first;
             std::string fieldNameLow = boost::algorithm::to_lower_copy(fieldName);
-            p->second.convertString(fieldVal, izenelib::util::UString::UTF_8);
+            fieldVal = p->second;
 
             if (fieldNameLow == "docid")
             {

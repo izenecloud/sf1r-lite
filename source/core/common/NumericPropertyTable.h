@@ -241,6 +241,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -253,6 +254,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -265,7 +267,8 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
-	data_[pos] = static_cast<T>(value);
+        ScopedReadBoolLock lock(mutex_, true);
+        data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setDoubleValue(std::size_t pos, const double& value)
@@ -277,6 +280,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -289,6 +293,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         try
         {
             data_[pos] = boost::lexical_cast<T>(value);
@@ -310,6 +315,7 @@ public:
                 data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = value;
         dirty_ = true;
     }

@@ -855,8 +855,8 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                 {
                     if (tg_properties.find(property_it->first))
                     {
-                        const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
-                        tgInfo_->addDocument(docid, content);
+                        const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
+                        tgInfo_->addDocument(docid, propstr_to_ustr(content));
                     }
                     property_it++;
                 }
@@ -2232,8 +2232,8 @@ bool MiningManager::GetSuffixMatch(
         double minor_score = 0;
         unsigned int major_highscore_size = 0;
         unsigned int major_size = major_tokens.size();
-        unsigned int minor_size = minor_tokens.size();
-        unsigned int total_size = major_size + minor_size;
+        //unsigned int minor_size = minor_tokens.size();
+        //unsigned int total_size = major_size + minor_size;
         std::list<std::pair<UString, double> > boundary_minor_tokens;
         std::list<std::pair<UString, double> > boundary_major_tokens;
 
@@ -2542,7 +2542,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         ProductMatcher::Product result_product;
         if (matcher->Process(doc, result_product))
         {
@@ -2582,7 +2582,7 @@ bool MiningManager::GetProductFrontendCategory(
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         std::vector<ProductMatcher::Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {

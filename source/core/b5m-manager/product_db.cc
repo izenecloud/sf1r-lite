@@ -29,13 +29,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     std::set<std::string> psource;
     std::vector<Document> subdocs;
     ProductPrice pprice;
-    UString pdate;
-    UString spu_title;
-    UString url;
+    Document::doc_prop_value_strtype pdate;
+    Document::doc_prop_value_strtype spu_title;
+    Document::doc_prop_value_strtype url;
     ProductPrice min_price;
     //std::vector<ProductMatcher::Attribute> pattributes;
     bool independent=true;
-    UString pid;
+    Document::doc_prop_value_strtype pid;
     odocs.front().getProperty("uuid", pid);
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
@@ -60,17 +60,17 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
                 subdocs.push_back(subdoc);
             }
         }
-        UString oid;
+        Document::doc_prop_value_strtype oid;
         doc.getProperty("DOCID", oid);
         if(oid!=pid) independent=false;
         doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
         pdoc.merge(doc);
         itemcount+=1;
-        UString usource;
-        UString uprice;
-        //UString uattribute;
-        UString udate;
-        UString uurl;
+        Document::doc_prop_value_strtype usource;
+        Document::doc_prop_value_strtype uprice;
+        //Document::doc_prop_value_strtype uattribute;
+        Document::doc_prop_value_strtype udate;
+        Document::doc_prop_value_strtype uurl;
         doc.getProperty("Source", usource);
         doc.getProperty("Price", uprice);
         //doc.getProperty("Attribute", uattribute);
@@ -95,8 +95,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         }
         if(usource.length()>0)
         {
-            std::string ssource;
-            usource.convertString(ssource, UString::UTF_8);
+            std::string ssource = propstr_to_str(usource);
             psource.insert(ssource);
         }
         //if(!uattribute.empty())
@@ -115,16 +114,16 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     pdoc.eraseProperty("uuid");
     if(!subdocs.empty()&&!independent)
     {
-        UString text;
+        izenelib::util::UString text;
         JsonDocument::ToJsonText(subdocs, text);
-        pdoc.property(B5MHelper::GetSubDocsPropertyName()) = text;
+        pdoc.property(B5MHelper::GetSubDocsPropertyName()) = ustr_to_propstr(text);
     }
 
     pdoc.property("DOCID") = pid;
     pdoc.property("itemcount") = itemcount;
     pdoc.property("independent") = (int64_t)independent;
     if(!pdate.empty()) pdoc.property("DATE") = pdate;
-    pdoc.property("Price") = pprice.ToUString();
+    pdoc.property("Price") = pprice.ToPropString();
     pdoc.property("Url") = url;
     std::string ssource;
     for(std::set<std::string>::const_iterator it=psource.begin();it!=psource.end();++it)
@@ -132,7 +131,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         if(!ssource.empty()) ssource+=",";
         ssource+=*it;
     }
-    if(!ssource.empty()) pdoc.property("Source") = UString(ssource, UString::UTF_8);
+    if(!ssource.empty()) pdoc.property("Source") = str_to_propstr(ssource, UString::UTF_8);
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
     {
@@ -150,7 +149,7 @@ bool ProductProperty::Parse(const Document& doc)
 {
     if(doc.getProperty("itemcount", itemcount))
     {
-        if(!doc.getProperty("DOCID", pid))
+        if(!doc.getProperty("DOCID", productid))
         {
             LOG(ERROR)<<"parse doc error"<<std::endl;
             return false;
@@ -161,7 +160,7 @@ bool ProductProperty::Parse(const Document& doc)
             return false;
         }
     }
-    else if(doc.getProperty("uuid", pid)) 
+    else if(doc.getProperty("uuid", productid)) 
     {
         itemcount = 1;
         if(!doc.getProperty("DOCID", oid))
@@ -178,17 +177,16 @@ bool ProductProperty::Parse(const Document& doc)
     doc.getString("DATE", date);
     SetIndependent();
     //LOG(INFO)<<"find oid "<<oid<<std::endl;
-    UString usource;
-    UString uprice;
-    UString uattribute;
+    Document::doc_prop_value_strtype usource;
+    Document::doc_prop_value_strtype uprice;
+    Document::doc_prop_value_strtype uattribute;
     doc.getProperty("Source", usource);
     doc.getProperty("Price", uprice);
     doc.getProperty("Attribute", uattribute);
     price.Parse(uprice);
     if(usource.length()>0)
     {
-        std::string ssource;
-        usource.convertString(ssource, UString::UTF_8);
+        std::string ssource = propstr_to_str(usource);
         std::vector<std::string> s_vector;
         boost::algorithm::split( s_vector, ssource, boost::algorithm::is_any_of(",") );
         for(uint32_t i=0;i<s_vector.size();i++)
@@ -198,7 +196,7 @@ bool ProductProperty::Parse(const Document& doc)
         }
     }
     std::vector<AttrPair> attrib_list;
-    split_attr_pair(uattribute, attrib_list);
+    split_attr_pair(propstr_to_ustr(uattribute), attrib_list);
     for(std::size_t i=0;i<attrib_list.size();i++)
     {
         std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
@@ -224,27 +222,27 @@ bool ProductProperty::Parse(const Document& doc)
 
 void ProductProperty::Set(Document& doc) const
 {
-    doc.property("DOCID") = pid;
+    doc.property("DOCID") = productid;
     //LOG(INFO)<<"set oid "<<oid<<std::endl;
     doc.property("OID") = oid;
     if(!date.empty())
     {
-        doc.property("DATE") = UString(date, UString::UTF_8);
+        doc.property("DATE") = str_to_propstr(date, UString::UTF_8);
     }
     if(price.Valid())
     {
-        doc.property("Price") = price.ToUString();
+        doc.property("Price") = price.ToPropString();
     }
     izenelib::util::UString usource = GetSourceUString();
     if(!usource.empty())
     {
-        doc.property("Source") = usource;
+        doc.property("Source") = ustr_to_propstr(usource);
     }
 
     UString uattribute = GetAttributeUString();
     if(!uattribute.empty())
     {
-        doc.property("Attribute") = uattribute;
+        doc.property("Attribute") = ustr_to_propstr(uattribute);
     }
  
     doc.property("itemcount") = itemcount;
@@ -261,7 +259,7 @@ void ProductProperty::Set(Document& doc) const
 
 void ProductProperty::SetIndependent()
 {
-    if(itemcount==1 && pid==oid)
+    if(itemcount==1 && productid==oid)
     {
         independent = true;
     }
@@ -314,8 +312,8 @@ izenelib::util::UString ProductProperty::GetAttributeUString() const
 
 ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
 {
-    if(pid.empty()) pid = other.pid;
-    if(oid.empty() || other.pid==other.oid) oid = other.oid;
+    if(productid.empty()) productid = other.productid;
+    if(oid.empty() || other.productid==other.oid) oid = other.oid;
     if(other.date>date) date = other.date; //use latest date
     price += other.price;
     for(SourceType::const_iterator oit = other.source.begin(); oit!=other.source.end(); ++oit)
@@ -363,7 +361,7 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
 std::string ProductProperty::ToString() const
 {
     std::string spid;
-    pid.convertString(spid, izenelib::util::UString::UTF_8);
+    spid = propstr_to_str(productid);
     std::stringstream ss;
     ss<<"pid:"<<spid<<",DATE:"<<date<<",itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
     for(SourceType::const_iterator it = source.begin(); it!=source.end(); ++it)

@@ -1224,8 +1224,7 @@ bool AttributeIndexer::SplitScd(const std::string& scd_file)
             const std::string& property_name = p->first;
             doc.property(property_name) = p->second;
         }
-        std::string scategory;
-        doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
+        std::string scategory = propstr_to_str(doc.property("Category").getPropertyStrValue());
         //if( !match_param_.MatchCategory(scategory) )
         //{
             //continue;
@@ -1402,7 +1401,7 @@ void AttributeIndexer::BuildProductDocuments_()
             product_doc.property[property_name] = p->second;
             if(property_name=="AID")
             {
-                p->second.convertString(aid_str, UString::UTF_8);
+                aid_str = p->second;
             }
         }
         if(aid_str.length()==0)

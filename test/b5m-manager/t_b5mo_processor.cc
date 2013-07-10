@@ -30,25 +30,23 @@ void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
 
 string getTitle(Document doc)
 {
-    UString utitle;
+    Document::doc_prop_value_strtype utitle;
     doc.getProperty("Title", utitle);
-    return toString(utitle);
+    return propstr_to_str(utitle);
 }
 
 string getSource(Document doc)
 {
-
-    UString usource;
+    Document::doc_prop_value_strtype usource;
     doc.getProperty("Source", usource);
-    return toString(usource);
+    return propstr_to_str(usource);
 }
 
 string get(Document doc,string prop)
 {
-
-    UString ustr;
+    Document::doc_prop_value_strtype ustr;
     doc.getProperty(prop, ustr);
-    return toString(ustr);
+    return propstr_to_str(ustr);
 }
 void check(Document doc,string source,string price,string title,string category,string attrubute,string mobile)//,uint128_t docid,uint128_t uuid
 {
@@ -109,18 +107,16 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 
     uint128_t pid=B5MHelper::StringToUint128("5f29098f1f606d9daeb41e49e9a24f87");
     uint128_t docid=1;
-    UString brand("联想",izenelib::util::UString::UTF_8);
+    Document::doc_prop_value_strtype brand("联想");
     bdb->set(pid, brand);
-
-
 
     Document doc;
     SCD_TYPE type=INSERT_SCD;
-    doc.property("Title") = UString("苹果 iphone4s", UString::UTF_8);
-    doc.property("DOCID") = UString(B5MHelper::Uint128ToString(docid), UString::UTF_8);
-    doc.property("Price") =UString("100.0", UString::UTF_8);
-    doc.property("Source") =UString("京东", UString::UTF_8);
-    doc.property("Attribute") =UString("品牌:苹果", UString::UTF_8);
+    doc.property("Title") = str_to_propstr("苹果 iphone4s", UString::UTF_8);
+    doc.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
+    doc.property("Price") = str_to_propstr("100.0", UString::UTF_8);
+    doc.property("Source") = str_to_propstr("京东", UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr("品牌:苹果", UString::UTF_8);
     odb->insert(1, pid);
     odb->flush();
     odb->get(docid, pid);
@@ -134,11 +130,11 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 
     bdocid=B5MHelper::StringToUint128(get(doc,"DOCID"));
     bdb->get(bdocid, brand);
-    BOOST_CHECK_EQUAL(toString(brand),"联想");
-    doc.property("Category") =UString("平板电脑/MID", UString::UTF_8);
+    BOOST_CHECK_EQUAL( propstr_to_str(brand),"联想");
+    doc.property("Category") = str_to_propstr("平板电脑/MID", UString::UTF_8);
     type=UPDATE_SCD;
-    doc.property("Source") =UString("天猫", UString::UTF_8);
-    doc.property("Price") =UString("106.0", UString::UTF_8);
+    doc.property("Source") = str_to_propstr("天猫", UString::UTF_8);
+    doc.property("Price") = str_to_propstr("106.0", UString::UTF_8);
     processor.Process(doc,type);
     check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
 
@@ -146,11 +142,11 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     type=INSERT_SCD;
     Document doc2;
     docid=2;
-    doc2.property("Source") =UString("天猫", UString::UTF_8);
-    doc2.property("DOCID") = UString(B5MHelper::Uint128ToString(docid), UString::UTF_8);
-    doc2.property("Price") =UString("154.0", UString::UTF_8);
-    doc2.property("Category") =UString("手机", UString::UTF_8);
-    doc2.property("Attribute") =UString("品牌:三星", UString::UTF_8);
+    doc2.property("Source") = str_to_propstr("天猫", UString::UTF_8);
+    doc2.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
+    doc2.property("Price") = str_to_propstr("154.0", UString::UTF_8);
+    doc2.property("Category") = str_to_propstr("手机", UString::UTF_8);
+    doc2.property("Attribute") = str_to_propstr("品牌:三星", UString::UTF_8);
     odb->insert(2, pid);
     odb->flush();
     processor.Process(doc2,type);
@@ -163,21 +159,21 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     BOOST_CHECK_EQUAL(toString(brand),"联想");
     Document doc3;
     type=INSERT_SCD;
-    doc3.property("Source") =UString("当当", UString::UTF_8);
-    doc3.property("DOCID") = UString("03", UString::UTF_8);
-    doc3.property("Price") =UString("15434.0", UString::UTF_8);
-    doc3.property("Category") =UString("男装>夹克", UString::UTF_8);
-    doc3.property("Attribute") =UString("品牌:brand1", UString::UTF_8);
+    doc3.property("Source") = str_to_propstr("当当", UString::UTF_8);
+    doc3.property("DOCID") = str_to_propstr("03", UString::UTF_8);
+    doc3.property("Price") = str_to_propstr("15434.0", UString::UTF_8);
+    doc3.property("Category") = str_to_propstr("男装>夹克", UString::UTF_8);
+    doc3.property("Attribute") = str_to_propstr("品牌:brand1", UString::UTF_8);
     processor.Process(doc3,type);
 //当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile
 
     check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1","");
     processor.Process(doc,type);
     Document doc4;
-    doc4.property("Title") ="SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版";
-    doc4.property("DOCID") = UString("04", UString::UTF_8);
-    doc4.property("Price") =UString("1324.0", UString::UTF_8);
-    doc4.property("Category") ="平板电脑/MID";
+    doc4.property("Title") = str_to_propstr("SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版");
+    doc4.property("DOCID") = str_to_propstr("04", UString::UTF_8);
+    doc4.property("Price") = str_to_propstr("1324.0", UString::UTF_8);
+    doc4.property("Category") = str_to_propstr("平板电脑/MID");
     type=INSERT_SCD;
     processor.Process(doc,type);
 

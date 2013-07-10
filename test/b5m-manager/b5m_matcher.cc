@@ -904,7 +904,7 @@ int do_main(int ac, char** av)
                 getline(std::cin, line);
                 boost::algorithm::trim(line);
                 Document doc;
-                doc.property("Title") = UString(line, UString::UTF_8);
+                doc.property("Title") = str_to_propstr(line, UString::UTF_8);
                 uint32_t limit = 3;
                 std::vector<ProductMatcher::Product> products;
                 matcher.Process(doc, limit, products);

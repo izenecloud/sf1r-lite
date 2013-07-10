@@ -55,8 +55,7 @@ void ScdSharder::setShardKeyValues(SCDDoc& scdDoc)
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         const std::string& propertyName = propertyIter->first;
-        std::string propertyValue;
-        (*propertyIter).second.convertString(propertyValue, izenelib::util::UString::UTF_8);
+        const std::string& propertyValue = propertyIter->second;
 
         if (shardingConfig_.hasShardKey(propertyName))
         {

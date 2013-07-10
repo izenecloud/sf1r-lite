@@ -66,10 +66,7 @@ void renderItem(
         if (findIt == endIt)
             continue;
 
-        const izenelib::util::UString& ustr = findIt->second.get<izenelib::util::UString>();
-        ustr.convertString(utf8, ENCODING_TYPE);
-
-        itemValue[docIdToItemId(propName)] = utf8;
+        itemValue[docIdToItemId(propName)] = sf1r::propstr_to_str(findIt->second.get<sf1r::PropertyValue::PropertyValueStrType>());
     }
 }
 

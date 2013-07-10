@@ -62,8 +62,7 @@ bool RemoteItemManagerBase::getItemStrIds_(ItemContainer& itemContainer)
         if (! itemIdGenerator_->itemIdToStrId(item.getId(), strItemId))
             return false;
 
-        izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
-        item.property(DOCID) = ustr;
+        item.property(DOCID) = str_to_propstr(strItemId);
     }
 
     return true;
@@ -154,7 +153,7 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
             if (! propValue.empty())
             {
                 Document& doc = itemContainer.getItem(docValueId);
-                doc.property(propName) = propValue;
+                doc.property(propName) = ustr_to_propstr(propValue);
             }
         }
     }

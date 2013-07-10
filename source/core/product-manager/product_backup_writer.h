@@ -81,9 +81,7 @@ public:
         while(it!=doc.propertyEnd())
         {
             std::string key = it->first;
-            const izenelib::util::UString& uvalue = it->second.get<izenelib::util::UString>();
-            std::string svalue;
-            uvalue.convertString(svalue, izenelib::util::UString::UTF_8);
+            std::string svalue = propstr_to_str(it->second.getPropertyStrValue());
             value[key] = svalue;
             ++it;
         }

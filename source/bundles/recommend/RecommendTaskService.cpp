@@ -136,18 +136,18 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         const std::string& propName = it->first;
-        const izenelib::util::UString & propValueU = it->second;
+        const ScdPropertyValueType & propValue = it->second;
 
         if (propName == PROP_USERID)
         {
-            propValueU.convertString(user.idStr_, DEFAULT_ENCODING);
+            user.idStr_ = propValue;
         }
         else
         {
             sf1r::RecommendProperty recommendProperty;
             if (schema.getUserProperty(propName, recommendProperty))
             {
-                user.propValueMap_[propName] = propValueU;
+                user.propValueMap_[propName] = izenelib::util::UString(propValue, DEFAULT_ENCODING);
             }
             else
             {
@@ -177,7 +177,7 @@ bool doc2Order(
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         const std::string& propName = it->first;
-        it->second.convertString(docMap[propName], DEFAULT_ENCODING);
+        docMap[propName] = it->second;
     }
 
     userIdStr = docMap[PROP_USERID];

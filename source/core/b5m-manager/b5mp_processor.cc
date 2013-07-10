@@ -151,7 +151,7 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
     if(another_value.type!=DELETE_SCD)
     {
         pp += another;
-        if(value.empty() || another.oid==another.pid )
+        if(value.empty() || another.oid==another.productid )
         {
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
         }
@@ -170,7 +170,7 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
                     PropertyValue& pvalue = value.doc.property(it->first);
                     if(pvalue.which()==docid_value.which()) //is UString
                     {
-                        const UString& uvalue = pvalue.get<UString>();
+                        const PropertyValue::PropertyValueStrType& uvalue = pvalue.getPropertyStrValue();
                         if(uvalue.empty())
                         {
                             pvalue = it->second;
@@ -183,9 +183,9 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
     }
     else
     {
-        if(pp.pid.empty())
+        if(pp.productid.empty())
         {
-            pp.pid = another.pid;
+            pp.productid= another.productid;
         }
     }
     pp.Set(value.doc);
@@ -213,7 +213,7 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
-    UString ptitle;
+    Document::doc_prop_value_strtype ptitle;
     doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
     if(!ptitle.empty())
     {
