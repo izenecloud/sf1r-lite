@@ -337,6 +337,9 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
     is_real_time_ = inc_supported_index_manager_.isRealTime();
 
+    if (is_real_time_)
+        LOG(INFO) << "indexing in single thread while in real time mode";
+
     {
         DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
         if (!dirGuard)
@@ -1344,7 +1347,6 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         if (is_real_time_)
         {
-            LOG(INFO) << "indexing in single thread while in real time mode";
             // real time can not using multi thread because of the inverted index in 
             // the real time can not handle the out-of-order docid list.
             std::string source = "";
@@ -1876,7 +1878,7 @@ bool IndexWorker::prepareDocument_(
             {
                 std::string rtypevalue;
                 datePropertyTable->getStringValue(docId, rtypevalue);
-                old_rtype_doc.property(fieldStr) = rtypevalue;
+                old_rtype_doc.property(fieldStr) = str_to_propstr(rtypevalue);
                 datePropertyTable->setInt64Value(docId, ts);
             }
             else
@@ -1899,7 +1901,7 @@ bool IndexWorker::prepareDocument_(
 
                         std::string rtypevalue;
                         rtypeprop->getRTypeString(docId, rtypevalue);
-                        old_rtype_doc.property(fieldStr) = rtypevalue;
+                        old_rtype_doc.property(fieldStr) = str_to_propstr(rtypevalue);
 
                         rtypeprop->updateRTypeString(docId, fieldValue);
                     }
@@ -1954,7 +1956,7 @@ bool IndexWorker::prepareDocument_(
 
                     std::string rtypevalue;
                     numericPropertyTable->getStringValue(docId, rtypevalue);
-                    old_rtype_doc.property(fieldStr) = rtypevalue;
+                    old_rtype_doc.property(fieldStr) = str_to_propstr(rtypevalue);
                     
                     numericPropertyTable->setStringValue(docId, fieldValue);
                 }
@@ -1975,7 +1977,7 @@ bool IndexWorker::prepareDocument_(
 
                     std::string rtypevalue;
                     datePropertyTable->getStringValue(docId, rtypevalue);
-                    old_rtype_doc.property(fieldStr) = rtypevalue;
+                    old_rtype_doc.property(fieldStr) = str_to_propstr(rtypevalue);
 
                     datePropertyTable->setInt64Value(docId, ts);
                 }
@@ -2007,7 +2009,7 @@ bool IndexWorker::prepareDocument_(
 
         std::string rtypevalue;
         numericPropertyTable->getStringValue(docId, rtypevalue);
-        old_rtype_doc.property(dateProperty_.getName()) = rtypevalue;
+        old_rtype_doc.property(dateProperty_.getName()) = str_to_propstr(rtypevalue);
 
         numericPropertyTable->setInt64Value(docId, tm);
     }
