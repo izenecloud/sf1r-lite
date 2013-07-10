@@ -2500,6 +2500,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     boost::unordered_map<cid_t, uint32_t>::iterator iter;
 
     std::vector<std::pair<cid_t, double> > cos_value;
+    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     for(iter=first_level_category_.begin();iter!=first_level_category_.end();iter++)
     {
         double tcos = Cosine_(feature_vector, feature_vectors_[iter->first]);
@@ -2512,19 +2513,26 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         cos_value.insert(it, make_pair(iter->first, tcos));
     }
 
+    for(uint32_t i=0;i<20;i++)
+    {
+        LOG(INFO)<<"cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
+                 <<category_list_[cos_value[i].first].name<<endl;
+    }
     boost::unordered_map<std::string, uint32_t> note;
     KeywordVector temp_k;
     
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         KeywordTag& ki = keyword_vector[i];
-/*
+
         std::string str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
-        LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
+/*        LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
 */
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         uint32_t att_num, bm_num;
+        uint32_t product_count = ki.attribute_apps.size();
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
         att_num = bm_num = 0;
         while(it1!=ki.attribute_apps.end())
         {
@@ -2536,6 +2544,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 bool b = false;
                 for(uint32_t i=0;i<15;i++)
                 {
+                    if(cos_value[i].second < 0.05)break;
 		    if(cos_value[i].first == cid)
                     {
                         b = true;
