@@ -2524,6 +2524,8 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
 */
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
+        uint32_t att_num, bm_num;
+        att_num = bm_num = 0;
         while(it1!=ki.attribute_apps.end())
         {
 //            LOG(INFO)<<str<<" 属性名：  "<<it1->attribute_name<<endl;
@@ -2532,7 +2534,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
 		cid_t cid = products_[it1->spu_id].cid;
                 cid = GetLevelCid_(category_list_[cid].name, 1);
                 bool b = false;
-                for(uint32_t i=0;i<10;i++)
+                for(uint32_t i=0;i<15;i++)
                 {
 		    if(cos_value[i].first == cid)
                     {
@@ -2545,8 +2547,15 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
 //                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
                     break;
                 }
+                bm_num++;
             }
             ki.attribute_apps.erase(it1);
+            att_num++;
+            if(att_num > 25 || bm_num > 5)
+            {
+                ki.attribute_apps.clear();
+                break;
+            }
         }
         if(ki.attribute_apps.empty())continue;
 
