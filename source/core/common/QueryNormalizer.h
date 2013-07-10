@@ -29,6 +29,14 @@ public:
     void tokenizeQuery(const std::string& query, std::vector<std::string>& tokens);
 
     /*
+    * spaceQuery
+    * For example, given the query "全网底价FOTILE方太CXW-189-EH16欧式吸油烟机 + JZT-FZ26GE嵌入式燃气灶"
+    * The resulut is "全网底价 FOTILE 方太 CXW-189-EH16 欧式吸油烟机 JZT-FZ26GE 嵌入式燃气灶"
+    */
+
+    void spaceQuery(const std::string& query, std::string& queryOut);
+
+    /*
      * Normalize the query from @p fromStr to @p toStr.
      *
      * It consists of below steps:
@@ -59,13 +67,27 @@ public:
         return countCharNum(query) >= LONG_QUERY_MIN_CHAR_NUM;
     }
 
+    void getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
+                        std::string& newquery);
+
+    void getMajorQueryByPunctuation(const std::string& query, std::string& majorQuery, std::string& minorQuery);
+
+    void getMajorQueryByKeyWord(const std::string& query, std::string& majorQuery, std::string& minorQuery);
+
+    void clearUselessWord(const std::string& query, std::string& newquery);
+
+    void getProductTypesForApple(const std::string& query, std::string& newquery, std::vector<std::string>& productTypes);
+
 private:
+    bool isProductType(const std::string &str);
 
     enum
     {
         LONG_QUERY_MIN_CHAR_NUM = 8 // the mininum character number for long query
     };
 };
+
+
 
 } // namespace sf1r
 
