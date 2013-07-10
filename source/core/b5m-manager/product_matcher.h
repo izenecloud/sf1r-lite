@@ -671,14 +671,14 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                try
-                {
-                    ar & spid & stitle & scategory & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
-                }
-                catch(std::exception& ex)
-                {
-                    ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
-                }
+                ar & spid & stitle & scategory & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+                //try
+                //{
+                //}
+                //catch(std::exception& ex)
+                //{
+                    //ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+                //}
             }
 
             static bool FCategoryCompare(const Product& p1, const Product& p2)
