@@ -77,8 +77,8 @@ int main(int ac, char** av)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            Document::doc_prop_value_strtype e_dattrib;
-            Document::doc_prop_value_strtype e_fattrib;
+            UString e_dattrib;
+            UString e_fattrib;
             doc.getProperty("DisplayAttribute", e_dattrib);
             doc.getProperty("FilterAttribute", e_fattrib);
             std::string stitle;
@@ -107,15 +107,15 @@ int main(int ac, char** av)
                 if( discover_writer && (!e_dattrib.empty()||!e_fattrib.empty()) && (result_product.display_attributes.empty()&&result_product.filter_attributes.empty()))
                 {
                     Document sdoc;
-                    sdoc.property("DOCID") = str_to_propstr(result_product.spid, UString::UTF_8);
-                    sdoc.property("Title") = str_to_propstr(result_product.stitle, UString::UTF_8);
+                    sdoc.property("DOCID") = UString(result_product.spid, UString::UTF_8);
+                    sdoc.property("Title") = UString(result_product.stitle, UString::UTF_8);
                     if(!e_dattrib.empty())
                     {
-                        sdoc.property("DisplayAttribute") = ustr_to_propstr(e_dattrib);
+                        sdoc.property("DisplayAttribute") = e_dattrib;
                     }
                     if(!e_fattrib.empty())
                     {
-                        sdoc.property("FilterAttribute") = ustr_to_propstr(e_fattrib);
+                        sdoc.property("FilterAttribute") = e_fattrib;
                     }
                     discover_writer->Append(sdoc, UPDATE_SCD); 
                 }

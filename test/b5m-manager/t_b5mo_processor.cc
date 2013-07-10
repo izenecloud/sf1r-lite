@@ -84,22 +84,22 @@ BOOST_AUTO_TEST_SUITE(b5mo_processor_test)
 
 BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 {
-    //string bdb_path="./bdb";
+    string bdb_path="./bdb";
     string odb_path="./odb";
     std::string cma_path= IZENECMA_KNOWLEDGE ;
 
     //string scd_path="/home/lscm/6indexSCD";
     string output_dir="./output";
 
-    //boost::filesystem::remove_all(bdb_path);
+    boost::filesystem::remove_all(bdb_path);
     boost::filesystem::remove_all(odb_path);
     //b5mo process
-    //boost::shared_ptr<BrandDb> bdb;
+    boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<OfferDb> odb;
-    //bdb.reset(new BrandDb(bdb_path));
+    bdb.reset(new BrandDb(bdb_path));
     odb.reset(new OfferDb(odb_path));
     odb->open();
-    //bdb->open();
+    bdb->open();
     int mode=0;
     ProductMatcher*  matcher=(new ProductMatcher);;
     matcher->SetCmaPath(cma_path);
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     uint128_t pid=B5MHelper::StringToUint128("5f29098f1f606d9daeb41e49e9a24f87");
     uint128_t docid=1;
     Document::doc_prop_value_strtype brand("联想");
-    //bdb->set(pid, brand);
+    bdb->set(pid, brand);
 
     Document doc;
     SCD_TYPE type=INSERT_SCD;
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     odb->insert(1, pid);
     odb->flush();
     odb->get(docid, pid);
-    B5moProcessor processor(odb.get(), matcher, mode, NULL);
+    B5moProcessor processor(odb.get(), matcher, bdb.get(), mode, NULL);
 
 
     processor.Process(doc,type);
@@ -129,8 +129,8 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     uint128_t bdocid;
 
     bdocid=B5MHelper::StringToUint128(get(doc,"DOCID"));
-    //bdb->get(bdocid, brand);
-    //BOOST_CHECK_EQUAL( propstr_to_str(brand),"联想");
+    bdb->get(bdocid, brand);
+    BOOST_CHECK_EQUAL( propstr_to_str(brand),"联想");
     doc.property("Category") = str_to_propstr("平板电脑/MID", UString::UTF_8);
     type=UPDATE_SCD;
     doc.property("Source") = str_to_propstr("天猫", UString::UTF_8);
@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 
     type=DELETE_SCD;
     processor.Process(doc,type);
-    //bdb->get(bdocid, brand);
-    //BOOST_CHECK_EQUAL(toString(brand),"联想");
+    bdb->get(bdocid, brand);
+    BOOST_CHECK_EQUAL(toString(brand),"联想");
     Document doc3;
     type=INSERT_SCD;
     doc3.property("Source") = str_to_propstr("当当", UString::UTF_8);
