@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdio>
 
+#include "PropertyValue.h"
 #include <util/ustring/UString.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <util/fileno.hpp>
@@ -95,7 +96,7 @@ struct scd_grammar
             boost::regex_replace(std::back_inserter(str), begin, end,
                     PATTERN_LT_GT, FORMAT_LT_GT, boost::match_default | boost::format_all);
 
-            scddoc.push_back(FieldPair(property_name, str));
+            scddoc.push_back(FieldPair(property_name, sf1r::str_to_propstr(str)));
             property_name.clear();
         }
         SCDDoc& scddoc;
@@ -766,7 +767,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
         {
             if(!property_name.empty())
             {
-                doc->push_back(std::make_pair( property_name, property_value.str()));
+                doc->push_back(std::make_pair( property_name, sf1r::str_to_propstr(property_value.str())));
             }
             property_name.clear();
             property_value.str("");
@@ -776,7 +777,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
     }
     if(!property_name.empty())
     {
-        doc->push_back(std::make_pair( property_name, property_value.str()));
+        doc->push_back(std::make_pair( property_name, sf1r::str_to_propstr(property_value.str())));
     }
     STOP_PROFILER ( proScdParsingN );
 }
