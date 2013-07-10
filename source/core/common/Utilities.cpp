@@ -217,7 +217,7 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     }
     if (sf1r_type == STRING_PROPERTY_TYPE)
     {
-        type = izenelib::util::UString("", izenelib::util::UString::UTF_8);
+        type = IndexPropString("");
         return true;
     }
     else if (sf1r_type == INT32_PROPERTY_TYPE

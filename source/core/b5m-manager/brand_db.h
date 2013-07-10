@@ -24,24 +24,25 @@ namespace sf1r {
     public:
         typedef uint128_t IdType;
         typedef uint32_t BidType;
-        typedef izenelib::util::UString StringType;
+        typedef PropertyValue::PropertyValueStrType StringType;
         typedef StringType::value_type CharType;
         typedef std::vector<BidType> BidList;
         typedef std::map<std::string, BidList> SourceType;
         typedef boost::unordered_map<std::string, double> BidScore;
+        typedef izenelib::util::UString UString;
 
         //typedef izenelib::ir::idmanager::_IDManager<StringType, BidType,
                //izenelib::util::NullLock,
                //izenelib::ir::idmanager::EmptyWildcardQueryHandler<StringType, BidType>,
                //izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
                //izenelib::ir::idmanager::HDBIDStorage<StringType, BidType> >  IdManager;
-        typedef izenelib::ir::idmanager::_IDManager<StringType, StringType, BidType,
+        typedef izenelib::ir::idmanager::_IDManager<UString, UString, BidType,
                    izenelib::util::NullLock,
-                   izenelib::ir::idmanager::EmptyWildcardQueryHandler<StringType, BidType>,
-                   izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
-                   izenelib::ir::idmanager::HDBIDStorage<StringType, BidType>,
-                   izenelib::ir::idmanager::UniqueIDGenerator<izenelib::util::UString, uint64_t>,
-                   izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint64_t> > IdManager;
+                   izenelib::ir::idmanager::EmptyWildcardQueryHandler<UString, BidType>,
+                   izenelib::ir::idmanager::UniqueIDGenerator<UString, BidType>,
+                   izenelib::ir::idmanager::HDBIDStorage<UString, BidType>,
+                   izenelib::ir::idmanager::UniqueIDGenerator<UString, uint64_t>,
+                   izenelib::ir::idmanager::EmptyIDStorage<UString, uint64_t> > IdManager;
 
 
         typedef izenelib::am::succinct::fujimap::Fujimap<IdType, BidType> DbType;
@@ -94,17 +95,16 @@ namespace sf1r {
         BidType set(const IdType& pid, const StringType& brand)
         {
             BidType bid;
-            id_manager_->getTermIdByTermString(brand, bid);
+            UString u = propstr_to_ustr(brand);
+            id_manager_->getTermIdByTermString(u, bid);
             db_->setInteger(pid, bid);
             return bid;
         }
 
         void set_source(const StringType& brand, const BidType& bid)
         {
-            std::string str;
-            brand.convertString(str, StringType::UTF_8);
             std::vector<std::string> text_list;
-            B5MHelper::SplitAttributeValue(str, text_list);
+            B5MHelper::SplitAttributeValue(propstr_to_str(brand), text_list);
             for(uint32_t i=0;i<text_list.size();i++)
             {
                 source_[text_list[i]].push_back(bid);
@@ -118,23 +118,28 @@ namespace sf1r {
             {
                 return false;
             }
-            return id_manager_->getTermStringByTermId(bid, brand);
+            UString u;
+            if(id_manager_->getTermStringByTermId(bid, u))
+            {
+                brand = ustr_to_propstr(u);
+                return true;
+            }
+            return false;
         }
 
-        bool get_source(const StringType& uinput, StringType& output)
+        bool get_source(const StringType& input, StringType& output)
         {
-            std::string input;
-            uinput.convertString(input, StringType::UTF_8);
+            std::string sinput = propstr_to_str(input);
             uint32_t begin = 0;
             BidScore bid_score;
-            while(begin<input.length())
+            while(begin<sinput.length())
             {
                 std::string found;
                 uint32_t length = 1;
                 while(true)
                 {
-                    if(begin+length>input.length()) break;
-                    std::string sub = input.substr(begin, length);
+                    if(begin+length>sinput.length()) break;
+                    std::string sub = sinput.substr(begin, length);
 
                     SourceType::const_iterator it = source_.lower_bound(sub);
                     if(it==source_.end())
@@ -184,8 +189,7 @@ namespace sf1r {
                 score_vector.push_back(std::make_pair(score, brand));
             }
             std::sort(score_vector.begin(), score_vector.end());
-            const std::string& soutput = score_vector.back().second;
-            output = StringType(soutput, StringType::UTF_8);
+            output = str_to_propstr(score_vector.back().second);
             if(output.length()<=1)
             {
                 output.clear();

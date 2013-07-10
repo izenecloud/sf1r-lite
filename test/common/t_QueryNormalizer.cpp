@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(testMixInput)
 BOOST_AUTO_TEST_CASE(testGetProductType)
 {
     std::cout <<"Test :임성연고객님의 개인결제창" << std::endl;
-    std::string source_0("임성연고객님의 개인결제창");
+    std::string source_0("iphone5手机");
     std::vector<std::string> actual_0;
     actual_0.push_back("5");
     actual_0.push_back("iphone");

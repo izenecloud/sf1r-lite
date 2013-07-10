@@ -91,7 +91,7 @@ int OntologyManager::getDocTermsCount(Document& doc)
     std::cout<<"OntologyManager::getDocTermsCount"<<std::endl;
     uint32_t doc_terms_cnt = 0;
     Document::property_iterator property_it =doc.findProperty("Content");
-    izenelib::util::UString content = property_it->second.get<izenelib::util::UString>();
+    Document::doc_prop_value_strtype content = property_it->second.getPropertyStrValue();
 
     std::vector<idmlib::util::IDMTerm> term_list;
 #ifdef DEBUG_ONTOLOTY
@@ -465,7 +465,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         Document::property_iterator property_it = doc.findProperty("DOCID");
         if (property_it!=doc.propertyEnd())
         {
-            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
+            Document::doc_prop_value_strtype str_docid = property_it->second.getPropertyStrValue();
             CategoryIdType* cid = manmade_categories.find(str_docid);
             if (cid!=NULL)
             {
@@ -477,12 +477,12 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         uint32_t terms_count = 0;
         CountingTrie trie;
         property_it = doc.propertyBegin();
-        izenelib::util::UString last_faceted_property;
+        Document::doc_prop_value_strtype last_faceted_property;
         while (property_it != doc.propertyEnd())
         {
             if (faceted_properties_.find(property_it->first))
             {
-                const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+                const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
                 std::vector<idmlib::util::IDMTerm> term_list;
                 analyzer_->GetStemTermList( content, term_list );
 //              std::cout<<"after la "<<term_list.size()<<std::endl;
@@ -541,8 +541,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
             CategoryIdType c = score_item[0].second;
             if ( score_item[0].first>0.0)
             {
-                std::string t;
-                last_faceted_property.convertString(t, izenelib::util::UString::UTF_8);
+                std::string t = propstr_to_str(last_faceted_property);
                 izenelib::util::UString cn;
                 ontology->GetCategoryName(c, cn);
                 std::string cns;
@@ -748,9 +747,8 @@ void OntologyManager::OutputToFile_(const std::string& file, Ontology* ontology)
         Document::property_iterator property_it = doc.findProperty("DOCID");
         if (property_it!=doc.propertyEnd())
         {
-            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
-            std::string s_docid;
-            str_docid.convertString(s_docid, izenelib::util::UString::UTF_8);
+            Document::doc_prop_value_strtype str_docid = property_it->second.getPropertyStrValue();
+            std::string s_docid = propstr_to_str(str_docid);
             std::list<uint32_t> cid_list;
             ontology->GetCategories(docid, cid_list);
             if(cid_list.size()==0) continue;

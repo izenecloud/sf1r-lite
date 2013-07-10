@@ -29,14 +29,14 @@ namespace sf1r {
     public:
         //typedef std::map<std::string, int32_t> SourceMap;
         typedef boost::unordered_set<std::string> SourceType;
-        typedef izenelib::util::UString UString;
+        typedef Document::doc_prop_value_strtype StringType;
         typedef std::map<std::string, std::vector<std::string> > AttributeType;
 
-        UString pid;
+        Document::doc_prop_value_strtype productid;
         ProductPrice price;
         SourceType source;
         int64_t itemcount;
-        UString oid;
+        StringType oid;
         bool independent;
         AttributeType attribute;
         std::string date;

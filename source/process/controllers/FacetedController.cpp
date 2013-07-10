@@ -854,11 +854,7 @@ void FacetedController::renderDoc_(
         if (findIt == endIt)
             continue;
 
-        const izenelib::util::UString& ustr =
-            findIt->second.get<izenelib::util::UString>();
-        ustr.convertString(utf8, ENCODING_TYPE);
-
-        docValue[propName] = utf8;
+        docValue[propName] = propstr_to_str(findIt->second.get<PropertyValue::PropertyValueStrType>());
     }
 }
 

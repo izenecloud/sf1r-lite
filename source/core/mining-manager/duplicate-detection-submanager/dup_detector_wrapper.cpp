@@ -200,10 +200,10 @@ bool DupDetectorWrapper::ProcessCollection()
         {
             if (dd_properties_.find(property_it->first))
             {
-                const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+                const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
 
                 std::vector<izenelib::util::UString> termList;
-                analyzer_->GetFilteredStringList(content, termList);
+                analyzer_->GetFilteredStringList(propstr_to_ustr(content), termList);
                 for (uint32_t u = 0; u < termList.size(); u++)
                 {
                     strTermList.push_back(std::string());

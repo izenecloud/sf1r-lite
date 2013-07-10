@@ -20,6 +20,7 @@
 #include <util/string/StringUtils.h>
 #include <configuration-manager/ConfigurationTool.h>
 #include <configuration-manager/PropertyConfig.h>
+#include <document-manager/Document.h>
 
 #include <3rdparty/am/stx/btree_map.h>
 #include <boost/tuple/tuple.hpp>
@@ -63,12 +64,12 @@ struct PropertyValue2IndexPropertyType
     void operator()(const std::string& value)
     {
         izenelib::util::Trim(const_cast<std::string&>(value));
-        out_ = izenelib::util::UString(value,izenelib::util::UString::UTF_8);
+        out_ = str_to_propstr(value);
     }
     void operator()(const izenelib::util::UString& value)
     {
         izenelib::util::Trim(const_cast<izenelib::util::UString&>(value));
-        out_ = value;
+        out_ = ustr_to_propstr(value);
     }
 
 private:
@@ -128,6 +129,7 @@ public:
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
 
+    virtual bool isRealTime();
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
     virtual void preBuildFromSCD(size_t total_filesize);
@@ -147,14 +149,14 @@ private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);
     bool makeForwardIndex_(
             docid_t docId,
-            const izenelib::util::UString& text,
+            const Document::doc_prop_value_strtype& text,
             const std::string& propertyName,
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo,
             boost::shared_ptr<LAInput>& laInput);
 
     bool checkSeparatorType_(
-            const izenelib::util::UString& propertyValueStr,
+            const Document::doc_prop_value_strtype& propertyValueStr,
             izenelib::util::UString::EncodingType encoding,
             char separator);
 
@@ -168,7 +170,7 @@ private:
     bool prepareIndexDocumentStringProperty_(
             docid_t docId,
             const std::string& property_name,
-            const izenelib::util::UString& propertyValueU,
+            const IndexPropString& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 
@@ -182,7 +184,7 @@ private:
 
     bool prepareIndexDocumentNumericProperty_(
             docid_t docId,
-            const izenelib::util::UString & propertyValueU,
+            const Document::doc_prop_value_strtype& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 

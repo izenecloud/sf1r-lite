@@ -49,27 +49,25 @@ namespace sf1r {
     {
     public:
         static bool GetPsmItem(const CategoryStringMatcher& cs_matcher, ProductTermAnalyzer& analyzer
-          , std::map<std::string, izenelib::util::UString>& doc
+          , std::map<std::string, Document::doc_prop_value_strtype>& doc
           , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach)
         {
             if(doc["Category"].length()==0 || doc["Title"].length()==0 || doc["Source"].length()==0)
             {
                 return false;
             }
-            std::string scategory;
-            doc["Category"].convertString(scategory, izenelib::util::UString::UTF_8);
-            if( !cs_matcher.Match(scategory) )
+            if( !cs_matcher.Match(propstr_to_str(doc["Category"])) )
             {
                 return false;
             }
-            doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
+            key = propstr_to_str(doc["DOCID"]);
             ProductPrice price;
-            price.Parse(doc["Price"]);
+            price.Parse(propstr_to_ustr(doc["Price"]));
             if(!price.Valid() || price.value.first<=0.0 )
             {
                 return false;
             }
-            analyzer.Analyze(doc["Title"], doc_vector);
+            analyzer.Analyze(propstr_to_ustr(doc["Title"]), doc_vector);
 
             if( doc_vector.empty() )
             {
@@ -77,13 +75,13 @@ namespace sf1r {
             }
 
             attach.price = price;
-            UString id_str = doc["Source"];
-            id_str.append(UString("|", UString::UTF_8));
+            Document::doc_prop_value_strtype id_str = doc["Source"];
+            id_str.append(str_to_propstr("|"));
             id_str.append(doc["Title"]);
-            id_str.append(UString("|", UString::UTF_8));
-            id_str.append(price.ToUString());
-            attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
-            attach.cid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(doc["Category"]);
+            id_str.append(str_to_propstr("|"));
+            id_str.append(price.ToPropString());
+            attach.id = izenelib::util::HashFunction<Document::doc_prop_value_strtype>::generateHash32(id_str);
+            attach.cid = izenelib::util::HashFunction<Document::doc_prop_value_strtype>::generateHash32(doc["Category"]);
             return true;
         }
     };

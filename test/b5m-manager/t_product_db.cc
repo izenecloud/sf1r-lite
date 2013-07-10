@@ -41,15 +41,12 @@ BOOST_AUTO_TEST_CASE(Product)
 
     Document doc;
     string spid="7bc999f5d10830d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="SourceA",date="20130301",price="1000~3213",attribute="产地:中国,质量:优";//spid和soid反了
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    izenelib::util::UString pid(spid,izenelib::util::UString::UTF_8);
-    doc.property("DOCID") = pid;
-    izenelib::util::UString usource(source, izenelib::util::UString::UTF_8);
-    izenelib::util::UString oid(soid,izenelib::util::UString::UTF_8);
-    doc.property("uuid") = oid;
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);;
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);;
+    doc.property("DATE") = str_to_propstr(date, izenelib::util::UString::UTF_8);
+    doc.property("DOCID") = str_to_propstr(spid);
+    doc.property("uuid") = str_to_propstr(soid);
+    doc.property("Price") = str_to_propstr(price,izenelib::util::UString::UTF_8);;
+    doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);;
 
     bool independent=false;
 
@@ -60,12 +57,12 @@ BOOST_AUTO_TEST_CASE(Product)
     pp.Parse(doc);
 
     spid="12345f5d10830d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="SourceB",date="20130229",price="100~1213",attribute="产地:美国,质量:优,品牌:阿迪王";
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
-    doc.property("uuid") =     izenelib::util::UString(soid,izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
+    doc.property("DATE") =  str_to_propstr(date, izenelib::util::UString::UTF_8);
+    doc.property("DOCID") = str_to_propstr(spid,izenelib::util::UString::UTF_8);
+    doc.property("uuid") =  str_to_propstr(soid,izenelib::util::UString::UTF_8);
+    doc.property("Price") = str_to_propstr(price,izenelib::util::UString::UTF_8);
+    doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);
     another.Parse(doc);
     BOOST_CHECK_EQUAL(pp.GetSourceString(),"SourceA");
 
@@ -85,12 +82,12 @@ BOOST_AUTO_TEST_CASE(Product)
     BOOST_CHECK_EQUAL(attribute,"产地:美国,品牌:阿迪王,质量:优");
 
     spid="12345f5d54433d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="SourceC",date="20130529",price="5000~1000213",attribute="产地:美国,质量:差,品牌:阿迪王";
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
-    doc.property("uuid") =     izenelib::util::UString(soid,izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
+    doc.property("DATE") =   str_to_propstr(date, izenelib::util::UString::UTF_8);
+    doc.property("DOCID") =  str_to_propstr(spid,izenelib::util::UString::UTF_8);
+    doc.property("uuid") =   str_to_propstr(soid,izenelib::util::UString::UTF_8);
+    doc.property("Price") =  str_to_propstr(price,izenelib::util::UString::UTF_8);
+    doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);
     third.Parse(doc);
     third+=another;
 

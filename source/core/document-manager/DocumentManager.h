@@ -136,7 +136,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId) const;
+    bool isDeleted(docid_t docId);
 
     /**
      * @brief gets one document by id
@@ -167,7 +167,7 @@ public:
      * @return \c size if the property existed in either \c propertyAliasMap_
      *          or in the propertyIDMapper_
      */
-    std::size_t getTotalPropertyLength(const std::string& property) const;
+    std::size_t getTotalPropertyLength(const std::string& property);
 
     /**
      * @brief get property value
@@ -265,7 +265,7 @@ public:
      */
     docid_t getMaxDocId() const;
 
-    uint32_t getNumDocs() const;
+    uint32_t getNumDocs();
 
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
 
@@ -384,7 +384,7 @@ private:
     /// @brief The delete flag filter
     DelFilterType delfilter_;
 
-    boost::mutex delfilter_mutex_;
+    boost::shared_mutex delfilter_mutex_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
@@ -417,7 +417,7 @@ private:
     /// @brief used for highlighting the rawtext snippet
     Highlighter* highlighter_;
 
-    boost::mutex mutex_;
+    boost::shared_mutex shared_mutex_;
 
 private:
     static const std::string INDEX_FILE;

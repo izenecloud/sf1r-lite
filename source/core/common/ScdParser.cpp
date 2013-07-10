@@ -59,10 +59,9 @@ struct scd_grammar
     : public grammar<scd_grammar>
 {
     SCDDoc& scddoc;
-    izenelib::util::UString::EncodingType& codingType;
     std::string property_name;
 
-    scd_grammar(SCDDoc& doc, izenelib::util::UString::EncodingType& type):scddoc(doc), codingType(type) {}
+    scd_grammar(SCDDoc& doc):scddoc(doc) {}
 
     struct print
     {
@@ -86,8 +85,8 @@ struct scd_grammar
 
     struct add_property_value
     {
-        add_property_value(SCDDoc& doc, izenelib::util::UString::EncodingType& type, std::string& propertyname)
-            : scddoc(doc), codingType(type), property_name(propertyname) {}
+        add_property_value(SCDDoc& doc, std::string& propertyname)
+            : scddoc(doc), property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
             // in ScdParser::iterator::preProcessDoc(), "<" is replaced by "&lt;", and ">" by "&gt;",
@@ -96,12 +95,10 @@ struct scd_grammar
             boost::regex_replace(std::back_inserter(str), begin, end,
                     PATTERN_LT_GT, FORMAT_LT_GT, boost::match_default | boost::format_all);
 
-            izenelib::util::UString property_value(str,codingType);
-            scddoc.push_back(FieldPair(property_name, property_value));
+            scddoc.push_back(FieldPair(property_name, str));
             property_name.clear();
         }
         SCDDoc& scddoc;
-        izenelib::util::UString::EncodingType& codingType;
         std::string& property_name;
     };
 
@@ -118,7 +115,7 @@ struct scd_grammar
             propertypair = ch_p('<') >>
                            propertyName[add_property_name(self.scddoc,const_cast<std::string&>(self.property_name))]
                            >> ch_p('>') >>
-                           propertyValue[add_property_value(self.scddoc,self.codingType,const_cast<std::string&>(self.property_name))];
+                           propertyValue[add_property_value(self.scddoc, const_cast<std::string&>(self.property_name))];
 
             // WARN: This rule should also apply to field name on XmlConfigParser.cpp.
             // Those two should share same field name rule to make easy validating.
@@ -153,15 +150,15 @@ const std::string ScdParser::SCD_TYPE_NAMES[] =
 };
 
 ScdParser::ScdParser()
-    : size_(0), encodingType_(izenelib::util::UString::UTF_8), docDelimiter_(DEFAULT_DOC_DELIMITER)
+    : size_(0), docDelimiter_(DEFAULT_DOC_DELIMITER)
 {}
 
 ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType)
-    : size_(0), encodingType_(encodingType), docDelimiter_(DEFAULT_DOC_DELIMITER)
+    : size_(0), docDelimiter_(DEFAULT_DOC_DELIMITER)
 {}
 
 ScdParser::ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter)
-    : size_(0), encodingType_(encodingType), docDelimiter_(docDelimiter)
+    : size_(0), docDelimiter_(docDelimiter)
 {}
 
 ScdParser::~ScdParser()
@@ -432,7 +429,7 @@ bool ScdParser::load(const string& path)
     return true;
 }
 
-bool ScdParser::getDocIdList(std::vector<izenelib::util::UString> & list)
+bool ScdParser::getDocIdList(std::vector<ScdPropertyValueType> & list)
 {
     if ( !fs_.is_open() )
         return false;
@@ -513,7 +510,7 @@ ScdParser::cached_iterator ScdParser::cend()
     return cached_iterator(-1);
 }
 
-bool ScdParser::getDoc(const izenelib::util::UString & docId, SCDDoc& doc)
+bool ScdParser::getDoc(const ScdPropertyValueType & docId, SCDDoc& doc)
 {
     long * val = docOffsetList_.find( docId );
     if ( val == NULL )
@@ -537,7 +534,6 @@ ScdParser::iterator::iterator(long offset)
     : pfs_(NULL)
     , prevOffset_(0)
     , offset_(offset)
-    , codingType_(izenelib::util::UString::UTF_8)
     , docDelimiter_(DEFAULT_DOC_DELIMITER)
 {
 }
@@ -546,7 +542,6 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
     : pfs_(&pScdParser->fs_)
     , prevOffset_(0)
     , offset_(0)
-    , codingType_(pScdParser->getEncodingType())
     , buffer_(new izenelib::util::izene_streambuf)
     , docDelimiter_(pScdParser->docDelimiter_)
 {
@@ -569,7 +564,6 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     : pfs_(&pScdParser->fs_)
     , prevOffset_(0)
     , offset_(0)
-    , codingType_(pScdParser->getEncodingType())
     , buffer_(new izenelib::util::izene_streambuf)
     , docDelimiter_(pScdParser->docDelimiter_)
     , propertyNameList_(propertyNameList)
@@ -595,7 +589,6 @@ ScdParser::iterator::iterator(const iterator& other)
     , prevOffset_(other.prevOffset_)
     , offset_(other.offset_)
     , doc_(other.doc_)
-    , codingType_(other.codingType_)
     , buffer_(other.buffer_)
     , docDelimiter_(other.docDelimiter_)
 {
@@ -611,7 +604,6 @@ const ScdParser::iterator& ScdParser::iterator::operator=(const iterator& other)
     prevOffset_ = other.prevOffset_;
     offset_ = other.offset_;
     doc_ = other.doc_;
-    codingType_ = other.codingType_;
     buffer_ = other.buffer_;
     docDelimiter_ = other.docDelimiter_;
     return *this;
@@ -774,7 +766,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
         {
             if(!property_name.empty())
             {
-                doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
+                doc->push_back(std::make_pair( property_name, property_value.str()));
             }
             property_name.clear();
             property_value.str("");
@@ -784,7 +776,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
     }
     if(!property_name.empty())
     {
-        doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
+        doc->push_back(std::make_pair( property_name, property_value.str()));
     }
     STOP_PROFILER ( proScdParsingN );
 }
@@ -818,18 +810,6 @@ SCDDoc* ScdParser::iterator::getDoc()
     SCDDoc* doc = new SCDDoc;
     STOP_PROFILER ( proScdParsing1 );
     parseDoc(str, doc);
-    //if(true)
-    //{
-        //std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
-
-        //for (p = doc->begin(); p != doc->end(); p++)
-        //{
-            //const std::string& property_name = p->first;
-            //std::string property_value;
-            //p->second.convertString(property_value, izenelib::util::UString::UTF_8);
-            //std::cout<<property_name<<":"<<property_value<<std::endl;
-        //}
-    //}
     return doc;
 }
 

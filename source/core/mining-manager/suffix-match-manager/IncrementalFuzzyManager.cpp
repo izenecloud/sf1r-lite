@@ -207,9 +207,8 @@ namespace sf1r
                         continue;
                     }
 
-                    const izenelib::util::UString& text = it->second.get<UString>();
-                    std::string textStr;
-                    text.convertString(textStr, izenelib::util::UString::UTF_8);
+                    const Document::doc_prop_value_strtype& text = it->second.getPropertyStrValue();
+                    std::string textStr = propstr_to_str(text);
                     if (!indexForDoc(i, textStr, j))
                     {
                         LOG(INFO) << "Add index error";
@@ -788,7 +787,7 @@ namespace sf1r
                     }
                     else
                     {
-                        const std::string& filter_str = filtertype.values_[j].get<std::string>();
+                        std::string filter_str = propstr_to_str(filtertype.values_[j].getPropertyStrValue());
                         LOG(INFO) << "filter range by : " << filter_str;
                         switch (filtertype.operation_)
                         {
@@ -811,7 +810,7 @@ namespace sf1r
                             {
                                 assert(filtertype.values_.size() == 2);
                                 if (j >= 1) continue;
-                                const std::string& filter_str1 = filtertype.values_[1].get<std::string>();
+                                std::string filter_str1 = propstr_to_str(filtertype.values_[1].getPropertyStrValue());
                                 FilterManager::FilterIdRange tmp_range;
                                 if (filter_str < filter_str1)
                                 {

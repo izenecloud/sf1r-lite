@@ -100,7 +100,7 @@ public:
             }
             else if(item.type()==Json::stringValue)
             {
-                doc.property(key) = izenelib::util::UString(item.asCString(), izenelib::util::UString::UTF_8);
+                doc.property(key) = str_to_propstr(item.asCString());
             }
             else if(item.type()==Json::realValue)
             {

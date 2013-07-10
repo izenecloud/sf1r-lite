@@ -44,9 +44,9 @@ public:
 
     bool buildDocument(docid_t docID, const Document& doc)
     {
-        izenelib::util::UString propValue;
+        Document::doc_prop_value_strtype propValue;
         doc.getProperty(propValueTable_.propName(), propValue);
-        buildDoc_(docID, propValue, propValueTable_);//return
+        buildDoc_(docID, propstr_to_ustr(propValue), propValueTable_);//return
         return true;
     }
 

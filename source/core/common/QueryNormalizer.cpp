@@ -253,7 +253,8 @@ void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std
         }
     }
     std::sort(productTypes.begin(), productTypes.end());
-
+    productTypes.erase(std::unique(productTypes.begin(), productTypes.end()), productTypes.end());
+    
     if (!minorQuery_k.empty() || !minorQuery_p.empty())
     {
         newquery += "(";

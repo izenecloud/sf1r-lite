@@ -20,6 +20,7 @@ public:
     ~IncSupportedIndexManager() {}
     void addIndex(boost::shared_ptr<IIncSupportedIndex> index);
 
+    bool isRealTime();
     void flush();
     void optimize(bool wait);
     void preBuildFromSCD(size_t total_filesize);

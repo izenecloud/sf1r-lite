@@ -332,7 +332,7 @@ void RecommendManager::RebuildForRecommend(
             {
                 if (recommend_properties.find(property_it->first) != NULL)
                 {
-                    const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+                    const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
                     bool succ = AddRecommendItem_(new_db, item_id, content, 2, 40);
                     if (succ)
                     {

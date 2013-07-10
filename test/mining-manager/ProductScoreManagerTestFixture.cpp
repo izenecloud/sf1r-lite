@@ -109,8 +109,7 @@ void ProductScoreManagerTestFixture::insertDocument(int docNum)
 
         Document document(lastDocId_);
         std::string docIdStr = boost::lexical_cast<std::string>(lastDocId_);
-        izenelib::util::UString property(docIdStr, ENCODING_TYPE);
-        document.property("DOCID") = property;
+        document.property("DOCID") = str_to_propstr(docIdStr);
 
         BOOST_CHECK(documentManager_->insertDocument(document));
     }

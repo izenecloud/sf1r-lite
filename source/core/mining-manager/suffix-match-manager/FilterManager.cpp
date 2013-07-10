@@ -305,7 +305,7 @@ void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc
         }
         size_t prop_id = prop_id_map_[property];
         size_t n = 0, nOld = 0;
-        const UString& value = dit->second.get<UString>();
+        UString value = propstr_to_ustr(dit->second.getPropertyStrValue());
         if (value.empty())
         {
             continue;

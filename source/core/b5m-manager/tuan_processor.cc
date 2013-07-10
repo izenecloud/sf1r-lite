@@ -61,7 +61,7 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -70,21 +70,20 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                     doc[property_name] = p->second;
                 }
                 //if(doc["uuid"].length()>0) continue;
-                UString category = doc["Category"];
-                UString city = doc["City"];
-                UString title = doc["Title"];
+                Document::doc_prop_value_strtype category = doc["Category"];
+                Document::doc_prop_value_strtype city = doc["City"];
+                Document::doc_prop_value_strtype title = doc["Title"];
                 if(category.empty()||city.empty()||title.empty())
                 {
                     continue;
                 }
-                std::string scategory;
-                category.convertString(scategory, izenelib::util::UString::UTF_8);
+                std::string scategory = propstr_to_str(category);
                 std::string soid;
-                doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
+                soid = propstr_to_str(doc["DOCID"]);
                 const DocIdType& id = soid;
 
                 TuanProcessorAttach attach;
-                UString sid_str = category;
+                UString sid_str = propstr_to_ustr(category);
                 sid_str.append(UString("|", UString::UTF_8));
                 sid_str.append(city);
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
@@ -140,10 +139,10 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            UString oid;
+            Document::doc_prop_value_strtype oid;
             std::string soid;
             doc.getProperty("DOCID", oid);
-            oid.convertString(soid, UString::UTF_8);
+            soid = propstr_to_str(oid);
             std::string spid;
             MatchResult::const_iterator it = match_result.find(soid);
             if(it==match_result.end())
@@ -154,7 +153,7 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
             {
                 spid = it->second;
             }
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
             writer.Append(doc);
         }
     }
@@ -224,7 +223,7 @@ void TuanProcessor::ProductMerge_(SValueType& value, const SValueType& another_v
     ProductProperty another;
     another.Parse(another_value.doc);
     pp += another;
-    if(value.empty() || another.oid==another.pid )
+    if(value.empty() || another.oid==another.productid)
     {
         value.doc.copyPropertiesFromDocument(another_value.doc, true);
     }
@@ -243,7 +242,7 @@ void TuanProcessor::ProductMerge_(SValueType& value, const SValueType& another_v
                 PropertyValue& pvalue = value.doc.property(it->first);
                 if(pvalue.which()==docid_value.which()) //is UString
                 {
-                    const UString& uvalue = pvalue.get<UString>();
+                    const PropertyValue::PropertyValueStrType& uvalue = pvalue.getPropertyStrValue();
                     if(uvalue.empty())
                     {
                         pvalue = it->second;
