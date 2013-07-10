@@ -40,8 +40,8 @@ namespace sf1r {
                    izenelib::ir::idmanager::EmptyWildcardQueryHandler<StringType, BidType>,
                    izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
                    izenelib::ir::idmanager::HDBIDStorage<StringType, BidType>,
-                   izenelib::ir::idmanager::UniqueIDGenerator<izenelib::util::UString, uint64_t>,
-                   izenelib::ir::idmanager::EmptyIDStorage<izenelib::util::UString, uint64_t> > IdManager;
+                   izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
+                   izenelib::ir::idmanager::EmptyIDStorage<StringType, BidType> > IdManager;
 
 
         typedef izenelib::am::succinct::fujimap::Fujimap<IdType, BidType> DbType;
@@ -181,7 +181,7 @@ namespace sf1r {
                 score_vector.push_back(std::make_pair(score, brand));
             }
             std::sort(score_vector.begin(), score_vector.end());
-            output = score_vector.back().second;
+            output = str_to_propstr(score_vector.back().second);
             if(output.length()<=1)
             {
                 output.clear();

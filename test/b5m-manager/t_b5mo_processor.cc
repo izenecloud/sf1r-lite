@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     type=DELETE_SCD;
     processor.Process(doc,type);
     bdb->get(bdocid, brand);
-    BOOST_CHECK_EQUAL(toString(brand),"联想");
+    BOOST_CHECK_EQUAL(propstr_to_str(brand),"联想");
     Document doc3;
     type=INSERT_SCD;
     doc3.property("Source") = str_to_propstr("当当", UString::UTF_8);
@@ -177,6 +177,11 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     type=INSERT_SCD;
     processor.Process(doc,type);
 
+    bdb->flush();
+    bdb.reset(new BrandDb(bdb_path));
+    bdb->open();
+    bdb->get(bdocid, brand);
+    BOOST_CHECK_EQUAL(propstr_to_str(brand),"联想");
 
 }
 
