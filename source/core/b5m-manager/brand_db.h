@@ -29,19 +29,20 @@ namespace sf1r {
         typedef std::vector<BidType> BidList;
         typedef std::map<std::string, BidList> SourceType;
         typedef boost::unordered_map<std::string, double> BidScore;
+        typedef izenelib::util::UString UString;
 
         //typedef izenelib::ir::idmanager::_IDManager<StringType, BidType,
                //izenelib::util::NullLock,
                //izenelib::ir::idmanager::EmptyWildcardQueryHandler<StringType, BidType>,
                //izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
                //izenelib::ir::idmanager::HDBIDStorage<StringType, BidType> >  IdManager;
-        typedef izenelib::ir::idmanager::_IDManager<StringType, StringType, BidType,
+        typedef izenelib::ir::idmanager::_IDManager<UString, UString, BidType,
                    izenelib::util::NullLock,
-                   izenelib::ir::idmanager::EmptyWildcardQueryHandler<StringType, BidType>,
-                   izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
-                   izenelib::ir::idmanager::HDBIDStorage<StringType, BidType>,
-                   izenelib::ir::idmanager::UniqueIDGenerator<StringType, BidType>,
-                   izenelib::ir::idmanager::EmptyIDStorage<StringType, BidType> > IdManager;
+                   izenelib::ir::idmanager::EmptyWildcardQueryHandler<UString, BidType>,
+                   izenelib::ir::idmanager::UniqueIDGenerator<UString, BidType>,
+                   izenelib::ir::idmanager::HDBIDStorage<UString, BidType>,
+                   izenelib::ir::idmanager::UniqueIDGenerator<UString, uint64_t>,
+                   izenelib::ir::idmanager::EmptyIDStorage<UString, uint64_t> > IdManager;
 
 
         typedef izenelib::am::succinct::fujimap::Fujimap<IdType, BidType> DbType;
@@ -94,7 +95,8 @@ namespace sf1r {
         BidType set(const IdType& pid, const StringType& brand)
         {
             BidType bid;
-            id_manager_->getTermIdByTermString(brand, bid);
+            UString u = propstr_to_ustr(brand);
+            id_manager_->getTermIdByTermString(u, bid);
             db_->setInteger(pid, bid);
             return bid;
         }
@@ -116,7 +118,13 @@ namespace sf1r {
             {
                 return false;
             }
-            return id_manager_->getTermStringByTermId(bid, brand);
+            UString u;
+            if(id_manager_->getTermStringByTermId(bid, u))
+            {
+                brand = ustr_to_propstr(u);
+                return true;
+            }
+            return false;
         }
 
         bool get_source(const StringType& input, StringType& output)
