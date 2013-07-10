@@ -30,14 +30,14 @@ string toString(UString us)
 string getTitle(Document doc)
 {
     std::string title;
-    doc.getProperty("Title", title);
+    doc.getString("Title", title);
     return title;
 }
 
 string getSource(Document doc)
 {
     std::string source;
-    doc.getProperty("Source", source);
+    doc.getString("Source", source);
     return source;
 }
 

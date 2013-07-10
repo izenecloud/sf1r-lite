@@ -2523,6 +2523,42 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
 */
+        std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
+        uint32_t att_num, bm_num;
+        att_num = bm_num = 0;
+        while(it1!=ki.attribute_apps.end())
+        {
+//            LOG(INFO)<<str<<" 属性名：  "<<it1->attribute_name<<endl;
+            if(it1->attribute_name == "品牌" || it1->attribute_name == "型号")
+            {
+		cid_t cid = products_[it1->spu_id].cid;
+                cid = GetLevelCid_(category_list_[cid].name, 1);
+                bool b = false;
+                for(uint32_t i=0;i<15;i++)
+                {
+		    if(cos_value[i].first == cid)
+                    {
+                        b = true;
+                        break;
+                    }
+                }
+                if(b || text.length() <= Len)
+                {
+//                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
+                    break;
+                }
+                bm_num++;
+            }
+            ki.attribute_apps.erase(it1);
+            att_num++;
+            if(att_num > 25 || bm_num > 5)
+            {
+                ki.attribute_apps.clear();
+                break;
+            }
+        }
+        if(ki.attribute_apps.empty())continue;
+
         std::vector<Position>::iterator it;
         for(it = ki.positions.begin();it!=ki.positions.end();it++)
         {
@@ -2572,58 +2608,10 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         bool is_brand = false;
         bool is_model = false;
-        while(it1!=ki.attribute_apps.end())
-        {
-            if(it1->attribute_name == "品牌")
-            {
-		cid_t cid = products_[it1->spu_id].cid;
-                cid = GetLevelCid_(category_list_[cid].name, 1);
-                bool b = false;
-                for(uint32_t i=0;i<5;i++)
-                {
-		    if(cos_value[i].first == cid)
-                    {
-                        b = true;
-                        break;
-                    }
-                }
-                if(b)
-                    is_brand = true;
-                else if(text.length() <= Len)
-                    is_brand = true;
-//                LOG(INFO)<<" term " <<term << " brand匹配到: " <<products_[it1->spu_id].sbrand<<endl;
-            }
-            if(it1->attribute_name == "型号")
-            {
+        if(ki.attribute_apps[0].attribute_name == "品牌")
+            is_brand = true;
+        else is_model = true;
 
-		cid_t cid = products_[it1->spu_id].cid;
-                cid = GetLevelCid_(category_list_[cid].name, 1);
-                bool b = false;
-                for(uint32_t i=0;i<5;i++)
-                {
-		    if(cos_value[i].first == cid)
-                    {
-                        b = true;
-                        break;
-                    }
-                }
-                if(b)
-                    is_model = true;
-                else if(text.length() <= Len)
-                    is_model = true;
-/*
-                LOG(INFO)<<" term "<<term << " model匹配到: ";
-                std::vector<Attribute>::iterator it;
-                for(it=products_[it1->spu_id].attributes.begin();it!=products_[it1->spu_id].attributes.end();it++)
-                    if(it->name == "型号")
-                        cout<<it->values[0];
-                cout<<endl;
-*/
-            }
-            if(is_brand || is_model) break;
-            spus[it1->spu_id]=1;
-            it1++;
-        }
         uint32_t end_pos = ki.positions[0].end;
         if(is_brand)
         while(j<temp_k.size()-1)

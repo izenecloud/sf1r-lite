@@ -8,6 +8,7 @@
  */
 #include <boost/test/unit_test.hpp>
 #include <common/ScdParser.h>
+#include <common/PropertyValue.h>
 #include "ScdBuilder.h"
 
 #include <iostream>
@@ -229,12 +230,12 @@ BOOST_AUTO_TEST_CASE(testIterator)
     BOOST_CHECK_EQUAL(doc->size(), 3);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    ScdPropertyValueType titleUStr("Title " + idStr);
-    ScdPropertyValueType contentUStr("Content " + idStr);
+    ScdPropertyValueType titleUStr(sf1r::str_to_propstr("Title " + idStr));
+    ScdPropertyValueType contentUStr(sf1r::str_to_propstr("Content " + idStr));
 
     // <DOCID>
     BOOST_CHECK((*doc)[0].first == docid);
-    BOOST_CHECK_EQUAL(idStr, (*doc)[0].second);
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr(idStr), (*doc)[0].second);
 
     // <Title>
     BOOST_CHECK((*doc)[1].first == title);
@@ -297,7 +298,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
     std::string docid("DOCID");
 
     BOOST_CHECK(idList.size() == 1);
-    BOOST_CHECK_EQUAL("1", idList.front());
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr("1"), idList.front());
 
     int docNum = 0;
     for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
@@ -308,7 +309,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
 
     // <DOCID>
     BOOST_CHECK((*doc)[0].first == docid);
-    BOOST_CHECK_EQUAL("1", (*doc)[0].second);
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr("1"), (*doc)[0].second);
 
     ++docNum;
     }

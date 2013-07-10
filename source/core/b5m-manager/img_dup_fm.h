@@ -132,7 +132,7 @@ namespace sf1r {
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, std::string> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -140,7 +140,7 @@ namespace sf1r {
                     const std::string& property_name = p->first;
                     doc[property_name] = p->second;
                 }
-                std::string docID = doc["DOCID"];
+                std::string docID = propstr_to_str(doc["DOCID"]);
                 uint32_t current_docid = DocidToUint(docID);
                 uint32_t match_docid;
                 if( docid_docid_->get(current_docid, match_docid))
@@ -165,8 +165,8 @@ namespace sf1r {
                 {
                     //saved
                     rest++;
-                    scddoc.push_back(std::pair<std::string, std::string>("GID", doc["DOCID"]));
-                    scddoc.push_back(std::pair<std::string, std::string>("guangURL", doc["Img"]));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", doc["DOCID"]));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", doc["Img"]));
                     writer0.Append(scddoc);
 
                     uint32_t count;

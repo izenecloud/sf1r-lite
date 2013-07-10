@@ -390,7 +390,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -399,7 +399,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             doc[property_name] = p->second;
         }
 
-        const std::string& sourceName = doc["ShareSourceName"];
+        std::string sourceName = propstr_to_str(doc["ShareSourceName"]);
         if(sourceName.compare(source_name_) == 0)
         {
             continue;
@@ -433,7 +433,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -441,7 +441,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             const std::string& property_name = p->first;
             doc[property_name] = p->second;
         }
-        const std::string& sourceName = doc["ShareSourceName"];
+        std::string sourceName = propstr_to_str(doc["ShareSourceName"]);
         if(sourceName.compare(source_name_) != 0)
         {
             continue;
@@ -506,7 +506,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -514,7 +514,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             const std::string& property_name = p->first;
             doc[property_name] = p->second;
         }
-        const std::string& sourceName = doc["ShareSourceName"];
+        std::string sourceName = propstr_to_str(doc["ShareSourceName"]);
         if(sourceName.compare(source_name_) == 0)
         {
             continue;
@@ -546,7 +546,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -554,7 +554,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             const std::string& property_name = p->first;
             doc[property_name] = p->second;
         }
-        const std::string& sourceName = doc["ShareSourceName"];
+        std::string sourceName = propstr_to_str(doc["ShareSourceName"]);
         if(sourceName.compare(source_name_) != 0)
         {
             continue;
@@ -623,7 +623,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -757,7 +757,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -776,7 +776,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         uint32_t match_key;
         uint32_t current_key;
         uint32_t current_docid = DocidToUint(docID);
-        std::string img_url_str = doc["Img"];
+        std::string img_url_str = propstr_to_str(doc["Img"]);
         docidImgDbTable->add_item(current_docid, img_url_str);
 
         if(!psm.Search(doc_vector, attach, match_key))
@@ -918,7 +918,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        std::map<std::string, std::string> doc;
+        std::map<std::string, Document::doc_prop_value_strtype> doc;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -926,7 +926,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             const std::string& property_name = p->first;
             doc[property_name] = p->second;
         }
-        uint32_t current_docid = DocidToUint(doc["DOCID"]);
+        uint32_t current_docid = DocidToUint(propstr_to_str(doc["DOCID"]));
         uint32_t match_docid;
         if( docid_docid_->get(current_docid, match_docid) )
         {
@@ -936,11 +936,11 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             if(!docidImgDbTable->get_item(match_docid, guangURL))
             {
                 LOG(INFO) << "Find no img url..." << endl;
-                scddoc.push_back(std::pair<std::string, std::string>("guangURL", doc["Img"]));
+                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", doc["Img"]));
             }
             else
             {
-                scddoc.push_back(std::pair<std::string, std::string>("guangURL", guangURL));
+                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", guangURL));
             }
             writer0.Append(scddoc);
         }
@@ -948,20 +948,20 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
         {
             //saved
             rest++;
-            scddoc.push_back(std::pair<std::string, std::string>("GID", doc["DOCID"]));
-            scddoc.push_back(std::pair<std::string, std::string>("guangURL", doc["Img"]));
+            scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", doc["DOCID"]));
+            scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", doc["Img"]));
             writer0.Append(scddoc);
 
             std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
             if(iter == gid_docids_.end())
             {
-                scddoc.push_back(std::pair<std::string, std::string>("GMemCount", "1"));
+                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr("1")));
                 writer1.Append(scddoc);
             }
             else
             {
                 std::string count = boost::lexical_cast<std::string> (iter->second.size()+1);
-                scddoc.push_back(std::pair<std::string, std::string>("GMemCount", count));
+                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr(count)));
                 writer1.Append(scddoc);
             }
         }

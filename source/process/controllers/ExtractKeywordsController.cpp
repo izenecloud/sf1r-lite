@@ -43,7 +43,7 @@
  			Value& keyword = keywords();
  			std::string value;
  			it->first.convertString(value, izenelib::util::UString::UTF_8);
- 			LOG(INFO)<<"keyword: "<<value<<endl;
+// 			LOG(INFO)<<"keyword: "<<value<<endl;
  			keyword[Keys::value] = value;
  			keyword[Keys::pos] = boost::lexical_cast<std::string>((it->second).first);
  			keyword[Keys::weight] = boost::lexical_cast<std::string>((it->second).second);
@@ -54,7 +54,7 @@
  			Value& keyword = keywords();
  			std::string value;
  			it->first.convertString(value, izenelib::util::UString::UTF_8);
- 			LOG(INFO)<<"keyword: "<<value<<endl;
+// 			LOG(INFO)<<"keyword: "<<value<<endl;
  			keyword[Keys::value] = value;
  			keyword[Keys::pos] = boost::lexical_cast<std::string>((it->second).first);
  			keyword[Keys::weight] = boost::lexical_cast<std::string>((it->second).second);
@@ -65,7 +65,7 @@
  			Value& keyword = keywords();
  			std::string value;
  			it->first.convertString(value, izenelib::util::UString::UTF_8);
- 			LOG(INFO)<<"keyword: "<<value<<endl;
+// 			LOG(INFO)<<"keyword: "<<value<<endl;
  			keyword[Keys::value] = value;
  			keyword[Keys::pos] = boost::lexical_cast<std::string>((it->second).first);
  			keyword[Keys::weight] = boost::lexical_cast<std::string>((it->second).second);

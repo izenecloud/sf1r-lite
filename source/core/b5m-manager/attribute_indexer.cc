@@ -1401,7 +1401,7 @@ void AttributeIndexer::BuildProductDocuments_()
             product_doc.property[property_name] = p->second;
             if(property_name=="AID")
             {
-                aid_str = p->second;
+                aid_str = propstr_to_str(p->second);
             }
         }
         if(aid_str.length()==0)

@@ -2,6 +2,7 @@
 
 #include <common/Utilities.h>
 #include <common/ScdParser.h>
+#include <common/PropertyValue.h>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -314,7 +315,7 @@ void LogDispatchHandler::UpdateDocuments()
         {
             const std::string& fieldName = p->first;
             std::string fieldNameLow = boost::algorithm::to_lower_copy(fieldName);
-            fieldVal = p->second;
+            fieldVal = propstr_to_str(p->second);
 
             if (fieldNameLow == "docid")
             {

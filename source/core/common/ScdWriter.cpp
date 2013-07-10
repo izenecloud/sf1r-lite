@@ -104,7 +104,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
         const std::string& name = it->first;
         if(name=="DOCID")
         {
-            docid_value = it->second;
+            docid_value = propstr_to_str(it->second);
             docid_found = true;
             break;
         }
@@ -126,7 +126,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
             const std::string& name = it->first;
             if(name!="DOCID")
             {
-                std::string value = it->second;
+                std::string value = propstr_to_str(it->second);
                 ofs_<<"<"<<name<<">"<<value<<std::endl;
             }
         }

@@ -10,6 +10,7 @@
 
 #include "ScdParserTraits.h"
 #include "Utilities.h"
+#include "PropertyValue.h"
 
 namespace scd {
 
@@ -19,7 +20,7 @@ template <typename Type> struct Converter;
 /// Converter specialization for the default type std::string.
 template <> struct Converter<std::string> {
     inline std::string operator()(const ScdPropertyValueType& in) const {
-        return in;
+        return sf1r::propstr_to_str(in);
     }
 };
 
