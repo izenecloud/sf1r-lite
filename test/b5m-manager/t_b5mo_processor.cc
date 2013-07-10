@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     odb->open();
     bdb->open();
     int mode=0;
-    ProductMatcher*  matcher=(new ProductMatcher);;
+    ProductMatcher*  matcher=(new ProductMatcher);
     matcher->SetCmaPath(cma_path);
 
 

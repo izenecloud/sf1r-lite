@@ -1,4 +1,5 @@
 #include "ScdSharder.h"
+#include <common/PropertyValue.h>
 
 #include <boost/assert.hpp>
 
@@ -55,7 +56,7 @@ void ScdSharder::setShardKeyValues(SCDDoc& scdDoc)
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         const std::string& propertyName = propertyIter->first;
-        const std::string& propertyValue = propertyIter->second;
+        std::string propertyValue = propstr_to_str(propertyIter->second);
 
         if (shardingConfig_.hasShardKey(propertyName))
         {

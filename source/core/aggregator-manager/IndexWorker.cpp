@@ -988,7 +988,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 std::string new_propvalue;
                 std::string oldvalue_str;
                 PropertyValue::PropertyValueStrType& propertyValueU = oldvalue.getPropertyStrValue();
-                oldvalue_str = propertyValueU;
+                oldvalue_str = propstr_to_str(propertyValueU);
                 ///if a numeric property does not contain valid value, suppose it to be zero
                 if (oldvalue_str.empty()) oldvalue_str = "0";
                 if (op == "add")
@@ -1335,7 +1335,7 @@ bool IndexWorker::insertOrUpdateSCD_(
             if (!bundleConfig_->productSourceField_.empty()
                 && boost::iequals(p->first, bundleConfig_->productSourceField_))
             {
-                source = p->second;
+                source = propstr_to_str(p->second);
             }
         }
 
@@ -1457,7 +1457,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
             iter != rawDocIDList.end(); ++iter)
     {
         docid_t docId;
-        std::string docid_str = *iter;
+        std::string docid_str = propstr_to_str(*iter);
         if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
         {
             docIdList.push_back(docId);

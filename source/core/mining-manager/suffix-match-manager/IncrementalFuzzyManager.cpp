@@ -787,7 +787,7 @@ namespace sf1r
                     }
                     else
                     {
-                        const std::string& filter_str = filtertype.values_[j].get<std::string>();
+                        std::string filter_str = propstr_to_str(filtertype.values_[j].getPropertyStrValue());
                         LOG(INFO) << "filter range by : " << filter_str;
                         switch (filtertype.operation_)
                         {
@@ -810,7 +810,7 @@ namespace sf1r
                             {
                                 assert(filtertype.values_.size() == 2);
                                 if (j >= 1) continue;
-                                const std::string& filter_str1 = filtertype.values_[1].get<std::string>();
+                                std::string filter_str1 = propstr_to_str(filtertype.values_[1].getPropertyStrValue());
                                 FilterManager::FilterIdRange tmp_range;
                                 if (filter_str < filter_str1)
                                 {

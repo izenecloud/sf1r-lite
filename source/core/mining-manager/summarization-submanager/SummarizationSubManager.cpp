@@ -198,7 +198,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 }
                 else
                 {
-                    const std::string& content_str = p->second;
+                    std::string content_str = propstr_to_str(p->second);
                     outNewScd << "<" << p->first << ">" << content_str << endl;
                 }
             }

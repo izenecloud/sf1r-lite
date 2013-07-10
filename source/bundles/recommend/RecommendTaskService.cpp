@@ -14,6 +14,7 @@
 #include <aggregator-manager/UpdateRecommendBase.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
 #include <common/ScdParser.h>
+#include <common/PropertyValue.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <node-manager/RequestLog.h>
@@ -140,14 +141,14 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
 
         if (propName == PROP_USERID)
         {
-            user.idStr_ = propValue;
+            user.idStr_ = sf1r::propstr_to_str(propValue);
         }
         else
         {
             sf1r::RecommendProperty recommendProperty;
             if (schema.getUserProperty(propName, recommendProperty))
             {
-                user.propValueMap_[propName] = izenelib::util::UString(propValue, DEFAULT_ENCODING);
+                user.propValueMap_[propName] = sf1r::propstr_to_ustr(propValue, DEFAULT_ENCODING);
             }
             else
             {
@@ -177,7 +178,7 @@ bool doc2Order(
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         const std::string& propName = it->first;
-        docMap[propName] = it->second;
+        docMap[propName] = sf1r::propstr_to_str(it->second);
     }
 
     userIdStr = docMap[PROP_USERID];
