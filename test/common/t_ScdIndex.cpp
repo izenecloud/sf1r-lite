@@ -11,8 +11,8 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
-//#define USTRING(in) izenelib::util::UString((in), izenelib::util::UString::UTF_8)
-#define USTRING(in) ScdPropertyValueType(in)
+#define USTRING(in) izenelib::util::UString((in), izenelib::util::UString::UTF_8)
+//#define USTRING(in) ScdPropertyValueType(in)
 #define DOCID(in) sf1r::Utilities::md5ToUint128(test::getDocid(in))
 
 #define PRINT(what) std::cout << what << std::endl
