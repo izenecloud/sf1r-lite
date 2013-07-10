@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 
     uint128_t pid=B5MHelper::StringToUint128("5f29098f1f606d9daeb41e49e9a24f87");
     uint128_t docid=1;
-    Document::doc_prop_value_strtype brand("联想");
+    Document::doc_prop_value_strtype brand(str_to_propstr("联想"));
     bdb->set(pid, brand);
 
     Document doc;
