@@ -11,6 +11,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <list>
 
 namespace sf1r
 {
@@ -56,8 +57,8 @@ public:
 
     size_t AllPossibleSuffixMatch(
             bool use_synonym,            
-            std::list<std::pair<UString, double> > major_tokens,
-            std::list<std::pair<UString, double> > minor_tokens,
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
@@ -78,6 +79,11 @@ public:
     boost::shared_ptr<FilterManager>& getFilterManager();
 
     void updateFmindex();
+
+    double getSuffixSearchRankThreshold(
+            const std::list<std::pair<UString, double> >& major_tokens,
+            const std::list<std::pair<UString, double> >& minor_tokens,
+            std::list<std::pair<UString, double> >& boundary_minor_tokens);
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
