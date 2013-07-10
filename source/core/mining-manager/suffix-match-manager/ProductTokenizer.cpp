@@ -332,16 +332,19 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
     KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
 
     double scoreSum = 0;
-
+    KNlpWrapper::category_score_map_t tokenScoreMap;
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
     {
-        scoreSum += it->second;
+        if (tokenScoreMap.insert(*it).second)
+        {
+            scoreSum += it->second;
+        }
     }
 
     std::ostringstream oss;
-    for (KNlpWrapper::token_score_list_t::const_iterator it =
-             tokenScores.begin(); it != tokenScores.end(); ++it)
+    for (KNlpWrapper::category_score_map_t::const_iterator it =
+             tokenScoreMap.begin(); it != tokenScoreMap.end(); ++it)
     {
         std::string str = it->first.get_bytes("utf-8");
         UString ustr(str, UString::UTF_8);
