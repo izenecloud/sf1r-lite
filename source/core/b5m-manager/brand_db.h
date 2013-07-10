@@ -189,7 +189,7 @@ namespace sf1r {
                 score_vector.push_back(std::make_pair(score, brand));
             }
             std::sort(score_vector.begin(), score_vector.end());
-            output = score_vector.back().second;
+            output = str_to_propstr(score_vector.back().second);
             if(output.length()<=1)
             {
                 output.clear();
