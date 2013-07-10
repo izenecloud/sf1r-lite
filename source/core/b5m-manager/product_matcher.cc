@@ -24,7 +24,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-#define B5M_DEBUG
+//#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130620000000");
 
@@ -3258,6 +3258,7 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
     FuzzyApps fuzzy_apps;//fuzzy keyword index to fuzzy app
     uint32_t text_pos = 0;
     typedef TermIndex::Invert Invert;
+    typedef std::pair<uint32_t, uint32_t> MatchPosition;
     const Invert& invert = term_index.invert;
     for(uint32_t i=0;i<term_list.size();i++)
     {
@@ -3271,17 +3272,104 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
         {
             const TermIndexItem& item = tiv.items[t];
             FuzzyApp& app = fuzzy_apps[item.keyword_index];
-            app.kpos.push_back(item.pos);
-            app.tpos.push_back(tpos);
+            if(app.positions.empty())
+            {
+                app.positions.push_back(std::make_pair(tpos, item.pos));
+            }
+            else {
+                MatchPosition& mp = app.positions.back();
+                if(mp.first!=tpos) app.positions.push_back(std::make_pair(tpos, item.pos));
+                else
+                {
+                    bool mp_kdd = false;
+                    bool kdd = false;
+                    for(uint32_t i=0;i<app.positions.size()-1;i++)
+                    {
+                        if(app.positions[i].second==mp.second)
+                        {
+                            mp_kdd = true;
+                            break;
+                        }
+                    }
+                    for(uint32_t i=0;i<app.positions.size()-1;i++)
+                    {
+                        if(app.positions[i].second==item.pos)
+                        {
+                            kdd = true;
+                            break;
+                        }
+                    }
+                    if(mp_kdd&&!kdd)
+                    {
+                        mp.second = item.pos;
+                    }
+                }
+            }
+            //app.kpos.push_back(item.pos);
+            //app.tpos.push_back(tpos);
         }
     }
     for(FuzzyApps::iterator it = fuzzy_apps.begin();it!=fuzzy_apps.end();++it)
     {
         FuzzyApp& app = it->second;
-        std::sort(app.kpos.begin(), app.kpos.end());
-        app.kpos.erase( std::unique(app.kpos.begin(), app.kpos.end()), app.kpos.end());
-        std::sort(app.tpos.begin(), app.tpos.end());
-        app.tpos.erase( std::unique(app.tpos.begin(), app.tpos.end()), app.tpos.end());
+        FuzzyApp& m = app;
+        double iavgkstart = 0.0;
+        for(uint32_t i=0;i<m.positions.size();i++)
+        {
+            iavgkstart+=((double)m.positions[i].first-(double)m.positions[i].second);
+        }
+        if(iavgkstart<0.0) iavgkstart=0.0;
+        iavgkstart/=m.positions.size();
+        boost::dynamic_bitset<> flag(m.positions.size());
+        boost::dynamic_bitset<> dflag(m.positions.size());
+        for(uint32_t i=0;i<m.positions.size();i++)
+        {
+            if(flag[i]) continue;
+            std::vector<std::pair<double, uint32_t> > dists;
+            const MatchPosition& pos = m.positions[i];
+            double kstart = (double)pos.first-(double)pos.second;
+            double dist = std::abs(iavgkstart-kstart);
+            dists.push_back(std::make_pair(dist, i));
+            flag.set(i);
+            for(uint32_t j=i+1;j<m.positions.size();j++)
+            {
+                if(flag[j]) continue;
+                const MatchPosition& jpos = m.positions[j];
+                if(pos.second==jpos.second)
+                {
+                    double kstart = (double)jpos.first-(double)jpos.second;
+                    double dist = std::abs(iavgkstart-kstart);
+                    dists.push_back(std::make_pair(dist, j));
+                    flag.set(j);
+                }
+
+            }
+            if(dists.size()<2) continue;
+            std::sort(dists.begin(),dists.end());
+            for(uint32_t j=1;j<dists.size();j++)
+            {
+                dflag.set(dists[j].second);
+            }
+        }
+        if(dflag.count()>0)
+        {
+            std::vector<MatchPosition> newp;
+            newp.reserve(m.positions.size());
+            for(uint32_t i=0;i<dflag.size();i++)
+            {
+                if(!dflag[i])
+                {
+                    newp.push_back(m.positions[i]);
+                }
+            }
+            m.positions.swap(newp);
+        }
+        m.ilength = m.positions.back().first - m.positions.front().first+1;
+        m.count = m.positions.size();
+        //std::sort(app.kpos.begin(), app.kpos.end());
+        //app.kpos.erase( std::unique(app.kpos.begin(), app.kpos.end()), app.kpos.end());
+        //std::sort(app.tpos.begin(), app.tpos.end());
+        //app.tpos.erase( std::unique(app.tpos.begin(), app.tpos.end()), app.tpos.end());
         const ATermList& keyword = term_index.forward[it->first];
         if(IsFuzzyMatched_(keyword, app))
         {
@@ -3443,7 +3531,11 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
         }
     }
     uint32_t iswap=0;
-    std::vector<uint32_t> kpos(app.kpos);
+    std::vector<uint32_t> kpos(app.positions.size());
+    for(uint32_t i=0;i<app.positions.size();i++)
+    {
+        kpos[i] = app.positions[i].second;
+    }
     for(uint32_t i=0;i<kpos.size();i++)
     {
         for(uint32_t j=i;j<kpos.size()-1;j++)
@@ -3455,9 +3547,12 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
             }
         }
     }
+    uint32_t keyword_len = keyword.size();
     double swap = (double)iswap/keyword.size();
-    double k_ratio = (double)app.kpos.size()/keyword.size();
-    double t_ratio = (double)(app.tpos.back()-app.tpos.front())/keyword.size();
+    double k_ratio = (double)app.count/keyword_len;
+    double t_ratio = (double)app.ilength/keyword_len;
+    //double k_ratio = (double)app.kpos.size()/keyword.size();
+    //double t_ratio = (double)(app.tpos.back()-app.tpos.front())/keyword.size();
 #ifdef B5M_DEBUG
     TermList keyword_id_list(keyword.size());
     for(uint32_t i=0;i<keyword.size();i++)
@@ -3470,11 +3565,12 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
     {
         tit->second.text.convertString(sk, UString::UTF_8);
     }
-    LOG(ERROR)<<"[FUZZY] "<<sk<<","<<all_chinese<<","<<k_ratio<<","<<t_ratio<<std::endl;
+    LOG(ERROR)<<"[FUZZY] "<<sk<<","<<all_chinese<<","<<swap<<","<<k_ratio<<","<<t_ratio<<std::endl;
 #endif
+    if(swap>1.0) return false;
     if(all_chinese)
     {
-        if(k_ratio>=0.75&&t_ratio<=1.3) return true;
+        if(k_ratio>=0.75&&t_ratio<=1.4) return true;
         return false;
     }
     else

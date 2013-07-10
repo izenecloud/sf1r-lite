@@ -390,8 +390,11 @@ namespace sf1r {
 
         struct FuzzyApp
         {
-            std::vector<uint32_t> kpos;
-            std::vector<uint32_t> tpos;
+            std::vector<std::pair<uint32_t, uint32_t> > positions;
+            uint32_t ilength;
+            uint32_t count;
+            //std::vector<uint32_t> kpos;
+            //std::vector<uint32_t> tpos;
         };
 
 
