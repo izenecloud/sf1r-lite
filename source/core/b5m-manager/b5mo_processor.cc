@@ -19,10 +19,10 @@
 
 using namespace sf1r;
 
-B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
+B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher, 
     int mode, 
     RpcServerConnectionConfig* img_server_config)
-:odb_(odb), matcher_(matcher), bdb_(bdb), sorter_(NULL), mode_(mode), img_server_cfg_(img_server_config)
+:odb_(odb), matcher_(matcher), sorter_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 {
 }
 
@@ -268,30 +268,31 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         }
         uint128_t pid = B5MHelper::StringToUint128(spid);
         Document::doc_prop_value_strtype ebrand;
-        if(bdb_->get(pid, ebrand))
+        doc.getProperty(B5MHelper::GetBrandPropertyName(), ebrand);
+        //if(bdb_->get(pid, ebrand))
+        //{
+            //brand = ustr_to_propstr(ebrand);
+        //}
+        //else
+        //{
+            //if(bdb_->get_source(brand, ebrand))
+            //{
+                //brand = ebrand;
+            //}
+            //else if(!product.sbrand.empty())
+            //{
+                ////TODO, remove?
+                //brand = str_to_propstr(product.sbrand);
+                ////std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
+            //}
+            //if(!brand.empty())
+            //{
+                //bdb_->set(pid, brand);
+            //}
+        //}
+        if(ebrand.empty() && !product.sbrand.empty())
         {
-            brand = ustr_to_propstr(ebrand);
-        }
-        else
-        {
-            if(bdb_->get_source(brand, ebrand))
-            {
-                brand = ebrand;
-            }
-            else if(!product.sbrand.empty())
-            {
-                //TODO, remove?
-                brand = str_to_propstr(product.sbrand);
-                //std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
-            }
-            if(!brand.empty())
-            {
-                bdb_->set(pid, brand);
-            }
-        }
-        if(!brand.empty() && !title.empty())
-        {
-            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+            doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
         }
         //brand.convertString(sbrand, UString::UTF_8);
         //std::cerr<<"[BBRAND]"<<sbrand<<std::endl;
@@ -360,15 +361,15 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             //return false;
         //}
     //}
-    if(!bdb_->is_open())
-    {
-        LOG(INFO)<<"open bdb..."<<std::endl;
-        if(!bdb_->open())
-        {
-            LOG(ERROR)<<"bdb open fail"<<std::endl;
-            return false;
-        }
-    }
+    //if(!bdb_->is_open())
+    //{
+        //LOG(INFO)<<"open bdb..."<<std::endl;
+        //if(!bdb_->open())
+        //{
+            //LOG(ERROR)<<"bdb open fail"<<std::endl;
+            //return false;
+        //}
+    //}
     namespace bfs = boost::filesystem;
     ts_ = bfs::path(mdb_instance).filename().string();
     last_ts_="";
@@ -454,7 +455,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();
-    bdb_->flush();
+    //bdb_->flush();
     if(sorter_!=NULL)
     {
         sorter_->StageOne();

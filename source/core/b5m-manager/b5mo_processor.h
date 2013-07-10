@@ -14,7 +14,7 @@ namespace sf1r {
     class RpcServerConnectionConfig;
     class B5moProcessor {
     public:
-        B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
+        B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
             int mode,
             RpcServerConnectionConfig* img_server_config);
 
@@ -30,7 +30,7 @@ namespace sf1r {
     private:
         OfferDb* odb_;
         ProductMatcher* matcher_;
-        BrandDb* bdb_;
+        //BrandDb* bdb_;
         std::string ts_;
         std::string last_ts_;
         B5moSorter* sorter_;
