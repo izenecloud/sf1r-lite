@@ -1,5 +1,6 @@
 #include <b5m-manager/product_matcher.h>
 #include <common/ScdWriter.h>
+#include <common/ScdTypeWriter.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
 namespace po = boost::program_options;
@@ -51,12 +52,12 @@ int main(int ac, char** av)
     izenelib::util::ClockTimer clocker;
     uint32_t all_count = 0;
     uint32_t match_count = 0;
-    boost::shared_ptr<ScdWriter> discover_writer;
+    boost::shared_ptr<ScdTypeWriter> discover_writer;
     if(!discover.empty())
     {
         boost::filesystem::remove_all(discover);
         boost::filesystem::create_directories(discover);
-        discover_writer.reset(new ScdWriter(discover, INSERT_SCD));
+        discover_writer.reset(new ScdTypeWriter(discover));
     }
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -76,6 +77,10 @@ int main(int ac, char** av)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
+            UString e_dattrib;
+            UString e_fattrib;
+            doc.getProperty("DisplayAttribute", e_dattrib);
+            doc.getProperty("FilterAttribute", e_fattrib);
             std::string stitle;
             doc.getString("Title", stitle);
             ProductMatcher::Product result_product;
@@ -92,13 +97,28 @@ int main(int ac, char** av)
                 LOG(ERROR)<<"unmatch for "<<stitle<<std::endl;
                 if(discover_writer)
                 {
-                    discover_writer->Append(doc);
+                    discover_writer->Append(doc, INSERT_SCD);
                 }
                 //return EXIT_FAILURE;
             }
             else
             {
                 LOG(INFO)<<"spumatch for "<<stitle<<" to "<<result_product.stitle<<std::endl;
+                if( discover_writer && (!e_dattrib.empty()||!e_fattrib.empty()) && (result_product.display_attributes.empty()&&result_product.filter_attributes.empty()))
+                {
+                    Document sdoc;
+                    sdoc.property("DOCID") = UString(result_product.spid, UString::UTF_8);
+                    sdoc.property("Title") = UString(result_product.stitle, UString::UTF_8);
+                    if(!e_dattrib.empty())
+                    {
+                        sdoc.property("DisplayAttribute") = e_dattrib;
+                    }
+                    if(!e_fattrib.empty())
+                    {
+                        sdoc.property("FilterAttribute") = e_fattrib;
+                    }
+                    discover_writer->Append(sdoc, UPDATE_SCD); 
+                }
             }
         }
         

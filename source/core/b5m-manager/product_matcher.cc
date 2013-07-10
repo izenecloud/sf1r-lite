@@ -24,7 +24,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-//#define B5M_DEBUG
+#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130620000000");
 
@@ -1304,7 +1304,20 @@ void ProductMatcher::IndexFuzzy_()
 bool ProductMatcher::NeedFuzzy_(const std::string& value)
 {
     UString text(value, UString::UTF_8);
-    if(text.length()<7) return false;
+    bool all_chinese = true;
+    for(uint32_t i=0;i<text.length();i++)
+    {
+        if(!text.isChineseChar(i))
+        {
+            all_chinese = false;
+            break;
+        }
+    }
+    if(all_chinese)
+    {
+        if(text.length()<5) return false;
+    }
+    else if(text.length()<7) return false;
     ATermList tl;
     AnalyzeNoSymbol_(text, tl);
     if(tl.size()<3) return false;
@@ -3332,7 +3345,7 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
                 if(tit!=trie_.end())
                 {
                     keyword_vector.push_back(tit->second);
-                    keyword_vector.back().kweight = 0.05;
+                    keyword_vector.back().kweight = 0.0;
                 }
             }
         }
@@ -3468,8 +3481,36 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
             break;
         }
     }
+    uint32_t iswap=0;
+    std::vector<uint32_t> kpos(app.kpos);
+    for(uint32_t i=0;i<kpos.size();i++)
+    {
+        for(uint32_t j=i;j<kpos.size()-1;j++)
+        {
+            if(kpos[j]>kpos[j+1])
+            {
+                std::swap(kpos[j], kpos[j+1]);
+                iswap++;
+            }
+        }
+    }
+    double swap = (double)iswap/keyword.size();
     double k_ratio = (double)app.kpos.size()/keyword.size();
     double t_ratio = (double)(app.tpos.back()-app.tpos.front())/keyword.size();
+#ifdef B5M_DEBUG
+    TermList keyword_id_list(keyword.size());
+    for(uint32_t i=0;i<keyword.size();i++)
+    {
+        keyword_id_list[i] = keyword[i].id;
+    }
+    TrieType::const_iterator tit = trie_.find(keyword_id_list);
+    std::string sk;
+    if(tit!=trie_.end())
+    {
+        tit->second.text.convertString(sk, UString::UTF_8);
+    }
+    LOG(ERROR)<<"[FUZZY] "<<sk<<","<<all_chinese<<","<<k_ratio<<","<<t_ratio<<std::endl;
+#endif
     if(all_chinese)
     {
         if(k_ratio>=0.75&&t_ratio<=1.3) return true;
@@ -3574,7 +3615,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
             it->second = add_score;
         }
 #ifdef B5M_DEBUG
-        std::cout<<"[CNA]"<<category_list_[app.cid].name<<","<<app.depth<<","<<app.is_complete<<","<<add_score<<std::endl;
+        //std::cout<<"[CNA]"<<category_list_[app.cid].name<<","<<app.depth<<","<<app.is_complete<<","<<add_score<<std::endl;
 #endif
     }
     CategoryContributor acc;
@@ -3634,7 +3675,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
         }
         all_score+=score;
 #ifdef B5M_DEBUG
-        std::cout<<"[AN]"<<category_list_[it->first].name<<","<<score<<std::endl;
+        //std::cout<<"[AN]"<<category_list_[it->first].name<<","<<score<<std::endl;
 #endif
 
     }
@@ -3693,7 +3734,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
         }
         all_score+=score;
 #ifdef B5M_DEBUG
-        std::cout<<"[CNO]"<<category_list_[it->first].name<<","<<score<<std::endl;
+        //std::cout<<"[CNO]"<<category_list_[it->first].name<<","<<score<<std::endl;
 #endif
     }
     double inner_kweight = 1.0;
@@ -3716,7 +3757,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
             it->second*=(inner_kweight/divide)*kweight;
             //it->second*=inner_kweight*kweight;
 #ifdef B5M_DEBUG
-            std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
+            //std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
 #endif
         }
     }
@@ -3946,10 +3987,10 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
         std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
 #ifdef B5M_DEBUG
-        for(std::size_t i=0;i<clen;i++)
-        {
-            std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
-        }
+        //for(std::size_t i=0;i<clen;i++)
+        //{
+            //std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
+        //}
 #endif
         for(uint32_t i=0;i<clen;i++)
         {
