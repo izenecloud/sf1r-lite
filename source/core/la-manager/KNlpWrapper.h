@@ -6,7 +6,6 @@
 #ifndef SF1R_KNLP_WRAPPER_H
 #define SF1R_KNLP_WRAPPER_H
 
-#include <knlp/tokenize.h>
 #include <knlp/dictionary.h>
 #include <util/string/kstring.hpp>
 #include <util/singleton.h>
@@ -14,16 +13,21 @@
 #include <map>
 #include <boost/scoped_ptr.hpp>
 
+namespace ilplib
+{
+namespace knlp
+{
+    class Fmm;
+}
+}
+
 namespace sf1r
 {
 
 class KNlpWrapper
 {
 public:
-    static KNlpWrapper* get()
-    {
-        return izenelib::util::Singleton<KNlpWrapper>::get();
-    }
+    static KNlpWrapper* get();
 
     bool initTokenizer(const std::string& dictDir);
     bool initClassifier(const std::string& dictDir);
@@ -44,7 +48,7 @@ public:
         const token_score_list_t& tokenScores);
 
 private:
-    boost::scoped_ptr<ilplib::knlp::Tokenize> tokenizer_;
+    boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> cateDict_;
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> termCateDict_;

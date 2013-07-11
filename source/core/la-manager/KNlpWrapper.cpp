@@ -1,4 +1,5 @@
 #include "KNlpWrapper.h"
+#include <knlp/fmm.h>
 #include <knlp/doc_naive_bayes.h>
 #include <exception>
 #include <glog/logging.h>
@@ -7,13 +8,18 @@
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
+KNlpWrapper* KNlpWrapper::get()
+{
+    return izenelib::util::Singleton<KNlpWrapper>::get();
+}
+
 bool KNlpWrapper::initTokenizer(const std::string& dictDir)
 {
     const bfs::path dirPath(dictDir);
 
     try
     {
-        tokenizer_.reset(new ilplib::knlp::Tokenize(
+        tokenizer_.reset(new ilplib::knlp::Fmm(
                              (dirPath / "term.txt").string()));
     }
     catch (const std::exception& e)
