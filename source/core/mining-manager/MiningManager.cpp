@@ -2204,9 +2204,50 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "original query string: " << pattern_orig;
 
+        std::string pattern_new;
+        std::vector<std::string> productTypes;
+        if (QueryNormalizer::get()->isLongQuery(pattern))
+            QueryNormalizer::get()->getProductTypes(pattern, productTypes, pattern_new);
+        else
+            pattern_new = pattern;
+
+        LOG(INFO) << "Get Product Model end";
+        unsigned int productType_size = productTypes.size();
+
+
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
-        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+        if (!pattern_new.empty())
+            suffixMatchManager_->GetTokenResults(pattern_new, major_tokens, minor_tokens, analyzedQuery);
+
+        for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
+        {
+            analyzedQuery += UString(" ", izenelib::util::UString::UTF_8);
+            analyzedQuery += UString(*i, izenelib::util::UString::UTF_8);
+        }
+        
+        if (productType_size == 1)
+        {
+            UString ukey(productTypes[0], izenelib::util::UString::UTF_8);
+            major_tokens.push_back(std::make_pair(ukey, 6.0));
+        }
+        else if(productType_size == 2)
+        {
+            for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
+            {
+                UString ukey(*i, izenelib::util::UString::UTF_8);
+                major_tokens.push_back(std::make_pair(ukey, 5.0));
+            }
+        }
+        else
+        {
+            for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
+            {
+                UString ukey(*i, izenelib::util::UString::UTF_8);
+                major_tokens.push_back(std::make_pair(ukey, 4.0));
+            }
+        }
+
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
             std::string key;
@@ -2221,111 +2262,8 @@ bool MiningManager::GetSuffixMatch(
             cout << key << " " << i->second << endl;
         }
         
-        // add three kind to major directly
-        // two chars without space -> one word
-        // three chars without space -> one word
-        // short query with sapces -> words with spaces ...
-        double rank_boundary = 0.2;
-
-        double total_score = 0;
-        double major_score = 0;
-        double minor_score = 0;
-        unsigned int major_highscore_size = 0;
-        unsigned int major_size = major_tokens.size();
-        //unsigned int minor_size = minor_tokens.size();
-        //unsigned int total_size = major_size + minor_size;
-        std::list<std::pair<UString, double> > boundary_minor_tokens;
         std::list<std::pair<UString, double> > boundary_major_tokens;
-
-        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-        {
-            if (i->second >= 3)
-            {
-                major_highscore_size++;
-            }
-
-            double tmp_score = 0;
-
-            if (i->second < 1)
-            {
-                major_score += 0.12;
-                boundary_minor_tokens.push_back(std::make_pair(i->first, 0.12));
-            }
-            else if (major_size >= 5)
-            {
-                tmp_score = (i->second)/5;
-                major_score += tmp_score;
-                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-            }
-            else if (major_size >= 3)
-            {
-                tmp_score = (i->second)/6;
-                major_score += tmp_score;
-                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-            }
-            else if(major_size > 0)
-            {
-                tmp_score = (i->second)/7;
-                major_score += tmp_score;
-                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-            }
-        }
-
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-        {
-            if (i->second < 1)
-            {
-                minor_score += i->second;
-                boundary_minor_tokens.push_back(*i);
-            }
-            else
-            {
-                double tmp_score = (i->second)/8;
-                minor_score += tmp_score;
-                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-            }
-        }
-        total_score = minor_score + major_score;
-                
-        cout << "total_score :" <<total_score <<endl;
-        cout << "major_score :" <<major_score <<endl;
-        cout << "minor_score :" <<minor_score <<endl;
-
-        if (major_size >= 7) // 7 8 9 10 ...
-        {
-            ///0.54 + 0.3 // 0.54 + 0.4
-            if (major_highscore_size >= 5)
-                rank_boundary = major_score * 0.54 + minor_score * 0.3;
-            else
-                rank_boundary = major_score * 0.54 + minor_score * 0.4;
-        }
-        else if (major_size >= 5) // 5 6
-        {
-            ///0.53 + 0.4  // 0.53 + 0.55
-            if (major_highscore_size > 3)
-                rank_boundary = major_score * 0.53 + minor_score * 0.4;
-            else
-                rank_boundary = major_size * 0.53 + minor_score * 0.55;
-        }
-        else if (major_size >= 3) // 3 4
-        {
-            ///0.6 + 0.4 // 0.6 + 0.6
-            if (major_highscore_size > 2)
-                rank_boundary = major_score * 0.6 + minor_score * 0.4;
-            else
-                rank_boundary = major_score * 0.6 + minor_score * 0.6;
-        }
-        else if (major_size > 0) // 1 2
-        {
-            ///0.75 + 0.65
-            rank_boundary = major_score * 0.75 + minor_score * 0.65;
-        }
-        else
-        {
-            ///0.7
-            rank_boundary = total_score * 0.7;
-        }
-
+        std::list<std::pair<UString, double> > boundary_minor_tokens;
 
         if (!QueryNormalizer::get()->isLongQuery(pattern))
         {
@@ -2405,7 +2343,9 @@ bool MiningManager::GetSuffixMatch(
                                             rank_boundary_short);
                 if (res_list.empty() && actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
                 {
-                    rank_boundary_short = rank_boundary;
+                    rank_boundary_short = suffixMatchManager_->getSuffixSearchRankThreshold(
+                                                        major_tokens, minor_tokens, 
+                                                        boundary_minor_tokens);
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                                     actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                                     boundary_major_tokens,
@@ -2422,7 +2362,9 @@ bool MiningManager::GetSuffixMatch(
         }
         else if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
         {
-            LOG(INFO) << "DO FUZZY SEARCH WITH rank_boundary :" << rank_boundary;
+            double rank_boundary = suffixMatchManager_->getSuffixSearchRankThreshold(major_tokens, minor_tokens, 
+                                                        boundary_minor_tokens);
+            LOG(INFO) << "[threshold] DO FUZZY SEARCH WITH rank_boundary :" << rank_boundary;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                                     actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                                     boundary_major_tokens,
@@ -2437,7 +2379,7 @@ bool MiningManager::GetSuffixMatch(
         }
         else
         {
-            rank_boundary = 0.4;
+            double rank_boundary = 0.4;
             cout << "rank_boundary :" << rank_boundary <<endl;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                                     actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,

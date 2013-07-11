@@ -216,8 +216,8 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
         bool use_synonym,
-        std::list<std::pair<UString, double> > major_tokens,
-        std::list<std::pair<UString, double> > minor_tokens,
+        std::list<std::pair<UString, double> >& major_tokens,
+        std::list<std::pair<UString, double> >& minor_tokens,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
@@ -395,7 +395,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         if (cit->second > rank_boundary)
             res_list.push_back(std::make_pair(cit->second, cit->first));
     }
-    
     if (res_list.empty())
         return total_match;
     
@@ -828,5 +827,112 @@ void SuffixMatchManager::updateFmindex()
     suffixMatchTask_->postProcess();
     last_doc_id_ = document_manager_->getMaxDocId();
 }
+
+
+double SuffixMatchManager::getSuffixSearchRankThreshold(
+            const std::list<std::pair<UString, double> >& major_tokens,
+            const std::list<std::pair<UString, double> >& minor_tokens,
+            std::list<std::pair<UString, double> >& boundary_minor_tokens)
+{
+    double rank_boundary = 0;
+    double total_score = 0;
+    double major_score = 0;
+    double minor_score = 0;
+    unsigned int major_highscore_size = 0;
+    unsigned int major_size = major_tokens.size();
+    unsigned int minor_size = minor_tokens.size();
+
+    for (std::list<std::pair<UString, double> >::const_iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+    {
+        if (i->second >= 3)
+        {
+            major_highscore_size++;
+        }
+
+        double tmp_score = 0;
+
+        if (i->second < 1)
+        {
+            major_score += 0.12;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, 0.12));
+        }
+        else if (major_size >= 5)
+        {
+            tmp_score = (i->second)/5;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+        else if (major_size >= 3)
+        {
+            tmp_score = (i->second)/6;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+        else if(major_size > 0)
+        {
+            tmp_score = (i->second)/7;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+    }
+    for (std::list<std::pair<UString, double> >::const_iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second < 1)
+        {
+            minor_score += i->second;
+            boundary_minor_tokens.push_back(*i);
+        }
+        else
+        {
+            double tmp_score = (i->second)/8;
+            minor_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+    }
+
+    total_score = minor_score + major_score;
+
+    cout << "total_score :" <<total_score <<endl;
+    cout << "major_score :" <<major_score <<endl;
+    cout << "minor_score :" <<minor_score <<endl;
+
+    if (major_size >= 7) // 7 8 9 10 ...
+    {
+        ///0.54 + 0.3 // 0.54 + 0.4
+        if (major_highscore_size >= 5)
+            rank_boundary = major_score * 0.5 + minor_score * 0.3;
+        else
+            rank_boundary = major_score * 0.5 + minor_score * 0.4;
+    }
+    else if (major_size >= 5) // 5 6
+    {
+        ///0.53 + 0.4  // 0.53 + 0.55
+        if (major_highscore_size > 3)
+            rank_boundary = major_score * 0.5 + minor_score * 0.4;
+        else
+            rank_boundary = major_size * 0.5 + minor_score * 0.55;
+    }
+    else if (major_size >= 3) // 3 4
+    {
+        ///0.6 + 0.4 // 0.6 + 0.6
+        if (major_highscore_size > 2)
+            rank_boundary = major_score * 0.55 + minor_score * 0.4;
+        else
+            rank_boundary = major_score * 0.55 + minor_score * 0.6;
+    }
+    else if (major_size > 0) // 1 2
+    {
+        ///0.75 + 0.65
+        rank_boundary = major_score * 0.75 + minor_score * 0.65;
+    }
+    else
+    {
+        ///0.7
+        rank_boundary = total_score * 0.7;
+    }
+
+    return rank_boundary;
+}
+
 
 }
