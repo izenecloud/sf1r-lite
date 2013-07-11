@@ -621,7 +621,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         }
         if (!ret)
         {
-            LOG(ERROR) << "get number property failed.";
+            //LOG(ERROR) << "get number property failed.";
         }
         ret = true;
     }

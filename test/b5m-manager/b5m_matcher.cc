@@ -1046,7 +1046,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, imgserver_config.get());
+        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))

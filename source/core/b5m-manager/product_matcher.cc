@@ -24,9 +24,9 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-#define B5M_DEBUG
+//#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20130620000000");
+const std::string ProductMatcher::AVERSION("20130710000000");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -617,8 +617,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     else if(mode==2)
     {
         SetIndexDone_(kpath, false);
-        std::string bdb_path = kpath+"/bdb";
-        B5MHelper::PrepareEmptyDir(bdb_path);
+        //std::string bdb_path = kpath+"/bdb";
+        //B5MHelper::PrepareEmptyDir(bdb_path);
     }
     SetIndexDone_(kpath, false);
     Init_();
@@ -764,9 +764,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         ifs.close();
     }
-    std::string bdb_path = path_+"/bdb";
-    BrandDb bdb(bdb_path);
-    bdb.open();
+    //std::string bdb_path = path_+"/bdb";
+    //BrandDb bdb(bdb_path);
+    //bdb.open();
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(spu_scd);
     uint32_t n=0;
@@ -964,28 +964,28 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             }
 
         }
-        Document::doc_prop_value_strtype brand;
+        //Document::doc_prop_value_strtype brand;
         std::string sbrand;
         for(uint32_t i=0;i<product.attributes.size();i++)
         {
             if(product.attributes[i].name=="品牌")
             {
                 sbrand = product.attributes[i].GetValue();
-                brand = str_to_propstr(sbrand, UString::UTF_8);
+                //brand = str_to_propstr(sbrand, UString::UTF_8);
                 break;
             }
         }
-        if(!brand.empty())
-        {
-            BrandDb::BidType bid = bdb.set(ipid, brand);
-            bdb.set_source(brand, bid);
-        }
+        //if(!brand.empty())
+        //{
+            //BrandDb::BidType bid = bdb.set(ipid, brand);
+            //bdb.set_source(brand, bid);
+        //}
         product.sbrand = sbrand;
         uint32_t spu_id = products_.size();
         products_.push_back(product);
         product_index_[spid] = spu_id;
     }
-    bdb.flush();
+    //bdb.flush();
     //add virtual spus
     for(uint32_t i=1;i<category_list_.size();i++)
     {
@@ -2056,10 +2056,12 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         result_products.resize(1, pbook);
         return true;
     }
-    Document::doc_prop_value_strtype title;
-    Document::doc_prop_value_strtype category;
-    doc.getProperty("Category", category);
-    doc.getProperty("Title", title);
+    Document::doc_prop_value_strtype ptitle;
+    Document::doc_prop_value_strtype pcategory;
+    doc.getProperty("Category", pcategory);
+    doc.getProperty("Title", ptitle);
+    UString title = propstr_to_ustr(ptitle);
+    UString category = propstr_to_ustr(pcategory);
 
     if(title.length()==0)
     {
@@ -2500,6 +2502,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     boost::unordered_map<cid_t, uint32_t>::iterator iter;
 
     std::vector<std::pair<cid_t, double> > cos_value;
+    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     for(iter=first_level_category_.begin();iter!=first_level_category_.end();iter++)
     {
         double tcos = Cosine_(feature_vector, feature_vectors_[iter->first]);
@@ -2512,19 +2515,26 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         cos_value.insert(it, make_pair(iter->first, tcos));
     }
 
+    for(uint32_t i=0;i<20;i++)
+    {
+        LOG(INFO)<<"cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
+                 <<category_list_[cos_value[i].first].name<<endl;
+    }
     boost::unordered_map<std::string, uint32_t> note;
     KeywordVector temp_k;
     
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         KeywordTag& ki = keyword_vector[i];
-/*
+
         std::string str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
-        LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
+/*        LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
 */
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         uint32_t att_num, bm_num;
+        uint32_t product_count = ki.attribute_apps.size();
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
         att_num = bm_num = 0;
         while(it1!=ki.attribute_apps.end())
         {
@@ -2536,6 +2546,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 bool b = false;
                 for(uint32_t i=0;i<15;i++)
                 {
+                    if(cos_value[i].second < 0.05)break;
 		    if(cos_value[i].first == cid)
                     {
                         b = true;
@@ -3105,6 +3116,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         KeywordTag& k = keyword_vector[i];
+        if(k.kweight<0.0) continue;
         UString original_text;
         if(!k.positions.empty())
         {
@@ -3246,6 +3258,7 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
     FuzzyApps fuzzy_apps;//fuzzy keyword index to fuzzy app
     uint32_t text_pos = 0;
     typedef TermIndex::Invert Invert;
+    typedef std::pair<uint32_t, uint32_t> MatchPosition;
     const Invert& invert = term_index.invert;
     for(uint32_t i=0;i<term_list.size();i++)
     {
@@ -3259,17 +3272,104 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
         {
             const TermIndexItem& item = tiv.items[t];
             FuzzyApp& app = fuzzy_apps[item.keyword_index];
-            app.kpos.push_back(item.pos);
-            app.tpos.push_back(tpos);
+            if(app.positions.empty())
+            {
+                app.positions.push_back(std::make_pair(tpos, item.pos));
+            }
+            else {
+                MatchPosition& mp = app.positions.back();
+                if(mp.first!=tpos) app.positions.push_back(std::make_pair(tpos, item.pos));
+                else
+                {
+                    bool mp_kdd = false;
+                    bool kdd = false;
+                    for(uint32_t i=0;i<app.positions.size()-1;i++)
+                    {
+                        if(app.positions[i].second==mp.second)
+                        {
+                            mp_kdd = true;
+                            break;
+                        }
+                    }
+                    for(uint32_t i=0;i<app.positions.size()-1;i++)
+                    {
+                        if(app.positions[i].second==item.pos)
+                        {
+                            kdd = true;
+                            break;
+                        }
+                    }
+                    if(mp_kdd&&!kdd)
+                    {
+                        mp.second = item.pos;
+                    }
+                }
+            }
+            //app.kpos.push_back(item.pos);
+            //app.tpos.push_back(tpos);
         }
     }
     for(FuzzyApps::iterator it = fuzzy_apps.begin();it!=fuzzy_apps.end();++it)
     {
         FuzzyApp& app = it->second;
-        std::sort(app.kpos.begin(), app.kpos.end());
-        app.kpos.erase( std::unique(app.kpos.begin(), app.kpos.end()), app.kpos.end());
-        std::sort(app.tpos.begin(), app.tpos.end());
-        app.tpos.erase( std::unique(app.tpos.begin(), app.tpos.end()), app.tpos.end());
+        FuzzyApp& m = app;
+        double iavgkstart = 0.0;
+        for(uint32_t i=0;i<m.positions.size();i++)
+        {
+            iavgkstart+=((double)m.positions[i].first-(double)m.positions[i].second);
+        }
+        if(iavgkstart<0.0) iavgkstart=0.0;
+        iavgkstart/=m.positions.size();
+        boost::dynamic_bitset<> flag(m.positions.size());
+        boost::dynamic_bitset<> dflag(m.positions.size());
+        for(uint32_t i=0;i<m.positions.size();i++)
+        {
+            if(flag[i]) continue;
+            std::vector<std::pair<double, uint32_t> > dists;
+            const MatchPosition& pos = m.positions[i];
+            double kstart = (double)pos.first-(double)pos.second;
+            double dist = std::abs(iavgkstart-kstart);
+            dists.push_back(std::make_pair(dist, i));
+            flag.set(i);
+            for(uint32_t j=i+1;j<m.positions.size();j++)
+            {
+                if(flag[j]) continue;
+                const MatchPosition& jpos = m.positions[j];
+                if(pos.second==jpos.second)
+                {
+                    double kstart = (double)jpos.first-(double)jpos.second;
+                    double dist = std::abs(iavgkstart-kstart);
+                    dists.push_back(std::make_pair(dist, j));
+                    flag.set(j);
+                }
+
+            }
+            if(dists.size()<2) continue;
+            std::sort(dists.begin(),dists.end());
+            for(uint32_t j=1;j<dists.size();j++)
+            {
+                dflag.set(dists[j].second);
+            }
+        }
+        if(dflag.count()>0)
+        {
+            std::vector<MatchPosition> newp;
+            newp.reserve(m.positions.size());
+            for(uint32_t i=0;i<dflag.size();i++)
+            {
+                if(!dflag[i])
+                {
+                    newp.push_back(m.positions[i]);
+                }
+            }
+            m.positions.swap(newp);
+        }
+        m.ilength = m.positions.back().first - m.positions.front().first+1;
+        m.count = m.positions.size();
+        //std::sort(app.kpos.begin(), app.kpos.end());
+        //app.kpos.erase( std::unique(app.kpos.begin(), app.kpos.end()), app.kpos.end());
+        //std::sort(app.tpos.begin(), app.tpos.end());
+        //app.tpos.erase( std::unique(app.tpos.begin(), app.tpos.end()), app.tpos.end());
         const ATermList& keyword = term_index.forward[it->first];
         if(IsFuzzyMatched_(keyword, app))
         {
@@ -3294,7 +3394,7 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
                 if(tit!=trie_.end())
                 {
                     keyword_vector.push_back(tit->second);
-                    keyword_vector.back().kweight = 0.0;
+                    keyword_vector.back().kweight = -0.1;
                 }
             }
         }
@@ -3431,7 +3531,11 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
         }
     }
     uint32_t iswap=0;
-    std::vector<uint32_t> kpos(app.kpos);
+    std::vector<uint32_t> kpos(app.positions.size());
+    for(uint32_t i=0;i<app.positions.size();i++)
+    {
+        kpos[i] = app.positions[i].second;
+    }
     for(uint32_t i=0;i<kpos.size();i++)
     {
         for(uint32_t j=i;j<kpos.size()-1;j++)
@@ -3443,9 +3547,12 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
             }
         }
     }
+    uint32_t keyword_len = keyword.size();
     double swap = (double)iswap/keyword.size();
-    double k_ratio = (double)app.kpos.size()/keyword.size();
-    double t_ratio = (double)(app.tpos.back()-app.tpos.front())/keyword.size();
+    double k_ratio = (double)app.count/keyword_len;
+    double t_ratio = (double)app.ilength/keyword_len;
+    //double k_ratio = (double)app.kpos.size()/keyword.size();
+    //double t_ratio = (double)(app.tpos.back()-app.tpos.front())/keyword.size();
 #ifdef B5M_DEBUG
     TermList keyword_id_list(keyword.size());
     for(uint32_t i=0;i<keyword.size();i++)
@@ -3458,11 +3565,13 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
     {
         tit->second.text.convertString(sk, UString::UTF_8);
     }
-    LOG(ERROR)<<"[FUZZY] "<<sk<<","<<all_chinese<<","<<k_ratio<<","<<t_ratio<<std::endl;
+    LOG(ERROR)<<"[FUZZY] "<<sk<<","<<all_chinese<<","<<swap<<","<<k_ratio<<","<<t_ratio<<std::endl;
 #endif
     if(all_chinese)
     {
+        if(swap>1.0) return false;
         if(k_ratio>=0.75&&t_ratio<=1.3) return true;
+        if(k_ratio>=1.0&&t_ratio<=1.5) return true;
         return false;
     }
     else
@@ -3834,10 +3943,8 @@ void ProductMatcher::ComputeT_(const Document& doc, const std::vector<Term>& ter
 
 void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
 {
-    Document::doc_prop_value_strtype title;
-    doc.getProperty("Title", title);
     std::string stitle;
-    stitle = propstr_to_str(title);
+    doc.getString("Title", stitle);
 #ifdef B5M_DEBUG
     std::cout<<"[TITLE]"<<stitle<<std::endl;
 #endif
@@ -3848,11 +3955,9 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         price.Parse(propstr_to_ustr(uprice));
     }
     uint32_t given_cid = 0;
-    Document::doc_prop_value_strtype given_category;
-    doc.getProperty("Category", given_category);
     std::string sgiven_category;
-    sgiven_category = propstr_to_str(given_category);
-    if(!given_category.empty())
+    doc.getString("Category", sgiven_category);
+    if(!sgiven_category.empty())
     {
         CategoryIndex::const_iterator it = category_index_.find(sgiven_category);
         if(it!=category_index_.end())
@@ -3874,7 +3979,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #ifdef B5M_DEBUG
         std::cout<<"[KEYWORD]"<<str<<","<<tag.kweight<<std::endl;
 #endif
-        if(given_cid==0)
+        if(given_cid==0&&tag.kweight>0.0)
         {
             GenCategoryContributor_(tag,  ccs[i]);
             MergeCategoryContributor_(all_cc, ccs[i]);
