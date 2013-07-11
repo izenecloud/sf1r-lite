@@ -607,7 +607,7 @@ void CategoryMapper::CombineCategory_(const std::vector<std::string>& texts, std
 }
 void CategoryMapper::Analyze_(const std::string& text, std::vector<std::string>& terms)
 {
-    izenelib::util::UString utext(text);
+    izenelib::util::UString utext(text, izenelib::util::UString::UTF_8);
     utext.toLowerString();
     std::vector<idmlib::util::IDMTerm> term_list;
     analyzer_->GetTermList(utext, term_list);

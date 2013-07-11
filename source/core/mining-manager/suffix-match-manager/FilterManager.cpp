@@ -461,7 +461,7 @@ void FilterManager::buildGroupFilters(
         std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
         prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
 
-        prop_filter_str_list_[prop_id].push_back(UString(""));
+        prop_filter_str_list_[prop_id].push_back(UString("", UString::UTF_8));
         for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
                 filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
         {
@@ -554,7 +554,7 @@ void FilterManager::buildAttrFilters(
 
     std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
     prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
-    prop_filter_str_list_[prop_id].push_back(UString(""));
+    prop_filter_str_list_[prop_id].push_back(UString("", UString::UTF_8));
     for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
             filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
     {
@@ -852,7 +852,7 @@ void FilterManager::loadFilterId()
                 // start from 1. so reserve the first.
                 std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[i]);
                 prop_filter_str_list_[i].reserve(prop_filter_str_list_.size() + num + 1);
-                prop_filter_str_list_[i].push_back(UString(""));
+                prop_filter_str_list_[i].push_back(UString("", UString::UTF_8));
                 for (size_t j = 0; j < num; ++j)
                 {
                     std::string str_key;
@@ -877,7 +877,7 @@ void FilterManager::loadFilterId()
                     loadArray_(ifs, str_key);
                     FilterIdRange& idrange = filter_ids[UString(str_key, UString::UTF_8)];
                     ifs.read((char*)&idrange, sizeof(idrange));
-                    str_key_set[j] = str_key;
+                    str_key_set[j] = UString(str_key, UString::UTF_8);
                 }
             }
             break;

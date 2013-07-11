@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
                             Document::doc_prop_value_strtype propU = doc.property(it->first).getPropertyStrValue();
                             std::string propstr = propstr_to_str(propU);
                             ofs << it->first << "==" << propstr << std::endl;
-                            newdoc.property(it->first) = propstr;
+                            newdoc.property(it->first) = str_to_propstr(propstr);
                         }
                         catch(const boost::bad_get& e)
                         {

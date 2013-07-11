@@ -1,5 +1,6 @@
 #include "Utilities.h"
 
+#include <common/PropertyValue.h>
 #include <util/hashFunction.h>
 #include <ir/index_manager/utility/StringUtils.h>
 #include <util/mkgmtime.h>
@@ -217,7 +218,7 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     }
     if (sf1r_type == STRING_PROPERTY_TYPE)
     {
-        type = IndexPropString("");
+        type = IndexPropString(str_to_propstr(""));
         return true;
     }
     else if (sf1r_type == INT32_PROPERTY_TYPE

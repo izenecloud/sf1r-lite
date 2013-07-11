@@ -124,9 +124,9 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             attach.category = doc["Category"];
             attach.price = price;
             Document::doc_prop_value_strtype id_str = doc["Source"];
-            id_str.append(Document::doc_prop_value_strtype("|"));
+            id_str.append(str_to_propstr("|"));
             id_str.append(doc["Title"]);
-            id_str.append(Document::doc_prop_value_strtype("|"));
+            id_str.append(str_to_propstr("|"));
             id_str.append(price.ToPropString());
             attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
 

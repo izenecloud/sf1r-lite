@@ -931,7 +931,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
         if( docid_docid_->get(current_docid, match_docid) )
         {
             //deleted
-            scddoc.push_back(std::pair<std::string, std::string>("GID", UintToDocid(match_docid)));
+            scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", str_to_propstr(UintToDocid(match_docid))));
             std::string guangURL;
             if(!docidImgDbTable->get_item(match_docid, guangURL))
             {
@@ -940,7 +940,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             }
             else
             {
-                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", guangURL));
+                scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", str_to_propstr(guangURL)));
             }
             writer0.Append(scddoc);
         }

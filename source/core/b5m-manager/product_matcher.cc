@@ -1593,11 +1593,11 @@ bool ProductMatcher::OutputCategoryMap(const std::string& scd_path, const std::s
 
             Product result_product;
             Process(doc, result_product, true);
-            doc.property("Category") = scategory;
+            doc.property("Category") = str_to_propstr(scategory);
             std::string srcategory = result_product.scategory;
             if(!srcategory.empty())
             {
-                doc.property("PCategory") = srcategory;
+                doc.property("PCategory") = str_to_propstr(srcategory);
             }
             UString value_text;
             JsonDocument::ToJsonText(doc, value_text);

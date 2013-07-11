@@ -428,18 +428,18 @@ inline sf1r::PropertyValue& operator>>(object o, sf1r::PropertyValue& v)
 
         if (s.length() <= 1)
         {
-            v = s;
+            v = sf1r::str_to_propstr(s);
         }
         else if (s[0] == STR_TYPE_USTRING)
         {
             std::string str = s.substr(1);
             izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
-            //v = ustr;
+            v = sf1r::ustr_to_propstr(ustr);
         }
         else
         {
             std::string str = s.substr(1);
-            v = str;
+            v = sf1r::str_to_propstr(str);
         }
     }
 

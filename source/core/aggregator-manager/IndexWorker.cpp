@@ -2141,7 +2141,7 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
             --propertyId;
         }
         scddoc[insertto].first.assign(asString(it->first));
-        scddoc[insertto].second.assign(asString(it->second));
+        scddoc[insertto].second.assign(str_to_propstr(asString(it->second)));
     }
 }
 

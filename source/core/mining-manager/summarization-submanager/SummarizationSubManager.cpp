@@ -48,8 +48,8 @@ bool CheckParentKeyLogFormat(
         const UString& parent_key_name)
 {
     if (doc->size() != 2) return false;
-    const UString& first = (*doc)[0].first;
-    const UString& second = (*doc)[1].first;
+    const UString first = UString((*doc)[0].first, UString::UTF_8);
+    const UString second = UString((*doc)[1].first, UString::UTF_8);
     //FIXME case insensitive compare, but it requires extra string conversion,
     //which introduces unnecessary memory fragments
     return (first == DOCID && second == parent_key_name);

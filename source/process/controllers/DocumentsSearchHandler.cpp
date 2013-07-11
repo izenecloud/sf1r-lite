@@ -930,8 +930,11 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::INCLUDE;
         filter.property_ = "ACL_ALLOW";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
-        PropertyValue value(std::string("@@ALL@@"));
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
+        PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
         izenelib::util::swapBack(actionItem_.filteringList_, filter);
@@ -944,7 +947,10 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::EXCLUDE;
         filter.property_ = "ACL_DENY";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
 
         izenelib::util::swapBack(actionItem_.filteringList_, filter);
     }

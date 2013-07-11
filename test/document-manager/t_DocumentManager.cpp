@@ -161,10 +161,10 @@ void prepareDefinedDocument(unsigned int docId, Document& document, const string
     document.property("DATE") = property;
     //property.clear();
     //buildProperty(property, 100);
-    document.property("Title") = value;
+    document.property("Title") = str_to_propstr(value);
     //property.clear();
     //buildProperty(property, 2000);
-    document.property("Content") = value + value;
+    document.property("Content") = str_to_propstr(value + value);
     property.clear();
     buildProperty(property, 50);
     document.property("ImgURL") = property;
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE(summary)
     }
 
     std::vector<izenelib::util::UString> queryTermString;
-    queryTermString.push_back( izenelib::util::UString( "a" ) );
+    queryTermString.push_back( izenelib::util::UString( "a" , izenelib::util::UString::UTF_8) );
 
     std::vector<izenelib::util::UString> outSnippetList;
     std::vector<izenelib::util::UString> outRawSummaryList;
