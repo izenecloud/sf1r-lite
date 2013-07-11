@@ -2,6 +2,7 @@
 #include "CategoryClassifyTable.h"
 #include <document-manager/DocumentManager.h>
 #include <la-manager/KNlpWrapper.h>
+#include <knlp/doc_naive_bayes.h>
 #include <util/ustring/UString.h>
 #include <glog/logging.h>
 #include <boost/filesystem/path.hpp>
@@ -72,9 +73,11 @@ void CategoryClassifyMiningTask::classifyByCategory_(
 }
 
 void CategoryClassifyMiningTask::classifyByTitle_(
-    const std::string& title,
+    std::string& title,
     std::string& classifyCategory)
 {
+    ilplib::knlp::DocNaiveBayes::makeitclean(title);
+
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
     KNlpWrapper::string_t titleKStr(title);
     KNlpWrapper::token_score_list_t tokenScores;

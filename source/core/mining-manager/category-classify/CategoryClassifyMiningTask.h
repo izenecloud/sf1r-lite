@@ -36,7 +36,7 @@ private:
         std::string& classifyCategory);
 
     void classifyByTitle_(
-        const std::string& title,
+        std::string& title,
         std::string& classifyCategory);
 
 private:
