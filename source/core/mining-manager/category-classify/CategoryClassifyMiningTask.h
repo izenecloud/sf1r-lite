@@ -7,7 +7,6 @@
 #define SF1R_CATEGORY_CLASSIFY_MINING_TASK_H
 
 #include "../MiningTask.h"
-#include <fstream>
 #include <string>
 
 namespace sf1r
@@ -21,8 +20,7 @@ public:
     CategoryClassifyMiningTask(
         DocumentManager& documentManager,
         CategoryClassifyTable& classifyTable,
-        const std::string& categoryPropName,
-        bool isDebug);
+        const std::string& categoryPropName);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -49,10 +47,6 @@ private:
     const std::string categoryPropName_;
 
     docid_t startDocId_;
-
-    bool isDebug_;
-
-    std::ofstream debugStream_;
 };
 
 } // namespace sf1r

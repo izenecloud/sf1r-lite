@@ -11,7 +11,6 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
-const std::string kDebugFileName = "debug.txt";
 
 void getDocPropValue(
     const Document& doc,
@@ -28,21 +27,12 @@ void getDocPropValue(
 CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     DocumentManager& documentManager,
     CategoryClassifyTable& classifyTable,
-    const std::string& categoryPropName,
-    bool isDebug)
+    const std::string& categoryPropName)
     : documentManager_(documentManager)
     , classifyTable_(classifyTable)
     , categoryPropName_(categoryPropName)
     , startDocId_(0)
-    , isDebug_(isDebug)
 {
-    if (isDebug_)
-    {
-        const bfs::path dirPath(classifyTable.dirPath());
-        const bfs::path debugPath(dirPath / kDebugFileName);
-
-        debugStream_.open(debugPath.string().c_str(), std::ofstream::app);
-    }
 }
 
 bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& doc)
@@ -67,12 +57,6 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
     }
 
     classifyTable_.setCategory(docID, classifyCategory);
-
-    if (isDebug_)
-    {
-        debugStream_ << docID << " [" << classifyCategory << "] "
-                     << title << std::endl;
-    }
 
     return true;
 }
@@ -122,11 +106,6 @@ bool CategoryClassifyMiningTask::postProcess()
     {
         LOG(ERROR) << "failed in CategoryClassifyTable::flush()";
         return false;
-    }
-
-    if (isDebug_)
-    {
-        debugStream_.flush();
     }
 
     return true;

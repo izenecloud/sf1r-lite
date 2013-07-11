@@ -2646,7 +2646,8 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
     bfs::create_directories(classifyDir);
 
     categoryClassifyTable_ = new CategoryClassifyTable(classifyDir.string(),
-                                                       classifyConfig.propName);
+                                                       classifyConfig.propName,
+                                                       classifyConfig.isDebug);
     if (!categoryClassifyTable_->open())
     {
         LOG(ERROR) << "open " << classifyDir << " failed";
@@ -2659,8 +2660,7 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
     multiThreadMiningTaskBuilder_->addTask(
         new CategoryClassifyMiningTask(*document_manager_,
                                        *categoryClassifyTable_,
-                                       categoryPropName,
-                                       classifyConfig.isDebug));
+                                       categoryPropName));
     return true;
 }
 

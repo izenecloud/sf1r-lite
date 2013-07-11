@@ -21,7 +21,8 @@ public:
 
     CategoryClassifyTable(
         const std::string& dirPath,
-        const std::string& propName);
+        const std::string& propName,
+        bool isDebug);
 
     bool open();
     bool flush();
@@ -54,11 +55,16 @@ public:
     const category_t& getCategoryNoLock(docid_t docId) const;
 
 private:
+    bool saveTextFile_();
+
+private:
     const std::string dirPath_;
 
     const std::string propName_;
 
     std::vector<category_t> categories_;
+
+    bool isDebug_;
 };
 
 } // namespace sf1r
