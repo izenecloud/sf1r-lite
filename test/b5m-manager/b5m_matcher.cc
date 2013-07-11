@@ -1092,7 +1092,7 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mc-generate"))
     {
-        if( !odb || !cdb || scd_path.empty() || mdb_instance.empty())
+        if( scd_path.empty() || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
@@ -1108,9 +1108,9 @@ int do_main(int ac, char** av)
             matcher->SetCmaPath(cma_path);
         }
 
-        boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
-        B5mcScdGenerator generator(cdb.get(), odbr.get(), bdb.get(), matcher.get(), mode);
-        if(!generator.Generate(scd_path, mdb_instance))
+        //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
+        B5mcScdGenerator generator(mode, matcher.get());
+        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
         }
