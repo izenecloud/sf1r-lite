@@ -2206,8 +2206,10 @@ bool MiningManager::GetSuffixMatch(
 
         std::string pattern_new;
         std::vector<std::string> productTypes;
-
-        QueryNormalizer::get()->getProductTypes(pattern, productTypes, pattern_new);
+        if (QueryNormalizer::get()->isLongQuery(pattern))
+            QueryNormalizer::get()->getProductTypes(pattern, productTypes, pattern_new);
+        else
+            pattern_new = pattern;
 
         LOG(INFO) << "Get Product Model end";
         unsigned int productType_size = productTypes.size();
@@ -2217,6 +2219,12 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > minor_tokens;
         if (!pattern_new.empty())
             suffixMatchManager_->GetTokenResults(pattern_new, major_tokens, minor_tokens, analyzedQuery);
+
+        for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
+        {
+            analyzedQuery += UString(" ", izenelib::util::UString::UTF_8);
+            analyzedQuery += UString(*i, izenelib::util::UString::UTF_8);
+        }
         
         if (productType_size == 1)
         {

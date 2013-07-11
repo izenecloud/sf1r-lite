@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(testMixInput)
 
 BOOST_AUTO_TEST_CASE(testGetProductType)
 {
-    std::cout <<"Test :임성연고객님의 개인결제창" << std::endl;
+    std::cout <<"Test :iphone5手机" << std::endl;
     std::string source_0("iphone5手机");
     std::vector<std::string> actual_0;
     actual_0.push_back("5");
@@ -154,8 +154,8 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     actual_1.push_back("kfr-35gw");
     checkProductType(source_1, actual_1);
 
-    std::cout <<"Test :全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 欧式吸油烟机 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝" << std::endl;
-    std::string source_2("全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 欧式吸油烟机 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝");
+    std::cout <<"Test :全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 【欧式吸油烟机】 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝" << std::endl;
+    std::string source_2("全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 【欧式吸油烟机】 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝");
     std::vector<std::string> actual_2;
     actual_2.push_back("5");
     actual_2.push_back("cxw-189-eh16");
