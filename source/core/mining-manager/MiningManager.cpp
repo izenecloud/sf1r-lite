@@ -5,6 +5,7 @@
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "MiningTaskBuilder.h"
+#include "MultiThreadMiningTaskBuilder.h"
 #include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
@@ -185,12 +186,14 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
+    , multiThreadMiningTaskBuilder_(NULL)
     , hasDeletedDocDuringMining_(false)
 {
 }
 
 MiningManager::~MiningManager()
 {
+    if (multiThreadMiningTaskBuilder_) delete multiThreadMiningTaskBuilder_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
@@ -301,6 +304,8 @@ bool MiningManager::open()
             mining_schema_.product_ranking_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
+            multiThreadMiningTaskBuilder_ = new MultiThreadMiningTaskBuilder(
+                document_manager_, miningConfig_.mining_task_param.threadNum);
         }
 
         product_categorizer_ = new QueryCategorizer;
@@ -816,6 +821,10 @@ bool MiningManager::DOMiningTask()
     if (miningTaskBuilder_)
     {
         miningTaskBuilder_->buildCollection();
+    }
+    if (multiThreadMiningTaskBuilder_)
+    {
+        multiThreadMiningTaskBuilder_->buildCollection();
     }
     return true;
 }
@@ -2647,10 +2656,11 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
     const std::string& categoryPropName =
         rankConfig.scores[CATEGORY_SCORE].propName;
 
-    miningTaskBuilder_->addTask(new CategoryClassifyMiningTask(*document_manager_,
-                                                               *categoryClassifyTable_,
-                                                               categoryPropName,
-                                                               classifyConfig.isDebug));
+    multiThreadMiningTaskBuilder_->addTask(
+        new CategoryClassifyMiningTask(*document_manager_,
+                                       *categoryClassifyTable_,
+                                       categoryPropName,
+                                       classifyConfig.isDebug));
     return true;
 }
 

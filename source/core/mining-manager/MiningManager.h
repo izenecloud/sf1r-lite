@@ -112,6 +112,7 @@ class IncrementalFuzzyManager;
 class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
+class MultiThreadMiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
@@ -736,6 +737,10 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+
+    /** MultiThreadMiningTaskBuilder */
+    MultiThreadMiningTaskBuilder* multiThreadMiningTaskBuilder_;
+
     izenelib::util::CronExpression cronExpression_;
 #if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
