@@ -29,6 +29,7 @@
 #include "controllers/SynonymController.h"
 #include "controllers/CollectionController.h"
 #include "controllers/QueryNormalizeController.h"
+#include "controllers/QueryIntentController.h"
 #include "controllers/ExtractKeywordsController.h"
 
 namespace sf1r
@@ -36,6 +37,27 @@ namespace sf1r
 
 void initializeDriverRouter(::izenelib::driver::Router& router, IService* service, bool enableTest)
 {
+    {
+        QueryIntentController query_intent;
+        const std::string controllerName("query_intent");
+        typedef ::izenelib::driver::ActionHandler<QueryIntentController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                query_intent,
+                &QueryIntentController::reload
+            )
+        );
+
+        router.map(
+            controllerName,
+            "reload",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+    
     {
         AutoFillController auto_fill;
         const std::string controllerName("auto_fill");
