@@ -88,7 +88,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                 TicketProcessorAttach attach;
                 UString sid_str = propstr_to_ustr(category);
                 sid_str.append(UString("|", UString::UTF_8));
-                sid_str.append(city);
+                sid_str.append(propstr_to_ustr(city));
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
                 std::string stime = propstr_to_str(time);
                 boost::algorithm::split(attach.time_array, stime, boost::is_any_of(",;"));

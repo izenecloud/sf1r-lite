@@ -342,7 +342,7 @@ void SimAlgorithm::KpeTask_(const boost::shared_ptr<DocumentManager>& document_m
 
                 property_it++;
             }
-            task.Insert(docid, title, content);
+            task.Insert(docid, propstr_to_ustr(title), propstr_to_ustr(content));
         }
         task.Close();
         if (start_docid == process_max_docid) break;

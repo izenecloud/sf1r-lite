@@ -783,10 +783,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
         Document doc;
-        izenelib::util::UString pid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString attrib_ustr;
+        Document::doc_prop_value_strtype pid;
+        Document::doc_prop_value_strtype title;
+        Document::doc_prop_value_strtype category;
+        Document::doc_prop_value_strtype attrib_ustr;
         SCDDoc& scddoc = *(*doc_iter);
         SCDDoc::iterator p = scddoc.begin();
         for(; p!=scddoc.end(); ++p)
@@ -816,8 +816,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         //convert category
         uint32_t cid = 0;
-        std::string scategory;
-        category.convertString(scategory, UString::UTF_8);
+        std::string scategory = propstr_to_str(category);
         CategoryIndex::iterator cit = category_index_.find(scategory);
         if(cit==category_index_.end())
         {
@@ -836,20 +835,17 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         {
             price.Parse(propstr_to_ustr(uprice));
         }
-        std::string stitle;
-        title.convertString(stitle, izenelib::util::UString::UTF_8);
-        std::string spid;
-        pid.convertString(spid, UString::UTF_8);
+        std::string stitle = propstr_to_str(title);
+        std::string spid = propstr_to_str(pid);
         uint128_t ipid = B5MHelper::StringToUint128(spid);
-        std::string sattribute;
-        attrib_ustr.convertString(sattribute, UString::UTF_8);
+        std::string sattribute = propstr_to_str(attrib_ustr);
         Product product;
         product.spid = spid;
         product.stitle = stitle;
         product.scategory = scategory;
         product.cid = cid;
         product.price = price;
-        ParseAttributes(attrib_ustr, product.attributes);
+        ParseAttributes(propstr_to_ustr(attrib_ustr), product.attributes);
 
         for (size_t i = 0; i < product.attributes.size(); ++i)
             if (product.attributes[i].name == "品牌")
@@ -1374,7 +1370,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         app.cid = cid;
         app.count = 1;
         std::vector<Term> term_list;
-        Analyze_(title, term_list);
+        Analyze_(propstr_to_ustr(title), term_list);
         KeywordVector keyword_vector;
         GetKeywords(term_list, keyword_vector, false);
         for(uint32_t i=0;i<keyword_vector.size();i++)
@@ -1984,7 +1980,7 @@ bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_val
     Document::doc_prop_value_strtype attrib_ustr;
     doc.getProperty("Attribute", attrib_ustr);
     std::vector<Attribute> attributes;
-    ParseAttributes(attrib_ustr, attributes);
+    ParseAttributes(propstr_to_ustr(attrib_ustr), attributes);
     for(uint32_t i=0;i<attributes.size();i++)
     {
         const Attribute& a = attributes[i];

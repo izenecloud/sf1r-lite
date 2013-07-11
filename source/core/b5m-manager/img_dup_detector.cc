@@ -418,8 +418,8 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
         {
-            key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc[img_content_name_];
+            key_url_map_[url_key_] = propstr_to_ustr(doc["Img"]);
+            key_con_map_[url_key_] = propstr_to_ustr(doc[img_content_name_]);
         }
         url_key_++;
     }
@@ -458,8 +458,8 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
         {
-            key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc[img_content_name_];
+            key_url_map_[url_key_] = propstr_to_ustr(doc["Img"]);
+            key_con_map_[url_key_] = propstr_to_ustr(doc[img_content_name_]);
         }
         url_key_++;
     }
@@ -531,8 +531,8 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc[img_content_name_];
-            key_url_map_[con_key_] = doc["Img"];
+            key_con_map_[con_key_] = propstr_to_ustr(doc[img_content_name_]);
+            key_url_map_[con_key_] = propstr_to_ustr(doc["Img"]);
         }
         con_key_++;
     }
@@ -571,8 +571,8 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc[img_content_name_];
-            key_url_map_[con_key_] = doc["Img"];
+            key_con_map_[con_key_] = propstr_to_ustr(doc[img_content_name_]);
+            key_url_map_[con_key_] = propstr_to_ustr(doc["Img"]);
         }
         con_key_++;
     }

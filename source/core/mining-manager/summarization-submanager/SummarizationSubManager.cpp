@@ -188,9 +188,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 const std::string& fieldStr = p->first;// preventing copy
                 if (fieldStr == "DOCID")
                 {
-                    std::string key_str;
-                    const izenelib::util::UString & propertyValueU = p->second; // preventing copy
-                    propertyValueU.convertString(key_str, izenelib::util::UString::UTF_8);
+                    std::string key_str = propstr_to_str(p->second);
                     KeyType docid = Utilities::uuidToUint128(key_str);
                     if (del_docid_set.find(docid) != del_docid_set.end())
                         break;
