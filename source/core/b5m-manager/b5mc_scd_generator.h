@@ -3,18 +3,15 @@
 
 #include <string>
 #include <vector>
-#include "comment_db.h"
-#include "offer_db.h"
-#include "offer_db_recorder.h"
-#include "brand_db.h"
+//#include "brand_db.h"
 #include "product_matcher.h"
 
 namespace sf1r {
     class B5mcScdGenerator {
     public:
-        B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode);
+        B5mcScdGenerator(int mode, ProductMatcher* matcher = NULL);
 
-        bool Generate(const std::string& scd_path, const std::string& mdb_instance);
+        bool Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance = "");
 
 
     private:
@@ -24,11 +21,9 @@ namespace sf1r {
 
 
     private:
-        CommentDb* cdb_;
-        OfferDbRecorder* odb_;
-        BrandDb* bdb_;
-        ProductMatcher* matcher_;
+        //BrandDb* bdb_;
         int mode_;
+        ProductMatcher* matcher_;
     };
 
 }
