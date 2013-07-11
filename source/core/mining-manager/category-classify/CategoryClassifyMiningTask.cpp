@@ -78,13 +78,20 @@ void CategoryClassifyMiningTask::classifyByTitle_(
 {
     ilplib::knlp::DocNaiveBayes::makeitclean(title);
 
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    KNlpWrapper::string_t titleKStr(title);
-    KNlpWrapper::token_score_list_t tokenScores;
-    knlpWrapper->fmmTokenize(titleKStr, tokenScores);
+    try
+    {
+        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+        KNlpWrapper::string_t titleKStr(title);
+        KNlpWrapper::token_score_list_t tokenScores;
+        knlpWrapper->fmmTokenize(titleKStr, tokenScores);
 
-    KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
-    classifyCategory = classifyKStr.get_bytes("utf-8");
+        KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
+        classifyCategory = classifyKStr.get_bytes("utf-8");
+    }
+    catch(std::exception& ex)
+    {
+        LOG(ERROR) << "exception: " << ex.what();
+    }
 }
 
 bool CategoryClassifyMiningTask::preProcess()
