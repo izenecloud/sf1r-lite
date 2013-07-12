@@ -190,7 +190,6 @@ private:
             Document& old_rtype_doc,
             const docid_t& oldId,
             const docid_t& docId,
-            std::string& source,
             time_t& timestamp,
             const UpdateType& updateType,
             SCD_TYPE scdType);
