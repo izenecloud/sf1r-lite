@@ -3968,6 +3968,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     CategoryContributor all_cc;
     std::vector<CategoryContributor> ccs(keywords.size());
     SpuContributor spu_cc;
+    std::string found_brand;
     for(uint32_t i=0;i<keywords.size();i++)
     {
         const KeywordTag& tag = keywords[i];
@@ -3984,9 +3985,9 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             GenCategoryContributor_(tag,  ccs[i]);
             MergeCategoryContributor_(all_cc, ccs[i]);
         }
+        GenSpuContributor_(tag, spu_cc);
         if(price.Positive())
         {
-            GenSpuContributor_(tag, spu_cc);
             if(boost::regex_match(str, vol_regex_))
             {
                 std::string new_str;
@@ -4220,31 +4221,38 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
+        SpuMatchCandidate smc;
+        bool cid_found = false;
+        for(uint32_t i=0;i<cid_list.size();i++)
+        {
+            if(EqualOrIsParent_(cid_list[i], p.cid) || EqualOrIsParent_(p.cid, cid_list[i]))
+            {
+                cid_found = true;
+                smc.cid_index = i;
+                break;
+            }
+        }
+        if(!cid_found) continue;
+        SpuContributorValue& scv = it->second;
+        if(scv.brand_match)
+        {
+            if(p.sbrand.length()>found_brand.length())
+            {
+                found_brand = p.sbrand;
+            }
+        }
+        if(!price.Positive()) continue;
         bool pricesim = IsPriceSim_(price, p.price);
 #ifdef B5M_DEBUG
         LOG(ERROR)<<p.stitle<<",["<<price<<","<<p.price<<"],"<<(int)pricesim<<std::endl;
 #endif
         if(!pricesim) continue;
-        //if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
-        SpuContributorValue& scv = it->second;
 #ifdef B5M_DEBUG
         LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
 #endif
         scv.lenweight/=text_term_len;
         if(IsSpuMatch_(p, scv))
         {
-            SpuMatchCandidate smc;
-            bool cid_found = false;
-            for(uint32_t i=0;i<cid_list.size();i++)
-            {
-                if(EqualOrIsParent_(cid_list[i], p.cid) || EqualOrIsParent_(p.cid, cid_list[i]))
-                {
-                    cid_found = true;
-                    smc.cid_index = i;
-                    break;
-                }
-            }
-            if(!cid_found) continue;
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
             smc.price_diff = PriceDiff_(price, p.price);
@@ -4266,6 +4274,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             Product p;
             p.scategory = category_list_[cid_list[i]].name;
             p.score = cid_score_list[i];
+            if(!found_brand.empty()) p.sbrand = found_brand;
             result_products.push_back(p);
         }
     }
