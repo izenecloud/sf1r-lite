@@ -1,7 +1,7 @@
 #include "LexiconClassifier.h"
 #include <boost/filesystem.hpp>
 #include <boost/thread/locks.hpp>
-#include <boost/thread/lock_types.hpp>
+//#include <boost/thread/lock_types.hpp>
 
 #include <fstream>
 #include <iostream>
