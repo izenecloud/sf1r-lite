@@ -823,7 +823,7 @@ int do_main(int ac, char** av)
                     {
                         LOG(INFO)<<"Find Documents "<<n<<std::endl;
                     }
-                    UString title;
+                    Document::doc_prop_value_strtype title;
                     SCDDoc& scddoc = *(*doc_iter);
                     SCDDoc::iterator p = scddoc.begin();
                     for(; p!=scddoc.end(); ++p)
@@ -841,9 +841,8 @@ int do_main(int ac, char** av)
                     Hits left_hits;
                     typedef std::list<UString> Left;
                     Left left;
-                    matcher.GetSearchKeywords(title, hits, left_hits, left);
-                    std::string stitle;
-                    title.convertString(stitle, UString::UTF_8);
+                    matcher.GetSearchKeywords(propstr_to_ustr(title), hits, left_hits, left);
+                    std::string stitle = propstr_to_str(title);
                     std::cout<<"[TITLE]"<<stitle<<std::endl;
                     for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
                     {

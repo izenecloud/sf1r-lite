@@ -738,7 +738,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
     Document old_rtype_doc;
     //IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
-    std::string source = "";
     IndexWorker::UpdateType updateType = INSERT;
     time_t timestamp = reqlog.timestamp;
     if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
@@ -746,7 +745,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     {
         return false;
     }
-    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, source, timestamp, updateType, INSERT_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, timestamp, updateType, INSERT_SCD))
         return false;
 
     inc_supported_index_manager_.preProcessForAPI();
@@ -863,14 +862,13 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     docid_t oldId = 0;
     docid_t docid = 0;
     IndexWorker::UpdateType updateType = UNKNOWN;
-    std::string source = "";
 
     if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, UPDATE_SCD,
             oldId, docid, updateType))
     {
         return false;
     }
-    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, source, timestamp, updateType, UPDATE_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, timestamp, updateType, UPDATE_SCD))
     {
         return false;
     }
@@ -1244,13 +1242,12 @@ void IndexWorker::indexSCDDocFunc(int workerid)
         }
         boost::this_thread::interruption_point();
 
-        std::string source = "";
         time_t new_timestamp = workerdata.timestamp;
         document.clear();
         old_rtype_doc.clear();
 
         if (!prepareDocument_(*(workerdata.docptr), document, old_rtype_doc,
-                workerdata.oldDocId, workerdata.newDocId, source,
+                workerdata.oldDocId, workerdata.newDocId,
                 new_timestamp, workerdata.updateType, workerdata.scdType))
             continue;
 
@@ -1349,13 +1346,12 @@ bool IndexWorker::insertOrUpdateSCD_(
         {
             // real time can not using multi thread because of the inverted index in 
             // the real time can not handle the out-of-order docid list.
-            std::string source = "";
             time_t new_timestamp = timestamp;
             document.clear();
             old_rtype_doc.clear();
 
             if (!prepareDocument_(*(docptr), document, old_rtype_doc,
-                    oldId, docId, source, new_timestamp, updateType, scdType))
+                    oldId, docId, new_timestamp, updateType, scdType))
                 continue;
 
             if (scdType == INSERT_SCD || oldId == 0)
@@ -1828,7 +1824,6 @@ bool IndexWorker::prepareDocument_(
         Document& old_rtype_doc,
         const docid_t& oldId,
         const docid_t& docId,
-        std::string& source,
         time_t& timestamp,
         const IndexWorker::UpdateType& updateType,
         SCD_TYPE scdType)
@@ -2141,7 +2136,7 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
             --propertyId;
         }
         scddoc[insertto].first.assign(asString(it->first));
-        scddoc[insertto].second.assign(asString(it->second));
+        scddoc[insertto].second.assign(str_to_propstr(asString(it->second)));
     }
 }
 

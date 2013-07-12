@@ -4,9 +4,9 @@
 namespace sf1r
 {
 
-QueryIntent* QueryIntentFactory::createQueryIntent(QueryIntentContext& context)
+QueryIntent* QueryIntentFactory::createQueryIntent(IntentContext* context)
 {
-    return new ProductQueryIntent();
+    return new ProductQueryIntent(context);
 }
 
 }

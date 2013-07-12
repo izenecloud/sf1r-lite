@@ -333,10 +333,10 @@ void RecommendManager::RebuildForRecommend(
                 if (recommend_properties.find(property_it->first) != NULL)
                 {
                     const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
-                    bool succ = AddRecommendItem_(new_db, item_id, content, 2, 40);
+                    bool succ = AddRecommendItem_(new_db, item_id, propstr_to_ustr(content), 2, 40);
                     if (succ)
                     {
-                        new_concept_id_manager->Put(item_id, content);
+                        new_concept_id_manager->Put(item_id, propstr_to_ustr(content));
                         item_id++;
                     }
                 }

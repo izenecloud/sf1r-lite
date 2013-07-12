@@ -214,7 +214,7 @@ bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
     }
     else
     {
-        new_olduuid = PropertyValue::PropertyValueStrType(s_olduuid + "," + s_uuid);
+        new_olduuid = PropertyValue::PropertyValueStrType(str_to_propstr(s_olduuid + "," + s_uuid));
     }
 
     //update DM first

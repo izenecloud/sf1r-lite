@@ -1,9 +1,10 @@
 #include "ProductQueryIntent.h"
-#include "QueryIntentType.h"
 #include "QueryIntentHelper.h"
 
 #include <common/Keys.h>
+#include <common/QueryNormalizer.h>
 
+#include <boost/unordered_map.hpp>
 #include <map>
 #include <list>
 
@@ -13,24 +14,122 @@ namespace sf1r
 {
 using driver::Keys;
 using namespace izenelib::driver;
+using namespace NQI;
 
-void ProductQueryIntent::process(izenelib::driver::Request& request)
+ProductQueryIntent::ProductQueryIntent(IntentContext* context)
+    : QueryIntent(context)
 {
-    if (NULL == classifier_)
+    for (std::size_t i = 0; i < classifiers_.size(); i++)
+    {
+        classifiers_[i].clear();
+    }
+}
+
+ProductQueryIntent::~ProductQueryIntent()
+{
+    for (std::size_t i = 0; i < classifiers_.size(); i++)
+    {
+        ContainerIterator it = classifiers_[i].begin();
+        for(; it != classifiers_[i].end(); it++)
+        {
+            if(*it)
+            {
+                delete *it;
+                *it = NULL;
+            }
+        }
+    }
+    classifiers_.clear();
+}
+
+void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::driver::Response& response)
+{
+    if (classifiers_.empty())
         return;
-    
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
-    LOG(INFO)<<keywords;
-    std::map<QueryIntentType, std::list<std::string> > intents;
-    int ret = classifier_->classify(intents, keywords);
-  
-    if (-1 == ret)
+    if (keywords.empty() || "*" == keywords)
         return;
-    if (keywords.empty())
+    if (keywords.size() > 60)
+        return;
+    std::string mode = asString(request[Keys::search][Keys::searching_mode][Keys::mode]);
+    boost::to_lower(mode);
+    if (mode == "suffix")
+        return;
+    std::string normalizedQuery;
+    QueryNormalizer::get()->normalize(keywords, normalizedQuery);
+    LOG(INFO)<<normalizedQuery; 
+    
+    bool intentSpecified = false;
+    boost::unordered_map<std::string, bool> bitmap;
+    izenelib::driver::Value& enables = request["query_intent"];
+    const izenelib::driver::Value::ArrayType* array = enables.getPtr<Value::ArrayType>();
+    if (array && (0 != array->size()))
+    {
+        intentSpecified = true;
+        for (std::size_t i = 0; i < array->size(); i++)
+        {
+            std::string property = asString((*array)[i][Keys::property]);
+            bitmap.insert(make_pair(property, true));
+        }
+    }
+    
+    izenelib::driver::Value& conditions = request[Keys::conditions];
+    array = conditions.getPtr<Value::ArrayType>();
+    if (array && (0 != array->size()))
+    {
+        for (std::size_t i = 0; i < array->size(); i++)
+        {
+            std::string property = asString((*array)[i][Keys::property]);
+            bitmap.insert(make_pair(property, false));
+        }
+    }
+    
+    
+    WMVContainer wmvs;
+    bool ret = false;
+    for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
+    {
+        ContainerIterator it = classifiers_[priority].begin();
+        for(; it != classifiers_[priority].end(); it++)
+        {
+            boost::unordered_map<std::string, bool>::iterator bIt = bitmap.find((*it)->name());
+            if (intentSpecified) 
+            {
+                if((bitmap.end() != bIt) && (bIt->second) )
+                    ret |= (*it)->classify(wmvs, normalizedQuery);
+            }
+            else if ( bitmap.end() == bIt || bIt->second)
+                ret |= (*it)->classify(wmvs, normalizedQuery);
+            
+        }
+    }
+    bitmap.clear();
+  
+    if (!ret)
+        return;
+    combineWMVS(wmvs, normalizedQuery);
+    request[Keys::search][Keys::keywords] = normalizedQuery;
+    
+    boost::trim(normalizedQuery);
+    if (normalizedQuery.empty() )
         request[Keys::search][Keys::keywords] = "*";
-    else
-        request[Keys::search][Keys::keywords] = keywords;
-    rewriteRequest(request, intents);
+    refineRequest(request, response, wmvs);
+    wmvs.clear();
+}
+
+void ProductQueryIntent::reloadLexicon()
+{
+    for (std::size_t i = 0; i < classifiers_.size(); i++)
+    {
+        ContainerIterator it = classifiers_[i].begin();
+        for(; it != classifiers_[i].end(); it++)
+        {
+            if(*it)
+            {
+                (*it)->reloadLexicon();
+            }
+        }
+    }
 }
 
 }

@@ -200,7 +200,7 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                         std::string spid;
                         if(odb_->get(sdocid, spid))
                         {
-                            doc.property("uuid") = spid;
+                            doc.property("uuid") = str_to_propstr(spid);
                             b5mo_u.Append(doc);
                         }
                         pid_changed_oid.erase(oid);

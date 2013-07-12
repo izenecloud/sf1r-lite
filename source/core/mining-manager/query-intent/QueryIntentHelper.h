@@ -10,17 +10,17 @@
 #include <map>
 #include <list>
 
-#include "QueryIntentType.h"
-
 #include <util/driver/Request.h>
+#include <util/driver/Response.h>
+#include <configuration-manager/QueryIntentConfig.h>
+
+#include "Classifier.h"
 
 namespace sf1r
 {
-
-const char* intentToString(QueryIntentType intentType);
-
-void rewriteRequest(izenelib::driver::Request& request,
-             std::map<QueryIntentType, std::list<std::string> >& intents);
+void refineRequest(izenelib::driver::Request& request,
+             izenelib::driver::Response& response,
+             NQI::WMVContainer& wmvs);
 }
 
 #endif // QueryIntentHelper.h

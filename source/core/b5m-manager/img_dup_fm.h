@@ -149,7 +149,7 @@ namespace sf1r {
                     std::string gid;
                     gid.assign(UintToDocid(match_docid));
 
-                    scddoc.push_back(std::pair<std::string, std::string>("GID", gid));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", str_to_propstr(gid)));
                     std::string guangURL;
                     if(!docidImgDbTable->get_item(match_docid, guangURL))
                     {
@@ -157,7 +157,7 @@ namespace sf1r {
                     }
                     else
                     {
-                        scddoc.push_back(std::pair<std::string, std::string>("guangURL", guangURL));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", str_to_propstr(guangURL)));
                     }
                     writer0.Append(scddoc);
                 }
@@ -172,13 +172,13 @@ namespace sf1r {
                     uint32_t count;
                     if( !gid_memcount_->get(current_docid, count))
                     {
-                        scddoc.push_back(std::pair<std::string, std::string>("GMemCount", "1"));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr("1")));
                         writer1.Append(scddoc);
                     }
                     else
                     {
                         std::string count_str = boost::lexical_cast<std::string> (count+1);
-                        scddoc.push_back(std::pair<std::string, std::string>("GMemCount", count_str));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr(count_str)));
                         writer1.Append(scddoc);
                     }
                 }

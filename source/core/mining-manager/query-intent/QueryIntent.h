@@ -9,30 +9,43 @@
 #define SF1R_QUERY_INTENT_H
 
 #include <util/driver/Request.h>
+#include <util/driver/Response.h>
 #include "Classifier.h"
 
 namespace sf1r
 {
 
+class IntentContext
+{
+public:
+    IntentContext(QueryIntentConfig* config) 
+        : config_(config)
+    {
+    }
+public:
+    QueryIntentConfig* config_;
+};
 class QueryIntent
 {
 public:
-    QueryIntent(Classifier* classifier)
-        :classifier_(classifier)
-    {
-    }
-    QueryIntent()
-        :classifier_(NULL)
+    QueryIntent(IntentContext* context)
+        : context_(context)
     {
     }
     virtual ~QueryIntent()
     {
+        if (context_)
+        {
+            delete context_;
+            context_ = NULL;
+        }
     }
 public:
-    virtual void process(izenelib::driver::Request& request) = 0;
-    virtual void setClassifier(Classifier* classifier) = 0;
-public:
-    Classifier* classifier_;
+    virtual void process(izenelib::driver::Request& request, izenelib::driver::Response& response) = 0;
+    virtual void addClassifier(Classifier* classifier) = 0;
+    virtual void reloadLexicon() = 0;
+protected:
+    IntentContext* context_;
 };
 
 }

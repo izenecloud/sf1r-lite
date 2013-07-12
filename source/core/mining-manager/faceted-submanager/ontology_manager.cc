@@ -99,7 +99,7 @@ int OntologyManager::getDocTermsCount(Document& doc)
     content.convertString(str,UString::UTF_8);
     cout<<"content is "<<str<<endl;
 #endif
-    analyzer_->GetStemTermList( content, term_list );
+    analyzer_->GetStemTermList( propstr_to_ustr(content), term_list );
     //analyzer_->GetTermList(content, term_list);
     doc_terms_cnt+=term_list.size();
 #ifdef DEBUG_ONTOLOTY
@@ -466,7 +466,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         if (property_it!=doc.propertyEnd())
         {
             Document::doc_prop_value_strtype str_docid = property_it->second.getPropertyStrValue();
-            CategoryIdType* cid = manmade_categories.find(str_docid);
+            CategoryIdType* cid = manmade_categories.find(propstr_to_ustr(str_docid));
             if (cid!=NULL)
             {
                 std::cout<<"Manmade category: "<<docid<<" -> "<<*cid<<std::endl;
@@ -484,7 +484,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
             {
                 const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
                 std::vector<idmlib::util::IDMTerm> term_list;
-                analyzer_->GetStemTermList( content, term_list );
+                analyzer_->GetStemTermList( propstr_to_ustr(content), term_list );
 //              std::cout<<"after la "<<term_list.size()<<std::endl;
 //              if(term_list.size()>100000)
 //              {

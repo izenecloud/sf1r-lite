@@ -163,10 +163,9 @@ int main(int argc, char *argv[])
         for (SCDDoc::iterator p = doc->begin(); p != doc->end(); p++)
         {
             const std::string& fieldStr = p->first;
-            const izenelib::util::UString & propertyValueU = p->second;
             if (boost::iequals(fieldStr, DOCID))
             {
-                docid_list.push_back(Utilities::md5ToUint128(propertyValueU));
+                docid_list.push_back(Utilities::md5ToUint128(p->second));
                 if (docid_list.size() == buffer_size)
                 {
                     price_history.deleteMultiSlice(docid_list, start, finish);

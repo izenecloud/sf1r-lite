@@ -7,6 +7,7 @@
 #include "TDTConfig.h"
 #include "SummarizeConfig.h"
 #include "SuffixMatchConfig.h"
+#include "QueryIntentConfig.h"
 
 
 #include <stdint.h>
@@ -31,6 +32,7 @@ public:
         , recommend_tg(false), recommend_querylog(true)
         , summarization_enable(false), summarization_schema()
         , product_matcher_enable(false)
+        , query_intent_enable(false)
     {
     }
     ~MiningSchema() {}
@@ -55,6 +57,7 @@ private:
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
         ar & product_matcher_enable & product_categorizer_mode;
+        ar & query_intent_enable & query_intent_config;
     }
 
 public:
@@ -100,6 +103,9 @@ public:
 
     bool product_matcher_enable;
     std::string product_categorizer_mode;
+
+    bool query_intent_enable;
+    QueryIntentConfig query_intent_config;
 };
 
 } // namespace

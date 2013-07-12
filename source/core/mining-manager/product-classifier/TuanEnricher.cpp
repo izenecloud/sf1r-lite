@@ -207,9 +207,9 @@ void TuanEnricher::GetEnrichedQuery(
         try
         {
             PropertyValue::PropertyValueStrType enriched = doc.property("Title").get<PropertyValue::PropertyValueStrType>();
-            enriched += PropertyValue::PropertyValueStrType(" ");
+            enriched += str_to_propstr(" ");
             enriched += doc.property("Category").get<PropertyValue::PropertyValueStrType>();
-            enriched += PropertyValue::PropertyValueStrType(" ");
+            enriched += str_to_propstr(" ");
             enriched += doc.property("SubCategory").get<PropertyValue::PropertyValueStrType>();
 
             //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;

@@ -239,7 +239,7 @@ public:
                 izenelib::util::UString ustrseg = ustr.substr(i, k);
                 ustrseg.convertString(strseg, UString::UTF_8);
                 outlog<<"strseg         "<<strseg<<endl;
-                if(dbTable_Ngram.get(strseg, HitNum))
+                if(dbTable_Ngram.get(ustrseg, HitNum))
                 {
                     HitNum++;
                 }
@@ -247,7 +247,7 @@ public:
                 {
                     HitNum = 1;
                 }
-                dbTable_Ngram.insert(strseg, HitNum);
+                dbTable_Ngram.insert(ustrseg, HitNum);
             }
             //outlog<<"computeString3"<<endl;
         }
@@ -256,7 +256,7 @@ public:
     double Freq(const string& str)
     {     
         int HitNum;
-        if(dbTable_Ngram.get(str, HitNum))
+        if(dbTable_Ngram.get(izenelib::util::UString(str, izenelib::util::UString::UTF_8), HitNum))
         {    
             return double(HitNum);
         } 
