@@ -92,6 +92,10 @@ void FuzzySearchRanker::rank(
         {
             if (isCategoryClassify_)
             {
+                // ignore the docs with zero category score
+                if (tmpdoc.score == 0)
+                    continue;
+
                 fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
             }
             tmpdoc.score += fuzzyScore;

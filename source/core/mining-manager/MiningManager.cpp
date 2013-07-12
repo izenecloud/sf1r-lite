@@ -2238,10 +2238,24 @@ bool MiningManager::GetSuffixMatch(
             cout << key << " " << i->second << endl;
         }
 
-        const double rank_boundary = 0.8;
-        
-        bool isAndSearch = !QueryNormalizer::get()->isLongQuery(pattern);
+        const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
+        double rank_boundary = 1.55 - tokenNum * 0.1;
+        rank_boundary = std::max(rank_boundary, 0.5);
+        rank_boundary = std::min(rank_boundary, 0.95);
+
+        LOG(INFO) << "token num: " << tokenNum
+                  << ", rank boundary: " << rank_boundary;
+
+        const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+        bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
+        bool isAndSearch = true;
         bool isOrSearch = true;
+
+        if (isLongQuery)
+        {
+            useSynonym = false;
+            isAndSearch = false;
+        }
 
         if (isAndSearch)
         {
@@ -2256,7 +2270,7 @@ bool MiningManager::GetSuffixMatch(
             }
 
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                useSynonym,
                 short_query_major_tokens,
                 short_query_minor_tokens,
                 search_in_properties,
@@ -2274,7 +2288,7 @@ bool MiningManager::GetSuffixMatch(
         {
             LOG(INFO) << "for long query or short AND result is empty, try OR search";
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                useSynonym,
                 major_tokens,
                 minor_tokens,
                 search_in_properties,
