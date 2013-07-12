@@ -345,40 +345,34 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
     }
 
     double scoreSum = 0;
-    double maxScore = 0;
-    double reset_boundary = 0;
     KNlpWrapper::category_score_map_t tokenScoreMap;
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
-        if (it->second > maxScore)
-            maxScore = it->second;
-
-    if (maxScore == 0)
-        maxScore = 1;
+    {
+        scoreSum += it->second;
+    }
 
     std::ostringstream oss;
     if (product_model.size() == 1)
     {
-        product_modelScores.push_back(std::make_pair(t_product_model[0], maxScore));
+        product_modelScores.push_back(std::make_pair(t_product_model[0], scoreSum/8));
     }
     else if (product_model.size() == 2)
     {
         for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
-            product_modelScores.push_back(std::make_pair(*i, maxScore*0.7));
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/16));
     }
-    else if (product_model.size() > 2)
-    {
-        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
-            product_modelScores.push_back(std::make_pair(*i, maxScore*0.5));
-    }
-
-    // insert score;
+    
+    scoreSum = 0;
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              product_modelScores.begin(); it != product_modelScores.end(); ++it)
     {
         if (tokenScoreMap.insert(*it).second)
+        {
             scoreSum += it->second;
+        }
     }
+
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
     {
@@ -388,7 +382,7 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         }
     }
 
-    maxScore = 0;
+    //maxScore = 0;
     for (KNlpWrapper::category_score_map_t::const_iterator it =
              tokenScoreMap.begin(); it != tokenScoreMap.end(); ++it)
     {
@@ -396,19 +390,9 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         UString ustr(str, UString::UTF_8);
         double score = it->second / scoreSum;
         
-        if (maxScore < score)
-            maxScore = score;
-
         token_results.push_back(std::make_pair(ustr, score));
         oss << str << " ";
     }
-
-    if (product_model.size() == 1)
-        reset_boundary = maxScore*0.8;
-    else if (product_model.size() == 2)
-        reset_boundary = maxScore*0.6;
-    else if (product_model.size() > 2)
-        reset_boundary = maxScore*0.5;
 
     refined_results.assign(oss.str(), UString::UTF_8);
     return true;

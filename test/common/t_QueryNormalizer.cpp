@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::string source_0("iphone5手机");
     std::vector<std::string> actual_0;
     actual_0.push_back("5");
-    actual_0.push_back("iphone");
+    //actual_0.push_back("iphone");
     checkProductType(source_0, actual_0);
     
     std::cout <<"Test :皇冠Haier 海尔 KFR-35GW/05FFC23 1.5匹 挂壁式 无氟直流变频 冷暖空调" << std::endl;
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::vector<std::string> actual_2;
     actual_2.push_back("5");
     actual_2.push_back("cxw-189-eh16");
-    actual_2.push_back("iphone");
+    //actual_2.push_back("iphone");
     actual_2.push_back("jzt-fz26ge");
     checkProductType(source_2, actual_2);
 
@@ -168,8 +168,8 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::vector<std::string> actual_3;
     actual_3.push_back("4");
     actual_3.push_back("5");
-    actual_3.push_back("iphone");
-    actual_3.push_back("itouch");
+    //actual_3.push_back("iphone");
+    //actual_3.push_back("itouch");
     actual_3.push_back("q500p");
     checkProductType(source_3, actual_3);
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::string source_6("Apple/苹果 iphone 4s无锁16G/32G现货促销全国包邮返100送充电宝");
     std::vector<std::string> actual_6;
     actual_6.push_back("4s");
-    actual_6.push_back("iphone");
+    //actual_6.push_back("iphone");
     checkProductType(source_6, actual_6);
 
 
