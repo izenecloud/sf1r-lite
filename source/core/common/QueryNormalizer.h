@@ -68,7 +68,7 @@ public:
     }
 
     void getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
-                        std::string& newquery);
+                        std::string& minorQuery);
 
     void getMajorQueryByPunctuation(const std::string& query, std::string& majorQuery, std::string& minorQuery);
 

@@ -216,7 +216,7 @@ bool QueryNormalizer::isProductType(const std::string &str)
 }
 
 void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
-                                std::string& newquery)
+                                std::string& minorQuery)
 {
     std::cout << "DO GET PRODUCT MODEL..." << std::endl;
     std::vector<std::string> tokens;
@@ -246,21 +246,19 @@ void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std
     {
         if (isProductType(*i) && i->size() > PRODUCT_MODEL_SIZE)
             productTypes.push_back(*i);
-        else
+        /*else
         {
             newquery += *i;
             newquery += " ";
-        }
+        }*/
     }
     std::sort(productTypes.begin(), productTypes.end());
 
     if (!minorQuery_k.empty() || !minorQuery_p.empty())
     {
-        newquery += "(";
-        newquery += minorQuery_k;
-        newquery += " ";
-        newquery += minorQuery_p;
-        newquery += ")";
+        minorQuery += minorQuery_k;
+        minorQuery += " ";
+        minorQuery += minorQuery_p;
     }
 }
 
@@ -466,6 +464,33 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     types.push_back("5");
     umajorAppleType.push_back(AppleType(UString("itouch5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 5", kEncodeType),types));
+
+    //nokia
+    types.clear();
+    //types.push_back("itouch");
+    types.push_back("720");
+    umajorAppleType.push_back(AppleType(UString("lumia 720", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("520");
+    umajorAppleType.push_back(AppleType(UString("lumia 520", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("920");
+    umajorAppleType.push_back(AppleType(UString("lumia 920", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("800");
+    umajorAppleType.push_back(AppleType(UString("lumia 800", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("900");
+    umajorAppleType.push_back(AppleType(UString("lumia 900", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("925");
+    umajorAppleType.push_back(AppleType(UString("lumia 925", kEncodeType),types));
+
 
     unsigned char bitmap[32];
     for (int i = 0; i < 32; ++i)

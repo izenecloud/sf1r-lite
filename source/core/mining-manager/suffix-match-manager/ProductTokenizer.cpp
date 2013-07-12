@@ -329,13 +329,22 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         UString& refined_results)
 {
     std::string newPattern;
+    std::string minor_pattern;
     std::vector<std::string> product_model;
-    sf1r::QueryNormalizer::get()->getProductTypes(pattern, product_model, newPattern);
+    sf1r::QueryNormalizer::get()->getProductTypes(pattern, product_model, minor_pattern);
     KNlpWrapper::token_score_list_t tokenScores;
     KNlpWrapper::token_score_list_t product_modelScores;
+    KNlpWrapper::token_score_list_t minor_patternScore;
 
     KNlpWrapper::string_t kstr(pattern);
     KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
+
+    if (!minor_pattern.empty())
+    {
+        std::cout <<"minor_pattern: " << minor_pattern << std::endl;
+        KNlpWrapper::string_t kmstr(minor_pattern);
+        KNlpWrapper::get()->fmmTokenize(kmstr, minor_patternScore);
+    }
 
     std::vector<KNlpWrapper::string_t> t_product_model;
     for (std::vector<std::string>::iterator i = product_model.begin(); i != product_model.end(); ++i)
@@ -364,6 +373,16 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
     }
     
     scoreSum = 0;
+    for (KNlpWrapper::token_score_list_t::iterator it =
+             minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
+    {
+        it->second /= 10;
+        if (tokenScoreMap.insert(*it).second)
+        {
+            scoreSum += it->second;
+        }
+    }
+
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              product_modelScores.begin(); it != product_modelScores.end(); ++it)
     {
