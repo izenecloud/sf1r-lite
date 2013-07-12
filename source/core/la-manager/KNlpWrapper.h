@@ -51,8 +51,7 @@ private:
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> cateDict_;
-    boost::scoped_ptr<ilplib::knlp::DigitalDictionary> termCateDict_;
-    boost::scoped_ptr<ilplib::knlp::Dictionary> termMultiCatesDict_;
+    boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesDict_;
 };
 
 } // namespace sf1r

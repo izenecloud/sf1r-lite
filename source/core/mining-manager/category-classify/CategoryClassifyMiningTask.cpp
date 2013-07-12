@@ -2,6 +2,7 @@
 #include "CategoryClassifyTable.h"
 #include <document-manager/DocumentManager.h>
 #include <la-manager/KNlpWrapper.h>
+#include <knlp/doc_naive_bayes.h>
 #include <util/ustring/UString.h>
 #include <glog/logging.h>
 #include <boost/filesystem/path.hpp>
@@ -11,7 +12,6 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
-const std::string kDebugFileName = "debug.txt";
 
 void getDocPropValue(
     const Document& doc,
@@ -28,21 +28,12 @@ void getDocPropValue(
 CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     DocumentManager& documentManager,
     CategoryClassifyTable& classifyTable,
-    const std::string& categoryPropName,
-    bool isDebug)
+    const std::string& categoryPropName)
     : documentManager_(documentManager)
     , classifyTable_(classifyTable)
     , categoryPropName_(categoryPropName)
     , startDocId_(0)
-    , isDebug_(isDebug)
 {
-    if (isDebug_)
-    {
-        const bfs::path dirPath(classifyTable.dirPath());
-        const bfs::path debugPath(dirPath / kDebugFileName);
-
-        debugStream_.open(debugPath.string().c_str(), std::ofstream::app);
-    }
 }
 
 bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& doc)
@@ -68,12 +59,6 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
 
     classifyTable_.setCategory(docID, classifyCategory);
 
-    if (isDebug_)
-    {
-        debugStream_ << docID << " [" << classifyCategory << "] "
-                     << title << std::endl;
-    }
-
     return true;
 }
 
@@ -88,16 +73,25 @@ void CategoryClassifyMiningTask::classifyByCategory_(
 }
 
 void CategoryClassifyMiningTask::classifyByTitle_(
-    const std::string& title,
+    std::string& title,
     std::string& classifyCategory)
 {
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    KNlpWrapper::string_t titleKStr(title);
-    KNlpWrapper::token_score_list_t tokenScores;
-    knlpWrapper->fmmTokenize(titleKStr, tokenScores);
+    ilplib::knlp::DocNaiveBayes::makeitclean(title);
 
-    KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
-    classifyCategory = classifyKStr.get_bytes("utf-8");
+    try
+    {
+        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+        KNlpWrapper::string_t titleKStr(title);
+        KNlpWrapper::token_score_list_t tokenScores;
+        knlpWrapper->fmmTokenize(titleKStr, tokenScores);
+
+        KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
+        classifyCategory = classifyKStr.get_bytes("utf-8");
+    }
+    catch(std::exception& ex)
+    {
+        LOG(ERROR) << "exception: " << ex.what();
+    }
 }
 
 bool CategoryClassifyMiningTask::preProcess()
@@ -122,11 +116,6 @@ bool CategoryClassifyMiningTask::postProcess()
     {
         LOG(ERROR) << "failed in CategoryClassifyTable::flush()";
         return false;
-    }
-
-    if (isDebug_)
-    {
-        debugStream_.flush();
     }
 
     return true;

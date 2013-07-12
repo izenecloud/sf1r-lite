@@ -12,6 +12,7 @@
 #include <common/QueryNormalizer.h>
 #include <configuration-manager/ProductRankingConfig.h>
 #include <la-manager/KNlpWrapper.h>
+#include <knlp/doc_naive_bayes.h>
 #include <glog/logging.h>
 #include <memory> // auto_ptr
 #include <sstream>
@@ -171,7 +172,9 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         return NULL;
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    const std::string& query(scoreParam.query_);
+    std::string query(scoreParam.query_);
+    ilplib::knlp::DocNaiveBayes::makeitclean(query);
+
     KNlpWrapper::string_t queryKStr(query);
     KNlpWrapper::token_score_list_t tokenScores;
     knlpWrapper->fmmTokenize(queryKStr, tokenScores);
