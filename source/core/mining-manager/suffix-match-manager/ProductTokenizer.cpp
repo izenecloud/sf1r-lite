@@ -3,6 +3,7 @@
 #include <b5m-manager/product_matcher.h>
 #include <la-manager/KNlpWrapper.h>
 
+#include <common/QueryNormalizer.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <iostream>
@@ -327,12 +328,57 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         std::list<std::pair<UString,double> >& token_results,
         UString& refined_results)
 {
+    std::string newPattern;
+    std::vector<std::string> product_model;
+    sf1r::QueryNormalizer::get()->getProductTypes(pattern, product_model, newPattern);
     KNlpWrapper::token_score_list_t tokenScores;
+    KNlpWrapper::token_score_list_t product_modelScores;
+
     KNlpWrapper::string_t kstr(pattern);
     KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
 
+    std::vector<KNlpWrapper::string_t> t_product_model;
+    for (std::vector<std::string>::iterator i = product_model.begin(); i != product_model.end(); ++i)
+    {
+        KNlpWrapper::string_t kpmstr(*i);
+        t_product_model.push_back(kpmstr);
+    }
+
     double scoreSum = 0;
+    double maxScore = 0;
+    double reset_boundary = 0;
     KNlpWrapper::category_score_map_t tokenScoreMap;
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+        if (it->second > maxScore)
+            maxScore = it->second;
+
+    if (maxScore == 0)
+        maxScore = 1;
+
+    std::ostringstream oss;
+    if (product_model.size() == 1)
+    {
+        product_modelScores.push_back(std::make_pair(t_product_model[0], maxScore));
+    }
+    else if (product_model.size() == 2)
+    {
+        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
+            product_modelScores.push_back(std::make_pair(*i, maxScore*0.7));
+    }
+    else if (product_model.size() > 2)
+    {
+        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
+            product_modelScores.push_back(std::make_pair(*i, maxScore*0.5));
+    }
+
+    // insert score;
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             product_modelScores.begin(); it != product_modelScores.end(); ++it)
+    {
+        if (tokenScoreMap.insert(*it).second)
+            scoreSum += it->second;
+    }
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
     {
@@ -342,19 +388,29 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         }
     }
 
-    std::ostringstream oss;
+    maxScore = 0;
     for (KNlpWrapper::category_score_map_t::const_iterator it =
              tokenScoreMap.begin(); it != tokenScoreMap.end(); ++it)
     {
         std::string str = it->first.get_bytes("utf-8");
         UString ustr(str, UString::UTF_8);
         double score = it->second / scoreSum;
+        
+        if (maxScore < score)
+            maxScore = score;
 
         token_results.push_back(std::make_pair(ustr, score));
         oss << str << " ";
     }
-    refined_results.assign(oss.str(), UString::UTF_8);
 
+    if (product_model.size() == 1)
+        reset_boundary = maxScore*0.8;
+    else if (product_model.size() == 2)
+        reset_boundary = maxScore*0.6;
+    else if (product_model.size() > 2)
+        reset_boundary = maxScore*0.5;
+
+    refined_results.assign(oss.str(), UString::UTF_8);
     return true;
 }
 

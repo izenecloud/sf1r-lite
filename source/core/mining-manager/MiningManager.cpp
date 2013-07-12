@@ -2230,6 +2230,7 @@ bool MiningManager::GetSuffixMatch(
         }
 
         const double rank_boundary = 0.8;
+        
         bool isAndSearch = !QueryNormalizer::get()->isLongQuery(pattern);
         bool isOrSearch = true;
 
