@@ -424,9 +424,9 @@ BOOST_AUTO_TEST_CASE(summary)
     std::vector<izenelib::util::UString> queryTermString;
     queryTermString.push_back( izenelib::util::UString( "a" , izenelib::util::UString::UTF_8) );
 
-    std::vector<izenelib::util::UString> outSnippetList;
-    std::vector<izenelib::util::UString> outRawSummaryList;
-    std::vector<izenelib::util::UString> outFullTextList;
+    std::vector<Document::doc_prop_value_strtype> outSnippetList;
+    std::vector<Document::doc_prop_value_strtype> outRawSummaryList;
+    std::vector<Document::doc_prop_value_strtype> outFullTextList;
 
     BOOST_CHECK( documentManager->getRawTextOfDocuments(
             docIdList, "Content", true, 10, O_SNIPPET, queryTermString,

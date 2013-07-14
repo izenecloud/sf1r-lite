@@ -229,16 +229,12 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
-    izenelib::util::UString taxonomyLabel(
-        actionItem_.env_.taxonomyLabel_,
-        izenelib::util::UString::UTF_8
-    );
-    typedef std::vector<izenelib::util::UString>::const_iterator iterator;
+    typedef std::vector<PropertyValue::PropertyValueStrType>::const_iterator iterator;
     std::size_t taxonomyIndex =
         std::find(
             miaResult.taxonomyString_.begin(),
             miaResult.taxonomyString_.end(),
-            taxonomyLabel
+            actionItem_.env_.taxonomyLabel_
         ) - miaResult.taxonomyString_.begin();
 
     std::size_t totalCount = 0;
@@ -741,7 +737,7 @@ bool DocumentsSearchHandler::validateSearchResult(
 }
 
 bool DocumentsSearchHandler::validateTextList(
-    const std::vector<std::vector<izenelib::util::UString> >& textList,
+    const std::vector<std::vector<PropertyValue::PropertyValueStrType> >& textList,
     std::size_t row,
     std::size_t column
 )
@@ -754,7 +750,7 @@ bool DocumentsSearchHandler::validateTextList(
             return false;
         }
 
-        typedef std::vector<std::vector<izenelib::util::UString> > list_type;
+        typedef std::vector<std::vector<PropertyValue::PropertyValueStrType> > list_type;
         typedef list_type::const_iterator iterator;
 
         for (iterator it = textList.begin(); it != textList.end(); ++it)

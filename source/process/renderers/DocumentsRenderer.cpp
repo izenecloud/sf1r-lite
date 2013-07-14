@@ -210,9 +210,11 @@ void DocumentsRenderer::renderRelatedQueries(
     izenelib::driver::Value& relatedQueries
 )
 {
+    std::string tmpstr;
     for (std::size_t i = 0; i < miaResult.relatedQueryList_.size(); ++i)
     {
-        relatedQueries() = propstr_to_str(miaResult.relatedQueryList_[i], kEncoding);
+        miaResult.relatedQueryList_[i].convertString(tmpstr, kEncoding);
+        relatedQueries() = tmpstr;
     }
 }
 
@@ -252,11 +254,12 @@ void DocumentsRenderer::renderNameEntity(
     izenelib::driver::Value& nameEntity
 )
 {
+    std::string tmpstr;
     for (std::size_t i = 0; i < miaResult.neList_.size(); ++i)
     {
         Value& newNameEntity = nameEntity();
-
-        newNameEntity[Keys::type] = propstr_to_str(miaResult.neList_[i].type, kEncoding);
+        miaResult.neList_[i].type.convertString(tmpstr, kEncoding);
+        newNameEntity[Keys::type] = tmpstr;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
         typedef std::vector<NEItem>::const_iterator const_iterator;
@@ -265,7 +268,8 @@ void DocumentsRenderer::renderNameEntity(
              item != itemEnd; ++item)
         {
             Value& newNameEntityItem = nameEntityList();
-            newNameEntityItem[Keys::name_entity_item] = propstr_to_str(item->text, kEncoding);
+            item->text.convertString(tmpstr, kEncoding);
+            newNameEntityItem[Keys::name_entity_item] = tmpstr;
             newNameEntityItem[Keys::document_support_count] = item->doc_list.size();
         }
     }
@@ -290,9 +294,11 @@ void DocumentsRenderer::renderFaceted(
       std::size_t currentLevel = item.level-1;
       BOOST_ASSERT(currentLevel < parents.size());
 
+      std::string tmpstr;
       Value& parent = *(parents[currentLevel]);
       Value& newLabel = parent();
-      newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
+      item.text.convertString(tmpstr, kEncoding);
+      newLabel[Keys::label] = tmpstr;
       newLabel[Keys::id] = item.id;
       newLabel[Keys::document_count] = item.doc_count;
 #ifdef ONTOLOGY
@@ -324,6 +330,7 @@ void DocumentsRenderer::renderGroup(
 
     std::vector<Value*> parents;
     parents.push_back(&groupResult);
+    std::string tmpstr;
     for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
             it != item_list.end(); ++it)
     {
@@ -337,15 +344,16 @@ void DocumentsRenderer::renderGroup(
         // alternative for the parent of next level
         std::size_t nextLevel = currentLevel + 1;
         parents.resize(nextLevel + 1);
+        item.text.convertString(tmpstr, kEncoding);
         if (currentLevel == 0)
         {
-            newLabel[Keys::property] = propstr_to_str(item.text, kEncoding);
+            newLabel[Keys::property] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
             parents[nextLevel] = &newLabel[Keys::labels];
         }
         else
         {
-            newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
+            newLabel[Keys::label] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
             parents[nextLevel] = &newLabel[Keys::sub_labels];
         }
@@ -364,16 +372,18 @@ void DocumentsRenderer::renderAttr(
     }
 
     Value* parent = NULL;
+    std::string tmpstr;
     for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
         it != item_list.end(); ++it)
     {
         const sf1r::faceted::OntologyRepItem& item = *it;
 
+        item.text.convertString(tmpstr, kEncoding);
         // attribute name
         if (item.level == 0)
         {
             Value& newLabel = attrResult();
-            newLabel[Keys::attr_name] = propstr_to_str(item.text, kEncoding);
+            newLabel[Keys::attr_name] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
             parent = &newLabel[Keys::labels];
         }
@@ -382,7 +392,7 @@ void DocumentsRenderer::renderAttr(
         {
             BOOST_ASSERT(parent);
             Value& newLabel = (*parent)();
-            newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
+            newLabel[Keys::label] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
         }
     }
