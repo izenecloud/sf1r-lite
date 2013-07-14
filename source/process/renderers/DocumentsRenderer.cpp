@@ -40,7 +40,7 @@ void renderPropertyList(
     {
         const std::string& propertyName = propertyList[p].propertyString_;
 
-        const izenelib::util::UString& snippetText =
+        const PropertyValue::PropertyValueStrType& snippetText =
             docResults.snippetTextOfDocumentInPage_[p][column];
             
         if (propertyList[p].isSplitPropertyValue_)
@@ -51,19 +51,14 @@ void renderPropertyList(
         }
         else if (propertyList[p].isSubDocPropertyValue_)
         {
-            snippetText.convertString(
-                propertyValueBuffer, kEncoding
-            );
+            propertyValueBuffer = propstr_to_str(snippetText, kEncoding);
             SubDocPropValueRenderer::renderSubDocPropValue(
                 propertyName, propertyValueBuffer, newResource[propertyName]
             );
         }
         else
         {
-            snippetText.convertString(
-                propertyValueBuffer, kEncoding
-            );
-
+            propertyValueBuffer = propstr_to_str(snippetText, kEncoding);
             // remove dummy token @@ALL@@ from result
             if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
             {
@@ -77,9 +72,7 @@ void renderPropertyList(
         {
             BOOST_ASSERT(summaryIndex < docResults.rawTextOfSummaryInPage_.size());
 
-            docResults.rawTextOfSummaryInPage_[summaryIndex][column].convertString(
-                propertyValueBuffer, kEncoding
-            );
+            propertyValueBuffer = propstr_to_str(docResults.rawTextOfSummaryInPage_[summaryIndex][column], kEncoding);
 
             const std::string& summaryPropertyName =
                 propertyList[p].summaryPropertyAlias_;
@@ -206,10 +199,7 @@ void DocumentsRenderer::renderDocuments(
             for(std::size_t c = 0;
                 c < searchResult.docCategories_[indexInTopK].size(); ++c)
             {
-                searchResult.docCategories_[indexInTopK][c].convertString(
-                    categoryValueBuffer, kEncoding
-                );
-                documentCategories() = categoryValueBuffer;
+                documentCategories() = propstr_to_str(searchResult.docCategories_[indexInTopK][c], kEncoding);
             }
         }
     }
@@ -220,40 +210,11 @@ void DocumentsRenderer::renderRelatedQueries(
     izenelib::driver::Value& relatedQueries
 )
 {
-    std::string convertBuffer;
     for (std::size_t i = 0; i < miaResult.relatedQueryList_.size(); ++i)
     {
-        miaResult.relatedQueryList_[i].convertString(convertBuffer, kEncoding);
-        relatedQueries() = convertBuffer;
+        relatedQueries() = propstr_to_str(miaResult.relatedQueryList_[i], kEncoding);
     }
 }
-
-// void DocumentsRenderer::renderPopularQueries(
-//     const KeywordSearchResult& miaResult,
-//     izenelib::driver::Value& popularQueries
-// )
-// {
-//     std::string convertBuffer;
-//     for (std::size_t i = 0; i < miaResult.popularQueries_.size(); ++i)
-//     {
-//         miaResult.popularQueries_[i].convertString(convertBuffer, kEncoding);
-//         popularQueries() = convertBuffer;
-//     }
-//
-// }
-//
-// void DocumentsRenderer::renderRealTimeQueries(
-//     const KeywordSearchResult& miaResult,
-//     izenelib::driver::Value& realTimeQueries
-// )
-// {
-//     std::string convertBuffer;
-//     for (std::size_t i = 0; i < miaResult.realTimeQueries_.size(); ++i)
-//     {
-//         miaResult.realTimeQueries_[i].convertString(convertBuffer, kEncoding);
-//         realTimeQueries() = convertBuffer;
-//     }
-// }
 
 void DocumentsRenderer::renderTaxonomy(
     const KeywordSearchResult& miaResult,
@@ -264,8 +225,6 @@ void DocumentsRenderer::renderTaxonomy(
     {
         return;
     }
-
-    std::string convertBuffer;
 
     BOOST_ASSERT(miaResult.taxonomyString_.size() == miaResult.taxonomyLevel_.size());
     BOOST_ASSERT(miaResult.taxonomyString_.size() == miaResult.numOfTGDocs_.size());
@@ -278,9 +237,7 @@ void DocumentsRenderer::renderTaxonomy(
 
         Value& parent = *(taxonomyParents[currentLevel]);
         Value& newLabel = parent();
-        miaResult.taxonomyString_[i].convertString(convertBuffer, kEncoding);
-
-        newLabel[Keys::label] = convertBuffer;
+        newLabel[Keys::label] = propstr_to_str(miaResult.taxonomyString_[i], kEncoding);
         newLabel[Keys::document_count] = miaResult.numOfTGDocs_[i];
 
         // alternative for the parent of next level
@@ -295,14 +252,11 @@ void DocumentsRenderer::renderNameEntity(
     izenelib::driver::Value& nameEntity
 )
 {
-    std::string convertBuffer;
-
     for (std::size_t i = 0; i < miaResult.neList_.size(); ++i)
     {
         Value& newNameEntity = nameEntity();
 
-        miaResult.neList_[i].type.convertString(convertBuffer, kEncoding);
-        newNameEntity[Keys::type] = convertBuffer;
+        newNameEntity[Keys::type] = propstr_to_str(miaResult.neList_[i].type, kEncoding);
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
         typedef std::vector<NEItem>::const_iterator const_iterator;
@@ -311,8 +265,7 @@ void DocumentsRenderer::renderNameEntity(
              item != itemEnd; ++item)
         {
             Value& newNameEntityItem = nameEntityList();
-            item->text.convertString(convertBuffer, kEncoding);
-            newNameEntityItem[Keys::name_entity_item] = convertBuffer;
+            newNameEntityItem[Keys::name_entity_item] = propstr_to_str(item->text, kEncoding);
             newNameEntityItem[Keys::document_support_count] = item->doc_list.size();
         }
     }
@@ -328,8 +281,6 @@ void DocumentsRenderer::renderFaceted(
       return;
   }
 
-  std::string convertBuffer;
-
   std::vector<Value*> parents;
   parents.push_back(&faceted[Keys::labels]);
   std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
@@ -341,15 +292,13 @@ void DocumentsRenderer::renderFaceted(
 
       Value& parent = *(parents[currentLevel]);
       Value& newLabel = parent();
-      item.text.convertString(convertBuffer, kEncoding);
-
-      newLabel[Keys::label] = convertBuffer;
+      newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
       newLabel[Keys::id] = item.id;
       newLabel[Keys::document_count] = item.doc_count;
 #ifdef ONTOLOGY
       cout<<"currentLevel is "<<currentLevel<<endl;
       cout<<"parents.size() is "<<parents.size()<<endl;
-      cout<<"convertBuffer is "<<convertBuffer<<endl;
+      //cout<<"convertBuffer is "<<convertBuffer<<endl;
       cout<<"itemid is "<<item.id<<endl;
       cout<<"item.doc_count is "<<item.doc_count<<endl;
 #endif
@@ -372,7 +321,6 @@ void DocumentsRenderer::renderGroup(
         return;
     }
 
-    std::string convertBuffer;
 
     std::vector<Value*> parents;
     parents.push_back(&groupResult);
@@ -386,20 +334,18 @@ void DocumentsRenderer::renderGroup(
 
         Value& parent = *(parents[currentLevel]);
         Value& newLabel = parent();
-        item.text.convertString(convertBuffer, kEncoding);
-
         // alternative for the parent of next level
         std::size_t nextLevel = currentLevel + 1;
         parents.resize(nextLevel + 1);
         if (currentLevel == 0)
         {
-            newLabel[Keys::property] = convertBuffer;
+            newLabel[Keys::property] = propstr_to_str(item.text, kEncoding);
             newLabel[Keys::document_count] = item.doc_count;
             parents[nextLevel] = &newLabel[Keys::labels];
         }
         else
         {
-            newLabel[Keys::label] = convertBuffer;
+            newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
             newLabel[Keys::document_count] = item.doc_count;
             parents[nextLevel] = &newLabel[Keys::sub_labels];
         }
@@ -417,19 +363,17 @@ void DocumentsRenderer::renderAttr(
         return;
     }
 
-    std::string convertBuffer;
     Value* parent = NULL;
     for (std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
         it != item_list.end(); ++it)
     {
         const sf1r::faceted::OntologyRepItem& item = *it;
-        item.text.convertString(convertBuffer, kEncoding);
 
         // attribute name
         if (item.level == 0)
         {
             Value& newLabel = attrResult();
-            newLabel[Keys::attr_name] = convertBuffer;
+            newLabel[Keys::attr_name] = propstr_to_str(item.text, kEncoding);
             newLabel[Keys::document_count] = item.doc_count;
             parent = &newLabel[Keys::labels];
         }
@@ -438,7 +382,7 @@ void DocumentsRenderer::renderAttr(
         {
             BOOST_ASSERT(parent);
             Value& newLabel = (*parent)();
-            newLabel[Keys::label] = convertBuffer;
+            newLabel[Keys::label] = propstr_to_str(item.text, kEncoding);
             newLabel[Keys::document_count] = item.doc_count;
         }
     }
