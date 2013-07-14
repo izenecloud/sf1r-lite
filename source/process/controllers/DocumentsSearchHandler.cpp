@@ -234,7 +234,7 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
         std::find(
             miaResult.taxonomyString_.begin(),
             miaResult.taxonomyString_.end(),
-            actionItem_.env_.taxonomyLabel_
+            str_to_propstr(actionItem_.env_.taxonomyLabel_)
         ) - miaResult.taxonomyString_.begin();
 
     std::size_t totalCount = 0;
