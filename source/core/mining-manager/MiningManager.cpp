@@ -2224,6 +2224,20 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
 
+        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+        {
+            std::string key;
+            (i->first).convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << i->second << endl;
+        }
+        cout<<"-----"<<endl;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            std::string key;
+            (i->first).convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << i->second << endl;
+        }
+
         const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
         double rank_boundary = 1.55 - tokenNum * 0.1;
         rank_boundary = std::max(rank_boundary, 0.5);
