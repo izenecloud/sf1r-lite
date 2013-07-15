@@ -2532,10 +2532,19 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
-*/
+
         LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
-        
-        
+*/
+        if(str.at(str.size()-1) == '#')
+        {
+            std::string st;
+            term_list[ki.positions[0].end-1].text.convertString(st, izenelib::util::UString::UTF_8);
+            if(st.at(st.size()-1) != '#' && st.at(0) >= '0' && st.at(0) <= '9')
+            {
+                str = str.substr(0, str.size()-1);
+                ki.text.assign(str, izenelib::util::UString::UTF_8);
+            }        
+        }
         uint32_t j = 0;
         uint32_t step = product_count/sample_capacity;
         bool right_category = false;
@@ -2543,7 +2552,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         while(j < product_count)
         {
             
-            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
+//            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
             bool b = false;
             if(text.length() > Len)
             {
@@ -2566,7 +2575,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 if(ki.attribute_apps[j].attribute_name == "品牌" || ki.attribute_apps[j].attribute_name == "型号")
                 {
                     ki.attribute_apps[0] = ki.attribute_apps[j];
-                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
+//                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
                     break;
                 }
             }
@@ -2603,14 +2612,14 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             if(temp_k.empty())temp_k.insert(iter, k);
         }
     }
-
+/*
     for(uint32_t i=0;i<temp_k.size();i++)
     {
         std::string str;
         temp_k[i].text.convertString(str, izenelib::util::UString::UTF_8);
         LOG(INFO)<<str<<"  "<<temp_k[i].positions[0].begin<<"  "<<temp_k[i].positions[0].end<<endl;
     }
-
+*/
     boost::unordered_map<std::string, uint32_t> note;
     for(uint32_t i=0;i<temp_k.size();i++)
     {
@@ -2625,14 +2634,19 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         bool is_model = false;
         if(ki.attribute_apps[0].attribute_name == "品牌")
             is_brand = true;
-        else is_model = true;
+        else if(ki.attribute_apps[0].attribute_name == "型号")
+            is_model = true;
 
         uint32_t end_pos = ki.positions[0].end;
         if(is_brand)
         while(j<temp_k.size()-1)
         {
             j++;
-            if(temp_k[j].positions[0].begin > temp_k[i].positions[0].end + 1 )
+            if(temp_k[j].positions[0].begin > temp_k[i].positions[0].end + 1)
+            {
+                break;
+            }
+            if(temp_k[j].attribute_apps[0].attribute_name == "品牌")
             {
                 break;
             }
