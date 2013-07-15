@@ -446,7 +446,7 @@ namespace sf1r {
             double GetLenWeight() const
             {
                 double lw = 0.0;
-                for(typename boost::unordered_map<std::string, double>::const_iterator it = attribute_lenweight.begin(); it!=attribute_lenweight.end(); ++it)
+                for(boost::unordered_map<std::string, double>::const_iterator it = attribute_lenweight.begin(); it!=attribute_lenweight.end(); ++it)
                 {
                     lw += it->second;
                 }
