@@ -123,6 +123,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
         doc.eraseProperty(B5MHelper::GetBrandPropertyName());
+        doc.eraseProperty("Attribute");
         Document::doc_prop_value_strtype category;
         doc.getProperty("Category", category);
         Document::doc_prop_value_strtype title;
