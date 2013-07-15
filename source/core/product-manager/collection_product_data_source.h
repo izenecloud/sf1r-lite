@@ -16,7 +16,7 @@ namespace sf1r
 {
 
 class DocumentManager;
-class IndexManager;
+class InvertedIndexManager;
 class SearchManager;
 
 class CollectionProductDataSource : public ProductDataSource
@@ -24,7 +24,7 @@ class CollectionProductDataSource : public ProductDataSource
 public:
     CollectionProductDataSource(
             const boost::shared_ptr<DocumentManager>& document_manager,
-            const boost::shared_ptr<IndexManager>& index_manager,
+            const boost::shared_ptr<InvertedIndexManager>& index_manager,
             const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
             const boost::shared_ptr<SearchManager>& search_manager,
             const PMConfig& config,
@@ -38,11 +38,11 @@ public:
 
     void GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc);
 
-    void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
+    void GetDocIdList(const Document::doc_prop_value_strtype& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
 
-    bool UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid);
+    bool UpdateUuid(const std::vector<uint32_t>& docid_list, const Document::doc_prop_value_strtype& uuid);
 
-    bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
+    bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const Document::doc_prop_value_strtype& uuid);
 
     bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list);
 
@@ -56,7 +56,7 @@ public:
 
 private:
     boost::shared_ptr<DocumentManager> document_manager_;
-    boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<InvertedIndexManager> index_manager_;
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> id_manager_;
     boost::shared_ptr<SearchManager> search_manager_;
     PMConfig config_;

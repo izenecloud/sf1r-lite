@@ -74,16 +74,14 @@ int main(int ac, char** av)
 
             if(verbose)
             {
-                std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
+                std::vector<std::pair<std::string, ScdPropertyValueType> >::iterator p;
 
                 for (p = doc.begin(); p != doc.end(); p++)
                 {
                     const std::string& property_name = p->first;
-                    std::string property_value;
-                    p->second.convertString(property_value, izenelib::util::UString::UTF_8);
                     std::cout<<"<"<<property_name<<">"<<std::endl;
                     std::cout<<p->second<<std::endl;
-                    std::cout<<property_value<<std::endl;
+                    std::cout<< p->second <<std::endl;
                 }
             }
             if(n%100000==0)

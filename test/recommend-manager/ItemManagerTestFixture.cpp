@@ -211,8 +211,8 @@ void ItemManagerTestFixture::checkItem_(const Document& doc, const ItemInput& it
         BOOST_REQUIRE_MESSAGE(doc.hasProperty(propName), propName);
 
         const PropertyValue propValue = doc.property(propName);
-        const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();
-        BOOST_CHECK_EQUAL(ustr, it->second);
+        const Document::doc_prop_value_strtype& ustr = propValue.getPropertyStrValue();
+        BOOST_CHECK_EQUAL(propstr_to_ustr(ustr), it->second);
     }
 }
 
@@ -230,28 +230,28 @@ void ItemManagerTestFixture::prepareDoc_(
 
     ustr.assign(PROP_VALUE_DOCID + idStr, ENCODING_TYPE);
     itemInput[PROP_NAME_DOCID] = ustr;
-    doc.property(PROP_NAME_DOCID) = ustr;
+    doc.property(PROP_NAME_DOCID) = ustr_to_propstr(ustr);
 
     int randValue = rand();
     const string randIdStr = boost::lexical_cast<string>(randValue);
 
     ustr.assign(PROP_VALUE_TITLE + randIdStr, ENCODING_TYPE);
     itemInput[PROP_NAME_TITLE] = ustr;
-    doc.property(PROP_NAME_TITLE) = ustr;
+    doc.property(PROP_NAME_TITLE) = ustr_to_propstr(ustr);
 
     ustr.assign(PROP_VALUE_URL + randIdStr, ENCODING_TYPE);
     itemInput[PROP_NAME_URL] = ustr;
-    doc.property(PROP_NAME_URL) = ustr;
+    doc.property(PROP_NAME_URL) = ustr_to_propstr(ustr);
 
     float f = static_cast<float>(randValue) / 3;
     ustr.assign(boost::lexical_cast<string>(f), ENCODING_TYPE);
     itemInput[PROP_NAME_PRICE] = ustr;
-    doc.property(PROP_NAME_PRICE) = ustr;
+    doc.property(PROP_NAME_PRICE) = ustr_to_propstr(ustr);
 
     int c = randValue * 10;
     ustr.assign(boost::lexical_cast<string>(c), ENCODING_TYPE);
     itemInput[PROP_NAME_COUNT] = ustr;
-    doc.property(PROP_NAME_COUNT) = ustr;
+    doc.property(PROP_NAME_COUNT) = ustr_to_propstr(ustr);
 }
 
 } // namespace sf1r

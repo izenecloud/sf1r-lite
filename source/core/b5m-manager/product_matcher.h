@@ -390,8 +390,11 @@ namespace sf1r {
 
         struct FuzzyApp
         {
-            std::vector<uint32_t> kpos;
-            std::vector<uint32_t> tpos;
+            std::vector<std::pair<uint32_t, uint32_t> > positions;
+            uint32_t ilength;
+            uint32_t count;
+            //std::vector<uint32_t> kpos;
+            //std::vector<uint32_t> tpos;
         };
 
 
@@ -439,6 +442,11 @@ namespace sf1r {
             double lenweight;
             bool model_match;
             bool brand_match;
+            boost::unordered_set<std::string> attribute_found;
+            bool IsAttributeFound(const std::string& a) const
+            {
+                return attribute_found.find(a)!=attribute_found.end();
+            }
             //double price_diff;
             //friend class boost::serialization::access;
             //template<class Archive>
@@ -651,6 +659,8 @@ namespace sf1r {
             ProductPrice price;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
+            UString display_attributes;
+            UString filter_attributes;
             std::string sbrand;
             //WeightType weight;
             double aweight;
@@ -661,7 +671,14 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+                ar & spid & stitle & scategory & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+                //try
+                //{
+                //}
+                //catch(std::exception& ex)
+                //{
+                    //ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+                //}
             }
 
             static bool FCategoryCompare(const Product& p1, const Product& p2)
@@ -769,8 +786,10 @@ namespace sf1r {
         static UString AttributesText(const std::vector<Attribute>& attributes);
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
+        bool GetKeyword(const UString& text, KeywordTag& tag);
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
-        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >&res);
+        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_model);
+        void ExtractKeywordsFromPage(const UString& text, std::map<std::string, std::vector<std::pair<UString, uint32_t> > > & res, std::list<std::pair<UString, uint32_t> >& category, std::map<UString, uint32_t>& weight);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
         void SetCmaPath(const std::string& path)
@@ -788,6 +807,16 @@ namespace sf1r {
         {
             category_max_depth_ = d;
             LOG(INFO)<<"set category max depth to "<<d<<std::endl;
+        }
+
+        const Product& GetProduct(uint32_t spu_id) const
+        {
+            return products_[spu_id];
+        }
+
+        const Category& GetCategory(uint32_t cid) const
+        {
+            return category_list_[cid];
         }
 
         static void CategoryDepthCut(std::string& category, uint16_t d);
@@ -957,12 +986,13 @@ namespace sf1r {
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         boost::regex type_regex_;
+        boost::regex vol_regex_;
 
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
 
         std::vector<FeatureVector> feature_vectors_;
-
+        boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
 
         const static double optional_weight_ = 0.2;

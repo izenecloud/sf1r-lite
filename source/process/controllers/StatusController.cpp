@@ -79,7 +79,7 @@ void StatusController::index()
             indexStatusResponse[Keys::left_time] = indexStatus.getLeftTime();
             indexStatusResponse[Keys::meta] = indexStatus.metaInfo_;
         }
-        indexStatusResponse[Keys::document_count] = indexStatus.numDocs_;
+        //indexStatusResponse[Keys::document_count] = indexStatus.numDocs_;
         indexStatusResponse[Keys::last_modified] = indexStatus.lastModified();
         indexStatusResponse[Keys::counter] = indexStatus.counter();
     }

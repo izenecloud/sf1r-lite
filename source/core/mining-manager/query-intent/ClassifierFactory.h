@@ -13,14 +13,14 @@
 namespace sf1r
 {
 
-class ClassifierContext
-{
-};
-
 class ClassifierFactory
 {
 public:
-    Classifier* createClassifier(ClassifierContext& context);
+    ClassifierFactory()
+    {
+    }
+public:
+    Classifier* createClassifier(ClassifierContext* context);
 };
 
 }

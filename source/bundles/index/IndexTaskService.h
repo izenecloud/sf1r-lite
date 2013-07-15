@@ -47,10 +47,6 @@ public:
 
     bool isAutoRebuild();
 
-    uint32_t getDocNum();
-
-    uint32_t getKeyCount(const std::string& property_name);
-
     std::string getScdDir(bool rebuild) const;
     izenelib::util::UString::EncodingType getEncode() const;
 

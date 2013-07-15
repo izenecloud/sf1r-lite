@@ -133,9 +133,9 @@ std::string ProductPrice::ToString() const
     return ss.str();
 }
 
-izenelib::util::UString ProductPrice::ToUString() const
+Document::doc_prop_value_strtype ProductPrice::ToPropString() const
 {
-    return izenelib::util::UString(ToString(), izenelib::util::UString::UTF_8);
+    return str_to_propstr(ToString(), izenelib::util::UString::UTF_8);
 }
 
 bool ProductPrice::Valid() const

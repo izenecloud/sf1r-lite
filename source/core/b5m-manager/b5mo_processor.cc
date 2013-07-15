@@ -19,10 +19,10 @@
 
 using namespace sf1r;
 
-B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
+B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
     int mode, 
     RpcServerConnectionConfig* img_server_config)
-:odb_(odb), matcher_(matcher), bdb_(bdb), sorter_(NULL), mode_(mode), img_server_cfg_(img_server_config)
+:odb_(odb), matcher_(matcher), sorter_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 {
 }
 
@@ -64,20 +64,19 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     if(type==NOT_SCD) return;
 
     //format Price property
-    UString uprice;
+    Document::doc_prop_value_strtype uprice;
     if(doc.getProperty("Price", uprice))
     {
         ProductPrice pp;
-        pp.Parse(uprice);
-        doc.property("Price") = pp.ToUString();
+        pp.Parse(propstr_to_ustr(uprice));
+        doc.property("Price") = pp.ToPropString();
     }
 
     //set mobile tag
-    UString usource;
-    if(doc.getProperty("Source", usource))
+    Document::doc_prop_value_strtype usource;
+    if(doc.getString("Source", usource))
     {
-        std::string ssource;
-        usource.convertString(ssource, izenelib::util::UString::UTF_8);
+        std::string ssource = propstr_to_str(usource);
         if(mobile_source_.find(ssource)!=mobile_source_.end())
         {
             doc.property("mobile") = (int64_t)1;
@@ -87,13 +86,15 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     //set color tag
     if(img_server_cfg_)
     {
+        Document::doc_prop_value_strtype propvalue;
         std::string img_file;
-        doc.getString("Picture", img_file);
+        doc.getString("Picture", propvalue);
+        img_file = propstr_to_str(propvalue);
         if(!img_file.empty())
         {
             std::string color_str;
             ImageServerClient::GetImageColor(img_file, color_str);
-            doc.property("Color") = UString(color_str, UString::UTF_8);
+            doc.property("Color") = str_to_propstr(color_str);
         }
     }
 
@@ -109,7 +110,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         if(odb_->get(sdocid, spid)) 
         {
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid);
             type = UPDATE_SCD;
         }
         else
@@ -120,19 +121,14 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     }
     else if(type!=DELETE_SCD) //I or U
     {
-        UString ptitle;
-        UString category;
-        UString brand;
-        std::string sbrand;
-        std::string scategory;
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
-        doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
+        doc.eraseProperty(B5MHelper::GetBrandPropertyName());
+        doc.eraseProperty("Attribute");
+        Document::doc_prop_value_strtype category;
         doc.getProperty("Category", category);
-        category.convertString(scategory, UString::UTF_8);
-        UString title;
+        Document::doc_prop_value_strtype title;
         doc.getProperty("Title", title);
-        std::string stitle;
-        title.convertString(stitle, UString::UTF_8);
+        //std::string stitle = propstr_to_str(title);
         //brand.convertString(sbrand, UString::UTF_8);
         //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
         bool is_human_edit = false;
@@ -180,11 +176,11 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             {
                 if(category.empty())
                 {
-                    category = UString(product.scategory, UString::UTF_8);
+                    category = str_to_propstr(product.scategory);
                     doc.property("Category") = category;
                     if(!product.fcategory.empty())
                     {
-                        UString front(product.fcategory, UString::UTF_8);
+                        Document::doc_prop_value_strtype front(str_to_propstr(product.fcategory));
                         doc.property(tcp) = front;
                     }
                     //if(!category.empty())
@@ -207,35 +203,57 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
 
                 //}
                 //process attributes
-                
-                const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
-                const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
-                if(!attributes.empty()||!dattributes.empty())
+
+                //doc.eraseProperty("Attribute");
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
                 {
-                    if(!dattributes.empty())
+                    if(!product.display_attributes.empty())
                     {
-                        doc.property("Attribute") = ProductMatcher::AttributesText(dattributes);
+                        doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
                     }
-                    else
+                    if(!product.filter_attributes.empty())
                     {
-                        std::vector<ProductMatcher::Attribute> eattributes;
-                        UString attrib_ustr;
-                        doc.getProperty("Attribute", attrib_ustr);
-                        std::string attrib_str;
-                        attrib_ustr.convertString(attrib_str, UString::UTF_8);
-                        boost::algorithm::trim(attrib_str);
-                        if(!attrib_str.empty())
+                        doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
+                        doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
+                    }
+                }
+                else
+                {
+                    const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
+                    const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
+                    if(!attributes.empty()||!dattributes.empty())
+                    {
+                        if(!dattributes.empty())
                         {
-                            ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
                         }
-                        std::vector<ProductMatcher::Attribute> new_attributes(attributes);
-                        //ProductMatcher::MergeAttributes(new_attributes, dattributes);
-                        ProductMatcher::MergeAttributes(new_attributes, eattributes);
-                        doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                        else if(!attributes.empty())
+                        {
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                        }
+                        //else
+                        //{
+                            //std::vector<ProductMatcher::Attribute> eattributes;
+                            //UString attrib_ustr;
+                            //doc.getProperty("Attribute", attrib_ustr);
+                            //std::string attrib_str;
+                            //attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                            //boost::algorithm::trim(attrib_str);
+                            //if(!attrib_str.empty())
+                            //{
+                                //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                            //}
+                            //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
+                            ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
+                            //ProductMatcher::MergeAttributes(new_attributes, eattributes);
+                            //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                        //}
                     }
                 }
             }
-            match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
+            match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
         }
         else
         {
@@ -243,34 +261,34 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         }
         if(!product.stitle.empty() && !title.empty())
         {
-            doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
+            doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
         }
-        uint128_t pid = B5MHelper::StringToUint128(spid);
-        UString ebrand;
-        if(bdb_->get(pid, ebrand))
+        //uint128_t pid = B5MHelper::StringToUint128(spid);
+        //Document::doc_prop_value_strtype ebrand;
+        //if(bdb_->get(pid, ebrand))
+        //{
+            //brand = ustr_to_propstr(ebrand);
+        //}
+        //else
+        //{
+            //if(bdb_->get_source(brand, ebrand))
+            //{
+                //brand = ebrand;
+            //}
+            //else if(!product.sbrand.empty())
+            //{
+                ////TODO, remove?
+                //brand = str_to_propstr(product.sbrand);
+                ////std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
+            //}
+            //if(!brand.empty())
+            //{
+                //bdb_->set(pid, brand);
+            //}
+        //}
+        if(!product.sbrand.empty() && !title.empty())
         {
-            brand = ebrand;
-        }
-        else
-        {
-            if(bdb_->get_source(brand, ebrand))
-            {
-                brand = ebrand;
-            }
-            else if(!product.sbrand.empty())
-            {
-                //TODO, remove?
-                brand = UString(product.sbrand, UString::UTF_8);
-                //std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
-            }
-            if(!brand.empty())
-            {
-                bdb_->set(pid, brand);
-            }
-        }
-        if(!brand.empty() && !title.empty())
-        {
-            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+            doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
         }
         //brand.convertString(sbrand, UString::UTF_8);
         //std::cerr<<"[BBRAND]"<<sbrand<<std::endl;
@@ -279,7 +297,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             odb_->insert(sdocid, spid);
             cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
         }
-        doc.property("uuid") = UString(spid, UString::UTF_8);
+        doc.property("uuid") = str_to_propstr(spid);
     }
     else
     {
@@ -289,7 +307,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         if(spid.empty()) type=NOT_SCD;
         else
         {
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid);
         }
     }
     if(!changed_match_.empty())
@@ -305,8 +323,8 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             if(old_spid!=spid&&!old_spid.empty())
             {
                 ScdDocument old_doc;
-                old_doc.property("DOCID") = UString(sdocid, UString::UTF_8);
-                old_doc.property("uuid") = UString(old_spid, UString::UTF_8);
+                old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
+                old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
                 old_doc.type=DELETE_SCD;
                 sorter_->Append(old_doc, last_ts_);
             }
@@ -339,15 +357,15 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             //return false;
         //}
     //}
-    if(!bdb_->is_open())
-    {
-        LOG(INFO)<<"open bdb..."<<std::endl;
-        if(!bdb_->open())
-        {
-            LOG(ERROR)<<"bdb open fail"<<std::endl;
-            return false;
-        }
-    }
+    //if(!bdb_->is_open())
+    //{
+        //LOG(INFO)<<"open bdb..."<<std::endl;
+        //if(!bdb_->open())
+        //{
+            //LOG(ERROR)<<"bdb open fail"<<std::endl;
+            //return false;
+        //}
+    //}
     namespace bfs = boost::filesystem;
     ts_ = bfs::path(mdb_instance).filename().string();
     last_ts_="";
@@ -433,7 +451,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();
-    bdb_->flush();
+    //bdb_->flush();
     if(sorter_!=NULL)
     {
         sorter_->StageOne();

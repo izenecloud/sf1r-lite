@@ -888,7 +888,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
             resultList.erase(bigram_it, resultList.end());
         }
         // push splitter at the end of each sentence to avoid the opinion cross two different sentence.
-        resultList.push_back(std::make_pair(".", "."));
+        resultList.push_back(std::make_pair(UString(".", UString::UTF_8), UString(".", UString::UTF_8)));
     }
 
     int filter_counter = 2;

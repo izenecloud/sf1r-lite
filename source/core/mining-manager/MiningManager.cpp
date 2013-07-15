@@ -64,7 +64,7 @@
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <search-manager/RTypeStringPropTableBuilder.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <common/SearchCache.h>
 
 #include <idmlib/tdt/integrator.h>
@@ -136,7 +136,7 @@ MiningManager::MiningManager(
         const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<LAManager>& laManager,
-        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<InvertedIndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
         const boost::shared_ptr<SearchCache>& searchCache,
         const boost::shared_ptr<IDManager>& idManager,
@@ -527,10 +527,11 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-        
-        if (queryIntentManager_) delete queryIntentManager_;
-        queryIntentManager_ = new QueryIntentManager();
-        
+        if (mining_schema_.query_intent_enable)
+        {
+            if (queryIntentManager_) delete queryIntentManager_;
+            queryIntentManager_ = new QueryIntentManager(&(mining_schema_.query_intent_config), system_resource_path_, this);
+        }
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
@@ -564,7 +565,6 @@ bool MiningManager::open()
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
-                                                    index_manager_,
                                                     c_analyzer_);
             miningTaskBuilder_->addTask(summarizationManagerTask_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
@@ -871,8 +871,8 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                 {
                     if (tg_properties.find(property_it->first))
                     {
-                        const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
-                        tgInfo_->addDocument(docid, content);
+                        const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
+                        tgInfo_->addDocument(docid, propstr_to_ustr(content));
                     }
                     property_it++;
                 }
@@ -2224,20 +2224,6 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
 
-        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-        {
-            std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            cout << key << " " << i->second << endl;
-        }
-        cout<<"-----"<<endl;
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-        {
-            std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            cout << key << " " << i->second << endl;
-        }
-
         const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
         double rank_boundary = 1.55 - tokenNum * 0.1;
         rank_boundary = std::max(rank_boundary, 0.5);
@@ -2390,7 +2376,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         ProductMatcher::Product result_product;
         if (matcher->Process(doc, result_product))
         {
@@ -2430,7 +2416,7 @@ bool MiningManager::GetProductFrontendCategory(
     {
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
-        doc.property("Title") = query;
+        doc.property("Title") = ustr_to_propstr(query);
         std::vector<ProductMatcher::Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {

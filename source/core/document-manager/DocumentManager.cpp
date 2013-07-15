@@ -125,14 +125,17 @@ bool DocumentManager::insertDocument(const Document& document)
             continue;
         }
 
-        const izenelib::util::UString* stringValue =
-            get<izenelib::util::UString>(&it->second);
+        const Document::doc_prop_value_strtype* stringValue =
+            get<Document::doc_prop_value_strtype>(&it->second);
         if (stringValue)
         {
             if (propertyLengthDb_.size() <= *pid)
             {
-                propertyLengthDb_.resize(*pid + 1);
+                boost::unique_lock<boost::shared_mutex> lock(shared_mutex_);
+                if (propertyLengthDb_.size() <= *pid)
+                    propertyLengthDb_.resize(*pid + 1);
             }
+            boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
             propertyLengthDb_[*pid] += stringValue->length();
         }
     }
@@ -207,8 +210,9 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId) const
+bool DocumentManager::isDeleted(docid_t docId)
 {
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if (docId == 0 || docId > delfilter_.size())
     {
         return false;
@@ -222,8 +226,11 @@ bool DocumentManager::removeDocument(docid_t docId)
     if (docId < 1) return false;
     if (delfilter_.size() < docId)
     {
-        delfilter_.resize(docId);
+        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
+        if (delfilter_.size() < docId)
+            delfilter_.resize(docId);
     }
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
@@ -231,12 +238,13 @@ bool DocumentManager::removeDocument(docid_t docId)
     return true;
 }
 
-std::size_t DocumentManager::getTotalPropertyLength(const std::string& property) const
+std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 {
 
     boost::unordered_map< std::string, unsigned int>::const_iterator iter =
         propertyAliasMap_.find(property);
 
+    boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
     if (iter != propertyAliasMap_.end() && iter->second < propertyLengthDb_.size())
         return propertyLengthDb_[ iter->second ];
     else
@@ -273,7 +281,7 @@ bool DocumentManager::getPropertyValue(
         {
 //          return false;
         }
-        result = izenelib::util::UString(tempStr, encodingType_);
+        result = str_to_propstr(tempStr, encodingType_);
         return true;
     }
 
@@ -282,7 +290,7 @@ bool DocumentManager::getPropertyValue(
     {
         std::string tempStr;
         rtype_table_cit->second->getRTypeString(docId, tempStr);
-        result = izenelib::util::UString(tempStr, encodingType_);
+        result = str_to_propstr(tempStr, encodingType_);
         return true;
     }
 
@@ -315,14 +323,14 @@ void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& doc
     {
         std::string tempStr;
         if (it->second->getStringValue(docId, tempStr))
-            document.property(it->first) = izenelib::util::UString(tempStr, encodingType_);
+            document.property(it->first) = str_to_propstr(tempStr, encodingType_);
     }
     for(RTypeStringPropTableMap::const_iterator cit = rtype_string_proptable_.begin();
         cit != rtype_string_proptable_.end(); ++cit)
     {
         std::string tempStr;
         if(cit->second->getRTypeString(docId, tempStr))
-            document.property(cit->first) = izenelib::util::UString(tempStr, encodingType_);
+            document.property(cit->first) = str_to_propstr(tempStr, encodingType_);
     }
 }
 
@@ -367,14 +375,16 @@ docid_t DocumentManager::getMaxDocId() const
     return propertyValueTable_->getMaxDocId();
 }
 
-uint32_t DocumentManager::getNumDocs() const
+uint32_t DocumentManager::getNumDocs()
 {
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     return getMaxDocId() - delfilter_.count();
 }
 
 bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
     docid_list.clear();
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     DelFilterType::size_type find = delfilter_.find_first();
     docid_list.reserve(delfilter_.count());
     while (find!=DelFilterType::npos)
@@ -388,7 +398,7 @@ bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 
 bool DocumentManager::loadDelFilter_()
 {
-    boost::mutex::scoped_lock lock(delfilter_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
 
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data;
@@ -403,7 +413,7 @@ bool DocumentManager::loadDelFilter_()
 
 bool DocumentManager::saveDelFilter_()
 {
-    boost::mutex::scoped_lock lock(delfilter_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
 
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
@@ -519,29 +529,33 @@ bool DocumentManager::getRawTextOfDocuments(
         const bool summaryOn, const unsigned int summaryNum,
         const unsigned int option,
         const std::vector<izenelib::util::UString>& queryTerms,
-        std::vector<izenelib::util::UString>& outSnippetList,
-        std::vector<izenelib::util::UString>& outRawSummaryList,
-        std::vector<izenelib::util::UString>& outFullTextList)
+        std::vector<Document::doc_prop_value_strtype>& outSnippetList,
+        std::vector<Document::doc_prop_value_strtype>& outRawSummaryList,
+        std::vector<Document::doc_prop_value_strtype>& outFullTextList)
 {
     try
     {
         unsigned int docListSize = docIdList.size();
-        std::vector<izenelib::util::UString> snippetList(docListSize);
-        std::vector<izenelib::util::UString> rawSummaryList(docListSize);
-        std::vector<izenelib::util::UString> fullTextList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> snippetList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> rawSummaryList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> fullTextList(docListSize);
 
-        izenelib::util::UString rawText; // raw text
-        izenelib::util::UString result; // output variable to store return value
+        Document::doc_prop_value_strtype rawText; // raw text
+        izenelib::util::UString rawUText; // raw text
+        Document::doc_prop_value_strtype result; // output variable to store return value
+        izenelib::util::UString resultU; 
 
         bool ret = false;
         for (unsigned int listId = 0; listId != docListSize; ++listId)
         {
             docid_t docId = docIdList[listId];
             result.clear();
+            resultU.clear();
 
             if (!getPropertyValue(docId, propertyName, rawText))
                 continue;
 
+            rawUText = propstr_to_ustr(rawText, encodingType_);
             fullTextList[listId] = rawText;
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
@@ -552,9 +566,10 @@ bool DocumentManager::getRawTextOfDocuments(
             ret = true;
 
             maxSnippetLength_ = getDisplayLength_(propertyName);
-            processOptionForRawText(option, queryTerms, rawText,
-                                    sentenceOffsets, result);
+            processOptionForRawText(option, queryTerms, rawUText,
+                                    sentenceOffsets, resultU);
 
+            result = ustr_to_propstr(resultU);
             if (result.size() > 0)
                 snippetList[listId] = result;
             else
@@ -565,10 +580,10 @@ bool DocumentManager::getRawTextOfDocuments(
             if (summaryOn)
             {
                 izenelib::util::UString summary;
-                getSummary(rawText, sentenceOffsets, numSentences,
+                getSummary(rawUText, sentenceOffsets, numSentences,
                            option, queryTerms, summary);
 
-                rawSummaryList[listId] = summary;
+                rawSummaryList[listId] = ustr_to_propstr(summary);
             }
         }
         outSnippetList.swap(snippetList);
@@ -590,8 +605,8 @@ bool DocumentManager::getRawTextOfOneDocument(
         const string& propertyName,
         const unsigned int option,
         const std::vector<izenelib::util::UString>& queryTerms,
-        izenelib::util::UString& outSnippet,
-        izenelib::util::UString& rawText)
+        Document::doc_prop_value_strtype& outSnippet,
+        Document::doc_prop_value_strtype& rawText)
 {
     rawText.clear();
     NumericPropertyTableMap::const_iterator it = numericPropertyTables_.find(propertyName);
@@ -603,19 +618,19 @@ bool DocumentManager::getRawTextOfOneDocument(
         {
 //          return false;
         }
-        rawText = izenelib::util::UString(tempStr, encodingType_);
+        rawText = str_to_propstr(tempStr, encodingType_);
     }
     else if( rtype_table_cit != rtype_string_proptable_.end() )
     {
         std::string tempStr;
         rtype_table_cit->second->getRTypeString(docId, tempStr);
-        rawText = izenelib::util::UString(tempStr, encodingType_);
+        rawText = str_to_propstr(tempStr, encodingType_);
     }
     else
     {
-        izenelib::util::UString propValue;
+        Document::doc_prop_value_strtype propValue;
         if(document.getProperty(propertyName,propValue))
-            std::swap(rawText, propValue);
+            rawText = propValue;
     }
 
     if (rawText.empty())
@@ -636,9 +651,11 @@ bool DocumentManager::getRawTextOfOneDocument(
     }
 
     maxSnippetLength_ = getDisplayLength_(propertyName);
-    processOptionForRawText(option, queryTerms, rawText, sentenceOffsets,
-                            outSnippet);
+    izenelib::util::UString tempustr;
+    processOptionForRawText(option, queryTerms, propstr_to_ustr(rawText), sentenceOffsets,
+                            tempustr);
 
+    outSnippet = ustr_to_propstr(tempustr);
     //put raw text to outSnippet if it is empty
     if (outSnippet.size() <= 0)
         outSnippet = rawText;

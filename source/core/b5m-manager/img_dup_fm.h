@@ -132,7 +132,7 @@ namespace sf1r {
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -140,17 +140,16 @@ namespace sf1r {
                     const std::string& property_name = p->first;
                     doc[property_name] = p->second;
                 }
-                std::string docID;
-                doc["DOCID"].convertString(docID, izenelib::util::UString::UTF_8);
+                std::string docID = propstr_to_str(doc["DOCID"]);
                 uint32_t current_docid = DocidToUint(docID);
                 uint32_t match_docid;
                 if( docid_docid_->get(current_docid, match_docid))
                 {
                     //deleted
-                    UString gid;
-                    gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
+                    std::string gid;
+                    gid.assign(UintToDocid(match_docid));
 
-                    scddoc.push_back(std::pair<std::string, UString>("GID", gid));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", str_to_propstr(gid)));
                     std::string guangURL;
                     if(!docidImgDbTable->get_item(match_docid, guangURL))
                     {
@@ -158,9 +157,7 @@ namespace sf1r {
                     }
                     else
                     {
-                        UString gURL;
-                        gURL.assign(guangURL, izenelib::util::UString::UTF_8);
-                        scddoc.push_back(std::pair<std::string, UString>("guangURL", gURL));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", str_to_propstr(guangURL)));
                     }
                     writer0.Append(scddoc);
                 }
@@ -168,24 +165,20 @@ namespace sf1r {
                 {
                     //saved
                     rest++;
-                    scddoc.push_back(std::pair<std::string, UString>("GID", doc["DOCID"]));
-                    scddoc.push_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GID", doc["DOCID"]));
+                    scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("guangURL", doc["Img"]));
                     writer0.Append(scddoc);
 
                     uint32_t count;
                     if( !gid_memcount_->get(current_docid, count))
                     {
-                        UString gmemcount;
-                        gmemcount.assign("1", izenelib::util::UString::UTF_8);
-                        scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr("1")));
                         writer1.Append(scddoc);
                     }
                     else
                     {
-                        UString gmemcount;
                         std::string count_str = boost::lexical_cast<std::string> (count+1);
-                        gmemcount.assign(count_str, izenelib::util::UString::UTF_8);
-                        scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
+                        scddoc.push_back(std::pair<std::string, Document::doc_prop_value_strtype>("GMemCount", str_to_propstr(count_str)));
                         writer1.Append(scddoc);
                     }
                 }

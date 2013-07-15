@@ -62,8 +62,7 @@ bool RemoteItemManagerBase::getItemStrIds_(ItemContainer& itemContainer)
         if (! itemIdGenerator_->itemIdToStrId(item.getId(), strItemId))
             return false;
 
-        izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
-        item.property(DOCID) = ustr;
+        item.property(DOCID) = str_to_propstr(strItemId);
     }
 
     return true;
@@ -120,7 +119,7 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
     ItemContainer& itemContainer
 ) const
 {
-    typedef std::vector<izenelib::util::UString> DocValues;
+    typedef std::vector<Document::doc_prop_value_strtype> DocValues;
     typedef std::vector<DocValues> PropDocTable;
 
     const PropDocTable& propDocTable = response.fullTextOfDocumentInPage_;
@@ -149,7 +148,7 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
 
         for (std::size_t docValueId = 0; docValueId < itemNum; ++docValueId)
         {
-            const izenelib::util::UString& propValue = docValues[docValueId];
+            const Document::doc_prop_value_strtype& propValue = docValues[docValueId];
 
             if (! propValue.empty())
             {

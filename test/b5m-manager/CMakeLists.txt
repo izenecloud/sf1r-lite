@@ -102,6 +102,13 @@ TARGET_LINK_LIBRARIES(keywords_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${lib
 SET_TARGET_PROPERTIES(keywords_test PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
 )
+ADD_EXECUTABLE(keyword_found_test
+keyword_found_test.cc
+)
+TARGET_LINK_LIBRARIES(keyword_found_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(keyword_found_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
 ADD_EXECUTABLE(t_commentdb
 Runner.cpp
 t_commentdb.cc

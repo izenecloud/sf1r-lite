@@ -7,7 +7,7 @@ using namespace sf1r;
 SearchFactory::SearchFactory(
     const IndexBundleConfiguration& config,
     const boost::shared_ptr<DocumentManager>& documentManager,
-    const boost::shared_ptr<IndexManager>& indexManager,
+    const boost::shared_ptr<InvertedIndexManager>& indexManager,
     const boost::shared_ptr<RankingManager>& rankingManager)
     : config_(config)
     , documentManager_(documentManager)

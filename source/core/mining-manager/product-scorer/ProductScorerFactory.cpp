@@ -173,9 +173,10 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
     std::string query(scoreParam.query_);
-    ilplib::knlp::DocNaiveBayes::makeitclean(query);
 
     KNlpWrapper::string_t queryKStr(query);
+    ilplib::knlp::DocNaiveBayes::makeitclean(queryKStr);
+
     KNlpWrapper::token_score_list_t tokenScores;
     knlpWrapper->fmmTokenize(queryKStr, tokenScores);
 

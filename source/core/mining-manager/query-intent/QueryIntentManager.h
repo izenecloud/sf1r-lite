@@ -13,20 +13,37 @@
 #include "ClassifierFactory.h"
 
 #include <util/driver/Request.h>
+#include <configuration-manager/QueryIntentConfig.h>
+#include <configuration-manager/CollectionPath.h>
 
+#include <sys/time.h>
+//#define QUERY_INTENT_TIMER
 namespace sf1r
 {
 
 class QueryIntentManager
 {
 public:
-    QueryIntentManager();
+    QueryIntentManager(QueryIntentConfig* config, std::string& resource, MiningManager* miningManager);
     ~QueryIntentManager();
 public:
-    void queryIntent(izenelib::driver::Request& request);   
+    void queryIntent(izenelib::driver::Request& request,izenelib::driver::Response& response);
+    void reload();
+private:
+    void init_();
+    void destroy_();
 private:
     QueryIntentFactory* intentFactory_;
     ClassifierFactory* classifierFactory_;
+    QueryIntent* intent_;
+    
+    QueryIntentConfig* config_;
+    std::string lexiconDirectory_;
+    MiningManager* miningManager_;
+#ifdef QUERY_INTENT_TIMER    
+    unsigned int nQuery_;
+    unsigned long int nanoseconds_;
+#endif
 };
 
 }

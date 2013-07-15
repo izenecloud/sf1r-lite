@@ -76,12 +76,12 @@ void CategoryClassifyMiningTask::classifyByTitle_(
     std::string& title,
     std::string& classifyCategory)
 {
-    ilplib::knlp::DocNaiveBayes::makeitclean(title);
-
     try
     {
         KNlpWrapper* knlpWrapper = KNlpWrapper::get();
         KNlpWrapper::string_t titleKStr(title);
+        ilplib::knlp::DocNaiveBayes::makeitclean(titleKStr);
+
         KNlpWrapper::token_score_list_t tokenScores;
         knlpWrapper->fmmTokenize(titleKStr, tokenScores);
 

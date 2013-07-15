@@ -684,7 +684,7 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
             }
             else
             {
-                const std::string& filter_str = filter.values_[0].get<std::string>();
+                std::string filter_str = propstr_to_str(filter.values_[0].getPropertyStrValue());
                 LOG(INFO) << "filter range by : " << filter_str;
 
                 switch (filter.operation_)
@@ -713,7 +713,7 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                     {
                         if (filter.values_.size() < 2) return false;
 
-                        const std::string& filter_str1 = filter.values_[1].get<std::string>();
+                        std::string filter_str1 = propstr_to_str(filter.values_[1].getPropertyStrValue());
                         if (filter_str < filter_str1)
                         {
                             filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);

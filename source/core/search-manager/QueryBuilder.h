@@ -15,7 +15,7 @@
 #include "WANDDocumentIterator.h"
 #include "VirtualPropertyScorer.h"
 #include "VirtualPropertyTermDocumentIterator.h"
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <document-manager/DocumentManager.h>
 
 #include <boost/shared_ptr.hpp>
@@ -42,7 +42,7 @@ public:
 
     QueryBuilder(
         const boost::shared_ptr<DocumentManager> documentManager,
-        const boost::shared_ptr<IndexManager> indexManager,
+        const boost::shared_ptr<InvertedIndexManager> indexManager,
         const schema_map& schemaMap,
         size_t filterCacheNum
     );
@@ -83,7 +83,7 @@ public:
     */
     void prepare_filter(
         const std::vector<QueryFiltering::FilteringType>& filtingList,
-        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap
     );
 
     void reset_cache();
@@ -196,7 +196,7 @@ private:
 private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
 
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
+    boost::shared_ptr<InvertedIndexManager> indexManagerPtr_;
 
     IndexReader* pIndexReader_;
 

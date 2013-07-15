@@ -823,7 +823,7 @@ int do_main(int ac, char** av)
                     {
                         LOG(INFO)<<"Find Documents "<<n<<std::endl;
                     }
-                    UString title;
+                    Document::doc_prop_value_strtype title;
                     SCDDoc& scddoc = *(*doc_iter);
                     SCDDoc::iterator p = scddoc.begin();
                     for(; p!=scddoc.end(); ++p)
@@ -841,9 +841,8 @@ int do_main(int ac, char** av)
                     Hits left_hits;
                     typedef std::list<UString> Left;
                     Left left;
-                    matcher.GetSearchKeywords(title, hits, left_hits, left);
-                    std::string stitle;
-                    title.convertString(stitle, UString::UTF_8);
+                    matcher.GetSearchKeywords(propstr_to_ustr(title), hits, left_hits, left);
+                    std::string stitle = propstr_to_str(title);
                     std::cout<<"[TITLE]"<<stitle<<std::endl;
                     for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
                     {
@@ -904,7 +903,7 @@ int do_main(int ac, char** av)
                 getline(std::cin, line);
                 boost::algorithm::trim(line);
                 Document doc;
-                doc.property("Title") = UString(line, UString::UTF_8);
+                doc.property("Title") = str_to_propstr(line, UString::UTF_8);
                 uint32_t limit = 3;
                 std::vector<ProductMatcher::Product> products;
                 matcher.Process(doc, limit, products);
@@ -1046,7 +1045,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, imgserver_config.get());
+        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))
@@ -1092,7 +1091,7 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mc-generate"))
     {
-        if( !odb || !cdb || scd_path.empty() || mdb_instance.empty())
+        if( scd_path.empty() || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
@@ -1108,9 +1107,9 @@ int do_main(int ac, char** av)
             matcher->SetCmaPath(cma_path);
         }
 
-        boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
-        B5mcScdGenerator generator(cdb.get(), odbr.get(), bdb.get(), matcher.get(), mode);
-        if(!generator.Generate(scd_path, mdb_instance))
+        //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
+        B5mcScdGenerator generator(mode, matcher.get());
+        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
         }

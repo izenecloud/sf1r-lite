@@ -251,10 +251,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -262,10 +264,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -273,10 +277,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -284,10 +290,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos].first = data_[pos].second = static_cast<T>(value);
         dirty_ = true;
     }
@@ -295,10 +303,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         if (detail::split_numeric(value, data_[pos]))
         {
             dirty_ = true;
@@ -311,10 +321,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = value;
         dirty_ = true;
     }

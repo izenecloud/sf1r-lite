@@ -229,16 +229,12 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
-    izenelib::util::UString taxonomyLabel(
-        actionItem_.env_.taxonomyLabel_,
-        izenelib::util::UString::UTF_8
-    );
-    typedef std::vector<izenelib::util::UString>::const_iterator iterator;
+    typedef std::vector<PropertyValue::PropertyValueStrType>::const_iterator iterator;
     std::size_t taxonomyIndex =
         std::find(
             miaResult.taxonomyString_.begin(),
             miaResult.taxonomyString_.end(),
-            taxonomyLabel
+            str_to_propstr(actionItem_.env_.taxonomyLabel_)
         ) - miaResult.taxonomyString_.begin();
 
     std::size_t totalCount = 0;
@@ -356,7 +352,7 @@ bool DocumentsSearchHandler::parse()
 {
     QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager(); 
     if (queryIntentManager)
-        queryIntentManager->queryIntent(request_);
+        queryIntentManager->queryIntent(request_, response_);
 
     std::vector<Parser*> parsers;
     std::vector<const Value*> values;
@@ -741,7 +737,7 @@ bool DocumentsSearchHandler::validateSearchResult(
 }
 
 bool DocumentsSearchHandler::validateTextList(
-    const std::vector<std::vector<izenelib::util::UString> >& textList,
+    const std::vector<std::vector<PropertyValue::PropertyValueStrType> >& textList,
     std::size_t row,
     std::size_t column
 )
@@ -754,7 +750,7 @@ bool DocumentsSearchHandler::validateTextList(
             return false;
         }
 
-        typedef std::vector<std::vector<izenelib::util::UString> > list_type;
+        typedef std::vector<std::vector<PropertyValue::PropertyValueStrType> > list_type;
         typedef list_type::const_iterator iterator;
 
         for (iterator it = textList.begin(); it != textList.end(); ++it)
@@ -930,8 +926,11 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::INCLUDE;
         filter.property_ = "ACL_ALLOW";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
-        PropertyValue value(std::string("@@ALL@@"));
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
+        PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
         izenelib::util::swapBack(actionItem_.filteringList_, filter);
@@ -944,7 +943,10 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::EXCLUDE;
         filter.property_ = "ACL_DENY";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
 
         izenelib::util::swapBack(actionItem_.filteringList_, filter);
     }

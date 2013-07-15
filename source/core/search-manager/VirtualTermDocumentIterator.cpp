@@ -1,7 +1,5 @@
 #include "VirtualTermDocumentIterator.h"
 #include "TermDocumentIterator.h"
-#include <index-manager/IndexManager.h>
-
 #include <ir/index_manager/index/TermPositions.h>
 #include <ir/index_manager/utility/BitVector.h>
 
@@ -13,32 +11,6 @@ using namespace izenelib::ir::indexmanager;
 
 namespace sf1r
 {
-
-VirtualTermDocumentIterator::VirtualTermDocumentIterator(
-        termid_t termid,
-        std::string rawTerm,
-        collectionid_t colID,
-        izenelib::ir::indexmanager::IndexReader* pIndexReader,
-        boost::shared_ptr<IndexManager> indexManagerPtr,
-        const std::vector<std::string>& virtualPropreties,
-        std::vector<unsigned int>& propertyIdList,
-        std::vector<sf1r::PropertyDataType>& dataTypeList,
-        unsigned int termIndex,
-        bool readPositions
-    ):termId_(termid)
-    , rawTerm_(rawTerm)
-    , colID_(colID)
-    , pIndexReader_(pIndexReader)
-    , pTermReader_(0)
-    , indexManagerPtr_(indexManagerPtr)
-    , subProperties_(virtualPropreties)
-    , propertyIdList_(propertyIdList)
-    , dataTypeList_(dataTypeList)
-    , termIndex_(termIndex)
-    , OrDocIterator_(NULL)
-{
-    readPositions_ = false;
-}
 
 VirtualTermDocumentIterator::VirtualTermDocumentIterator(
         termid_t termid,

@@ -21,7 +21,7 @@ namespace sf1r
 {
 
 class DocumentManager;
-class IndexManager;
+//class IndexManager;
 class IndexBundleConfiguration;
 class PropSharedLockSet;
 class NumericPropertyTableBuilder;

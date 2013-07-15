@@ -220,7 +220,7 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             if (productTaskService != NULL)
             {
                 ProductBundleConfiguration* bundleConfig = productTaskService->getbundleConfig();
-                if (bundleConfig != NULL)
+                if (bundleConfig != NULL && bundleConfig->mode_ == "a")
                 {
                     productID = bundleConfig->productId_;
                 }
@@ -229,7 +229,7 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
 
         if (!productID.empty())
         {
-            std::cout << "productID: " << productID << std::endl;
+            LOG(INFO) << "productID: " << productID << std::endl;
             doAddCommentSCD = true;
         }
         
@@ -267,14 +267,13 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
                             {
                                 std::string fileName = itr->path().filename().string();
                                 bfs::path from_file(local_total_comment_path + fileName);
-                                cout<<"Comment SCD: " << from_file.string();
+                                LOG(INFO) << "Comment SCD: " << from_file.string();
                                 scd_list.push_back(from_file.string());
                             }
                         }
                     }
                     catch(std::exception& ex)
                     {
-
                         LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src  <<", exception: " << ex.what();
                     }
                 }

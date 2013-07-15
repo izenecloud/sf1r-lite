@@ -412,9 +412,9 @@ void FacetedController::manmade()
         if (izenelib::driver::nullValue( manmades() )) break;
         faceted::ManmadeDocCategoryItem item;
         item.docid = asUint(manmades()[Keys::_id]);
-        item.str_docid = asString(manmades()[Keys::docid]);
+        item.str_docid = izenelib::util::UString(asString(manmades()[Keys::docid]), izenelib::util::UString::UTF_8);
         item.cid = asUint(manmades()[Keys::cid]);
-        item.cname = asString(manmades()[Keys::cname]);
+        item.cname = izenelib::util::UString(asString(manmades()[Keys::cname]), izenelib::util::UString::UTF_8);
         items.push_back(item);
     }
     bool requestSent = miningSearchService_->DefineDocCategory(items);
@@ -854,11 +854,7 @@ void FacetedController::renderDoc_(
         if (findIt == endIt)
             continue;
 
-        const izenelib::util::UString& ustr =
-            findIt->second.get<izenelib::util::UString>();
-        ustr.convertString(utf8, ENCODING_TYPE);
-
-        docValue[propName] = utf8;
+        docValue[propName] = propstr_to_str(findIt->second.get<PropertyValue::PropertyValueStrType>());
     }
 }
 

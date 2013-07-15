@@ -94,7 +94,7 @@ class TaxonomyInfo;
 class Document;
 class DocumentManager;
 class LAManager;
-class IndexManager;
+class InvertedIndexManager;
 class SearchManager;
 class SearchCache;
 class MultiDocSummarizationSubManager;
@@ -159,7 +159,7 @@ public:
                   const CollectionPath& collectionPath,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<LAManager>& laManager,
-                  const boost::shared_ptr<IndexManager>& index_manager,
+                  const boost::shared_ptr<InvertedIndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
                   const boost::shared_ptr<SearchCache>& searchCache,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
@@ -630,7 +630,7 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<LAManager> laManager_;
-    boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<InvertedIndexManager> index_manager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<SearchCache> searchCache_;
 

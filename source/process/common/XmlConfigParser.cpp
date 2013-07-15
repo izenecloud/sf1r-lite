@@ -2127,11 +2127,80 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         std::sort(mining_schema.suffixmatch_schema.date_filter_properties.begin(), mining_schema.suffixmatch_schema.date_filter_properties.end());
         std::sort(mining_schema.suffixmatch_schema.num_filter_properties.begin(), mining_schema.suffixmatch_schema.num_filter_properties.end());
     }
+    
     task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
     if (task_node)
     {
         mining_schema.product_matcher_enable = true;
         getAttribute(task_node, "mode", mining_schema.product_categorizer_mode, false);
+    }
+    
+    task_node = getUniqChildElement(mining_schema_node, "QueryIntent", false);
+    mining_schema.query_intent_enable = false;
+    if (task_node)
+    {
+        mining_schema.query_intent_enable = true;
+        Iterator<Element> it("Property");
+        for (it = it.begin(task_node); it != it.end(); ++it)
+        {
+            const ticpp::Element* cate_node = it.Get();
+            std::string prop_name, type, op;
+            int operands;
+            getAttribute(cate_node, "name", prop_name);
+            getAttribute(cate_node, "type", type);
+            getAttribute(cate_node, "operator", op);
+            getAttribute_IntType(cate_node, "operands", operands);
+    
+            IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+            PropertyConfig p;
+            p.setName(prop_name);
+            IndexBundleSchema::iterator sp = indexSchema.find(p);
+            if (sp == indexSchema.end())
+            {
+                throw XmlConfigParserException("Property ["+prop_name+"] in <Query_intent> is not define in IndexBundle.");
+            }
+            if (!sp->getIsFilter())
+            {
+                throw XmlConfigParserException("Property ["+prop_name+"] in <Query_intent> is not filter type.");
+            }
+
+            if (mining_schema.suffixmatch_schema.suffix_match_enable)
+            {
+                std::vector<std::string>::iterator it = mining_schema.suffixmatch_schema.group_filter_properties.begin();
+                for(; it != mining_schema.suffixmatch_schema.group_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.attr_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.attr_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.str_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.str_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.date_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.date_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                std::vector<NumericFilterConfig>::iterator numIt = mining_schema.suffixmatch_schema.num_filter_properties.begin();
+                for (; numIt != mining_schema.suffixmatch_schema.num_filter_properties.end(); numIt++)
+                {
+                    if (numIt->property == prop_name)
+                        goto NEXT;
+                }
+                LOG(WARNING)<<"Property ["<<prop_name<<"] in <Query_intent> is not filter type in <SuffixMatch>.";
+            }
+NEXT:
+            mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op, operands);
+        }
     }
 }
 

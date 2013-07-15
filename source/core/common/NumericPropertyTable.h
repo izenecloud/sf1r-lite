@@ -236,10 +236,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -247,10 +249,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -258,21 +262,25 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
-	data_[pos] = static_cast<T>(value);
+        ScopedReadBoolLock lock(mutex_, true);
+        data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setDoubleValue(std::size_t pos, const double& value)
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -280,10 +288,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         try
         {
             data_[pos] = boost::lexical_cast<T>(value);
@@ -300,10 +310,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = value;
         dirty_ = true;
     }
@@ -414,8 +426,9 @@ inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const 
 {
     if (pos >= data_.size())
     {
-        ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-        data_.resize(pos + 1, invalidValue_);
+        ScopedWriteBoolLock lock(mutex_, true);
+        if (pos >= data_.size())
+            data_.resize(pos + 1, invalidValue_);
     }
 
     try

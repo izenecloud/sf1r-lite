@@ -102,10 +102,10 @@ bool AttributeProcessor::BuildAttributeId_()
                 LOG(INFO)<<"Find O Documents "<<n<<std::endl;
             }
             Document doc;
-            izenelib::util::UString oid;
-            izenelib::util::UString title;
-            izenelib::util::UString category;
-            izenelib::util::UString attrib_ustr;
+            Document::doc_prop_value_strtype oid;
+            Document::doc_prop_value_strtype title;
+            Document::doc_prop_value_strtype category;
+            Document::doc_prop_value_strtype attrib_ustr;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)
@@ -134,13 +134,11 @@ bool AttributeProcessor::BuildAttributeId_()
                 continue;
             }
             std::string aid_str;
-            std::string scategory;
-            category.convertString(scategory, izenelib::util::UString::UTF_8);
-            std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
+            std::string scategory = propstr_to_str(category);
+            std::string stitle = propstr_to_str(title);
             //logger_<<"[BPD][Title]"<<stitle<<std::endl;
             std::vector<AttrPair> attrib_list;
-            split_attr_pair(attrib_ustr, attrib_list);
+            split_attr_pair(propstr_to_ustr(attrib_ustr), attrib_list);
             for(std::size_t i=0;i<attrib_list.size();i++)
             {
                 const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
@@ -161,9 +159,9 @@ bool AttributeProcessor::BuildAttributeId_()
                 ////LOG(INFO)<<"san after "<<san<<std::endl;
                 //attrib_name = UString(san, UString::UTF_8);
                 if(attrib_value.length()==0 || attrib_value.length()>30) continue;
-                std::string name_rep = GetAttribRep_(category, attrib_name);
-                uint32_t name_id = GetNameId_(category, attrib_name);
-                uint32_t aid = GetAid_(category, attrib_name, attrib_value);
+                std::string name_rep = GetAttribRep_(propstr_to_ustr(category), attrib_name);
+                uint32_t name_id = GetNameId_(propstr_to_ustr(category), attrib_name);
+                uint32_t aid = GetAid_(propstr_to_ustr(category), attrib_name, attrib_value);
                 if(!aid_str.empty())
                 {
                     aid_str += ",";
@@ -171,7 +169,7 @@ bool AttributeProcessor::BuildAttributeId_()
                 std::string sss = boost::lexical_cast<std::string>(name_id)+":"+boost::lexical_cast<std::string>(aid);
                 aid_str += sss;
             }
-            doc.property("AID") = UString(aid_str, UString::UTF_8);
+            doc.property("AID") = str_to_propstr(aid_str);
             writer.Append(doc);
         }
     }

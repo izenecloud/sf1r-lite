@@ -1,6 +1,6 @@
 #include "CustomRankDocumentIterator.h"
 #include "FilterDocumentIterator.h"
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <algorithm> // sort
 
 namespace
@@ -10,8 +10,8 @@ using namespace sf1r;
 
 FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docIdList)
 {
-    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmap(
-        new IndexManager::FilterBitmapT);
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap(
+        new InvertedIndexManager::FilterBitmapT);
 
     std::sort(docIdList.begin(), docIdList.end());
 
@@ -24,8 +24,8 @@ FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docI
         filterBitmap->set(*it);
     }
 
-    IndexManager::FilterTermDocFreqsT* filterTermDocFreqs =
-        new IndexManager::FilterTermDocFreqsT(filterBitmap);
+    InvertedIndexManager::FilterTermDocFreqsT* filterTermDocFreqs =
+        new InvertedIndexManager::FilterTermDocFreqsT(filterBitmap);
 
     return new FilterDocumentIterator(filterTermDocFreqs);
 }

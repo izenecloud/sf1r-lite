@@ -6,7 +6,7 @@ namespace po = boost::program_options;
 int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<std::string>& tags)
 {
     Document doc;
-    doc.property("Title") = UString(text, UString::UTF_8);
+    doc.property("Title") = str_to_propstr(text, UString::UTF_8);
     ProductMatcher::Product p;
     pm->Process(doc, p);
     if(p.scategory.empty()) return -1;

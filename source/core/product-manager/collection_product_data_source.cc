@@ -1,7 +1,7 @@
 #include "collection_product_data_source.h"
 
 #include <document-manager/DocumentManager.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <common/Utilities.h>
 #include <common/NumericRangePropertyTable.h>
@@ -14,7 +14,7 @@ using namespace izenelib::ir::idmanager;
 
 CollectionProductDataSource::CollectionProductDataSource(
         const boost::shared_ptr<DocumentManager>& document_manager,
-        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<InvertedIndexManager>& index_manager,
         const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
         const boost::shared_ptr<SearchManager>& search_manager,
         const PMConfig& config,
@@ -47,7 +47,7 @@ void CollectionProductDataSource::GetRTypePropertiesForDocument(uint32_t docid, 
     document_manager_->getRTypePropertiesForDocument(docid, doc);
 }
 
-void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
+void CollectionProductDataSource::GetDocIdList(const Document::doc_prop_value_strtype& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
 {
     PropertyType value(uuid);
     index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
@@ -55,7 +55,7 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
 
 }
 
-bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
+bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const PropertyValue::PropertyValueStrType& uuid)
 {
     if (docid_list.empty()) return false;
     if (uuid.empty()) return false;
@@ -80,7 +80,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
             return false;
         }
     }
-    std::vector<izenelib::util::UString> uuid_list(doc_list.size());
+    std::vector<PropertyValue::PropertyValueStrType> uuid_list(doc_list.size());
     for (uint32_t i=0;i<doc_list.size();i++)
     {
         PMDocumentType::property_const_iterator it = doc_list[i].findProperty(config_.uuid_property_name);
@@ -88,7 +88,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
         {
             return false;
         }
-        uuid_list[i] = it->second.get<izenelib::util::UString>();
+        uuid_list[i] = it->second.getPropertyStrValue();
     }
 
     //update DM first
@@ -130,7 +130,8 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
     return true;
 }
 
-bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid)
+bool CollectionProductDataSource::SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc,
+    const Document::doc_prop_value_strtype& uuid)
 {
     PropertyConfig property_config;
     property_config.propertyName_ = config_.uuid_property_name;
@@ -188,34 +189,32 @@ bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
     {
         return false;
     }
-    izenelib::util::UString uuid;
+    PropertyValue::PropertyValueStrType uuid;
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
     if(it == doc.propertyEnd())
     {
         return false;
     }
-    uuid = it->second.get<izenelib::util::UString>();
-    izenelib::util::UString olduuid;
+    uuid = it->second.getPropertyStrValue();
+    Document::doc_prop_value_strtype olduuid;
     doc.getProperty(config_.olduuid_property_name, olduuid);
-    if(olduuid.find(uuid) != UString::npos)
+    if(olduuid.find(uuid) != Document::doc_prop_value_strtype::npos)
     {
         // already in history
         std::cout << "warning: current uuid already in history while adding to history" << endl;
         return true;
     }
-    std::string s_olduuid;
-    olduuid.convertString(s_olduuid, UString::UTF_8);
-    std::string s_uuid;
-    uuid.convertString(s_uuid, UString::UTF_8);
+    std::string s_olduuid = propstr_to_str(olduuid);
+    std::string s_uuid = propstr_to_str(uuid);
 
-    izenelib::util::UString new_olduuid;
+    PropertyValue::PropertyValueStrType new_olduuid;
     if(olduuid.empty())
     {
         new_olduuid = uuid;
     }
     else
     {
-        new_olduuid = UString(s_olduuid + "," + s_uuid, UString::UTF_8);
+        new_olduuid = PropertyValue::PropertyValueStrType(str_to_propstr(s_olduuid + "," + s_uuid));
     }
 
     //update DM first

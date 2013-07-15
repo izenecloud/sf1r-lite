@@ -78,7 +78,7 @@ bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
     Document::property_const_iterator it = doc.findProperty(propName);
     if (it != doc.propertyEnd())
     {
-        const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+        izenelib::util::UString propValue(propstr_to_ustr(it->second.get<PropertyValue::PropertyValueStrType>()));
         std::vector<AttrPair> attrPairs;
         split_attr_pair(propValue, attrPairs);
 

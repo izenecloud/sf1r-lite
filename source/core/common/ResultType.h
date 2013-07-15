@@ -15,6 +15,7 @@
 #define _RESULTTYPE_H_
 
 #include <common/type_defs.h>
+#include <common/PropertyValue.h>
 #include <common/sf1_msgpack_serialization_types.h>
 #include <query-manager/ConditionInfo.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
@@ -222,7 +223,7 @@ public:
             for (size_t j = 0; j < docCategories_[i].size(); j++)
             {
                 string s;
-                docCategories_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                s = propstr_to_str(docCategories_[i][j]);
                 ss << s << ", ";
             }
             ss << endl;
@@ -239,7 +240,7 @@ public:
         for (size_t i = 0; i < taxonomyString_.size(); i++)
         {
             string s;
-            taxonomyString_[i].convertString(s, izenelib::util::UString::UTF_8);
+            s = propstr_to_str(taxonomyString_[i]);
             ss << s << ", ";
         }
         ss << endl;
@@ -327,7 +328,7 @@ public:
     /// ProtoType : fullTextOfDocumentInPage_[DISPLAY PROPERTY Order][DOC Order]
     /// - DISPLAY PROPERTY Order : The sequence which follows the order in displayPropertyList_
     /// - DOC Order : The sequence which follows the order in topKDocs_
-    std::vector<std::vector<izenelib::util::UString> >  fullTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  fullTextOfDocumentInPage_;
 
     /// @brief Displayed text of documents in one page.
     /// @see pageInfo_
@@ -337,7 +338,7 @@ public:
     /// order.
     ///
     /// The inner vector is raw text for documents in current page.
-    std::vector<std::vector<izenelib::util::UString> >  snippetTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  snippetTextOfDocumentInPage_;
 
     /// @brief Summary of documents in one page.
     /// @see pageInfo_
@@ -355,14 +356,14 @@ public:
     ///      rawTextOfSummaryInPage_[1][3] -> summary of fourth document[3] of attach property[0].
     ///
     ///
-    std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummaryInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  rawTextOfSummaryInPage_;
 
 
     std::vector<count_t> numberOfDuplicatedDocs_;
 
     std::vector<count_t> numberOfSimilarDocs_;
 
-    std::vector<std::vector<izenelib::util::UString> > docCategories_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> > docCategories_;
 
     std::vector<uint32_t> imgs_;
 
@@ -371,7 +372,7 @@ public:
     idmlib::cc::CCInput32 tg_input;
 
     /// Taxonomy string list.
-    std::vector<izenelib::util::UString> taxonomyString_;
+    std::vector<PropertyValue::PropertyValueStrType> taxonomyString_;
 
     /// A list which stores the number of documents which are related to the specific TG item.
     std::vector<count_t> numOfTGDocs_;
@@ -528,21 +529,19 @@ public:
     /// ProtoType : fullTextOfDocumentInPage_[DISPLAY PROPERTY Order][DOC Order]
     /// - DISPLAY PROPERTY Order : The sequence which follows the order in displayPropertyList_
     /// - DOC Order : The sequence which follows the order of docIdList
-    std::vector<std::vector<izenelib::util::UString> >  fullTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  fullTextOfDocumentInPage_;
 
     /// Raw Text of Document is used for generating resultXML of "KeywordSearch" query.
     /// And the first index is following the sequence of the displayPropertyList in KeywordSearchActionItem.
     /// The second index is following the sequence of the rankedDocIdList_;
-    //std::vector<std::vector<izenelib::util::UString> >  rawTextOfDocument_;
-    std::vector<std::vector<izenelib::util::UString> >  snippetTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  snippetTextOfDocumentInPage_;
 
 
     /// Raw Text of Document is used for generating resultXML of "KeywordSearch" query.
     /// And the first index is following the sequence of the
     /// displayPropertyList(which is set to generate summary) in KeywordSearchActionItem.
     /// The second index is following the sequence of the rankedDocIdList_;
-    //std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummary_;
-    std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummaryInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  rawTextOfSummaryInPage_;
 
     /// internal IDs of the documents
     std::vector<docid_t> idList_;

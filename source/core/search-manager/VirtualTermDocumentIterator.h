@@ -26,25 +26,12 @@
 namespace sf1r
 {
 
-class IndexManager;
+class InvertedIndexManager;
 
 ///DocumentIterator for one term in one virtual property
 class VirtualTermDocumentIterator: public DocumentIterator
 {
 public:
-    VirtualTermDocumentIterator(
-        termid_t termid,
-        std::string rawTerm,
-        collectionid_t colID,
-        izenelib::ir::indexmanager::IndexReader* pIndexReader,
-        boost::shared_ptr<IndexManager> indexManagerPtr,
-        const std::vector<std::string>& virtualPropreties,
-        std::vector<unsigned int>& propertyIdList,
-        std::vector<sf1r::PropertyDataType>& dataTypeList,
-        unsigned int termIndex,
-        bool readPositions
-    );
-
     VirtualTermDocumentIterator(
         termid_t termid,
         std::string rawTerm,
@@ -190,8 +177,6 @@ protected:
     izenelib::ir::indexmanager::TermReader* pTermReader_;
 
     std::vector<izenelib::ir::indexmanager::TermDocFreqs*> pTermDocReaderList_;
-
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
 
     const std::vector<std::string> subProperties_;
  
