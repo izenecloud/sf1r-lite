@@ -431,7 +431,7 @@ namespace sf1r {
         struct SpuContributorValue
         {
             SpuContributorValue()
-            : paweight(0.0), lenweight(0.0), model_match(false), brand_match(false)
+            : paweight(0.0), model_match(false), brand_match(false)
             {
             }
             //double cweight;
@@ -439,14 +439,23 @@ namespace sf1r {
             //double tweight;
             //double kweight;
             double paweight;
-            double lenweight;
+            //double lenweight;
             bool model_match;
             bool brand_match;
-            boost::unordered_set<std::string> attribute_found;
-            bool IsAttributeFound(const std::string& a) const
+            boost::unordered_map<std::string, double> attribute_lenweight;
+            double GetLenWeight() const
             {
-                return attribute_found.find(a)!=attribute_found.end();
+                double lw = 0.0;
+                for(typename boost::unordered_map<std::string, double>::const_iterator it = attribute_lenweight.begin(); it!=attribute_lenweight.end(); ++it)
+                {
+                    lw += it->second;
+                }
+                return lw;
             }
+            //bool IsAttributeFound(const std::string& a) const
+            //{
+                //return attribute_found.find(a)!=attribute_found.end();
+            //}
             //double price_diff;
             //friend class boost::serialization::access;
             //template<class Archive>
@@ -474,13 +483,15 @@ namespace sf1r {
         struct SpuMatchCandidate
         {
             uint32_t spuid;
-            double price_diff;
-            double paweight;
             uint32_t cid_index;
+            double paweight;
+            double lenweight;
+            double price_diff;
             bool operator<(const SpuMatchCandidate& another) const
             {
                 if(cid_index!=another.cid_index) return cid_index<another.cid_index;
                 if(paweight!=another.paweight) return paweight>another.paweight;
+                if(lenweight!=another.lenweight) return lenweight>another.lenweight;
                 return price_diff<another.price_diff;
             }
         };
@@ -868,7 +879,7 @@ namespace sf1r {
         uint32_t GetCidByMaxDepth_(uint32_t cid);
         cid_t GetCid_(const UString& category) const;
 
-        bool IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const;
+        bool IsSpuMatch_(const Product& p, const SpuContributorValue& scv, double query_len) const;
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
         bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;

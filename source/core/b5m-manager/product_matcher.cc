@@ -3869,8 +3869,15 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         const AttributeApp& app = tag.attribute_apps[i];
         if(app.spu_id==0) continue;
         SpuContributorValue& scv = sc[app.spu_id];
-        if(scv.IsAttributeFound(app.attribute_name)) continue;
-        scv.attribute_found.insert(app.attribute_name);
+        boost::unordered_map<std::string, double>::iterator alit = scv.attribute_lenweight.find(app.attribute_name);
+        double lenweight = tag.term_list.size();
+        if(alit!=scv.attribute_lenweight.end())
+        {
+            if(lenweight>alit->second) alit->second = lenweight;
+            continue;
+        }
+        //if(scv.IsAttributeFound(app.attribute_name)) continue;
+        scv.attribute_lenweight.insert(std::make_pair(app.attribute_name, lenweight));
         double p_point = 0.0;
         if(app.is_optional)
         {
@@ -3892,7 +3899,7 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         }
         double paweight = p_point;
         scv.paweight+=paweight;
-        scv.lenweight+=tag.term_list.size();
+        //scv.lenweight+=tag.term_list.size();
 
         //const Product& p = products_[app.spu_id];
         //std::string stext;
@@ -4254,13 +4261,14 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #endif
         if(!pricesim) continue;
 #ifdef B5M_DEBUG
-        LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
+        LOG(ERROR)<<p.stitle<<","<<scv.GetLenWeight()<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
 #endif
-        scv.lenweight/=text_term_len;
-        if(IsSpuMatch_(p, scv))
+        //scv.lenweight/=text_term_len;
+        if(IsSpuMatch_(p, scv, text_term_len))
         {
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
+            smc.lenweight = scv.GetLenWeight();
             smc.price_diff = PriceDiff_(price, p.price);
             spu_match_candidates.push_back(smc);
         }
@@ -5436,12 +5444,13 @@ bool ProductMatcher::SpuMatched_(const WeightType& weight, const Product& p) con
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }
-bool ProductMatcher::IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const
+bool ProductMatcher::IsSpuMatch_(const Product& p, const SpuContributorValue& scv, double query_len) const
 {
     if(p.spid.empty()) return false; //detect empty product
     double paweight = scv.paweight;
     //LOG(INFO)<<p.stitle<<","<<scv.lenweight<<","<<scv.model_match<<","<<paweight<<std::endl;
-    if(scv.lenweight>=0.8&&scv.model_match) paweight*=2;
+    double ratio_lenweight = scv.GetLenWeight()/query_len;
+    if(ratio_lenweight>=0.8&&scv.model_match) paweight*=2;
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }
