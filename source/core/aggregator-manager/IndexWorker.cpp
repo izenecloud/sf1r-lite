@@ -740,7 +740,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     docid_t oldId = 0;
     IndexWorker::UpdateType updateType = INSERT;
     time_t timestamp = reqlog.timestamp;
-    if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
+    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
             oldId, docid, updateType))
     {
         return false;
@@ -863,7 +863,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     docid_t docid = 0;
     IndexWorker::UpdateType updateType = UNKNOWN;
 
-    if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, UPDATE_SCD,
+    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, UPDATE_SCD,
             oldId, docid, updateType))
     {
         return false;
