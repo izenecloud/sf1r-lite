@@ -83,19 +83,19 @@ bool RecommendManager::open()
     {
         return false;
     }
-    //try {
-        std::cout<<"open ir manager on "<<current_recommend_path<<std::endl;
+    try {
+        LOG(INFO) << "open ir manager on " << current_recommend_path << std::endl;
         recommend_db_ = new MIRDatabase(current_recommend_path);
         recommend_db_->setCacheSize<0>(100000000);
         recommend_db_->setCacheSize<1>(0);
         recommend_db_->open();
-    //}
-    //catch(std::exception& ex)
-    //{
-        //LOG(ERROR)<<ex.what()<<std::endl;
-        //return false;
-    //}
-    std::cout<<"open ir manager finished"<<std::endl;
+    }
+    catch(std::exception& ex)
+    {
+        LOG(ERROR) << ex.what() << std::endl;
+        return false;
+    }
+    LOG(INFO) << "open ir manager finished: " << current_recommend_path << std::endl;
     std::string path_tocreate = current_recommend_path+"/concept-id";
     boost::filesystem::create_directories(path_tocreate);
     concept_id_manager_ = new ConceptIDManager(path_tocreate);
@@ -264,7 +264,7 @@ void RecommendManager::RebuildForRecommend(
     if (!dir_switcher_.GetNextWithDelete(newPath))
         return;
 
-    std::cout << "switching recommend manager to " << newPath << std::endl;
+    LOG(INFO) << "switching recommend manager to " << newPath << std::endl;
     MIRDatabase* new_db = new MIRDatabase(newPath);
     new_db->setCacheSize<0>(100000000);
     new_db->setCacheSize<1>(0);
