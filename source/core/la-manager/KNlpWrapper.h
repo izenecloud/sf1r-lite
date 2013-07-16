@@ -11,6 +11,7 @@
 #include <util/singleton.h>
 #include <vector>
 #include <map>
+#include <string>
 #include <boost/scoped_ptr.hpp>
 
 namespace ilplib
@@ -47,11 +48,14 @@ public:
     category_score_map_t classifyToMultiCategories(
         const token_score_list_t& tokenScores);
 
+    std::string mapFromOriginalCategory(const std::string& originalCategory);
+
 private:
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> cateDict_;
     boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesDict_;
+    boost::scoped_ptr<ilplib::knlp::Dictionary> originalToClassifyCateDict_;
 };
 
 } // namespace sf1r

@@ -12,6 +12,9 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
+const std::string kOriginalCategoryPropName("OriginalCategory");
+const std::string kSourcePropName("Source");
+const std::string kClassifyCategoryValueBook("R>文娱>书籍杂志");
 
 void getDocPropValue(
     const Document& doc,
@@ -28,10 +31,10 @@ void getDocPropValue(
 CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     DocumentManager& documentManager,
     CategoryClassifyTable& classifyTable,
-    const std::string& categoryPropName)
+    const std::string& targetCategoryPropName)
     : documentManager_(documentManager)
     , classifyTable_(classifyTable)
-    , categoryPropName_(categoryPropName)
+    , targetCategoryPropName_(targetCategoryPropName)
     , startDocId_(0)
 {
 }
@@ -45,34 +48,73 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
         return true;
 
     std::string classifyCategory;
-    std::string category;
-    if (!categoryPropName_.empty())
-    {
-        getDocPropValue(doc, categoryPropName_, category);
-        classifyByCategory_(category, classifyCategory);
-    }
+    std::string targetCategory;
 
-    if (classifyCategory.empty())
+    if (ruleByTargetCategory_(doc, targetCategory, classifyCategory) ||
+        ruleByOriginalCategory_(doc, classifyCategory) ||
+        ruleBySource_(doc, targetCategory, classifyCategory) ||
+        classifyByTitle_(title, classifyCategory))
     {
-        classifyByTitle_(title, classifyCategory);
+        classifyTable_.setCategory(docID, classifyCategory);
     }
-
-    classifyTable_.setCategory(docID, classifyCategory);
 
     return true;
 }
 
-void CategoryClassifyMiningTask::classifyByCategory_(
-    const std::string& category,
+bool CategoryClassifyMiningTask::ruleByTargetCategory_(
+    const Document& doc,
+    std::string& targetCategory,
     std::string& classifyCategory)
 {
-    if (category.find("图书音像") != std::string::npos)
+    if (!targetCategoryPropName_.empty())
     {
-        classifyCategory = "R>文娱>书籍杂志";
+        getDocPropValue(doc, targetCategoryPropName_, targetCategory);
+        if (targetCategory.find("图书音像") != std::string::npos)
+        {
+            classifyCategory = kClassifyCategoryValueBook;
+            return true;
+        }
     }
+    return false;
 }
 
-void CategoryClassifyMiningTask::classifyByTitle_(
+bool CategoryClassifyMiningTask::ruleByOriginalCategory_(
+    const Document& doc,
+    std::string& classifyCategory)
+{
+    std::string originalCategory;
+    getDocPropValue(doc, kOriginalCategoryPropName, originalCategory);
+
+    if (!originalCategory.empty())
+    {
+        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+        classifyCategory = knlpWrapper->mapFromOriginalCategory(originalCategory);
+    }
+
+    return !classifyCategory.empty();
+}
+
+bool CategoryClassifyMiningTask::ruleBySource_(
+    const Document& doc,
+    const std::string& targetCategory,
+    std::string& classifyCategory)
+{
+    if (!targetCategory.empty())
+        return false;
+
+    std::string source;
+    getDocPropValue(doc, kSourcePropName, source);
+
+    if (source == "文轩网官网")
+    {
+        classifyCategory = kClassifyCategoryValueBook;
+        return true;
+    }
+
+    return false;
+}
+
+bool CategoryClassifyMiningTask::classifyByTitle_(
     std::string& title,
     std::string& classifyCategory)
 {
@@ -87,10 +129,12 @@ void CategoryClassifyMiningTask::classifyByTitle_(
 
         KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
         classifyCategory = classifyKStr.get_bytes("utf-8");
+        return true;
     }
     catch(std::exception& ex)
     {
         LOG(ERROR) << "exception: " << ex.what();
+        return false;
     }
 }
 

@@ -43,6 +43,9 @@ bool KNlpWrapper::initClassifier(const std::string& dictDir)
 
         termMultiCatesDict_.reset(new ilplib::knlp::VectorDictionary(
                                       (dirPath / "term.multi.cates.txt").string()));
+
+        originalToClassifyCateDict_.reset(new ilplib::knlp::Dictionary(
+                                              (dirPath / "tcate_map.txt").string()));
     }
     catch (const std::exception& e)
     {
@@ -95,4 +98,15 @@ KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
                                                              termMultiCatesDict_.get(),
                                                              tokenScores,
                                                              ss);
+}
+
+std::string KNlpWrapper::mapFromOriginalCategory(const std::string& originalCategory)
+{
+    string_t kstr(originalCategory);
+    const char* classifyCategory = originalToClassifyCateDict_->value(kstr, false);
+
+    if (classifyCategory == NULL)
+        return std::string();
+
+    return classifyCategory;
 }

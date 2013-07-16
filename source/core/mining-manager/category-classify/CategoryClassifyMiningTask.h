@@ -20,7 +20,7 @@ public:
     CategoryClassifyMiningTask(
         DocumentManager& documentManager,
         CategoryClassifyTable& classifyTable,
-        const std::string& categoryPropName);
+        const std::string& targetCategoryPropName);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -31,11 +31,21 @@ public:
     virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
-    void classifyByCategory_(
-        const std::string& category,
+    bool ruleByTargetCategory_(
+        const Document& doc,
+        std::string& targetCategory,
         std::string& classifyCategory);
 
-    void classifyByTitle_(
+    bool ruleByOriginalCategory_(
+        const Document& doc,
+        std::string& classifyCategory);
+
+    bool ruleBySource_(
+        const Document& doc,
+        const std::string& targetCategory,
+        std::string& classifyCategory);
+
+    bool classifyByTitle_(
         std::string& title,
         std::string& classifyCategory);
 
@@ -44,7 +54,7 @@ private:
 
     CategoryClassifyTable& classifyTable_;
 
-    const std::string categoryPropName_;
+    const std::string targetCategoryPropName_;
 
     docid_t startDocId_;
 };
