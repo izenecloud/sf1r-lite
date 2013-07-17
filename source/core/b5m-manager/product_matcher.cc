@@ -2532,9 +2532,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
-
-        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
 */
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
+
         if(str.at(str.size()-1) == '#')
         {
             std::string st;
@@ -2552,7 +2552,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         while(j < product_count)
         {
             
-//            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
+            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
             bool b = false;
             if(text.length() > Len)
             {
@@ -2575,7 +2575,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 if(ki.attribute_apps[j].attribute_name == "品牌" || ki.attribute_apps[j].attribute_name == "型号")
                 {
                     ki.attribute_apps[0] = ki.attribute_apps[j];
-//                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
+                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
                     break;
                 }
             }
@@ -2697,7 +2697,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             spus.clear();
             if(has_mid)spus = sp2;
             else spus = sp;
-//            LOG(INFO)<<"spus size: "<<spus.size()<<endl;
+            LOG(INFO)<<"spus size: "<<spus.size()<<endl;
             
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
            
@@ -2730,6 +2730,8 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 }
                 if(s.at(0)>='a' && s.at(0)<='z')
                 {
+                    if(s.at(s.size()-1) >='0' && s.at(s.size()-1) <='9')
+                        has_num = true;
                     if(has_space)
                         str +=" "+s;
                     else str += s;
