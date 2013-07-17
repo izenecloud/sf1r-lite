@@ -2653,24 +2653,33 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 break;
             }
+            bool has_space = false;
+            bool has_mid = false;
             if(temp_k[j].attribute_apps[0].attribute_name == "品牌")
             {
-                break;
+                std::string str;
+                term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                if(str.compare("/") == 0)
+                    has_mid = true;
+//                else break;
             }
-            bool has_space = false;
+            
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
             {
                 if(term_list[temp_k[i].positions[0].end].position == 0)
                     has_space = true;
-                else break;
+                else if(!has_mid) break;
             }
             
-            boost::unordered_map<uint32_t, uint32_t> sp;
+            boost::unordered_map<uint32_t, uint32_t> sp, sp2;
             std::vector<AttributeApp>::iterator it2 = temp_k[j].attribute_apps.begin();
+            
+            sp2 = spus;
             while(it2!=temp_k[j].attribute_apps.end())
             {
                 if(spus.find(it2->spu_id) == spus.end())
                 {
+                    sp2[it2->spu_id] = 1;
                     it2++;
                     continue;
                 }
@@ -2678,7 +2687,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
  //               break;
                 it2++;
             }
-            temp_k[j].text.convertString(str, izenelib::util::UString::UTF_8);
+                  
             if(sp.size() == 0)
             {
                 if(temp_k[j].positions[0].begin <= temp_k[i].positions[0].end)
@@ -2686,13 +2695,16 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 break;
             }
             spus.clear();
-            spus = sp;
+            if(has_mid)spus = sp2;
+            else spus = sp;
 //            LOG(INFO)<<"sp size: "<<sp.size()<<endl;
             
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
            
             if(has_space)
                 term += " "+str;
+            else if(has_mid)
+                term += "/"+str;
             else
                 term += str;
             i++;
