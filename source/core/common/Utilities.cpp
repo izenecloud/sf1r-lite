@@ -4,6 +4,7 @@
 #include <util/hashFunction.h>
 #include <ir/index_manager/utility/StringUtils.h>
 #include <util/mkgmtime.h>
+#include <openssl/md5.h>
 
 #include <boost/token_iterator.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -309,6 +310,31 @@ uint128_t Utilities::md5ToUint128(const izenelib::util::UString& ustr)
     return md5ToUint128(str);
 }
 
+std::string Utilities::generateMD5(const std::string& query)
+{
+    unsigned char result[MD5_DIGEST_LENGTH];
+    MD5((unsigned char*)(query.c_str()), query.length(), (unsigned char*)&result);
+    char md_chars[MD5_DIGEST_LENGTH+1];
+    for(int i=0;i<16;i++)
+    {
+        sprintf(&md_chars[i*2], "%02x", (unsigned int)result[i]);
+    }
+    std::string md5(md_chars);
+    return md5;
+    //MD5_CTX md5;
+    //MD5_Init(&md5);
+    //MD5_Update(&md5, query.c_str(), query.size());
+    //md5_state_t st;
+    //md5_init(&st);
+    //md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
+    //union
+    //{
+        //md5_byte_t digest[MD5_DIGEST_LENGTH];
+        //uint128_t md5_int_value;
+    //} digest_union;			
+    //memset(digest_union.digest, 0, sizeof(digest_union.digest));
+    //md5_finish(&st,digest_union.digest);
+}
 //void Utilities::uint128ToUuid(const uint128_t& val, std::string& str)
 //{
     //const boost::uuids::uuid& uuid = *reinterpret_cast<const boost::uuids::uuid *>(&val);

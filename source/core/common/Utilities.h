@@ -59,6 +59,7 @@ public:
     static std::string uint128ToMD5(const uint128_t& val);
     static uint128_t md5ToUint128(const std::string& str);
     static uint128_t md5ToUint128(const izenelib::util::UString& ustr);
+    static std::string generateMD5(const std::string& query);
 
     template <typename AssocType, typename SeqType>
     static void getKeyList(SeqType& key_list, const AssocType& src_map);

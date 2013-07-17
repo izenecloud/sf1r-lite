@@ -109,6 +109,7 @@ FIND_PACKAGE(LibCURL REQUIRED)
 FIND_PACKAGE(ImageMagick COMPONENTS Magick++ MagickWand MagickCore REQUIRED)
 FIND_PACKAGE(JPEG REQUIRED)
 FIND_PACKAGE(PNG REQUIRED)
+FIND_PACKAGE(OpenSSL REQUIRED)
 ##################################################
 # Driver Docs
 #####
