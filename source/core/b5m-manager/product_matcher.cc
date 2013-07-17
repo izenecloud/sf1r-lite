@@ -2697,7 +2697,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             spus.clear();
             if(has_mid)spus = sp2;
             else spus = sp;
-//            LOG(INFO)<<"sp size: "<<sp.size()<<endl;
+//            LOG(INFO)<<"spus size: "<<spus.size()<<endl;
             
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
            
@@ -2715,6 +2715,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         if(is_brand)
         {
             bool has_space = false;
+            bool has_num = false;
+            bool has_cha = false;
+            std::string str = "";
             while(end_pos<term_list.size())
             {
                 std::string s;
@@ -2725,21 +2728,35 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     has_space = true;
                     continue;
                 }
-                if( (s.at(0)>='a' && s.at(0)<='z') || (s.at(0)>='0' && s.at(0)<='9') )
+                if(s.at(0)>='a' && s.at(0)<='z')
                 {
                     if(has_space)
-                        term +=" "+s;
-                    else term += s;
+                        str +=" "+s;
+                    else str += s;
                     has_space = false;
+                    has_cha = true;
+                    end_pos++;
+                }
+                else if(s.at(0)>='0' && s.at(0)<='9')
+                {
+                    if(has_space)
+                        str +=" "+s;
+                    else str += s;
+                    has_space = false;
+                    has_num = true;
                     end_pos++;
                 }
                 else if(s.compare("-") == 0)
                 {
-                    term += s;
+                    str += s;
                     end_pos++;
                 }
                 else break;
             }
+            std::string ss;
+            ki.text.convertString(ss, izenelib::util::UString::UTF_8);
+            if(term.compare(ss) != 0)term += str;
+            else if(has_num && has_cha) term+=str;
         }
         if(note.find(term) == note.end())
         {
