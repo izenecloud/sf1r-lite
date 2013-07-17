@@ -112,11 +112,16 @@ void RecommendManager::flush()
 {
     if (isOpen_)
     {
+        try{
         serInfo_.flush();
         if(recommend_db_)
             recommend_db_->flush();
         if (concept_id_manager_)
             concept_id_manager_->Flush();
+        }catch(const std::exception& e)
+        {
+            LOG(ERROR) << "flush error in " << __FUNCTION__ << ", info :" << e.what();
+        }
     }
     if (autofill_) autofill_->flush();
 }
