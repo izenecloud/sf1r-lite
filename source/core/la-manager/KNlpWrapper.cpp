@@ -103,7 +103,7 @@ KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
 std::string KNlpWrapper::mapFromOriginalCategory(const std::string& originalCategory)
 {
     string_t kstr(originalCategory);
-    const char* classifyCategory = originalToClassifyCateDict_->value(kstr, false);
+    const char* classifyCategory = originalToClassifyCateDict_->value(kstr, true);
 
     if (classifyCategory == NULL)
         return std::string();
