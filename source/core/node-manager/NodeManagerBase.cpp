@@ -1918,6 +1918,12 @@ void NodeManagerBase::checkSecondaryState(bool self_changed)
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Recovery);
         checkSecondaryRecovery(self_changed);
         break;
+    case NODE_STATE_RECOVER_WAIT_PRIMARY:
+        // the secondary may became primary if 
+        // the old primary lost during recovery so 
+        // we need check for recovery.
+        checkPrimaryForRecovery(NODE_STATE_ELECTING);
+        break;
     default:
         break;
     }
