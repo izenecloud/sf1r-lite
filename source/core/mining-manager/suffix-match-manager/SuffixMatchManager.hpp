@@ -85,6 +85,8 @@ public:
             const std::list<std::pair<UString, double> >& minor_tokens,
             std::list<std::pair<UString, double> >& boundary_minor_tokens);
 
+    void GetQuerySumScore(const std::string& pattern, double &sum_score);
+
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;

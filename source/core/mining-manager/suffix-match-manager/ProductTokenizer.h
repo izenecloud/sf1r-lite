@@ -109,6 +109,7 @@ public:
         matcher_ = matcher;
     }
 
+    void GetQuerySumScore(const std::string& pattern, double& sum_score);
 private:
     void Init_(const std::string& dict_path);
 
@@ -118,7 +119,7 @@ private:
 
     void InitDict_(const std::string& dict_name);
 
-    bool GetTokenResultsByKNlp_(
+    unsigned int GetTokenResultsByKNlp_(
             const std::string& pattern,
             std::list<std::pair<UString,double> >& token_results,
             UString& refined_results);
@@ -160,6 +161,8 @@ private:
             const std::list<UString>& input,
             std::list<std::pair<UString,double> >& token_results,
             double score = 1.0);
+
+
 
     TokenizerType type_;
     std::string dict_path_;

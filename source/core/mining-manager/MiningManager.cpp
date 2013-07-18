@@ -2223,14 +2223,18 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
-
+        
+        double sum_Score = 0;
+        suffixMatchManager_->GetQuerySumScore(pattern, sum_Score);
+        std::cout << "The sum_Score is:" << sum_Score <<std::endl;
+        std::cout << "-----" << std::endl;
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
             std::string key;
             (i->first).convertString(key, izenelib::util::UString::UTF_8);
             cout << key << " " << i->second << endl;
         }
-        cout<<"-----"<<endl;
+        std::cout << "-----" << std::endl;
         for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
         {
             std::string key;
@@ -2279,7 +2283,7 @@ bool MiningManager::GetSuffixMatch(
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list,
-                rank_boundary);
+                rank_boundary);// rank_boundary
 
             isOrSearch = res_list.empty();
         }
@@ -2297,8 +2301,29 @@ bool MiningManager::GetSuffixMatch(
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list,
-                rank_boundary);
+                rank_boundary); // rank_boundary
         }
+
+        if (isLongQuery)
+        {
+            for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list.begin(); i < res_list.end(); ++i)
+            {
+                double titleScore = suffixMatchManager_->getMiningTask()->getDocumentScore()[i->second - 1];
+                double score_distance = abs(titleScore - sum_Score); /// less is better;
+                double s = score_distance/sum_Score;
+                //diannao 
+                double difPoint = (0 - std::log(s));
+
+                if (difPoint > 2)
+                    difPoint = 2;
+                if (difPoint < -10)
+                    difPoint = -10;
+                i->first += difPoint/25;
+            }
+        }
+        //sort ...
+        std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
+
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {

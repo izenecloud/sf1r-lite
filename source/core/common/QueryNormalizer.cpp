@@ -218,7 +218,7 @@ bool QueryNormalizer::isProductType(const std::string &str)
 void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
                                 std::string& minorQuery)
 {
-    std::cout << "DO GET PRODUCT MODEL..." << std::endl;
+    //std::cout << "DO GET PRODUCT MODEL..." << std::endl;
     std::vector<std::string> tokens;
 
     std::string majorQuery;

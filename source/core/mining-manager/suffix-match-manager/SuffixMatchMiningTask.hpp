@@ -27,6 +27,7 @@ namespace sf1r
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
+class ProductTokenizer;
 namespace faceted
 {
     class GroupManager;
@@ -42,6 +43,7 @@ public:
             boost::shared_ptr<FMIndexManager>& fmi_manager,
             boost::shared_ptr<FilterManager>& filter_manager,
             std::string data_root_path,
+            ProductTokenizer* tokenizer,
             boost::shared_mutex& mutex);
 
     ~SuffixMatchMiningTask();
@@ -55,6 +57,12 @@ public:
     void setTaskStatus(bool is_incrememtalTask);
 
     bool isRtypeIncremental_;
+
+    const std::vector<double>& getDocumentScore();
+
+    void saveDocumentScore();
+    void loadDocumentScore();
+    void clearDocumentScore();
 
 private:
     DISALLOW_COPY_AND_ASSIGN(SuffixMatchMiningTask);
@@ -70,6 +78,12 @@ private:
     boost::shared_ptr<FMIndexManager> new_fmi_manager;
     boost::shared_ptr<FilterManager> new_filter_manager;
     bool need_rebuild;
+
+    std::vector<double> document_Scores_;
+    bool isDocumentScoreRebuild_;
+    docid_t lastDocScoreDocid_;
+
+    ProductTokenizer* tokenizer_;
 
     typedef boost::shared_mutex MutexType;
     MutexType& mutex_;

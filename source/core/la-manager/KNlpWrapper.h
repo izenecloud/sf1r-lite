@@ -47,9 +47,12 @@ public:
 
     category_score_map_t classifyToMultiCategories(
         const token_score_list_t& tokenScores);
-
+    
     std::string mapFromOriginalCategory(const std::string& originalCategory);
 
+    void fmmBigram(std::vector<std::pair<KString,double> >& r);
+
+    void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);
 private:
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 

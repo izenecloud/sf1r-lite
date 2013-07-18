@@ -14,7 +14,7 @@
 #include <3rdparty/am/btree/btree_map.h>
 #include <util/ustring/algo.hpp>
 #include <glog/logging.h>
-
+#include <math.h>
 
 using namespace cma;
 using namespace izenelib::util;
@@ -392,8 +392,19 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
-        if (cit->second > rank_boundary)
+        // get new score
+        //double rankScore = 1;
+        /*cout << "rank_boundary" << rank_boundary << endl;
+        cout << "cit->second" << cit->second << endl;
+        cout << "cit->first" << cit->first << endl;
+        cout << "suffixMatchTask_->getDocumentScore()[cit->first]" << suffixMatchTask_->getDocumentScore()[cit->first -1] << endl;*/
+        //rankScore = (cit->second)/std::sqrt(rank_boundary * suffixMatchTask_->getDocumentScore()[cit->first -1]);
+
+        if (cit->second > 0.5)
+        {
             res_list.push_back(std::make_pair(cit->second, cit->first));
+            //cout << "rankScore:" << rankScore << endl;
+        }
     }
     if (res_list.empty())
         return total_match;
@@ -775,6 +786,7 @@ bool SuffixMatchManager::buildMiningTask()
             fmi_manager_,
             filter_manager_,
             data_root_path_,
+            tokenizer_,
             mutex_);
 
     if (!suffixMatchTask_)
@@ -783,6 +795,11 @@ bool SuffixMatchManager::buildMiningTask()
         return false;
     }
     return false;
+}
+
+void SuffixMatchManager::GetQuerySumScore(const std::string& pattern, double &sum_score)
+{
+    tokenizer_->GetQuerySumScore(pattern, sum_score);
 }
 
 SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()

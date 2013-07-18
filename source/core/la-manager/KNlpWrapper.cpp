@@ -61,8 +61,17 @@ void KNlpWrapper::fmmTokenize(const string_t& str, token_score_list_t& tokenScor
 {
     string_t norm(str);
     ilplib::knlp::Normalize::normalize(norm);
-
     tokenizer_->fmm(norm, tokenScores);
+}
+
+void KNlpWrapper::fmmBigram(std::vector<std::pair<KString,double> >& r)
+{
+    tokenizer_->bigram(r);
+}
+
+void KNlpWrapper::fmmBigram_with_space(std::vector<std::pair<KString,double> >& r)
+{
+    tokenizer_->bigram_with_space(r);
 }
 
 KNlpWrapper::string_t KNlpWrapper::classifyToBestCategory(const token_score_list_t& tokenScores)
