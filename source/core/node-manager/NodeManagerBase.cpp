@@ -1886,6 +1886,12 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
         sleep(1);
         updateSelfPrimaryNodeState();
     }
+    else
+    {
+        LOG(INFO) << "waiting primary to notify me recover.";
+        sleep(30);
+        updateSelfPrimaryNodeState();
+    }
 }
 
 // note : all check is for primary node. and they 
