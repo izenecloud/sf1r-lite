@@ -18,6 +18,8 @@ class CategoryClassifyTable : public PropSharedLock
 {
 public:
     typedef std::string category_t;
+    /** rflag true for classified by rule, false for not by rule */
+    typedef std::pair<category_t, bool> category_rflag_t;
 
     CategoryClassifyTable(
         const std::string& dirPath,
@@ -32,7 +34,7 @@ public:
     std::size_t docIdNum() const { return categories_.size(); }
 
     void resize(std::size_t num);
-    void setCategory(docid_t docId, const category_t& category);
+    void setCategory(docid_t docId, const category_t& category, bool ruleFlag);
 
     /**
      * @brief get classified category for @p docId (has lock version).
@@ -40,7 +42,7 @@ public:
      * before calling this function, the caller does not need to acquire
      * the read lock, as it would acquire the lock by itself.
      */
-    const category_t& getCategoryHasLock(docid_t docId) const;
+    const category_rflag_t& getCategoryHasLock(docid_t docId) const;
 
     /**
      * @brief get classified category for @p docId (no lock version).
@@ -52,17 +54,17 @@ public:
      * CategoryClassifyTable::ScopedReadLock lock(CategoryClassifyTable::getMutex());
      * </code>
      */
-    const category_t& getCategoryNoLock(docid_t docId) const;
+    const category_rflag_t& getCategoryNoLock(docid_t docId) const;
 
 private:
-    bool saveTextFile_();
+    bool saveTextFile_() const;
 
 private:
     const std::string dirPath_;
 
     const std::string propName_;
 
-    std::vector<category_t> categories_;
+    std::vector<category_rflag_t> categories_;
 
     bool isDebug_;
 };

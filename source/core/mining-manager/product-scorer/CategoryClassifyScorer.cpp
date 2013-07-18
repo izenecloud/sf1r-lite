@@ -3,6 +3,11 @@
 
 using namespace sf1r;
 
+namespace
+{
+const score_t kReduceScoreForNotRule = 0.01;
+}
+
 CategoryClassifyScorer::CategoryClassifyScorer(
     const ProductScoreConfig& config,
     const CategoryClassifyTable& categoryClassifyTable,
@@ -15,11 +20,20 @@ CategoryClassifyScorer::CategoryClassifyScorer(
 
 score_t CategoryClassifyScorer::score(docid_t docId)
 {
-    const std::string& category = categoryClassifyTable_.getCategoryNoLock(docId);
-    CategoryScoreMap::const_iterator it = categoryScoreMap_.find(category);
+    const CategoryClassifyTable::category_rflag_t& categoryRFlag =
+        categoryClassifyTable_.getCategoryNoLock(docId);
 
-    if (it != categoryScoreMap_.end())
-        return it->second;
+    CategoryScoreMap::const_iterator it =
+        categoryScoreMap_.find(categoryRFlag.first);
 
-    return 0;
+    if (it == categoryScoreMap_.end())
+        return 0;
+
+    score_t result = it->second;
+    if (!categoryRFlag.second)
+    {
+        result -= kReduceScoreForNotRule;
+    }
+
+    return result;
 }

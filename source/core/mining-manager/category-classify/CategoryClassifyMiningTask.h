@@ -47,7 +47,8 @@ private:
 
     bool classifyByTitle_(
         std::string& title,
-        std::string& classifyCategory);
+        std::string& classifyCategory,
+        bool& isRule);
 
 private:
     DocumentManager& documentManager_;

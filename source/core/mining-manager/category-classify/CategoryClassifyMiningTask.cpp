@@ -49,13 +49,14 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
 
     std::string classifyCategory;
     std::string targetCategory;
+    bool isRule = true;
 
     if (ruleByTargetCategory_(doc, targetCategory, classifyCategory) ||
         ruleByOriginalCategory_(doc, classifyCategory) ||
         ruleBySource_(doc, targetCategory, classifyCategory) ||
-        classifyByTitle_(title, classifyCategory))
+        classifyByTitle_(title, classifyCategory, isRule))
     {
-        classifyTable_.setCategory(docID, classifyCategory);
+        classifyTable_.setCategory(docID, classifyCategory, isRule);
     }
 
     return true;
@@ -116,7 +117,8 @@ bool CategoryClassifyMiningTask::ruleBySource_(
 
 bool CategoryClassifyMiningTask::classifyByTitle_(
     std::string& title,
-    std::string& classifyCategory)
+    std::string& classifyCategory,
+    bool& isRule)
 {
     try
     {
@@ -129,6 +131,7 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
 
         KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
         classifyCategory = classifyKStr.get_bytes("utf-8");
+        isRule = false;
         return true;
     }
     catch(std::exception& ex)

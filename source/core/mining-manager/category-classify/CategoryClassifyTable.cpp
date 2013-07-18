@@ -8,7 +8,7 @@ namespace
 {
 const std::string kBinaryFileName = "category.bin";
 const std::string kTextFileName = "category.txt";
-const std::string kEmptyCategory;
+const CategoryClassifyTable::category_rflag_t kEmptyCategory;
 }
 
 CategoryClassifyTable::CategoryClassifyTable(
@@ -37,7 +37,7 @@ bool CategoryClassifyTable::flush()
         saveTextFile_();
 }
 
-bool CategoryClassifyTable::saveTextFile_()
+bool CategoryClassifyTable::saveTextFile_() const
 {
     if (!isDebug_)
         return true;
@@ -58,10 +58,13 @@ bool CategoryClassifyTable::saveTextFile_()
 
     for (std::size_t docId = 1; docId < categories_.size(); ++docId)
     {
-        if (categories_[docId].empty())
+        const category_rflag_t& categoryRFlag = categories_[docId];
+        if (categoryRFlag.first.empty())
             continue;
 
-        ofs << docId << "\t" << categories_[docId] << std::endl;
+        ofs << docId << "\t"
+            << categoryRFlag.first << "\t"
+            << categoryRFlag.second << std::endl;
     }
 
     return true;
@@ -74,21 +77,22 @@ void CategoryClassifyTable::resize(std::size_t num)
     categories_.resize(num);
 }
 
-void CategoryClassifyTable::setCategory(docid_t docId, const category_t& category)
+void CategoryClassifyTable::setCategory(docid_t docId, const category_t& category, bool ruleFlag)
 {
     ScopedWriteLock lock(mutex_);
 
-    categories_[docId] = category;
+    categories_[docId].first = category;
+    categories_[docId].second = ruleFlag;
 }
 
-const CategoryClassifyTable::category_t& CategoryClassifyTable::getCategoryHasLock(docid_t docId) const
+const CategoryClassifyTable::category_rflag_t& CategoryClassifyTable::getCategoryHasLock(docid_t docId) const
 {
     ScopedReadLock lock(mutex_);
 
     return getCategoryNoLock(docId);
 }
 
-const CategoryClassifyTable::category_t& CategoryClassifyTable::getCategoryNoLock(docid_t docId) const
+const CategoryClassifyTable::category_rflag_t& CategoryClassifyTable::getCategoryNoLock(docid_t docId) const
 {
     if (docId < categories_.size())
         return categories_[docId];
