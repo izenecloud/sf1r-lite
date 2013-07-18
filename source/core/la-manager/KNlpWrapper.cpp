@@ -44,6 +44,9 @@ bool KNlpWrapper::initClassifier(const std::string& dictDir)
         termMultiCatesDict_.reset(new ilplib::knlp::VectorDictionary(
                                       (dirPath / "term.multi.cates.txt").string()));
 
+        termMultiCatesCondDict_.reset(new ilplib::knlp::VectorDictionary(
+                                          (dirPath / "term.multi.cates.cond.txt").string()));
+
         originalToClassifyCateDict_.reset(new ilplib::knlp::Dictionary(
                                               (dirPath / "tcate_map.txt").string()));
     }
@@ -96,6 +99,7 @@ KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
     std::stringstream ss;
     return ilplib::knlp::DocNaiveBayes::classify_multi_level(cateDict_.get(),
                                                              termMultiCatesDict_.get(),
+                                                             termMultiCatesCondDict_.get(),
                                                              tokenScores,
                                                              ss);
 }

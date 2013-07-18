@@ -55,6 +55,7 @@ private:
 
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> cateDict_;
     boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesDict_;
+    boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesCondDict_;
     boost::scoped_ptr<ilplib::knlp::Dictionary> originalToClassifyCateDict_;
 };
 
