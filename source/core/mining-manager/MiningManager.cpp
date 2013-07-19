@@ -84,6 +84,7 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
+#include <la-manager/KNlpWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -2223,10 +2224,16 @@ bool MiningManager::GetSuffixMatch(
         if (pattern_orig.empty())
             return 0;
 
+        LOG(INFO) << "original query string: " << pattern_orig;
         std::string pattern = pattern_orig;
         boost::to_lower(pattern);
 
-        LOG(INFO) << "original query string: " << pattern_orig;
+        const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+        if (isLongQuery)
+        {
+            pattern = KNlpWrapper::get()->cleanGarbage(pattern);
+            LOG(INFO) << "cleaned query for long query: " << pattern;
+        }
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
@@ -2260,7 +2267,6 @@ bool MiningManager::GetSuffixMatch(
         LOG(INFO) << "token num: " << tokenNum
                   << ", rank boundary: " << rank_boundary;
 
-        const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
         bool isOrSearch = true;
@@ -2323,12 +2329,12 @@ bool MiningManager::GetSuffixMatch(
                 double s = score_distance/sum_Score;
                 //diannao 
                 double difPoint = (0 - std::log(s));
-                cout << difPoint << endl;
+                //cout << difPoint << endl;
                 if (difPoint > 2)
                     difPoint = 2;
                 if (difPoint < -10)
                     difPoint = -10;
-                i->first += difPoint/25;
+                //i->first += difPoint/25;
             }
         }
         //sort ...

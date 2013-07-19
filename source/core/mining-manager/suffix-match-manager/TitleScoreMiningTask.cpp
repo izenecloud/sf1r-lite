@@ -38,7 +38,7 @@ bool TitleScoreMiningTask::buildDocument(docid_t docID, const Document& doc)
         std::string pattern;
         doc.getString(pname, pattern);
         double scoreSum = 0;
-        tokenizer_->GetQuerySumScore(pattern, scoreSum);
+        tokenizer_->GetQuerySumScore(pattern, scoreSum, docID);
         document_Scores_.push_back(scoreSum);
     }
     else
@@ -58,6 +58,10 @@ bool TitleScoreMiningTask::preProcess()
     if (lastDocScoreDocid_ == 0)
     {
         clearDocumentScore();
+    }
+    if (lastDocScoreDocid_ < document_manager_->getMaxDocId())
+    {
+        document_Scores_.reserve(document_manager_->getMaxDocId() + 1);
     }
     return true;
 }

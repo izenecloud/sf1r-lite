@@ -19,6 +19,7 @@ namespace ilplib
 namespace knlp
 {
     class Fmm;
+    class GarbagePattern;
 }
 }
 
@@ -47,8 +48,10 @@ public:
 
     category_score_map_t classifyToMultiCategories(
         const token_score_list_t& tokenScores);
-    
+
     std::string mapFromOriginalCategory(const std::string& originalCategory);
+
+    std::string cleanGarbage(const std::string& str);
 
     void fmmBigram(std::vector<std::pair<KString,double> >& r);
 
@@ -60,6 +63,8 @@ private:
     boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesDict_;
     boost::scoped_ptr<ilplib::knlp::VectorDictionary> termMultiCatesCondDict_;
     boost::scoped_ptr<ilplib::knlp::Dictionary> originalToClassifyCateDict_;
+
+    boost::scoped_ptr<ilplib::knlp::GarbagePattern> garbagePattern_;
 };
 
 } // namespace sf1r

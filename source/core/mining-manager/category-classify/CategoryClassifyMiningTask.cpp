@@ -116,15 +116,15 @@ bool CategoryClassifyMiningTask::ruleBySource_(
 }
 
 bool CategoryClassifyMiningTask::classifyByTitle_(
-    std::string& title,
+    const std::string& title,
     std::string& classifyCategory,
     bool& isRule)
 {
     try
     {
         KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-        KNlpWrapper::string_t titleKStr(title);
-        ilplib::knlp::DocNaiveBayes::makeitclean(titleKStr);
+        std::string cleanTitle = knlpWrapper->cleanGarbage(title);
+        KNlpWrapper::string_t titleKStr(cleanTitle);
 
         KNlpWrapper::token_score_list_t tokenScores;
         knlpWrapper->fmmTokenize(titleKStr, tokenScores);

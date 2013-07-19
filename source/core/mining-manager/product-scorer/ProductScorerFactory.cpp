@@ -172,18 +172,16 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         return NULL;
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    std::string query(scoreParam.query_);
+    std::string cleanQuery = knlpWrapper->cleanGarbage(scoreParam.query_);
 
-    KNlpWrapper::string_t queryKStr(query);
-    ilplib::knlp::DocNaiveBayes::makeitclean(queryKStr);
-
+    KNlpWrapper::string_t queryKStr(cleanQuery);
     KNlpWrapper::token_score_list_t tokenScores;
     knlpWrapper->fmmTokenize(queryKStr, tokenScores);
 
     KNlpWrapper::category_score_map_t categoryKStrMap =
         knlpWrapper->classifyToMultiCategories(tokenScores);
 
-    LOG(INFO) << "for query [" << query << "]";
+    LOG(INFO) << "for query [" << cleanQuery << "]";
 
     if (categoryKStrMap.empty())
     {
