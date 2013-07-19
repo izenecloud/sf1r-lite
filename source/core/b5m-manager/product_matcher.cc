@@ -2532,9 +2532,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
-*/
-        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
 
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
+*/
         if(str.at(str.size()-1) == '#')
         {
             std::string st;
@@ -2552,7 +2552,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         while(j < product_count)
         {
             
-            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
+//            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
             bool b = false;
             if(text.length() > Len)
             {
@@ -2575,7 +2575,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 if(ki.attribute_apps[j].attribute_name == "品牌" || ki.attribute_apps[j].attribute_name == "型号")
                 {
                     ki.attribute_apps[0] = ki.attribute_apps[j];
-                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
+//                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
                     break;
                 }
             }
@@ -2655,6 +2655,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
             bool has_space = false;
             bool has_mid = false;
+            bool has_mid2 = false;
             if(temp_k[j].attribute_apps[0].attribute_name == "品牌")
             {
                 std::string str;
@@ -2668,7 +2669,14 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 if(term_list[temp_k[i].positions[0].end].position == 0)
                     has_space = true;
-                else if(!has_mid) break;
+                else if(!has_mid) 
+                {
+                    std::string str;
+                    term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                    if(str.compare("-") == 0)
+                       has_mid2 = true;
+                    else break;
+                }
             }
             
             boost::unordered_map<uint32_t, uint32_t> sp, sp2;
@@ -2705,6 +2713,8 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 term += " "+str;
             else if(has_mid)
                 term += "/"+str;
+            else if(has_mid2)
+                term += "-" + str;
             else
                 term += str;
             i++;
