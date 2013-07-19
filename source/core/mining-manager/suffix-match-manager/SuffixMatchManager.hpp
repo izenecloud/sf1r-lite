@@ -2,7 +2,7 @@
 #define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 
 #include "SuffixMatchMiningTask.hpp"
-
+#include "TitleScoreMiningTask.h"
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
@@ -21,6 +21,7 @@ class FilterManager;
 class FMIndexManager;
 class ProductTokenizer;
 class ProductMatcher;
+class CategoryClassifyTable;
 
 namespace faceted
 {
@@ -39,7 +40,8 @@ public:
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
-            NumericPropertyTableBuilder* numeric_tablebuilder);
+            NumericPropertyTableBuilder* numeric_tablebuilder,
+            CategoryClassifyTable* categoryClassifyTable);
 
     ~SuffixMatchManager();
 
@@ -73,6 +75,10 @@ public:
                     UString& analyzedQuery);
 
     SuffixMatchMiningTask* getMiningTask();
+
+    TitleScoreMiningTask* getTitleScoreMiningTask();
+
+    bool buildTitleScoreMiningTask();
     
     bool buildMiningTask();
 
@@ -119,6 +125,9 @@ private:
     boost::shared_ptr<FilterManager> new_filter_manager;
 
     SuffixMatchMiningTask* suffixMatchTask_;
+    TitleScoreMiningTask* titleScoreTask_;
+
+    CategoryClassifyTable* categoryClassifyTable_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;

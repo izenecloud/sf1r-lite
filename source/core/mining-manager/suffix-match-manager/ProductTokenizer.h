@@ -4,7 +4,7 @@
 #include <util/ustring/UString.h>
 #include <util/singleton.h>
 #include <am/succinct/ux-trie/uxTrie.hpp>
-
+#include <common/type_defs.h>
 #include <string>
 #include <list>
 #include <map>
@@ -76,6 +76,8 @@ public:
 };
 
 class ProductMatcher;
+class CategoryClassifyTable;
+
 class ProductTokenizer
 {
     enum CharType
@@ -94,7 +96,8 @@ public:
 
     ProductTokenizer(
             TokenizerType type,
-            const std::string& dict_path);
+            const std::string& dict_path,
+            CategoryClassifyTable* categoryClassifyTable = NULL);
 
     ~ProductTokenizer();
 
@@ -109,7 +112,7 @@ public:
         matcher_ = matcher;
     }
 
-    void GetQuerySumScore(const std::string& pattern, double& sum_score);
+    void GetQuerySumScore(const std::string& pattern, double& sum_score, docid_t docid = 0);
 private:
     void Init_(const std::string& dict_path);
 
@@ -122,7 +125,8 @@ private:
     unsigned int GetTokenResultsByKNlp_(
             const std::string& pattern,
             std::list<std::pair<UString,double> >& token_results,
-            UString& refined_results);
+            UString& refined_results,
+            docid_t docid = 0);
 
     bool GetTokenResultsByCMA_(
             const std::string& pattern,
@@ -171,6 +175,7 @@ private:
     cma::Knowledge* knowledge_;
 
     ProductMatcher* matcher_;
+    CategoryClassifyTable* categoryClassifyTable_;
 
     std::vector<std::pair<std::string, double> > dict_names_;
     std::vector<izenelib::am::succinct::ux::Trie*> tries_;

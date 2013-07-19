@@ -8,6 +8,7 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
+#include <mining-manager/category-classify/CategoryClassifyTable.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
 
@@ -30,13 +31,15 @@ SuffixMatchManager::SuffixMatchManager(
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
-        NumericPropertyTableBuilder* numeric_tablebuilder)
+        NumericPropertyTableBuilder* numeric_tablebuilder,
+        CategoryClassifyTable* categoryClassifyTable)
     : data_root_path_(homePath)
     , tokenize_dicpath_(dicpath)
     , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
     , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
+    , categoryClassifyTable_(categoryClassifyTable)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -392,18 +395,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
-        // get new score
-        //double rankScore = 1;
-        /*cout << "rank_boundary" << rank_boundary << endl;
-        cout << "cit->second" << cit->second << endl;
-        cout << "cit->first" << cit->first << endl;
-        cout << "suffixMatchTask_->getDocumentScore()[cit->first]" << suffixMatchTask_->getDocumentScore()[cit->first -1] << endl;*/
-        //rankScore = (cit->second)/std::sqrt(rank_boundary * suffixMatchTask_->getDocumentScore()[cit->first -1]);
-
-        if (cit->second > 0.5)
+        if (cit->second > rank_boundary)
         {
             res_list.push_back(std::make_pair(cit->second, cit->first));
-            //cout << "rankScore:" << rankScore << endl;
         }
     }
     if (res_list.empty())
@@ -778,6 +772,20 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
     }
     return true;
 }
+bool SuffixMatchManager::buildTitleScoreMiningTask()
+{
+    titleScoreTask_ = new TitleScoreMiningTask(
+            document_manager_,
+            data_root_path_,
+            tokenizer_);
+
+    if (!titleScoreTask_)
+    {
+        LOG(INFO) << "Build TitleScore MingTask ERROR";
+        return false;
+    }
+    return false;
+}
 
 bool SuffixMatchManager::buildMiningTask()
 {
@@ -786,7 +794,6 @@ bool SuffixMatchManager::buildMiningTask()
             fmi_manager_,
             filter_manager_,
             data_root_path_,
-            tokenizer_,
             mutex_);
 
     if (!suffixMatchTask_)
@@ -811,6 +818,15 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
     return NULL;
 }
 
+TitleScoreMiningTask* SuffixMatchManager::getTitleScoreMiningTask()
+{
+    if (titleScoreTask_)
+    {
+        return titleScoreTask_;
+    }
+    return NULL;
+}
+
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {
     return filter_manager_;
@@ -824,7 +840,7 @@ void SuffixMatchManager::buildTokenizeDic()
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
         ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
-    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
+    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str(), categoryClassifyTable_);
 }
 
 void SuffixMatchManager::updateFmindex()
@@ -857,7 +873,6 @@ double SuffixMatchManager::getSuffixSearchRankThreshold(
     double minor_score = 0;
     unsigned int major_highscore_size = 0;
     unsigned int major_size = major_tokens.size();
-    unsigned int minor_size = minor_tokens.size();
 
     for (std::list<std::pair<UString, double> >::const_iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
     {

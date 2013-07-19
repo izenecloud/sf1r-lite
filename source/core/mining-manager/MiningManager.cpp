@@ -581,7 +581,7 @@ bool MiningManager::open()
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     system_resource_path_,
-                    document_manager_, groupManager_, attrManager_, numericTableBuilder_);
+                    document_manager_, groupManager_, attrManager_, numericTableBuilder_, categoryClassifyTable_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -632,7 +632,13 @@ bool MiningManager::open()
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-
+                if (categoryClassifyTable_ != NULL)
+                {
+                    suffixMatchManager_->buildTitleScoreMiningTask();
+                    MiningTask* miningTask_score = suffixMatchManager_->getTitleScoreMiningTask();
+                    miningTaskBuilder_->addTask(miningTask_score);
+                }
+                
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
                     if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
@@ -818,13 +824,15 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask()
 {
-    if (miningTaskBuilder_)
-    {
-        miningTaskBuilder_->buildCollection();
-    }
+   
     if (multiThreadMiningTaskBuilder_)
     {
         multiThreadMiningTaskBuilder_->buildCollection();
+    }
+
+    if (miningTaskBuilder_)
+    {
+        miningTaskBuilder_->buildCollection();
     }
     return true;
 }
@@ -2225,8 +2233,10 @@ bool MiningManager::GetSuffixMatch(
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
         
         double sum_Score = 0;
+
         suffixMatchManager_->GetQuerySumScore(pattern, sum_Score);
         std::cout << "The sum_Score is:" << sum_Score <<std::endl;
+
         std::cout << "-----" << std::endl;
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
@@ -2308,12 +2318,12 @@ bool MiningManager::GetSuffixMatch(
         {
             for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list.begin(); i < res_list.end(); ++i)
             {
-                double titleScore = suffixMatchManager_->getMiningTask()->getDocumentScore()[i->second - 1];
+                double titleScore = suffixMatchManager_->getTitleScoreMiningTask()->getDocumentScore()[i->second];
                 double score_distance = abs(titleScore - sum_Score); /// less is better;
                 double s = score_distance/sum_Score;
                 //diannao 
                 double difPoint = (0 - std::log(s));
-
+                cout << difPoint << endl;
                 if (difPoint > 2)
                     difPoint = 2;
                 if (difPoint < -10)

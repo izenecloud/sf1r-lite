@@ -2,7 +2,7 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <b5m-manager/product_matcher.h>
 #include <la-manager/KNlpWrapper.h>
-
+#include <mining-manager/category-classify/CategoryClassifyTable.h>
 #include <common/QueryNormalizer.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -16,11 +16,13 @@ const UString::CharT ProductTokenizer::SPACE_UCHAR = ' ';
 
 ProductTokenizer::ProductTokenizer(
     TokenizerType type,
-    const std::string& dict_path)
+    const std::string& dict_path,
+    CategoryClassifyTable* categoryClassifyTable)
     : type_(type)
     , analyzer_(NULL)
     , knowledge_(NULL)
     , matcher_(NULL)
+    , categoryClassifyTable_(categoryClassifyTable)
 {
     Init_(dict_path);
 }
@@ -322,28 +324,23 @@ bool ProductTokenizer::GetTokenResults(
 
     return false;
 }
-void ProductTokenizer::GetQuerySumScore(const std::string& pattern, double &sum_score)
+void ProductTokenizer::GetQuerySumScore(const std::string& pattern, double &sum_score, docid_t docid)
 {
     std::list<std::pair<UString,double> > token_results;
     UString refined_results;
-    sum_score = GetTokenResultsByKNlp_(pattern, token_results, refined_results);
+    sum_score = GetTokenResultsByKNlp_(pattern, token_results, refined_results, docid);
 }
 
 unsigned int ProductTokenizer::GetTokenResultsByKNlp_(
         const std::string& pattern,
         std::list<std::pair<UString,double> >& token_results,
-        UString& refined_results)
+        UString& refined_results,
+        docid_t docid)
 {
     std::string newPattern;
     std::string minor_pattern;
     std::vector<std::string> product_model;
     sf1r::QueryNormalizer::get()->getProductTypes(pattern, product_model, minor_pattern);
-    cout << "pattern:" << pattern << endl;
-    cout << "product_model: size" <<product_model.size() << endl;
-    for (std::vector<std::string>::iterator i = product_model.begin(); i != product_model.end(); ++i)
-    {
-        cout <<*i<<endl;
-    }
 
     KNlpWrapper::token_score_list_t tokenScores;
     KNlpWrapper::token_score_list_t product_modelScores;
@@ -353,36 +350,46 @@ unsigned int ProductTokenizer::GetTokenResultsByKNlp_(
     KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
 
     ///deal with "书籍杂志" category
-    
     std::string classifyCategory;
      try
     {
         KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-        KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
-        classifyCategory = classifyKStr.get_bytes("utf-8");
-        //std::cout << "classifyCategory:" << classifyCategory << std::endl; 
+        KNlpWrapper::string_t classifyKStr;
+        if (docid == 0)
+        {
+            KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
+            classifyCategory = classifyKStr.get_bytes("utf-8");
+        }
+        else
+        {
+            if (categoryClassifyTable_ != NULL)
+                classifyCategory = categoryClassifyTable_->getCategoryHasLock(docid).first;
+        }
     }
     catch(std::exception& ex)
     {
         LOG(ERROR) << "exception: " << ex.what();
     }
-    std::list<std::pair<UString, double> > token_results_1;
+    std::list<std::pair<UString, double> > token_results_book;
     if (classifyCategory == "R>文娱>书籍杂志")
     {
-        GetTokenResultsByCMA_(pattern, token_results_1, refined_results);
-        double sum_score = 1;
-        for (std::list<std::pair<UString, double> >::iterator i = token_results_1.begin(); i != token_results_1.end(); ++i)
+        GetTokenResultsByCMA_(pattern, token_results_book, refined_results);
+        double sum_score = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = token_results_book.begin(); i != token_results_book.end(); ++i)
         {
             sum_score += i->second;
         }
-        for (std::list<std::pair<UString, double> >::iterator i = token_results_1.begin(); i != token_results_1.end(); ++i)
+        for (std::list<std::pair<UString, double> >::iterator i = token_results_book.begin(); i != token_results_book.end(); ++i)
         {
             token_results.push_back(std::make_pair(i->first, i->second/sum_score));
         }
         return sum_score;
     }
     ///deal with "书籍杂志" category end;
-    
+
+    ///deal with other has many that can not been get;
+
+    ///deal with endl;
     if (!minor_pattern.empty())
     {
         KNlpWrapper::string_t kmstr(minor_pattern);
@@ -400,30 +407,31 @@ unsigned int ProductTokenizer::GetTokenResultsByKNlp_(
     KNlpWrapper::category_score_map_t tokenScoreMap;
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
-    {
-        cout << it->first <<":" << it->second << endl;
         scoreSum += it->second;
-    }
 
     std::ostringstream oss;
     if (product_model.size() == 1)
     {
-
-        product_modelScores.push_back(std::make_pair(t_product_model[0], scoreSum/8));
+        product_modelScores.push_back(std::make_pair(t_product_model[0], scoreSum/7));
     }
     else if (product_model.size() == 2)
     {
         for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
-            product_modelScores.push_back(std::make_pair(*i, scoreSum/16));
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/14));
     }
-    
+    else if (product_model.size() == 3)
+    {
+        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/21));
+    }
+
     scoreSum = 0;
 
     /// add all term and its score;
     for (KNlpWrapper::token_score_list_t::iterator it =
              minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
     {
-        it->second /= 10;
+        it->second /= 100;
         tokenScoreMap.insert(*it);
         scoreSum += it->second;
     }
@@ -431,16 +439,15 @@ unsigned int ProductTokenizer::GetTokenResultsByKNlp_(
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              product_modelScores.begin(); it != product_modelScores.end(); ++it)
     {
-        cout << "xx" << endl; 
-        tokenScoreMap.insert(*it);
-        scoreSum += it->second;
+        if(tokenScoreMap.insert(*it).second)
+            scoreSum += it->second;
     }
 
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
     {
-        tokenScoreMap.insert(*it);
-        scoreSum += it->second;
+        if(tokenScoreMap.insert(*it).second)
+            scoreSum += it->second;
     }
 
     //maxScore = 0;
