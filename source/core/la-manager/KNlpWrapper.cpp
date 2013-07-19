@@ -1,6 +1,7 @@
 #include "KNlpWrapper.h"
 #include <knlp/fmm.h>
 #include <knlp/doc_naive_bayes.h>
+#include <knlp/string_patterns.h>
 #include <exception>
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -21,6 +22,9 @@ bool KNlpWrapper::initTokenizer(const std::string& dictDir)
     {
         tokenizer_.reset(new ilplib::knlp::Fmm(
                              (dirPath / "term.txt").string()));
+
+        garbagePattern_.reset(new ilplib::knlp::GarbagePattern(
+                                  (dirPath / "garbage.pat").string()));
     }
     catch (const std::exception& e)
     {
@@ -113,4 +117,9 @@ std::string KNlpWrapper::mapFromOriginalCategory(const std::string& originalCate
         return std::string();
 
     return classifyCategory;
+}
+
+std::string KNlpWrapper::cleanGarbage(const std::string& str)
+{
+    return garbagePattern_->clean(str);
 }

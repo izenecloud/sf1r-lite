@@ -46,7 +46,7 @@ private:
         std::string& classifyCategory);
 
     bool classifyByTitle_(
-        std::string& title,
+        const std::string& title,
         std::string& classifyCategory,
         bool& isRule);
 
