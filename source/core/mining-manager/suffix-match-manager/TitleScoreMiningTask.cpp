@@ -62,6 +62,7 @@ bool TitleScoreMiningTask::preProcess()
     if (lastDocScoreDocid_ < document_manager_->getMaxDocId())
     {
         document_Scores_.reserve(document_manager_->getMaxDocId() + 1);
+        couldUse_ = false;
     }
     return true;
 }
@@ -128,7 +129,7 @@ void TitleScoreMiningTask::loadDocumentScore()
     else
         LOG (WARNING) << "open DocumentScore file failed";
 
-    if (document_Scores_.size() == lastDocScoreDocid_ + 1)
+    if (document_Scores_.size() == lastDocScoreDocid_ + 1 && lastDocScoreDocid_ == document_manager_->getMaxDocId())
     {
         couldUse_ = true;
         LOG (INFO) << "DocumentScore can be used now";

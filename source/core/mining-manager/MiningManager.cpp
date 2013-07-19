@@ -2322,19 +2322,22 @@ bool MiningManager::GetSuffixMatch(
 
         if (isLongQuery)
         {
-            for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list.begin(); i < res_list.end(); ++i)
+            if (suffixMatchManager_->getTitleScoreMiningTask()->canUse())
             {
-                double titleScore = suffixMatchManager_->getTitleScoreMiningTask()->getDocumentScore()[i->second];
-                double score_distance = abs(titleScore - sum_Score); /// less is better;
-                double s = score_distance/sum_Score;
-                //diannao 
-                double difPoint = (0 - std::log(s));
-                //cout << difPoint << endl;
-                if (difPoint > 2)
-                    difPoint = 2;
-                if (difPoint < -10)
-                    difPoint = -10;
-                //i->first += difPoint/25;
+                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list.begin(); i < res_list.end(); ++i)
+                {
+                    double titleScore = suffixMatchManager_->getTitleScoreMiningTask()->getDocumentScore()[i->second];
+                    double score_distance = abs(titleScore - sum_Score); /// less is better;
+                    double s = score_distance/sum_Score;
+                    //diannao 
+                    double difPoint = (0 - std::log(s));
+                    //cout << difPoint << endl;
+                    if (difPoint > 2)
+                        difPoint = 2;
+                    if (difPoint < -10)
+                        difPoint = -10;
+                    //i->first += difPoint/25;
+                }
             }
         }
         //sort ...
