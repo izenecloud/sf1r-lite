@@ -10,12 +10,16 @@
 
 #include <common/inttypes.h>
 #include <vector>
+#include <string>
+#include <set>
 
 namespace sf1r
 {
 class SearchManagerPreProcessor;
 class ProductRankingConfig;
 class SearchKeywordOperation;
+class KeywordSearchActionItem;
+class CustomRankManager;
 
 class FuzzySearchRanker
 {
@@ -29,7 +33,19 @@ public:
         isCategoryClassify_ = isEnable;
     }
 
-    void rank(
+    void setCustomRankManager(CustomRankManager* customRankManager)
+    {
+        customRankManager_ = customRankManager;
+    }
+
+    typedef std::pair<double, docid_t> ScoreDocId;
+
+    void rankByProductScore(
+        const KeywordSearchActionItem& actionItem,
+        std::vector<ScoreDocId>& resultList);
+
+    /** rank by property value such Price */
+    void rankByPropValue(
             const SearchKeywordOperation& actionOperation,
             uint32_t start,
             std::vector<uint32_t>& docid_list,
@@ -37,11 +53,17 @@ public:
             std::vector<float>& custom_score_list);
 
 private:
+    void getExcludeDocIds_(const std::string& query,
+                           std::set<docid_t>& excludeDocIds);
+
+private:
     SearchManagerPreProcessor& preprocessor_;
 
     score_t fuzzyScoreWeight_;
 
     bool isCategoryClassify_;
+
+    CustomRankManager* customRankManager_;
 };
 
 } // namespace sf1r

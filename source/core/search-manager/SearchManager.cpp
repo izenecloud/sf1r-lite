@@ -48,5 +48,8 @@ void SearchManager::setMiningManager(
     fuzzySearchRanker_.enableCategoryClassify(
         miningManager->GetCategoryClassifyTable() != NULL);
 
+    fuzzySearchRanker_.setCustomRankManager(
+        miningManager->GetCustomRankManager());
+
     searchBase_->setMiningManager(miningManager);
 }
