@@ -83,25 +83,28 @@ bool RecommendManager::open()
     {
         return false;
     }
-    try {
-        LOG(INFO) << "open ir manager on " << current_recommend_path << std::endl;
-        recommend_db_ = new MIRDatabase(current_recommend_path);
-        recommend_db_->setCacheSize<0>(100000000);
-        recommend_db_->setCacheSize<1>(0);
-        recommend_db_->open();
-    }
-    catch(std::exception& ex)
     {
-        LOG(ERROR) << ex.what() << std::endl;
-        return false;
-    }
-    LOG(INFO) << "open ir manager finished: " << current_recommend_path << std::endl;
-    std::string path_tocreate = current_recommend_path+"/concept-id";
-    boost::filesystem::create_directories(path_tocreate);
-    concept_id_manager_ = new ConceptIDManager(path_tocreate);
-    if (!concept_id_manager_->Open())
-    {
-        //TODO
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
+        try {
+            LOG(INFO) << "open ir manager on " << current_recommend_path << std::endl;
+            recommend_db_ = new MIRDatabase(current_recommend_path);
+            recommend_db_->setCacheSize<0>(100000000);
+            recommend_db_->setCacheSize<1>(0);
+            recommend_db_->open();
+        }
+        catch(std::exception& ex)
+        {
+            LOG(ERROR) << ex.what() << std::endl;
+            return false;
+        }
+        LOG(INFO) << "open ir manager finished: " << current_recommend_path << std::endl;
+        std::string path_tocreate = current_recommend_path+"/concept-id";
+        boost::filesystem::create_directories(path_tocreate);
+        concept_id_manager_ = new ConceptIDManager(path_tocreate);
+        if (!concept_id_manager_->Open())
+        {
+            //TODO
+        }
     }
     if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron)) return false;
     isOpen_ = true;
@@ -112,8 +115,10 @@ void RecommendManager::flush()
 {
     if (isOpen_)
     {
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
         try{
         serInfo_.flush();
+        LOG(INFO) << "flushing... " << std::endl;
         if(recommend_db_)
             recommend_db_->flush();
         if (concept_id_manager_)
@@ -131,6 +136,7 @@ void RecommendManager::close()
     if (isOpen_)
     {
         serInfo_.close();
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
         if (recommend_db_ != NULL)
         {
             recommend_db_->close();
@@ -281,7 +287,7 @@ void RecommendManager::RebuildForRecommend(
     {
         //TODO
     }
-    std::cout << newPath << " opened" << std::endl;
+    LOG(INFO) << newPath << " opened" << std::endl;
 
     uint32_t item_id = 1;
 
@@ -352,6 +358,7 @@ void RecommendManager::RebuildForRecommend(
         max_docid_file_.SetValue(max_docid_);
         max_docid_file_.Save();
     }
+    LOG(INFO) << newPath << " flushing" << std::endl;
     new_db->flush();
     new_concept_id_manager->Flush();
     {
@@ -482,6 +489,7 @@ uint32_t RecommendManager::getRelatedOnes_(
     }
     std::sort(seq.begin(), seq.end(), greater_than());
 
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
     uint32_t i = 0;
     while (queries.size()< maxNum && i<seq.size())
     {
