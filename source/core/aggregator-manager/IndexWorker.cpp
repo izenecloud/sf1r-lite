@@ -750,7 +750,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, reqlog.timestamp, true);
+    bool ret = insertDoc_(0, document, timestamp, true);
     if (ret)
     {
         doMining_(reqlog.timestamp);
@@ -875,7 +875,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = updateDoc_(0, oldId, document, old_rtype_doc, reqlog.timestamp, updateType, true);
+    bool ret = updateDoc_(0, oldId, document, old_rtype_doc, timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         if (!bundleConfig_->enable_forceget_doc_)
@@ -1253,11 +1253,11 @@ void IndexWorker::indexSCDDocFunc(int workerid)
 
         if (workerdata.scdType == INSERT_SCD || workerdata.oldDocId == 0)
         {
-            insertDoc_(workerid, document, workerdata.timestamp);
+            insertDoc_(workerid, document, new_timestamp);
         }
         else
         {
-            if (!updateDoc_(workerid, workerdata.oldDocId, document, old_rtype_doc, workerdata.timestamp, workerdata.updateType))
+            if (!updateDoc_(workerid, workerdata.oldDocId, document, old_rtype_doc, new_timestamp, workerdata.updateType))
                 continue;
             ++numUpdatedDocs_;
         }
@@ -1356,11 +1356,11 @@ bool IndexWorker::insertOrUpdateSCD_(
 
             if (scdType == INSERT_SCD || oldId == 0)
             {
-                insertDoc_(0, document, timestamp, true);
+                insertDoc_(0, document, new_timestamp, true);
             }
             else
             {
-                if (!updateDoc_(0, oldId, document, old_rtype_doc, timestamp, updateType, true))
+                if (!updateDoc_(0, oldId, document, old_rtype_doc, new_timestamp, updateType, true))
                     continue;
                 ++numUpdatedDocs_;
             }
@@ -1881,6 +1881,8 @@ bool IndexWorker::prepareDocument_(
                 PropertyValue propData(propertyValueU);
                 document.property(dateProperty_.getName()).swap(propData);
             }
+            // using the timestamp in the scd file.
+            timestamp = ts;
             STOP_PROFILER(pid_date);
         }
         else if (isIndexSchema)
@@ -1994,7 +1996,9 @@ bool IndexWorker::prepareDocument_(
 
     if (dateExistInSCD)
     {
-        timestamp = -1;
+        // using the timestamp in the doc.
+        //timestamp = -1;
+        
     }
     else
     {
