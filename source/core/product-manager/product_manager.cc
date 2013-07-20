@@ -217,6 +217,7 @@ bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp)
         return true;
     }
 
+    LOG(WARNING) << " get timestamp failed for doc : " << doc.getId();
     timestamp = Utilities::createTimeStamp();
     return false;
 }

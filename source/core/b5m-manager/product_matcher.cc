@@ -2698,24 +2698,41 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 break;
             }
+            bool has_space = false;
+            bool has_mid = false;
+            bool has_mid2 = false;
             if(temp_k[j].attribute_apps[0].attribute_name == "品牌")
             {
-                break;
+                std::string str;
+                term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                if(str.compare("/") == 0)
+                    has_mid = true;
+//                else break;
             }
-            bool has_space = false;
+            
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
             {
                 if(term_list[temp_k[i].positions[0].end].position == 0)
                     has_space = true;
-                else break;
+                else if(!has_mid) 
+                {
+                    std::string str;
+                    term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                    if(str.compare("-") == 0)
+                       has_mid2 = true;
+                    else break;
+                }
             }
             
-            boost::unordered_map<uint32_t, uint32_t> sp;
+            boost::unordered_map<uint32_t, uint32_t> sp, sp2;
             std::vector<AttributeApp>::iterator it2 = temp_k[j].attribute_apps.begin();
+            
+            sp2 = spus;
             while(it2!=temp_k[j].attribute_apps.end())
             {
                 if(spus.find(it2->spu_id) == spus.end())
                 {
+                    sp2[it2->spu_id] = 1;
                     it2++;
                     continue;
                 }
@@ -2723,7 +2740,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
  //               break;
                 it2++;
             }
-            temp_k[j].text.convertString(str, izenelib::util::UString::UTF_8);
+                  
             if(sp.size() == 0)
             {
                 if(temp_k[j].positions[0].begin <= temp_k[i].positions[0].end)
@@ -2731,13 +2748,18 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 break;
             }
             spus.clear();
-            spus = sp;
-//            LOG(INFO)<<"sp size: "<<sp.size()<<endl;
+            if(has_mid)spus = sp2;
+            else spus = sp;
+            LOG(INFO)<<"spus size: "<<spus.size()<<endl;
             
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
            
             if(has_space)
                 term += " "+str;
+            else if(has_mid)
+                term += "/"+str;
+            else if(has_mid2)
+                term += "-" + str;
             else
                 term += str;
             i++;
@@ -2748,6 +2770,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         if(is_brand)
         {
             bool has_space = false;
+            bool has_num = false;
+            bool has_cha = false;
+            std::string str = "";
             while(end_pos<term_list.size())
             {
                 std::string s;
@@ -2758,21 +2783,37 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     has_space = true;
                     continue;
                 }
-                if( (s.at(0)>='a' && s.at(0)<='z') || (s.at(0)>='0' && s.at(0)<='9') )
+                if(s.at(0)>='a' && s.at(0)<='z')
+                {
+                    if(s.at(s.size()-1) >='0' && s.at(s.size()-1) <='9')
+                        has_num = true;
+                    if(has_space)
+                        str +=" "+s;
+                    else str += s;
+                    has_space = false;
+                    has_cha = true;
+                    end_pos++;
+                }
+                else if(s.at(0)>='0' && s.at(0)<='9')
                 {
                     if(has_space)
-                        term +=" "+s;
-                    else term += s;
+                        str +=" "+s;
+                    else str += s;
                     has_space = false;
+                    has_num = true;
                     end_pos++;
                 }
                 else if(s.compare("-") == 0)
                 {
-                    term += s;
+                    str += s;
                     end_pos++;
                 }
                 else break;
             }
+            std::string ss;
+            ki.text.convertString(ss, izenelib::util::UString::UTF_8);
+            if(term.compare(ss) != 0)term += str;
+            else if(has_num && has_cha) term+=str;
         }
         if(note.find(term) == note.end())
         {
