@@ -790,7 +790,8 @@ namespace sf1r {
         bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false);
         void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
-        static bool ProcessBook(const Document& doc, Product& result_product);
+        static bool ProcessBookStatic(const Document& doc, Product& result_product);
+        bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
         static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
         static void MergeAttributes(std::vector<Attribute>& eattributes, const std::vector<Attribute>& attributes);
@@ -998,6 +999,7 @@ namespace sf1r {
         KeywordVector all_keywords_; //not serialized
         boost::regex type_regex_;
         boost::regex vol_regex_;
+        std::string book_category_;
 
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
