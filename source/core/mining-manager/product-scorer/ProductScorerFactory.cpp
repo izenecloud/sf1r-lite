@@ -179,7 +179,7 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         return NULL;
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    std::string cleanQuery = knlpWrapper->cleanGarbage(scoreParam.query_);
+    std::string cleanQuery = knlpWrapper->cleanGarbage(scoreParam.rawQuery_);
 
     KNlpWrapper::string_t queryKStr(cleanQuery);
     KNlpWrapper::token_score_list_t tokenScores;
@@ -206,7 +206,7 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         double score = it->second;
 
         categoryScoreMap[category] = score;
-        oss << " " << category << "/" << std::setprecision(2) << score;
+        oss << " " << category << "/" << std::setprecision(4) << score;
     }
     LOG(INFO) << oss.str();
 

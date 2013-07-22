@@ -22,6 +22,9 @@ struct ProductScoreParam
     /** used to create @c CustomScorer and @c CategoryScorer */
     const std::string& query_;
 
+    /** used to create @c CategoryClassifyScorer */
+    const std::string& rawQuery_;
+
     /** used to create @c CategoryScorer */
     const std::string& querySource_;
 
@@ -38,12 +41,14 @@ struct ProductScoreParam
 
     ProductScoreParam(
         const std::string& query,
+        const std::string& rawQuery,
         const std::string& querySource,
         const faceted::GroupParam::GroupPathVec& boostGroupLabels,
         PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer,
         SearchingMode::SearchingModeType searchMode)
         : query_(query)
+        , rawQuery_(rawQuery)
         , querySource_(querySource)
         , boostGroupLabels_(boostGroupLabels)
         , propSharedLockSet_(propSharedLockSet)
