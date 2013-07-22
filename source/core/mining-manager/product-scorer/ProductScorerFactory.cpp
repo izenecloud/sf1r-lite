@@ -68,6 +68,13 @@ ProductScorer* ProductScorerFactory::createScorer(
         {
             scoreSum->addScorer(scorer);
         }
+
+        scorer = createCustomScorer_(config_.scores[CUSTOM_SCORE],
+                                     scoreParam.query_);
+        if (scorer)
+        {
+            scoreSum->addScorer(scorer);
+        }
     }
     else
     {

@@ -2390,6 +2390,9 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
+        searchManager_->fuzzySearchRanker_.rankByProductScore(
+            actionOperation.actionItem_, res_list);
+
         if ((groupManager_ || attrManager_) && groupFilterBuilder_)
         {
             PropSharedLockSet propSharedLockSet;
@@ -2425,8 +2428,8 @@ bool MiningManager::GetSuffixMatch(
         docIdList[i] = res_list[i].second;
     }
 
-    searchManager_->fuzzySearchRanker_.rank(actionOperation, start, docIdList,
-            rankScoreList, customRankScoreList);
+    searchManager_->fuzzySearchRanker_.rankByPropValue(
+        actionOperation, start, docIdList, rankScoreList, customRankScoreList);
 
     cout<<"return true"<<endl;
     return true;
