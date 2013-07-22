@@ -637,7 +637,8 @@ bool MiningManager::open()
                 {
                     suffixMatchManager_->buildTitleScoreMiningTask();
                     MiningTask* miningTask_score = suffixMatchManager_->getTitleScoreMiningTask();
-                    miningTaskBuilder_->addTask(miningTask_score);
+                    //miningTaskBuilder_->addTask(miningTask_score);
+                    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
                 }
                 
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
@@ -2241,7 +2242,8 @@ bool MiningManager::GetSuffixMatch(
         
         double sum_Score = 0;
 
-        suffixMatchManager_->GetQuerySumScore(pattern, sum_Score);
+        suffixMatchManager_->GetQuerySumScore(pattern_orig, sum_Score);
+
         std::cout << "The sum_Score is:" << sum_Score <<std::endl;
 
         std::cout << "-----" << std::endl;
@@ -2320,7 +2322,7 @@ bool MiningManager::GetSuffixMatch(
                 rank_boundary); // rank_boundary
         }
 
-        if (isLongQuery)
+        /// add title score factor
         {
             if (suffixMatchManager_->getTitleScoreMiningTask()->canUse())
             {
@@ -2328,8 +2330,15 @@ bool MiningManager::GetSuffixMatch(
                 {
                     double titleScore = suffixMatchManager_->getTitleScoreMiningTask()->getDocumentScore()[i->second];
                     double score_distance = abs(titleScore - sum_Score); /// less is better;
+                    if (score_distance == 0)
+                    {
+                        
+                    }
+                    else
+                    {
+
+                    }
                     double s = score_distance/sum_Score;
-                    //diannao 
                     double difPoint = (0 - std::log(s));
                     //cout << difPoint << endl;
                     if (difPoint > 2)
@@ -2342,6 +2351,9 @@ bool MiningManager::GetSuffixMatch(
         }
         //sort ...
         std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
+
+
+        //add category filter ..
 
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)

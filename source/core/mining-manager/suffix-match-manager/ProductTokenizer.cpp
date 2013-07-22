@@ -329,6 +329,7 @@ void ProductTokenizer::GetQuerySumScore(const std::string& pattern, double &sum_
     std::list<std::pair<UString,double> > token_results;
     UString refined_results;
     sum_score = GetTokenResultsByKNlp_(pattern, token_results, refined_results, docid);
+    //cout << "pattern: " << pattern << " docid :" << docid << " sum_score:" << sum_score << endl;
 }
 
 unsigned int ProductTokenizer::GetTokenResultsByKNlp_(

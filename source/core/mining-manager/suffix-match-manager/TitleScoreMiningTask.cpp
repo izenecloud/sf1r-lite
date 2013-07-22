@@ -39,10 +39,10 @@ bool TitleScoreMiningTask::buildDocument(docid_t docID, const Document& doc)
         doc.getString(pname, pattern);
         double scoreSum = 0;
         tokenizer_->GetQuerySumScore(pattern, scoreSum, docID);
-        document_Scores_.push_back(scoreSum);
+        document_Scores_[docID] = scoreSum;
     }
     else
-        document_Scores_.push_back(0);
+        document_Scores_[docID] = 0;
 
     return true;
 }
@@ -61,7 +61,7 @@ bool TitleScoreMiningTask::preProcess()
     }
     if (lastDocScoreDocid_ < document_manager_->getMaxDocId())
     {
-        document_Scores_.reserve(document_manager_->getMaxDocId() + 1);
+        document_Scores_.resize(document_manager_->getMaxDocId() + 1);
         couldUse_ = false;
     }
     return true;
@@ -96,6 +96,7 @@ void TitleScoreMiningTask::saveDocumentScore()
             fout.write(reinterpret_cast< char *>(&document_Scores_[i]), sizeof(double));
         fout.close();
     }
+    couldUse_ = true;
 }
 
 void TitleScoreMiningTask::loadDocumentScore()
