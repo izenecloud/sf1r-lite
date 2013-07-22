@@ -136,7 +136,8 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
     }
     catch(std::exception& ex)
     {
-        LOG(ERROR) << "exception: " << ex.what();
+        LOG(ERROR) << "exception: " << ex.what()
+                   << ", title: " << title;
         return false;
     }
 }
