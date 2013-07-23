@@ -2,7 +2,6 @@
 #define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 
 #include "SuffixMatchMiningTask.hpp"
-#include "TitleScoreMiningTask.h"
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
@@ -75,10 +74,6 @@ public:
                     UString& analyzedQuery);
 
     SuffixMatchMiningTask* getMiningTask();
-
-    TitleScoreMiningTask* getTitleScoreMiningTask();
-
-    bool buildTitleScoreMiningTask();
     
     bool buildMiningTask();
 
@@ -92,6 +87,11 @@ public:
             std::list<std::pair<UString, double> >& boundary_minor_tokens);
 
     void GetQuerySumScore(const std::string& pattern, double &sum_score);
+
+    ProductTokenizer* getProductTokenizer()
+    {
+        return tokenizer_;
+    }
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -125,7 +125,6 @@ private:
     boost::shared_ptr<FilterManager> new_filter_manager;
 
     SuffixMatchMiningTask* suffixMatchTask_;
-    TitleScoreMiningTask* titleScoreTask_;
 
     CategoryClassifyTable* categoryClassifyTable_;
 

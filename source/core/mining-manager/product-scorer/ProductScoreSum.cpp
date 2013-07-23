@@ -1,6 +1,5 @@
 #include "ProductScoreSum.h"
-
-using namespace sf1r;
+#include <iostream>
 
 ProductScoreSum::ProductScoreSum(const ProductScoreConfig& config)
     : ProductScorer(config)

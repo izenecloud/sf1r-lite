@@ -33,6 +33,11 @@ public:
         isCategoryClassify_ = isEnable;
     }
 
+    void enableTitleRelevance(bool isEnable)
+    {
+        isTitleRelevance_ = isEnable;
+    }
+    
     void setCustomRankManager(CustomRankManager* customRankManager)
     {
         customRankManager_ = customRankManager;
@@ -62,6 +67,8 @@ private:
     score_t fuzzyScoreWeight_;
 
     bool isCategoryClassify_;
+
+    bool isTitleRelevance_;
 
     CustomRankManager* customRankManager_;
 };

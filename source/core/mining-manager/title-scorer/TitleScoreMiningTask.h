@@ -7,6 +7,7 @@
 #define TITLE_SCORE_MININGTASK_H
 
 #include "../MiningTask.h"
+#include "TitleScoreList.h"
 #include <common/type_defs.h>
 #include <string>
 
@@ -15,12 +16,13 @@ namespace sf1r
 
 class DocumentManager;
 class ProductTokenizer;
+
 class TitleScoreMiningTask: public MiningTask
 {
 public:
     explicit TitleScoreMiningTask(boost::shared_ptr<DocumentManager>& document_manager
-                    , std::string data_root_path
-                    , ProductTokenizer* tokenizer);
+                    , ProductTokenizer* tokenizer
+                    , TitleScoreList* titleScoreList);
 
     ~TitleScoreMiningTask();
 
@@ -32,21 +34,11 @@ public:
 
     docid_t getLastDocId();
 
-    const std::vector<double>& getDocumentScore();
-
-    void saveDocumentScore();
-    void loadDocumentScore();
-    void clearDocumentScore();
-
-    bool canUse();
 private:
-
-    bool couldUse_;
     boost::shared_ptr<DocumentManager> document_manager_;
-    std::string data_root_path_;
-    std::vector<double> document_Scores_; //from 1 - max
+    
+    TitleScoreList* titleScoreList_;
 
-    docid_t lastDocScoreDocid_;
     ProductTokenizer* tokenizer_;
 };
 }

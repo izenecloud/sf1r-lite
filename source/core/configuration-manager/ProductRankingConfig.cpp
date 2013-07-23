@@ -114,7 +114,8 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "fuzzy",        // FUZZY_SCORE
     "offer_item_count", // OFFER_ITEM_COUNT_SCORE
     "diversity",    // DIVERSITY_SCORE
-    "random"        // RANDOM_SCORE
+    "random",        // RANDOM_SCORE
+    "title_relevance" // TITLE_RELEVANCE_SCORE
 };
 
 ProductRankingConfig::ProductRankingConfig()

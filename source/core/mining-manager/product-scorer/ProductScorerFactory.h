@@ -18,6 +18,7 @@ class ProductScorer;
 class CustomRankManager;
 class ProductRankingConfig;
 class MiningManager;
+class TitleScoreList;
 class ProductScoreConfig;
 class ProductScoreManager;
 class CategoryClassifyTable;
@@ -67,6 +68,10 @@ private:
     ProductScorer* createPopularityScorer_(
         const ProductScoreConfig& scoreConfig);
 
+    ProductScorer* createTitleRelevanceScorer_(
+        const ProductScoreConfig& scoreConfig,
+        double score);
+
 private:
     const ProductRankingConfig& config_;
 
@@ -79,6 +84,8 @@ private:
     ProductScoreManager* productScoreManager_;
 
     CategoryClassifyTable* categoryClassifyTable_;
+
+    TitleScoreList* titleScoreList_;
 };
 
 } // namespace sf1r

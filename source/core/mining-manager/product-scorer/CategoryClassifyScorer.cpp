@@ -1,5 +1,6 @@
 #include "CategoryClassifyScorer.h"
 #include "../category-classify/CategoryClassifyTable.h"
+#include <iostream>
 
 using namespace sf1r;
 
@@ -34,6 +35,7 @@ score_t CategoryClassifyScorer::score(docid_t docId)
     {
         result -= kReduceScoreForNotRule;
     }
-
-    return result;
+    int int_res = static_cast<int>(result*10000);
+    score_t re_result = (double(int_res))/10000.0;
+    return re_result;
 }

@@ -772,20 +772,6 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
     }
     return true;
 }
-bool SuffixMatchManager::buildTitleScoreMiningTask()
-{
-    titleScoreTask_ = new TitleScoreMiningTask(
-            document_manager_,
-            data_root_path_,
-            tokenizer_);
-
-    if (!titleScoreTask_)
-    {
-        LOG(INFO) << "Build TitleScore MingTask ERROR";
-        return false;
-    }
-    return false;
-}
 
 bool SuffixMatchManager::buildMiningTask()
 {
@@ -818,14 +804,6 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
     return NULL;
 }
 
-TitleScoreMiningTask* SuffixMatchManager::getTitleScoreMiningTask()
-{
-    if (titleScoreTask_)
-    {
-        return titleScoreTask_;
-    }
-    return NULL;
-}
 
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {

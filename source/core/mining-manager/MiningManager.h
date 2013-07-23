@@ -105,6 +105,7 @@ class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
 class CategoryClassifyTable;
+class TitleScoreList;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
@@ -471,6 +472,11 @@ public:
         return categoryClassifyTable_;
     }
 
+    TitleScoreList* GetTitleScoreList()
+    {
+        return titleScoreList_;
+    }
+
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
@@ -596,6 +602,7 @@ private:
     bool initCategoryClassifyTable_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+    bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
 
 public:
     /// Should be initialized after construction
@@ -699,6 +706,9 @@ private:
 
     /** Table stores one classified category for each doc */
     CategoryClassifyTable* categoryClassifyTable_;
+
+    /** list stores all the documents' productTokenizer score*/
+    TitleScoreList* titleScoreList_;
 
     /** the knowledge of top labels for category boosting */
     GroupLabelKnowledge* groupLabelKnowledge_;

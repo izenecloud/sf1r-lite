@@ -49,6 +49,8 @@
 #include "product-ranker/ProductRankerFactory.h"
 #include "category-classify/CategoryClassifyTable.h"
 #include "category-classify/CategoryClassifyMiningTask.h"
+#include "title-scorer/TitleScoreList.h"
+#include "title-scorer/TitleScoreMiningTask.h"
 
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
@@ -175,6 +177,7 @@ MiningManager::MiningManager(
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
     , categoryClassifyTable_(NULL)
+    , titleScoreList_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
@@ -204,6 +207,7 @@ MiningManager::~MiningManager()
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (categoryClassifyTable_) delete categoryClassifyTable_;
+    if (titleScoreList_) delete titleScoreList_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
@@ -519,15 +523,6 @@ bool MiningManager::open()
         if (customDocIdConverter_) delete customDocIdConverter_;
         customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
-        const ProductRankingConfig& rankConfig =
-            mining_schema_.product_ranking_config;
-
-        if (!initMerchantScoreManager_(rankConfig) ||
-            !initGroupLabelKnowledge_(rankConfig) ||
-            !initCategoryClassifyTable_(rankConfig) ||
-            !initProductScorerFactory_(rankConfig) ||
-            !initProductRankerFactory_(rankConfig))
-            return false;
         if (mining_schema_.query_intent_enable)
         {
             if (queryIntentManager_) delete queryIntentManager_;
@@ -633,13 +628,6 @@ bool MiningManager::open()
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-                if (categoryClassifyTable_ != NULL)
-                {
-                    suffixMatchManager_->buildTitleScoreMiningTask();
-                    MiningTask* miningTask_score = suffixMatchManager_->getTitleScoreMiningTask();
-                    //miningTaskBuilder_->addTask(miningTask_score);
-                    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
-                }
                 
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
@@ -729,6 +717,18 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
+
+        /** product rank */
+        const ProductRankingConfig& rankConfig =
+            mining_schema_.product_ranking_config;
+
+        if (!initMerchantScoreManager_(rankConfig) ||
+            !initGroupLabelKnowledge_(rankConfig) ||
+            !initCategoryClassifyTable_(rankConfig) ||
+            !initTitleRelevanceScore_(rankConfig) ||
+            !initProductScorerFactory_(rankConfig) ||
+            !initProductRankerFactory_(rankConfig))
+            return false;
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -2240,13 +2240,11 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
         
-        double sum_Score = 0;
+        double queryScore = 0;
+        suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
+        actionOperation.actionItem_.queryScore_ = queryScore;
+        std::cout << "The query's product score is:" << queryScore <<std::endl;
 
-        suffixMatchManager_->GetQuerySumScore(pattern_orig, sum_Score);
-
-        std::cout << "The sum_Score is:" << sum_Score <<std::endl;
-
-        std::cout << "-----" << std::endl;
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
             std::string key;
@@ -2301,7 +2299,7 @@ bool MiningManager::GetSuffixMatch(
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list,
-                rank_boundary);// rank_boundary
+                rank_boundary);
 
             isOrSearch = res_list.empty();
         }
@@ -2319,42 +2317,8 @@ bool MiningManager::GetSuffixMatch(
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list,
-                rank_boundary); // rank_boundary
+                rank_boundary);
         }
-
-        /// add title score factor
-        {
-            if (suffixMatchManager_->getTitleScoreMiningTask()->canUse())
-            {
-                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list.begin(); i < res_list.end(); ++i)
-                {
-                    double titleScore = suffixMatchManager_->getTitleScoreMiningTask()->getDocumentScore()[i->second];
-                    double score_distance = abs(titleScore - sum_Score); /// less is better;
-                    if (score_distance == 0)
-                    {
-                        
-                    }
-                    else
-                    {
-
-                    }
-                    double s = score_distance/sum_Score;
-                    double difPoint = (0 - std::log(s));
-                    //cout << difPoint << endl;
-                    if (difPoint > 2)
-                        difPoint = 2;
-                    if (difPoint < -10)
-                        difPoint = -10;
-                    //i->first += difPoint/25;
-                }
-            }
-        }
-        //sort ...
-        std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
-
-
-        //add category filter ..
-
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -2698,6 +2662,38 @@ bool MiningManager::initGroupLabelKnowledge_(const ProductRankingConfig& rankCon
             LOG(ERROR) << "error in opening " << categoryBoostDir;
         }
     }
+
+    return true;
+}
+
+bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable || suffixMatchManager_ == NULL)
+        return true;
+    const ProductScoreConfig& titleRevelanceConfig =
+        rankConfig.scores[TITLE_RELEVANCE_SCORE];
+
+    if (titleRevelanceConfig.weight ==0)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path TitleScorerDir(parentDir / "title_scorer");
+    bfs::create_directories(TitleScorerDir);
+
+    titleScoreList_ = new TitleScoreList(TitleScorerDir.string(),
+                                        titleRevelanceConfig.propName,
+                                        titleRevelanceConfig.isDebug);
+
+     if (!titleScoreList_->open())
+    {
+        LOG(ERROR) << "open " << TitleScorerDir << " failed";
+        return false;
+    }
+    LOG (INFO) << "USE Title Score ,....";
+    MiningTask* miningTask_score =  new TitleScoreMiningTask(document_manager_, 
+                                            suffixMatchManager_->getProductTokenizer(), 
+                                            titleScoreList_);
+    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
 
     return true;
 }

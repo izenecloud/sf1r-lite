@@ -312,6 +312,7 @@ public:
     KeywordSearchActionItem(const KeywordSearchActionItem& obj)
         : env_(obj.env_)
         , refinedQueryString_(obj.refinedQueryString_)
+        , queryScore_(0)
         , collectionName_(obj.collectionName_)
         , rankingType_(obj.rankingType_)
         , searchingMode_(obj.searchingMode_)
@@ -462,6 +463,11 @@ public:
     ///        if it needs to be modified.
     ///
     izenelib::util::UString refinedQueryString_;
+
+    ///
+    /// @brief the score of the query in product tokenizer; only used in TitleScore Relevance;
+    ///
+    double queryScore_;
 
     ///
     /// @brief a collection name.
