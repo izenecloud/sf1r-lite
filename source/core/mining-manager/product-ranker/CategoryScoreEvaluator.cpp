@@ -24,15 +24,11 @@ score_t CategoryScoreEvaluator::evaluate(ProductScore& productScore)
     if (weight_ == 0)
         return 0;
 
-    score_t result = 0;
+    score_t result = static_cast<int>(productScore.topKScore_ / weight_);
 
-    if (isDiverseInPage_)
+    if (isDiverseInPage_ && result == 0)
     {
         result = resultCount_-- / kEachPageResultNum;
-    }
-    else
-    {
-        result = static_cast<int>(productScore.topKScore_ / weight_);
     }
 
     return result;
