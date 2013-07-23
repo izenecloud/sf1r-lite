@@ -3,7 +3,6 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/KNlpWrapper.h>
 #include <knlp/doc_naive_bayes.h>
-#include <util/ustring/UString.h>
 #include <glog/logging.h>
 #include <boost/filesystem/path.hpp>
 
@@ -12,7 +11,7 @@ namespace bfs = boost::filesystem;
 
 namespace
 {
-const std::string kOriginalCategoryPropName("OriginalCategory");
+const std::string kOriginalCategoryPropName("Category");
 const std::string kSourcePropName("Source");
 const std::string kClassifyCategoryValueBook("R>文娱>书籍杂志");
 
@@ -21,9 +20,7 @@ void getDocPropValue(
     const std::string& propName,
     std::string& propValue)
 {
-    izenelib::util::UString ustr;
-    doc.getProperty(propName, ustr);
-    ustr.convertString(propValue, izenelib::util::UString::UTF_8);
+    doc.getProperty(propName, propValue);
 }
 
 }
@@ -136,7 +133,8 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
     }
     catch(std::exception& ex)
     {
-        //LOG(ERROR) << "exception: " << ex.what() << title;
+        LOG(ERROR) << "exception: " << ex.what()
+                   << ", title: " << title;
         return false;
     }
 }

@@ -3,21 +3,41 @@
 using namespace sf1r;
 namespace po = boost::program_options;
 
-int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<std::string>& tags)
+
+int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<std::string>& tags, std::string& category)
 {
     Document doc;
     doc.property("Title") = str_to_propstr(text, UString::UTF_8);
     ProductMatcher::Product p;
     pm->Process(doc, p);
-    if(p.scategory.empty()) return -1;
-    for(uint32_t i=0;i<tags.size();i++)
+    category = p.scategory;
+    //if(!p.sbrand.empty())
+    //{
+        //std::cerr<<"matched brand "<<p.sbrand<<std::endl;
+    //}
+    int32_t flag=0;
+    if(p.scategory.empty())
     {
-        if(boost::algorithm::starts_with(p.scategory, tags[i]))
+        flag = -1;
+    }
+    else
+    {
+        for(uint32_t i=0;i<tags.size();i++)
         {
-            return 1;
+            if(boost::algorithm::starts_with(p.scategory, tags[i]))
+            {
+                flag = 1;
+                break;
+            }
         }
     }
-    std::cerr<<"unmatch category "<<p.scategory<<std::endl;
+    std::cerr<<"[CM]"<<text<<","<<flag<<","<<category<<"\t[";
+    for(uint32_t i=0;i<tags.size();i++)
+    {
+        if(i>0) std::cerr<<",";
+        std::cerr<<tags[i];
+    }
+    std::cerr<<"]"<<std::endl;
     return 0;
 }
 
@@ -61,6 +81,7 @@ int main(int ac, char** av)
     std::string must_file = scd_path+"/must";
     std::string accuracy_file = scd_path+"/accuracy";
     std::string line;
+    std::string category;
     izenelib::util::ClockTimer clocker;
     {
         std::string text;
@@ -73,7 +94,7 @@ int main(int ac, char** av)
             else
             {
                 boost::algorithm::split(tags, line, boost::algorithm::is_any_of(","));
-                int flag = IsMatch(&matcher, text, tags);
+                int flag = IsMatch(&matcher, text, tags, category);
                 if(flag!=1)
                 {
                     std::cerr<<text<<" not match for "<<line<<std::endl;
@@ -100,17 +121,17 @@ int main(int ac, char** av)
             {
                 boost::algorithm::split(tags, line, boost::algorithm::is_any_of(","));
                 all_count++;
-                int flag = IsMatch(&matcher, text, tags);
+                int flag = IsMatch(&matcher, text, tags, category);
                 if(flag==1)
                 {
                     correct_count++;
                 }
                 else
                 {
-                    std::cerr<<text<<" not match for "<<line<<std::endl;
+                    //std::cerr<<text<<" not match for "<<line<<std::endl;
                     if(flag==-1) 
                     {
-                        std::cerr<<"however empty"<<std::endl;
+                        //std::cerr<<"however empty"<<std::endl;
                         empty_count++;
                     }
                 }

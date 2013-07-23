@@ -325,6 +325,7 @@ int do_main(int ac, char** av)
         ("all", "specify all flag")
         ("test", "specify test flag")
         ("noprice", "no price flag")
+        ("spu-only", "spu only flag")
         ("depth", po::value<uint16_t>(), "specify category max depth while categorizing")
         ("force", "specify force flag")
         ("trie", "do trie test")
@@ -371,6 +372,7 @@ int do_main(int ac, char** av)
     bool test_flag = false;
     bool force_flag = false;
     bool noprice = false;
+    bool spu_only = false;
     uint16_t max_depth = 0;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
@@ -537,6 +539,10 @@ int do_main(int ac, char** av)
     if(vm.count("noprice"))
     {
         noprice = true;
+    }
+    if(vm.count("spu-only"))
+    {
+        spu_only = true;
     }
     if(vm.count("depth"))
     {
@@ -1083,7 +1089,7 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
-        if(!processor.Generate())
+        if(!processor.Generate(spu_only))
         {
             std::cout<<"b5mp processor failed"<<std::endl;
             return EXIT_FAILURE;

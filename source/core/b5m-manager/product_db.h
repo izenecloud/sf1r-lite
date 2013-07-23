@@ -18,7 +18,7 @@ namespace sf1r {
     {
     public:
         B5mpDocGenerator();
-        void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
+        void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only=false);
 
     private:
         boost::unordered_set<std::string> sub_doc_props_;

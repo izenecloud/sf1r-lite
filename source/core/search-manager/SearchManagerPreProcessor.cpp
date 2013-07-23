@@ -312,6 +312,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
         return relevanceScorerPtr.release();
 
     ProductScoreParam scoreParam(actionItem.env_.normalizedQueryString_,
+                                 actionItem.env_.queryString_,
                                  actionItem.env_.querySource_,
                                  actionItem.groupParam_.boostGroupLabels_,
                                  propSharedLockSet,
