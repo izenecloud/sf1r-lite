@@ -2526,7 +2526,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     if(text.length() == 0) return;
     LOG(INFO)<<"length: "<<text.length()<<endl;
     uint32_t Len = 250;
-    uint32_t category_size = 15;
+    uint32_t category_size = 2;
     uint32_t sample_capacity = 25;
     double similarity_threshold = 0.05;
     ATermList term_list;
@@ -2545,7 +2545,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     FeatureVector feature_vector;
     GenFeatureVector_(keyword_vector, feature_vector);
     
-//    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
+    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     std::vector<std::pair<cid_t, double> > cos_value;
     boost::unordered_map<cid_t, uint32_t>::iterator it;
     for(it=first_level_category_.begin();it!=first_level_category_.end();it++)
@@ -2559,10 +2559,10 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
-
-    for(uint32_t i=0;i<20;i++)
+    category_size = cos_value.size()/6;
+    for(uint32_t i=0;i<cos_value.size();i++)
     {
-        LOG(INFO)<<"cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
+        cout<<"i:  "<<i<<"   cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
                  <<category_list_[cos_value[i].first].name<<endl;
     }
 
@@ -2577,9 +2577,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
-
-        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
 */
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
+
         if(str.at(str.size()-1) == '#')
         {
             std::string st;
