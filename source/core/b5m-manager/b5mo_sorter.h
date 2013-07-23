@@ -58,7 +58,7 @@ namespace sf1r {
         void Append(const ScdDocument& doc, const std::string& ts);
 
         bool StageOne();
-        bool StageTwo(const std::string& last_m);
+        bool StageTwo(bool spu_only, const std::string& last_m);
 
 
     private:
@@ -96,6 +96,7 @@ namespace sf1r {
     private:
         std::string m_;
         std::string ts_;
+        bool spu_only_;
         uint32_t mcount_;
         uint32_t index_;
         std::vector<Value> buffer_;

@@ -22,7 +22,7 @@ B5mpDocGenerator::B5mpDocGenerator()
     sub_doc_props_.insert("isGenuine");
     //sub_doc_props_.clear();
 }
-void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
+void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
@@ -138,6 +138,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
+    if(spu_only&&independent) pdoc.type = NOT_SCD;
 }
 
 ProductProperty::ProductProperty()

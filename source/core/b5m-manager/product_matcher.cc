@@ -239,7 +239,8 @@ ProductMatcher::ProductMatcher()
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
- type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$")
+ type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
+ book_category_("书籍/杂志/报纸")
 {
 }
 
@@ -312,6 +313,11 @@ bool ProductMatcher::Open(const std::string& kpath)
             izenelib::am::ssf::Util<>::Load(path, b2f_map);
             back2front_.insert(b2f_map.begin(), b2f_map.end());
             LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
+            path = path_+"/book_category";
+            if(boost::filesystem::exists(path))
+            {
+                izenelib::am::ssf::Util<>::Load(path, book_category_);
+            }
             path = path_+"/feature_vector";
             izenelib::am::ssf::Util<>::LoadOne(path, feature_vectors_);
 
@@ -461,7 +467,11 @@ void ProductMatcher::CategoryDepthCut(std::string& category, uint16_t d)
 
 bool ProductMatcher::GetFrontendCategory(UString& backend, UString& frontend) const
 {
-    if(back2front_.empty()) return false;
+    if(back2front_.empty()) 
+    {
+        frontend = backend;
+        return true;
+    }
     std::string b;
     backend.convertString(b, UString::UTF_8);
     std::string ob = b;//original
@@ -666,6 +676,22 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         ifs.close();
     }
+    std::string bookcategory_file= scd_path+"/book_category";
+    if(boost::filesystem::exists(bookcategory_file))
+    {
+        std::ifstream ifs(bookcategory_file.c_str());
+        std::string line;
+        if( getline(ifs, line))
+        {
+            boost::algorithm::trim(line);
+            if(!line.empty())
+            {
+                book_category_ = line;
+                LOG(INFO)<<"book category set to "<<book_category_<<std::endl;
+            }
+        }
+        ifs.close();
+    }
     std::string spu_scd = scd_path+"/SPU.SCD";
     if(!boost::filesystem::exists(spu_scd))
     {
@@ -683,12 +709,12 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             boost::algorithm::trim(line);
             std::vector<std::string> vec;
             boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
-            if(vec.size()<2) continue;
+            if(vec.size()<1) continue;
             uint32_t cid = category_list_.size();
             const std::string& scategory = vec[0];
             if(scategory.empty()) continue;
             //ignore book category
-            if(boost::algorithm::starts_with(scategory, B5MHelper::BookCategoryName()))
+            if(boost::algorithm::starts_with(scategory, book_category_))
             {
                 continue;
             }
@@ -701,7 +727,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             c.has_spu = false;
             std::set<std::string> akeywords;
             std::set<std::string> rkeywords;
-            for(uint32_t i=2;i<vec.size();i++)
+            for(uint32_t i=1;i<vec.size();i++)
             {
                 std::string keyword = vec[i];
                 bool remove = false;
@@ -741,6 +767,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             }
             for(std::set<std::string>::const_iterator it = akeywords.begin();it!=akeywords.end();it++)
             {
+                UString uc(*it, UString::UTF_8);
+                if(uc.length()<=1) continue;
                 c.keywords.push_back(*it);
             }
             if(c.depth>1)
@@ -760,6 +788,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
                 //std::cerr<<"parent cid "<<c.parent_cid<<std::endl;
             }
             category_list_.push_back(c);
+#ifdef B5M_DEBUG
+            std::cerr<<"add category "<<c.name<<std::endl;
+#endif
             category_index_[c.name] = cid;
         }
         ifs.close();
@@ -1037,6 +1068,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, tmap);
     path = path_+"/back2front";
     izenelib::am::ssf::Util<>::Save(path, b2f_map);
+    path = path_+"/book_category";
+    izenelib::am::ssf::Util<>::Save(path, book_category_);
     path = path_+"/feature_vector";
     izenelib::am::ssf::Util<>::SaveOne(path, feature_vectors_);
     //path = path_+"/nf";
@@ -2006,7 +2039,7 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
 {
     std::string scategory;
     doc.getString("Category", scategory);
-    if(boost::algorithm::starts_with(scategory, B5MHelper::BookCategoryName()))
+    if(boost::algorithm::starts_with(scategory, book_category_))
     {
         std::string isbn_value;
         GetIsbnAttribute(doc, isbn_value);
@@ -2023,9 +2056,21 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
         if(!isbn_value.empty())
         {
             result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
-            result_product.scategory = B5MHelper::BookCategoryName();
+            result_product.scategory = book_category_;
             return true;
         }
+    }
+    return false;
+}
+
+bool ProductMatcher::ProcessBookStatic(const Document& doc, Product& result_product)
+{
+    std::string isbn_value;
+    GetIsbnAttribute(doc, isbn_value);
+    if(!isbn_value.empty())
+    {
+        result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
+        return true;
     }
     return false;
 }
@@ -2500,7 +2545,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     FeatureVector feature_vector;
     GenFeatureVector_(keyword_vector, feature_vector);
     
-    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
+//    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     std::vector<std::pair<cid_t, double> > cos_value;
     boost::unordered_map<cid_t, uint32_t>::iterator it;
     for(it=first_level_category_.begin();it!=first_level_category_.end();it++)
@@ -2628,7 +2673,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
         term = str;
         uint32_t j = i;
-//        boost::unordered_map<uint32_t, uint32_t> spus;
+        boost::unordered_map<uint32_t, uint32_t> spus;
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         bool is_brand = false;
         bool is_model = false;
@@ -2639,6 +2684,13 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
 
         uint32_t end_pos = ki.positions[0].end;
         if(is_brand)
+        {
+            for(uint32_t i=0;i<ki.attribute_apps.size();i++)
+            {
+                spus[ki.attribute_apps[i].spu_id] = 1;
+            }
+        }
+        if(is_brand)
         while(j<temp_k.size()-1)
         {
             j++;
@@ -2646,32 +2698,49 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 break;
             }
+            bool has_space = false;
+            bool has_mid = false;
+            bool has_mid2 = false;
             if(temp_k[j].attribute_apps[0].attribute_name == "品牌")
             {
-                break;
+                std::string str;
+                term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                if(str.compare("/") == 0)
+                    has_mid = true;
+//                else break;
             }
-            bool has_space = false;
+            
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
             {
                 if(term_list[temp_k[i].positions[0].end].position == 0)
                     has_space = true;
-                else break;
+                else if(!has_mid) 
+                {
+                    std::string str;
+                    term_list[temp_k[i].positions[0].end].text.convertString(str, izenelib::util::UString::UTF_8);
+                    if(str.compare("-") == 0)
+                       has_mid2 = true;
+                    else break;
+                }
             }
-            /*
-            boost::unordered_map<uint32_t, uint32_t> sp;
+            
+            boost::unordered_map<uint32_t, uint32_t> sp, sp2;
             std::vector<AttributeApp>::iterator it2 = temp_k[j].attribute_apps.begin();
+            
+            sp2 = spus;
             while(it2!=temp_k[j].attribute_apps.end())
             {
                 if(spus.find(it2->spu_id) == spus.end())
                 {
+                    sp2[it2->spu_id] = 1;
                     it2++;
                     continue;
                 }
                 sp[it2->spu_id]=1;
-                break;
+ //               break;
                 it2++;
             }
-            temp_k[j].text.convertString(str, izenelib::util::UString::UTF_8);
+                  
             if(sp.size() == 0)
             {
                 if(temp_k[j].positions[0].begin <= temp_k[i].positions[0].end)
@@ -2679,13 +2748,18 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 break;
             }
             spus.clear();
-            spus = sp;
-//            LOG(INFO)<<"sp size: "<<sp.size()<<endl;
-            */
+            if(has_mid)spus = sp2;
+            else spus = sp;
+            LOG(INFO)<<"spus size: "<<spus.size()<<endl;
+            
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
            
             if(has_space)
                 term += " "+str;
+            else if(has_mid)
+                term += "/"+str;
+            else if(has_mid2)
+                term += "-" + str;
             else
                 term += str;
             i++;
@@ -2696,6 +2770,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         if(is_brand)
         {
             bool has_space = false;
+            bool has_num = false;
+            bool has_cha = false;
+            std::string str = "";
             while(end_pos<term_list.size())
             {
                 std::string s;
@@ -2706,21 +2783,37 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     has_space = true;
                     continue;
                 }
-                if( (s.at(0)>='a' && s.at(0)<='z') || (s.at(0)>='0' && s.at(0)<='9') )
+                if(s.at(0)>='a' && s.at(0)<='z')
                 {
+                    if(s.at(s.size()-1) >='0' && s.at(s.size()-1) <='9')
+                        has_num = true;
                     if(has_space)
-                        term +=" "+s;
-                    else term += s;
+                        str +=" "+s;
+                    else str += s;
                     has_space = false;
+                    has_cha = true;
                     end_pos++;
                 }
-                else if(s.compare("-") == 0 || s.compare("/") == 0)
+                else if(s.at(0)>='0' && s.at(0)<='9')
                 {
-                    term += s;
+                    if(has_space)
+                        str +=" "+s;
+                    else str += s;
+                    has_space = false;
+                    has_num = true;
+                    end_pos++;
+                }
+                else if(s.compare("-") == 0)
+                {
+                    str += s;
                     end_pos++;
                 }
                 else break;
             }
+            std::string ss;
+            ki.text.convertString(ss, izenelib::util::UString::UTF_8);
+            if(term.compare(ss) != 0)term += str;
+            else if(has_num && has_cha) term+=str;
         }
         if(note.find(term) == note.end())
         {
@@ -3883,8 +3976,15 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         const AttributeApp& app = tag.attribute_apps[i];
         if(app.spu_id==0) continue;
         SpuContributorValue& scv = sc[app.spu_id];
-        if(scv.IsAttributeFound(app.attribute_name)) continue;
-        scv.attribute_found.insert(app.attribute_name);
+        boost::unordered_map<std::string, double>::iterator alit = scv.attribute_lenweight.find(app.attribute_name);
+        double lenweight = tag.term_list.size();
+        if(alit!=scv.attribute_lenweight.end())
+        {
+            if(lenweight>alit->second) alit->second = lenweight;
+            continue;
+        }
+        //if(scv.IsAttributeFound(app.attribute_name)) continue;
+        scv.attribute_lenweight.insert(std::make_pair(app.attribute_name, lenweight));
         double p_point = 0.0;
         if(app.is_optional)
         {
@@ -3906,7 +4006,7 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         }
         double paweight = p_point;
         scv.paweight+=paweight;
-        scv.lenweight+=tag.term_list.size();
+        //scv.lenweight+=tag.term_list.size();
 
         //const Product& p = products_[app.spu_id];
         //std::string stext;
@@ -4268,13 +4368,14 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #endif
         if(!pricesim) continue;
 #ifdef B5M_DEBUG
-        LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
+        LOG(ERROR)<<p.stitle<<","<<scv.GetLenWeight()<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
 #endif
-        scv.lenweight/=text_term_len;
-        if(IsSpuMatch_(p, scv))
+        //scv.lenweight/=text_term_len;
+        if(IsSpuMatch_(p, scv, text_term_len))
         {
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
+            smc.lenweight = scv.GetLenWeight();
             smc.price_diff = PriceDiff_(price, p.price);
             spu_match_candidates.push_back(smc);
         }
@@ -5450,12 +5551,13 @@ bool ProductMatcher::SpuMatched_(const WeightType& weight, const Product& p) con
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }
-bool ProductMatcher::IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const
+bool ProductMatcher::IsSpuMatch_(const Product& p, const SpuContributorValue& scv, double query_len) const
 {
     if(p.spid.empty()) return false; //detect empty product
     double paweight = scv.paweight;
     //LOG(INFO)<<p.stitle<<","<<scv.lenweight<<","<<scv.model_match<<","<<paweight<<std::endl;
-    if(scv.lenweight>=0.8&&scv.model_match) paweight*=2;
+    double ratio_lenweight = scv.GetLenWeight()/query_len;
+    if(ratio_lenweight>=0.8&&scv.model_match) paweight*=2;
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }

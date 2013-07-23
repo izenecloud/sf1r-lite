@@ -1250,9 +1250,11 @@ void AutoFillChildManager::updateFromLog()
     }
     LoadItem();
     buildItemVector();
+    LOG(INFO) << " buildDbIndex for query size : " << querylist.size() << ", time_string: " << time_string;
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
     wa_.Clear();
+    LOG(INFO) << " buildDbIndex for query finished";
     buildWat_array(false);
 }
 
