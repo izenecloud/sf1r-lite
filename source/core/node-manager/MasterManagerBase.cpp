@@ -106,6 +106,11 @@ void MasterManagerBase::stop()
     waiting_request_num_ = 0;
 }
 
+shardid_t MasterManagerBase::getMyShardId()
+{
+    return sf1rTopology_.curNode_.nodeId_;
+}
+
 bool MasterManagerBase::getShardReceiver(
         unsigned int shardid,
         std::string& host,

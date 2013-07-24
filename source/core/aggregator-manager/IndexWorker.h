@@ -17,6 +17,7 @@
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
 #include <index-manager/IncSupportedIndexManager.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -46,6 +47,7 @@ class ScdWriterController;
 class SearchWorker;
 class DistributeRequestHooker;
 class IndexHooker;
+class ScdSharder;
 
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
@@ -118,6 +120,9 @@ public:
     {
         return inc_supported_index_manager_;
     }
+
+    bool createScdSharder(
+        boost::shared_ptr<ScdSharder>& scdSharder);
 
 private:
     void createPropertyList_();
@@ -299,6 +304,8 @@ private:
     std::vector<boost::thread*> index_thread_workers_;
     bool* index_thread_status_;
     bool is_real_time_;
+    ShardingConfig shard_cfg_;
+    boost::shared_ptr<ScdSharder> scdSharder_;
 };
 
 }

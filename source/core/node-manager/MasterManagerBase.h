@@ -142,6 +142,7 @@ public:
     bool findServiceMasterAddress(const std::string& service, std::string& host, uint32_t& port);
     void updateServiceReadState(const std::string& my_state, bool include_self);
     bool hasAnyCachedRequest();
+    shardid_t getMyShardId();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

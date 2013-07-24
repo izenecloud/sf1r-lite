@@ -11,12 +11,19 @@ int main(int argc, char** argv)
 {
     bool help = false;
     char optchar;
-    std::string dir = "/home/zhongxia/codebase/sf1r-engine/bin/collection/chinese-wiki/scd/index";
+    std::string dir = "/home/vincentlee/codebase/sf1r-engine/bin/collection/chinese-wiki/scd/index";
     int maxDoc = 0;
     ShardingConfig cfg;
-    cfg.setShardNum(3);
-    cfg.addShardKey("Url");
-    cfg.addShardKey("Title");
+    ShardingConfig::RangeListT ranges;
+    ranges.push_back(10);
+    ranges.push_back(100);
+    ranges.push_back(1000);
+    cfg.addRangeShardKey("Price", ranges);
+    ShardingConfig::AttrListT strranges;
+    strranges.push_back("bbb");
+    strranges.push_back("eee");
+    cfg.addAttributeShardKey("Attribute", strranges);
+    cfg.setUniqueShardKey("DOCID");
 
     while ((optchar = getopt(argc, argv, "hd:n:s:m:")) != -1)
     {
@@ -24,41 +31,8 @@ int main(int argc, char** argv)
             case 'd':
                 dir = optarg;
                 break;
-            case 'n':
-                cfg.setShardNum(atoi(optarg));
-                break;
             case 'm':
                 maxDoc = atoi(optarg);
-                break;
-            case 's':
-                {
-                    // reset
-                    cfg.clearShardKeys();
-                    char* p = optarg;
-                    std::string shardkey;
-                    while (*p)
-                    {
-                        if (*p == ':')
-                        {
-                            if (!shardkey.empty())
-                            {
-                                cfg.addShardKey(shardkey);
-                                //cout<<"shardkey: "<<shardkey<<endl;
-                            }
-                            shardkey.clear();
-                            p++;
-                            continue;
-                        }
-
-                        shardkey.push_back(*p++);
-                    }
-
-                    if (!shardkey.empty())
-                    {
-                        cfg.addShardKey(shardkey);
-                        //cout<<"shardkey: "<<shardkey<<endl;
-                    }
-                }
                 break;
             case 'h':
                 help = true;
@@ -79,20 +53,16 @@ int main(int argc, char** argv)
             return 0;
     }
 
+    cfg.shardidList_.push_back(1);
+    cfg.shardidList_.push_back(2);
+    cfg.shardidList_.push_back(3);
     // show status
     cout<<"----------------------"<<endl;
     cout<<"scd dir: "<<dir<<endl;
     cout<<"documents(0 for all): "<<maxDoc<<endl;
-    cout<<"shards number: "<<cfg.getShardNum()<<endl;
+    //cout<<"shards number: "<<cfg.getShardNum()<<endl;
     cout<<"shard keys: ";
-    std::set<std::string>&keys = cfg.getShardKeys();
-    std::set<std::string>::iterator it;
-    for (it = keys.begin(); it != keys.end(); it++)
-    {
-        cout<<*it<<" ";
-    }
-    cout<<endl<<"----------------------"<<endl<<endl;
-
+    //
     // create scd sharding
     boost::shared_ptr<ScdSharder> scdSharder(new ScdSharder);
     if (!scdSharder->init(cfg))
@@ -101,7 +71,7 @@ int main(int argc, char** argv)
     }
 
     // create scd dispatcher
-    boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, "chinese-wiki"));
+    boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, "chinese-wiki", false));
 
     // In this test, there is no Worker and scd transmission will fail,
     // but it dosen't matter, because we only need to test sharding.

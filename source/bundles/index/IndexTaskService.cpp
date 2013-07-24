@@ -5,7 +5,6 @@
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/sharding/ScdSharder.h>
-#include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
@@ -21,6 +20,7 @@ using namespace izenelib::driver;
 namespace sf1r
 {
 static const char* SCD_BACKUP_DIR = "backup";
+const static std::string DISPATCH_TEMP_DIR = "dispatch-temp-dir/";
 
 IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig)
 : bundleConfig_(bundleConfig)
@@ -87,15 +87,16 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
             }
             else
             {
-                if (DistributeFileSys::get()->isEnabled())
-                {
-                    // TODO: while dfs enabled, shard the scd file under the scd_path to sub-directory directly on dfs.
-                    // and the shard worker only index the sub-directory belong to it.
-                    //
-                    //std::string myshard;
-                    //myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
-                    //scd_path = (bfs::path(scd_path)/bfs::path(myshard)).string();
-                }
+                //if (DistributeFileSys::get()->isEnabled())
+                //{
+                //    // while dfs enabled, the master will shard the scd file under the main scd_path
+                //    //  to sub-directory directly on dfs.
+                //    // and the shard worker only index the sub-directory belong to it.
+                //    //
+                //    std::string myshard;
+                //    myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
+                //    scd_path = (bfs::path(scd_path)/bfs::path(DISPATCH_TEMP_DIR + myshard)).string();
+                //}
                 indexWorker_->index(scd_path, numdoc, result);
             }
         }
@@ -148,6 +149,16 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
     return result;
 }
 
+bool IndexTaskService::isNeedSharding()
+{
+    if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute() &&
+        DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        return DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
+    }
+    return false;
+}
+
 bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list, int64_t timestamp)
 {
     return indexWorker_->buildCollection(0, scd_list, timestamp);
@@ -155,11 +166,23 @@ bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp)
 {
+    if (isNeedSharding())
+    {
+        LOG(INFO) << "distribute the index task to all shard nodes.";
+        HookDistributeRequestForIndex();
+    }
+ 
     return indexWorker_->reindex(documentManager, timestamp);
 }
 
 bool IndexTaskService::optimizeIndex()
 {
+    if (isNeedSharding())
+    {
+        LOG(INFO) << "distribute the index task to all shard nodes.";
+        HookDistributeRequestForIndex();
+    }
+
     return indexWorker_->optimizeIndex();
 }
 
@@ -231,8 +254,7 @@ bool IndexTaskService::distributedIndex_(unsigned int numdoc, std::string scd_di
     bool ret = distributedIndexImpl_(
                     numdoc,
                     bundleConfig_->collectionName_,
-                    scd_dir,
-                    bundleConfig_->indexShardKeys_);
+                    scd_dir);
 
     MasterManagerBase::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
 
@@ -242,30 +264,48 @@ bool IndexTaskService::distributedIndex_(unsigned int numdoc, std::string scd_di
 bool IndexTaskService::distributedIndexImpl_(
     unsigned int numdoc,
     const std::string& collectionName,
-    const std::string& masterScdPath,
-    const std::vector<std::string>& shardKeyList)
+    const std::string& masterScdPath)
 {
+    if (!scdSharder_)
+    {
+        if (!createScdSharder(scdSharder_))
+        {
+            LOG(ERROR) << "create scd sharder failed.";
+            return false;
+        }
+        if (!scdSharder_)
+        {
+            LOG(INFO) << "no scd sharder!";
+            return false;
+        }
+    }
+
     std::string scd_dir = masterScdPath;
     std::vector<std::string> outScdFileList;
+    //
+    // 1. dispatching scd to multiple nodes
     if (!DistributeFileSys::get()->isEnabled())
     {
-        // 1. dispatching scd to multiple nodes
-        boost::shared_ptr<ScdSharder> scdSharder;
-        if (!createScdSharder(scdSharder, shardKeyList))
-            return false;
-
-        boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, collectionName));
+        boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder_,
+                collectionName, DistributeFileSys::get()->isEnabled()));
         if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
             return false;
-
-        scd_dir = bundleConfig_->indexSCDPath();
     }
     // 2. send index request to multiple nodes
     LOG(INFO) << "start distributed indexing";
     HookDistributeRequestForIndex();
+
+    if (!DistributeFileSys::get()->isEnabled())
+        scd_dir = bundleConfig_->indexSCDPath();
+    //else
+    //{
+    //    std::string myshard;
+    //    myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
+    //    scd_dir = (bfs::path(scd_dir)/bfs::path(DISPATCH_TEMP_DIR + myshard)).string();
+    //}
     bool ret = true;
     
-    //indexAggregator_->distributeRequest(collectionName, "index", numdoc, ret);
+    // starting local index.
     indexWorker_->index(scd_dir, numdoc, ret);
 
     if (ret && !DistributeFileSys::get()->isEnabled())
@@ -288,37 +328,39 @@ bool IndexTaskService::distributedIndexImpl_(
 }
 
 bool IndexTaskService::createScdSharder(
-    boost::shared_ptr<ScdSharder>& scdSharder,
-    const std::vector<std::string>& shardKeyList)
+    boost::shared_ptr<ScdSharder>& scdSharder)
 {
-    if (shardKeyList.empty())
+    if (bundleConfig_->indexShardKeys_.empty())
     {
         LOG(ERROR) << "No sharding key!";
         return false;
     }
 
     // sharding configuration
-    ShardingConfig cfg;
-    if (MasterManagerBase::get()->getCollectionShardids(service_, bundleConfig_->collectionName_, cfg.shardidList_))
+    if (MasterManagerBase::get()->getCollectionShardids(service_,
+            bundleConfig_->collectionName_, shard_cfg_.shardidList_))
     {
-        cfg.shardNum_ = cfg.shardidList_.size();
-        cfg.totalShardNum_ = NodeManagerBase::get()->getTotalShardNum();
+        //cfg.shardNum_ = cfg.shardidList_.size();
+        //cfg.totalShardNum_ = NodeManagerBase::get()->getTotalShardNum();
     }
     else
     {
         LOG(ERROR) << "No shardid configured for " << bundleConfig_->collectionName_;
         return false;
     }
-    for (size_t i = 0; i < shardKeyList.size(); i++)
-    {
-        cfg.addShardKey(shardKeyList[i]);
-        LOG(INFO) << "Shard Key: " << shardKeyList[i];
-    }
-    cfg.setShardStrategy(ShardingConfig::SHARDING_HASH); // use proper strategy
+
+    ShardingConfig::RangeListT ranges;
+    ranges.push_back(100);
+    ranges.push_back(1000);
+    shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
+    ShardingConfig::AttrListT strranges;
+    strranges.push_back("abc");
+    shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
+    shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
 
     scdSharder.reset(new ScdSharder);
 
-    if (scdSharder && scdSharder->init(cfg))
+    if (scdSharder && scdSharder->init(shard_cfg_))
         return true;
     else
         return false;

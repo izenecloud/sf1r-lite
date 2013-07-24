@@ -3,6 +3,7 @@
 
 #include "IndexBundleConfiguration.h"
 
+#include <node-manager/sharding/ShardingStrategy.h>
 #include <aggregator-manager/IndexAggregator.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <common/Status.h>
@@ -57,17 +58,16 @@ public:
     void flush();
 
 private:
+    bool isNeedSharding();
     bool HookDistributeRequestForIndex();
     bool distributedIndex_(unsigned int numdoc, std::string scd_dir);
     bool distributedIndexImpl_(
         unsigned int numdoc,
         const std::string& collectionName,
-        const std::string& masterScdPath,
-        const std::vector<std::string>& shardKeyList);
+        const std::string& masterScdPath);
 
     bool createScdSharder(
-        boost::shared_ptr<ScdSharder>& scdSharder,
-        const std::vector<std::string>& shardKeyList);
+        boost::shared_ptr<ScdSharder>& scdSharder);
 
 private:
     std::string service_;
@@ -75,6 +75,8 @@ private:
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
+    ShardingConfig shard_cfg_;
+    boost::shared_ptr<ScdSharder> scdSharder_;
 
     friend class IndexWorkerController;
     friend class CollectionTaskScheduler;
