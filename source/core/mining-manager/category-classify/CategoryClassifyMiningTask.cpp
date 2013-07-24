@@ -45,35 +45,16 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
         return true;
 
     std::string classifyCategory;
-    std::string targetCategory;
     bool isRule = true;
 
-    if (ruleByTargetCategory_(doc, targetCategory, classifyCategory) ||
-        ruleByOriginalCategory_(doc, classifyCategory) ||
-        ruleBySource_(doc, targetCategory, classifyCategory) ||
+    if (ruleByOriginalCategory_(doc, classifyCategory) ||
+        ruleBySource_(doc, classifyCategory) ||
         classifyByTitle_(title, classifyCategory, isRule))
     {
         classifyTable_.setCategory(docID, classifyCategory, isRule);
     }
 
     return true;
-}
-
-bool CategoryClassifyMiningTask::ruleByTargetCategory_(
-    const Document& doc,
-    std::string& targetCategory,
-    std::string& classifyCategory)
-{
-    if (!targetCategoryPropName_.empty())
-    {
-        getDocPropValue(doc, targetCategoryPropName_, targetCategory);
-        if (targetCategory.find("图书音像") != std::string::npos)
-        {
-            classifyCategory = kClassifyCategoryValueBook;
-            return true;
-        }
-    }
-    return false;
 }
 
 bool CategoryClassifyMiningTask::ruleByOriginalCategory_(
@@ -94,9 +75,14 @@ bool CategoryClassifyMiningTask::ruleByOriginalCategory_(
 
 bool CategoryClassifyMiningTask::ruleBySource_(
     const Document& doc,
-    const std::string& targetCategory,
     std::string& classifyCategory)
 {
+    if (targetCategoryPropName_.empty())
+        return false;
+
+    std::string targetCategory;
+    getDocPropValue(doc, targetCategoryPropName_, targetCategory);
+
     if (!targetCategory.empty())
         return false;
 
