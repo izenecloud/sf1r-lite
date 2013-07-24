@@ -1274,6 +1274,8 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
 {
     uint32_t newest_reqid = reqlog_mgr_->getLastSuccessReqId();
     LOG(INFO) << "starting last request is :" << newest_reqid;
+    if (newest_reqid == 0)
+        return true;
     if (is_primary)
     {
         LOG(INFO) << "primary no need check log.";
