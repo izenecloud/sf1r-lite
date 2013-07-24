@@ -122,7 +122,7 @@ private:
 
     void InitDict_(const std::string& dict_name);
 
-    unsigned int GetTokenResultsByKNlp_(
+    double GetTokenResultsByKNlp_(
             const std::string& pattern,
             std::list<std::pair<UString,double> >& token_results,
             UString& refined_results,
