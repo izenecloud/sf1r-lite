@@ -2690,6 +2690,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 spus[ki.attribute_apps[i].spu_id] = 1;
             }
         }
+        bool not_only_brand = false;
         if(is_brand)
         while(j<temp_k.size()-1)
         {
@@ -2709,6 +2710,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     has_mid = true;
 //                else break;
             }
+            else not_only_brand = true;
             
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
             {
@@ -2812,8 +2814,18 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
             std::string ss;
             ki.text.convertString(ss, izenelib::util::UString::UTF_8);
-            if(term.compare(ss) != 0)term += str;
-            else if(has_num && has_cha) term+=str;
+            if(term.compare(ss) != 0)
+            {
+                term += str;
+            }
+            else if(has_num && has_cha)
+            {
+                term+=str;
+            }
+            if(has_num && has_cha)
+            {
+                not_only_brand = true;
+            }
         }
         if(note.find(term) == note.end())
         {
@@ -2821,7 +2833,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             if(term.compare(str)!=0 || is_brand)
             {
                 uint32_t weight;
-                if(term.compare(str) != 0)
+                if(term.compare(str) != 0 && not_only_brand)
                     weight = 10;
                 else weight = 5;
                 note[term]=1;
