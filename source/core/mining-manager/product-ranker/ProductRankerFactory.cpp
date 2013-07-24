@@ -79,7 +79,9 @@ bool ProductRankerFactory::isDiverseInPage_(const ProductRankParam& param) const
 
 void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    const score_t minWeight = minCustomCategoryWeight(config_);
+    const score_t minWeight = isDiverseInPage ?
+        config_.scores[CUSTOM_SCORE].weight :
+        minCustomCategoryWeight(config_);
 
     ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isDiverseInPage));
 }

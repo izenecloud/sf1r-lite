@@ -31,18 +31,12 @@ public:
     virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
-    bool ruleByTargetCategory_(
-        const Document& doc,
-        std::string& targetCategory,
-        std::string& classifyCategory);
-
     bool ruleByOriginalCategory_(
         const Document& doc,
         std::string& classifyCategory);
 
     bool ruleBySource_(
         const Document& doc,
-        const std::string& targetCategory,
         std::string& classifyCategory);
 
     bool classifyByTitle_(
