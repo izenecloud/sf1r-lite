@@ -16,13 +16,12 @@ const UString::CharT ProductTokenizer::SPACE_UCHAR = ' ';
 
 ProductTokenizer::ProductTokenizer(
     TokenizerType type,
-    const std::string& dict_path,
-    CategoryClassifyTable* categoryClassifyTable)
+    const std::string& dict_path)
     : type_(type)
     , analyzer_(NULL)
     , knowledge_(NULL)
     , matcher_(NULL)
-    , categoryClassifyTable_(categoryClassifyTable)
+    , categoryClassifyTable_(NULL)
 {
     Init_(dict_path);
 }
@@ -30,6 +29,11 @@ ProductTokenizer::ProductTokenizer(
 ProductTokenizer::~ProductTokenizer()
 {
     if (analyzer_) delete analyzer_;
+}
+
+void ProductTokenizer::setCategoryClassifyTable(CategoryClassifyTable* table)
+{
+    categoryClassifyTable_ = table;
 }
 
 void ProductTokenizer::Init_(const std::string& dict_path)
@@ -358,39 +362,56 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
         KNlpWrapper::string_t classifyKStr;
         if (docid == 0)
         {
-            KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
+            string pattern_cat = KNlpWrapper::get()->cleanGarbage(pattern);
+            KNlpWrapper::token_score_list_t tokenScores_cat;
+            KNlpWrapper::string_t kstr_cat(pattern_cat);
+            KNlpWrapper::get()->fmmTokenize(kstr_cat, tokenScores_cat);
+
+            KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores_cat);
             classifyCategory = classifyKStr.get_bytes("utf-8");
         }
         else
         {
             if (categoryClassifyTable_ != NULL)
-                classifyCategory = categoryClassifyTable_->getCategoryHasLock(docid).first;
+            {
+                classifyCategory = categoryClassifyTable_->getCategoryNoLock(docid).first;
+                //cout << "classifyCategory: " << classifyCategory <<endl; 
+            }
         }
     }
     catch(std::exception& ex)
     {
         LOG(ERROR) << "exception: " << ex.what();
     }
-    std::list<std::pair<UString, double> > token_results_book;
+    
     if (classifyCategory == "R>文娱>书籍杂志")
     {
+        std::map<UString, double> tokenScoreMap_cat;
+        std::list<std::pair<UString, double> > token_results_book;
+        std::list<std::pair<UString, double> > token_results_book_minor;
+        if (!minor_pattern.empty())
+            GetTokenResultsByCMA_(minor_pattern, token_results_book_minor, refined_results);
         GetTokenResultsByCMA_(pattern, token_results_book, refined_results);
         double sum_score = 0;
-        for (std::list<std::pair<UString, double> >::iterator i = token_results_book.begin(); i != token_results_book.end(); ++i)
+        for (std::list<std::pair<UString, double> >::iterator i = token_results_book_minor.begin(); i != token_results_book_minor.end(); ++i)
         {
-            sum_score += i->second;
+            i->second = (i->second)/10;
+            if(tokenScoreMap_cat.insert(*i).second)
+                sum_score += i->second;
         }
         for (std::list<std::pair<UString, double> >::iterator i = token_results_book.begin(); i != token_results_book.end(); ++i)
         {
-            token_results.push_back(std::make_pair(i->first, i->second/sum_score));
+            if (tokenScoreMap_cat.insert(*i).second)
+                sum_score += i->second;
+        }
+        for (std::map<UString, double>::iterator i = tokenScoreMap_cat.begin(); i != tokenScoreMap_cat.end(); ++i)
+        {
+            token_results.push_back(std::make_pair(i->first, i->second/sum_score));  
         }
         return sum_score;
     }
     ///deal with "书籍杂志" category end;
 
-    ///deal with other has many that can not been get;
-
-    ///deal with endl;
     if (!minor_pattern.empty())
     {
         KNlpWrapper::string_t kmstr(minor_pattern);

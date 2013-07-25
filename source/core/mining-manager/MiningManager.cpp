@@ -55,6 +55,7 @@
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "suffix-match-manager/ProductTokenizer.h"
 #include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
@@ -577,7 +578,7 @@ bool MiningManager::open()
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     system_resource_path_,
-                    document_manager_, groupManager_, attrManager_, numericTableBuilder_, categoryClassifyTable_);
+                    document_manager_, groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -2232,8 +2233,8 @@ bool MiningManager::GetSuffixMatch(
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
         if (isLongQuery)
         {
-            pattern = KNlpWrapper::get()->cleanGarbage(pattern);
-            LOG(INFO) << "cleaned query for long query: " << pattern;
+            pattern = KNlpWrapper::get()->cleanStopword(pattern);
+            LOG(INFO) << "clear stop word for long query: " << pattern;
         }
 
         std::list<std::pair<UString, double> > major_tokens;
@@ -2694,6 +2695,8 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
                                             suffixMatchManager_->getProductTokenizer(), 
                                             titleScoreList_);
     multiThreadMiningTaskBuilder_->addTask(miningTask_score);
+
+    suffixMatchManager_->getProductTokenizer()->setCategoryClassifyTable(categoryClassifyTable_);
 
     return true;
 }

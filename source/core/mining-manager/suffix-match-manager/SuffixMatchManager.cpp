@@ -8,7 +8,6 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
-#include <mining-manager/category-classify/CategoryClassifyTable.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
 
@@ -31,15 +30,13 @@ SuffixMatchManager::SuffixMatchManager(
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
-        NumericPropertyTableBuilder* numeric_tablebuilder,
-        CategoryClassifyTable* categoryClassifyTable)
+        NumericPropertyTableBuilder* numeric_tablebuilder)
     : data_root_path_(homePath)
     , tokenize_dicpath_(dicpath)
     , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
     , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
-    , categoryClassifyTable_(categoryClassifyTable)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -818,7 +815,7 @@ void SuffixMatchManager::buildTokenizeDic()
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
         ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
-    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str(), categoryClassifyTable_);
+    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }
 
 void SuffixMatchManager::updateFmindex()

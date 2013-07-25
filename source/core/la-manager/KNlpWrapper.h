@@ -53,6 +53,8 @@ public:
 
     std::string cleanGarbage(const std::string& str);
 
+    std::string cleanStopword(const std::string& str);
+
     void fmmBigram(std::vector<std::pair<KString,double> >& r);
 
     void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);

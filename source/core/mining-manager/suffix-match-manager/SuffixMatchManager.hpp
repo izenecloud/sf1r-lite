@@ -39,8 +39,7 @@ public:
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
-            NumericPropertyTableBuilder* numeric_tablebuilder,
-            CategoryClassifyTable* categoryClassifyTable);
+            NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
 
@@ -125,8 +124,6 @@ private:
     boost::shared_ptr<FilterManager> new_filter_manager;
 
     SuffixMatchMiningTask* suffixMatchTask_;
-
-    CategoryClassifyTable* categoryClassifyTable_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;

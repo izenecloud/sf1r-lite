@@ -96,8 +96,7 @@ public:
 
     ProductTokenizer(
             TokenizerType type,
-            const std::string& dict_path,
-            CategoryClassifyTable* categoryClassifyTable = NULL);
+            const std::string& dict_path);
 
     ~ProductTokenizer();
 
@@ -113,6 +112,9 @@ public:
     }
 
     void GetQuerySumScore(const std::string& pattern, double& sum_score, docid_t docid = 0);
+
+    void setCategoryClassifyTable(CategoryClassifyTable* table);
+    
 private:
     void Init_(const std::string& dict_path);
 

@@ -132,3 +132,8 @@ std::string KNlpWrapper::cleanGarbage(const std::string& str)
 {
     return garbagePattern_->clean(str);
 }
+
+std::string KNlpWrapper::cleanStopword(const std::string& str)
+{
+    return garbagePattern_->erase_stop_word(str);
+}

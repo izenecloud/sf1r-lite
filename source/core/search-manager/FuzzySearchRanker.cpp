@@ -62,7 +62,7 @@ void FuzzySearchRanker::rankByProductScore(
         if (isCategoryClassify_)
         {
             // ignore the docs with zero category score
-            if (productScore == 0)
+            if (productScore < 0.00009)
                 continue;
 
             fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
