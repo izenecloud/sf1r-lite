@@ -3786,7 +3786,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
             it->second = add_score;
         }
 #ifdef B5M_DEBUG
-        //std::cout<<"[CNA]"<<category_list_[app.cid].name<<","<<app.depth<<","<<app.is_complete<<","<<add_score<<std::endl;
+        std::cout<<"[CNA]"<<category_list_[app.cid].name<<","<<app.depth<<","<<app.is_complete<<","<<add_score<<std::endl;
 #endif
     }
     CategoryContributor acc;
@@ -3846,7 +3846,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
         }
         all_score+=score;
 #ifdef B5M_DEBUG
-        //std::cout<<"[AN]"<<category_list_[it->first].name<<","<<score<<std::endl;
+        std::cout<<"[AN]"<<category_list_[it->first].name<<","<<score<<std::endl;
 #endif
 
     }
@@ -3905,7 +3905,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
         }
         all_score+=score;
 #ifdef B5M_DEBUG
-        //std::cout<<"[CNO]"<<category_list_[it->first].name<<","<<score<<std::endl;
+        std::cout<<"[CNO]"<<category_list_[it->first].name<<","<<score<<std::endl;
 #endif
     }
     double inner_kweight = 1.0;
@@ -3914,7 +3914,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
         inner_kweight = 0.3;
     }
 #ifdef B5M_DEBUG
-    //std::cout<<"[INNERK]"<<inner_kweight<<std::endl;
+    std::cout<<"[INNERK]"<<inner_kweight<<std::endl;
 #endif
     if(all_score>0.0)
     {
@@ -3928,7 +3928,7 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
             it->second*=(inner_kweight/divide)*kweight;
             //it->second*=inner_kweight*kweight;
 #ifdef B5M_DEBUG
-            //std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
+            std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
 #endif
         }
     }
@@ -4068,6 +4068,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #ifdef B5M_DEBUG
     std::cout<<"[TITLE]"<<stitle<<std::endl;
 #endif
+    if(term_list.size()<=1) return;
     ProductPrice price;
     Document::doc_prop_value_strtype uprice;
     if(doc.getProperty("Price", uprice))
@@ -4162,10 +4163,10 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
         std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
 #ifdef B5M_DEBUG
-        //for(std::size_t i=0;i<clen;i++)
-        //{
-            //std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
-        //}
+        for(std::size_t i=0;i<clen;i++)
+        {
+            std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
+        }
 #endif
         for(uint32_t i=0;i<clen;i++)
         {
@@ -4194,6 +4195,8 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         FeatureVector feature_vector;
         GenFeatureVector_(keywords, feature_vector);
+        double max_cosine = 0.0;
+        uint32_t max_cosine_index = 0;
         //std::vector<double> cosine_list(cid_list.size());
         for(uint32_t i=0;i<cid_list.size();i++)
         {
@@ -4209,6 +4212,11 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             if(cid2>0) cosine = Cosine_(feature_vector, feature_vectors_[cid2]);
             else if(cid1>0) cosine = Cosine_(feature_vector, feature_vectors_[cid1]);
             //cosine_list[i] = cosine;
+            if(cosine>max_cosine)
+            {
+                max_cosine = cosine;
+                max_cosine_index = i;
+            }
             cid_score_list[i] = cosine;
 #ifdef B5M_DEBUG
             //std::cerr<<"vsm cosine "<<category_list_[cid].name<<" : "<<cosine1<<","<<cosine2<<std::endl;
@@ -4249,6 +4257,15 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
                     cid_score_list.clear();
                 }
             }
+        }
+        else if(max_cosine>=0.35&&max_cosine/top_cosine>=3.0)
+        {
+            uint32_t replace_index = max_cosine_index;
+#ifdef B5M_DEBUG
+            std::cerr<<"vsm change "<<category_list_[cid_list[0]].name<<" to "<<category_list_[cid_list[replace_index]].name<<std::endl;
+#endif
+            std::swap(cid_list[0], cid_list[replace_index]);
+            std::swap(cid_score_list[0], cid_score_list[replace_index]);
         }
         if(cid_list.empty()) return;
     }
