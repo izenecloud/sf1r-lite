@@ -413,7 +413,7 @@ uint32_t RecommendManager::getRelatedConcepts(
     analyzer_->GetIdListForMatch(queryStr, termIdList);
     std::vector<double> weightList(termIdList.size(), 1.0);
 
-    boost::shared_lock<boost::shared_mutex> mLock(mutex_);
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
     uint32_t num = getRelatedOnes_(recommend_db_, termIdList,weightList, maxNum, obtIdList , queries);
     return num;
 
@@ -489,7 +489,6 @@ uint32_t RecommendManager::getRelatedOnes_(
     }
     std::sort(seq.begin(), seq.end(), greater_than());
 
-    boost::lock_guard<boost::shared_mutex> lock(mutex_);
     uint32_t i = 0;
     while (queries.size()< maxNum && i<seq.size())
     {

@@ -2526,7 +2526,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     if(text.length() == 0) return;
     LOG(INFO)<<"length: "<<text.length()<<endl;
     uint32_t Len = 250;
-    uint32_t category_size = 15;
+    uint32_t category_size = 2;
     uint32_t sample_capacity = 25;
     double similarity_threshold = 0.05;
     ATermList term_list;
@@ -2545,7 +2545,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     FeatureVector feature_vector;
     GenFeatureVector_(keyword_vector, feature_vector);
     
-//    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
+    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     std::vector<std::pair<cid_t, double> > cos_value;
     boost::unordered_map<cid_t, uint32_t>::iterator it;
     for(it=first_level_category_.begin();it!=first_level_category_.end();it++)
@@ -2559,13 +2559,17 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
-
-    for(uint32_t i=0;i<20;i++)
+    if(category_list_[cos_value[0].first].name.find("妆") != std::string::npos || text.length() < Len)
     {
-        LOG(INFO)<<"cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
+        ExtractKeywordsFromPage(text, res_brand);
+    }
+    category_size = cos_value.size()/6;
+    for(uint32_t i=0;i<cos_value.size();i++)
+    {
+        cout<<"i:  "<<i<<"   cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
                  <<category_list_[cos_value[i].first].name<<endl;
     }
-
+    
     KeywordVector temp_k;
     LOG(INFO)<<"keyword size: "<<keyword_vector.size()<<endl;
     for(uint32_t i=0;i<keyword_vector.size();i++)
@@ -2577,9 +2581,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
         LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
-
-        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
 */
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
+
         if(str.at(str.size()-1) == '#')
         {
             std::string st;
@@ -2690,6 +2694,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 spus[ki.attribute_apps[i].spu_id] = 1;
             }
         }
+        bool not_only_brand = false;
         if(is_brand)
         while(j<temp_k.size()-1)
         {
@@ -2709,6 +2714,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     has_mid = true;
 //                else break;
             }
+            else not_only_brand = true;
             
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
             {
@@ -2812,8 +2818,18 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
             std::string ss;
             ki.text.convertString(ss, izenelib::util::UString::UTF_8);
-            if(term.compare(ss) != 0)term += str;
-            else if(has_num && has_cha) term+=str;
+            if(term.compare(ss) != 0)
+            {
+                term += str;
+            }
+            else if(has_num && has_cha)
+            {
+                term+=str;
+            }
+            if(has_num && has_cha)
+            {
+                not_only_brand = true;
+            }
         }
         if(note.find(term) == note.end())
         {
@@ -2821,7 +2837,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             if(term.compare(str)!=0 || is_brand)
             {
                 uint32_t weight;
-                if(term.compare(str) != 0)
+                if(term.compare(str) != 0 && not_only_brand)
                     weight = 10;
                 else weight = 5;
                 note[term]=1;
@@ -2856,108 +2872,227 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
     }
 }
-void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::map<std::string, std::vector<std::pair<UString, uint32_t> > > & res, std::list<std::pair<UString, uint32_t> > & category, std::map<UString, uint32_t>& weight)
+void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res)
 {
     if(!IsOpen()) return;
     if(text.length() == 0) return;
-    
+    LOG(INFO)<<"length: "<<text.length()<<endl;
+    uint32_t Len = 250;
+    uint32_t category_size = 1;
+    uint32_t sample_capacity = 25;
+    double similarity_threshold = 0.05;
     ATermList term_list;
     Analyze_(text, term_list);
-
+/*
+    for(uint32_t i=0;i<term_list.size();i++)
+    {
+        std::string str;
+        term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        LOG(INFO)<<"i: " << i << "term: "<<str<<" pos: "<<term_list[i].position<<endl; 
+    }
+*/    
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, false);
     
     FeatureVector feature_vector;
     GenFeatureVector_(keyword_vector, feature_vector);
-    boost::unordered_map<cid_t, uint32_t>::iterator iter;
     
+    LOG(INFO) <<"first_level_category_ size: " <<first_level_category_.size()<<endl;
     std::vector<std::pair<cid_t, double> > cos_value;
-    for(iter=first_level_category_.begin();iter!=first_level_category_.end();iter++)
+    boost::unordered_map<cid_t, uint32_t>::iterator it;
+    for(it=first_level_category_.begin();it!=first_level_category_.end();it++)
     {
-        double tcos = Cosine_(feature_vector, feature_vectors_[iter->first]);
-        std::vector<std::pair<cid_t, double> >::iterator it;
-        for(it = cos_value.begin();it!=cos_value.end();it++)
+        double tcos = Cosine_(feature_vector, feature_vectors_[it->first]);
+        std::vector<std::pair<cid_t, double> >::iterator iter;
+        for(iter = cos_value.begin();iter!=cos_value.end();iter++)
         {
-            if(it->second < tcos)
+            if(iter->second < tcos)
                 break;
         }
-        cos_value.insert(it, make_pair(iter->first, tcos));
+        cos_value.insert(iter, make_pair(it->first, tcos));
     }
-    for(uint32_t i=0;i<10;i++)
+    
+    for(uint32_t i=0;i<cos_value.size();i++)
     {
-        LOG(INFO)<<"i: "<<i<<" cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" name: "<<category_list_[cos_value[i].first].name<<endl;
+        cout<<"i:  "<<i<<"   cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" category: "
+                 <<category_list_[cos_value[i].first].name<<endl;
     }
 
-    boost::unordered_map<std::string, uint32_t> note;
-    KeywordVector::iterator it;
-    for(it = keyword_vector.begin();it!=keyword_vector.end();it++)
+    KeywordVector temp_k;
+    LOG(INFO)<<"keyword size: "<<keyword_vector.size()<<endl;
+    for(uint32_t i=0;i<keyword_vector.size();i++)
     {
-        std::string term;
-        it->text.convertString(term, izenelib::util::UString::UTF_8);
-        if(it->category_name_apps.size()>0)
-        {
-            if(note.find(term) ==note.end())
-             {
-                 std::vector<CategoryNameApp>::iterator iter = it->category_name_apps.begin();
-                 bool is_res = false;
-                 for(;iter!=it->category_name_apps.end();iter++)
-                 {
+        KeywordTag& ki = keyword_vector[i];
+        uint32_t product_count = ki.attribute_apps.size();
+
+        std::string str;
+        ki.text.convertString(str, izenelib::util::UString::UTF_8);
 /*
-                     cout<<"term: " <<term
-                       <<" cid: "<<iter->cid
-                       <<" depth: "<<iter->depth
-                       <<" is_complete: "<<iter->is_complete
-                       <<" category: "<< category_list_[iter->cid].name
-                       <<" parent_cid: " <<category_list_[iter->cid].parent_cid
-                       <<" is_parent: " <<category_list_[iter->cid].is_parent
-                       <<" depth: " <<category_list_[iter->cid].depth
-                       <<" has_spu: " << category_list_[iter->cid].has_spu<<endl;
+        LOG(INFO)<<"keyword: "<<str<<"  "<<ki.positions[0].begin<<"  "<<ki.positions[0].end<<endl;
 */
-                     std::string man_category = category_list_[iter->cid].name.substr(0,category_list_[iter->cid].name.find_first_of(">"));
-                     if(man_category.find(term) != std::string::npos)
-                         is_res = true;
-                 }
-                 if(is_res)
-                 {
-                     category.push_back(std::make_pair(it->text, it->positions[0].begin));
-                     note[term]=1;
-                 }
-             }
-        }
-        else if(it->attribute_apps.size() > 0)
+        LOG(INFO)<<"keyword: "<<str<<" product count: "<<product_count<<endl;
+
+        if(str.at(str.size()-1) == '#')
         {
-            std::vector<AttributeApp>::iterator iter = it->attribute_apps.begin();
-            
-            for(uint32_t i=0;iter!=it->attribute_apps.end();iter++,i++)
+            std::string st;
+            term_list[ki.positions[0].end-1].text.convertString(st, izenelib::util::UString::UTF_8);
+            if(st.at(st.size()-1) != '#' && st.at(0) >= '0' && st.at(0) <= '9')
             {
-                if(i>10 || it->attribute_apps.size() < 15)break;
-                if(iter->attribute_name !="品牌" && iter->attribute_name != "型号")
-                    continue;
-		cid_t cid = products_[iter->spu_id].cid;
-                cid = GetLevelCid_(category_list_[cid].name, 1);
-                bool b = false;
-                for(uint32_t i=0;i<5;i++)
+                str = str.substr(0, str.size()-1);
+                ki.text.assign(str, izenelib::util::UString::UTF_8);
+            }        
+        }
+        uint32_t j = 0;
+        uint32_t step = product_count/sample_capacity;
+        bool right_category = false;
+        if(step < 1) step = 1;
+        while(j < product_count)
+        {
+            
+//            LOG(INFO)<<str<<" 属性名：  "<<ki.attribute_apps[j].attribute_name<<endl;
+            bool b = false;
+            if(text.length() > Len)
+            {
+	        cid_t cid = products_[ki.attribute_apps[j].spu_id].cid;
+                cid = GetLevelCid_(category_list_[cid].name, 1);    
+                for(uint32_t k=0;k< category_size;k++)
                 {
-		    if(cos_value[i].first == cid)
+                    if(cos_value[k].second < similarity_threshold)break;
+		    if(cos_value[k].first == cid)
                     {
                         b = true;
                         break;
                     }
                 }
-                if(!b)continue;
-                
-                std::string pt = products_[iter->spu_id].stitle;
-                if(res.find(pt) == res.end())
+            }
+            else b = true;
+            if(b)
+            {
+                right_category = true;
+                if(ki.attribute_apps[j].attribute_name == "品牌" || ki.attribute_apps[j].attribute_name == "型号")
                 {
-                    std::vector<std::pair<UString, uint32_t> > v;
-                    res[pt] = v;
+                    ki.attribute_apps[0] = ki.attribute_apps[j];
+//                    LOG(INFO)<<"匹配到了品牌或者型号"<<endl;
+                    break;
                 }
-                weight[it->text] = it->attribute_apps.size();
-                std::string value =term;
-                UString uterm;
-                uterm.assign(value, izenelib::util::UString::UTF_8);
-                for(uint32_t i=0;i<it->positions.size();i++)
-                    res[pt].push_back(std::make_pair(it->text, it->positions[i].begin));
+            }
+            j+=step;
+        }
+        if(ki.attribute_apps.empty() && !ki.category_name_apps.empty())
+        {
+            std::vector<CategoryNameApp>::iterator it;
+            it = ki.category_name_apps.begin();
+            while(it != ki.category_name_apps.end())
+            {
+                bool b = false;
+                if(text.length() > Len)
+                {
+                    cid_t cid = GetLevelCid_(category_list_[it->cid].name, 1);
+                    for(uint32_t k=0;k<category_size;k++)
+                    {
+                        if(cos_value[k].second < similarity_threshold) break;
+                        if(cos_value[k].first == cid)
+                        {
+                            b = true;
+                            break;
+                        }
+                    }
+                }
+                else b = true;
+                if(b)
+                {
+                    right_category = true;
+                    break;
+                }
+                it++;
+            }
+        }
+        if(!right_category)continue;
+
+        std::vector<Position>::iterator it;
+        for(it = ki.positions.begin();it!=ki.positions.end();it++)
+        {
+            KeywordTag k = ki;
+            k.positions.clear();
+            k.positions.push_back(*it);
+            KeywordVector::iterator iter;
+            for(iter = temp_k.begin();iter!=temp_k.end();iter++)
+            {
+                KeywordVector::iterator itt = iter;
+                itt++;
+		if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
+                {
+                    while(itt != temp_k.end())
+                    {
+                        if(itt->positions[0].begin < k.positions[0].end)
+                        {
+                            temp_k.erase(itt);
+                            
+                        }else break;
+                    }
+                    iter++;
+                    temp_k.insert(iter, k);
+                    break;
+                }
+            }
+            if(temp_k.empty())temp_k.insert(iter, k);
+        }
+    }
+
+    for(uint32_t i=0;i<temp_k.size();i++)
+    {
+        std::string str;
+        temp_k[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        LOG(INFO)<<str<<"  "<<temp_k[i].positions[0].begin<<"  "<<temp_k[i].positions[0].end<<endl;
+    }
+
+    boost::unordered_map<std::string, uint32_t> note;
+    for(uint32_t i=0;i<temp_k.size();i++)
+    {
+        KeywordTag& ki = temp_k[i];
+        std::string term, str;
+        ki.text.convertString(str, izenelib::util::UString::UTF_8);
+        term = str;
+        uint32_t j = i;
+
+        if(!ki.attribute_apps.empty() && ki.attribute_apps[0].attribute_name == "品牌")
+        {
+            j++;
+            while(j < temp_k.size() && temp_k[j].positions[0].begin < temp_k[i].positions[0].end + 16)
+            {
+                if(!temp_k[j].attribute_apps.empty() && temp_k[j].attribute_apps[0].attribute_name == "品牌")
+                    break;
+                std::string sss="";
+                bool chinese = true;
+                uint32_t pos = temp_k[j-1].positions[0].end;
+                while(pos < temp_k[j].positions[0].end)
+                {
+                    std::string str;
+                    term_list[pos].text.convertString(str, izenelib::util::UString::UTF_8);
+//                    LOG(INFO)<<"str: "<<str<<" size: "<<str.length()<<endl;
+                    if(!(str.at(0) & 0x80) || str.compare("，")==0 || str.compare("。")==0)
+                    {
+                        chinese = false;
+                        break;
+                    }
+//                    LOG(INFO)<<"is chinese"<<endl;
+                    sss+=str;
+                    pos++;
+                    }
+                if(chinese)
+                    term += sss;
+                j++;
+            }
+        }
+        if(note.find(term) == note.end())
+        {
+            ki.text.convertString(str, izenelib::util::UString::UTF_8);
+            if(term.compare(str)!=0)
+            {
+                note[term]=1;
+                UString usterm;
+                usterm.assign(term, izenelib::util::UString::UTF_8);
+                res.push_back(std::make_pair(usterm, std::make_pair(ki.positions[0].begin, 10)));
             }
         }
     }
