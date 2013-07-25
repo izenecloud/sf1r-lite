@@ -177,6 +177,7 @@ public:
     void updateLastWriteReqId(uint32_t req_id);
     uint32_t getLastWriteReqId();
     bool checkElectingInAsyncMode(uint32_t newest_logid);
+    bool isPrimaryReadyForCheckLog();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

@@ -1328,6 +1328,12 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
         if (min_size == 0 && check_start <= newest_reqid)
         {
             LOG(INFO) << "local log data is forword at id " << check_start;
+            if (!NodeManagerBase::get()->isPrimaryReadyForCheckLog())
+            {
+                LOG(INFO) << "primary is not ready for checking log, waiting...";
+                sleep(10);
+                continue;
+            }
             setRollbackFlag(check_start);
             return false;
         }
