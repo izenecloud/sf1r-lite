@@ -301,7 +301,11 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
 {
     std::auto_ptr<ProductScorer> relevanceScorerPtr(relevanceScorer);
 
-    if (!hasSortByRankProp(actionItem.sortPriorityList_))
+    SearchingMode::SearchingModeType searchMode =
+        actionItem.searchingMode_.mode_;
+
+    if (searchMode != SearchingMode::SUFFIX_MATCH &&
+        !hasSortByRankProp(actionItem.sortPriorityList_))
         return NULL;
 
     if (!isProductRanking_(actionItem))

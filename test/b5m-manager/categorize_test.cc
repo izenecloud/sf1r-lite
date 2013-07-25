@@ -24,7 +24,7 @@ int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<s
     {
         for(uint32_t i=0;i<tags.size();i++)
         {
-            if(boost::algorithm::starts_with(p.scategory, tags[i]))
+            if(boost::algorithm::starts_with(tags[i], p.scategory))
             {
                 flag = 1;
                 break;
@@ -38,7 +38,7 @@ int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<s
         std::cerr<<tags[i];
     }
     std::cerr<<"]"<<std::endl;
-    return 0;
+    return flag;
 }
 
 int main(int ac, char** av)
