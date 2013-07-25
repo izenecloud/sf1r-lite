@@ -98,10 +98,8 @@ bool CobraProcess::initKNlpWrapper()
 {
     const bfs::path resource = SF1Config::get()->getResourceDir();
     const std::string dictDir = (resource / "dict" / "term_category").string();
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-
-    return knlpWrapper->initTokenizer(dictDir) &&
-        knlpWrapper->initClassifier(dictDir);
+    KNlpWrapper::get()->setDictDir(dictDir);
+    return true;
 }
 
 bool CobraProcess::initLogManager()

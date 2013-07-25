@@ -14,9 +14,23 @@ KNlpWrapper* KNlpWrapper::get()
     return izenelib::util::Singleton<KNlpWrapper>::get();
 }
 
-bool KNlpWrapper::initTokenizer(const std::string& dictDir)
+KNlpWrapper::KNlpWrapper()
+    : isDictLoaded_(false)
 {
-    const bfs::path dirPath(dictDir);
+}
+
+void KNlpWrapper::setDictDir(const std::string& dictDir)
+{
+    dictDir_ = dictDir;
+}
+
+bool KNlpWrapper::loadDictFiles()
+{
+    if (isDictLoaded_)
+        return true;
+
+    LOG(INFO) << "Start loading knlp dictionaries in " << dictDir_;
+    const bfs::path dirPath(dictDir_);
 
     try
     {
@@ -25,23 +39,7 @@ bool KNlpWrapper::initTokenizer(const std::string& dictDir)
 
         garbagePattern_.reset(new ilplib::knlp::GarbagePattern(
                                   (dirPath / "garbage.pat").string()));
-    }
-    catch (const std::exception& e)
-    {
-        LOG(ERROR) << "exception: " << e.what()
-                   << ", dictDir: " << dictDir;
-        return false;
-    }
 
-    return true;
-}
-
-bool KNlpWrapper::initClassifier(const std::string& dictDir)
-{
-    const bfs::path dirPath(dictDir);
-
-    try
-    {
         cateDict_.reset(new ilplib::knlp::DigitalDictionary(
                             (dirPath / "cate.txt").string()));
 
@@ -57,9 +55,12 @@ bool KNlpWrapper::initClassifier(const std::string& dictDir)
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception: " << e.what()
-                   << ", dictDir: " << dictDir;
+                   << ", dictDir: " << dictDir_;
         return false;
     }
+
+    isDictLoaded_ = true;
+    LOG(INFO) << "Finished loading knlp dictionaries.";
 
     return true;
 }
