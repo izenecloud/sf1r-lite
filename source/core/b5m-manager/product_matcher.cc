@@ -2559,10 +2559,12 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
+/*    
     if(category_list_[cos_value[0].first].name.find("妆") != std::string::npos || text.length() < Len)
     {
+*/
         ExtractKeywordsFromPage(text, res_brand);
-    }
+//    }
     category_size = cos_value.size()/6;
     for(uint32_t i=0;i<cos_value.size();i++)
     {
@@ -3043,7 +3045,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         if(!ki.attribute_apps.empty() && ki.attribute_apps[0].attribute_name == "品牌")
         {
             j++;
-            while(j < temp_k.size() && temp_k[j].positions[0].begin < temp_k[i].positions[0].end + 16)
+            while(j < temp_k.size() && temp_k[j].positions[0].begin < temp_k[i].positions[0].end + 25)
             {
                 if(!temp_k[j].attribute_apps.empty() && temp_k[j].attribute_apps[0].attribute_name == "品牌")
                     break;
@@ -3054,13 +3056,11 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 {
                     std::string str;
                     term_list[pos].text.convertString(str, izenelib::util::UString::UTF_8);
-//                    LOG(INFO)<<"str: "<<str<<" size: "<<str.length()<<endl;
                     if(!(str.at(0) & 0x80) || str.compare("，")==0 || str.compare("。")==0)
                     {
                         chinese = false;
                         break;
                     }
-//                    LOG(INFO)<<"is chinese"<<endl;
                     sss+=str;
                     pos++;
                 }
@@ -3071,6 +3071,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     temp_k[j].text.convertString(sk, izenelib::util::UString::UTF_8);
                     term += sk;
                 }
+                else break;
                 j++;
             }
         }
