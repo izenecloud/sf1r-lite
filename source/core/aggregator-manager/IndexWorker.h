@@ -124,6 +124,8 @@ public:
     bool createScdSharder(
         boost::shared_ptr<ScdSharder>& scdSharder);
 
+    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
+
 private:
     void createPropertyList_();
 
@@ -224,8 +226,6 @@ private:
             std::vector<CharacterOffset>& sentenceOffsetList);
 
     size_t getTotalScdSize_(const std::vector<std::string>& scdlist);
-
-    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
 
     static void document2SCDDoc(const Document& document, SCDDoc& scddoc);
 

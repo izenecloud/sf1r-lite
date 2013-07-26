@@ -57,6 +57,7 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
 
     setZNodePaths();
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
+    MasterManagerBase::get()->initCfg();
     LOG(INFO) << "node starting mode : " << s_enable_async_;
 }
 

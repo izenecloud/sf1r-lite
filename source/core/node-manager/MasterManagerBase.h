@@ -56,6 +56,7 @@ public:
 
     virtual ~MasterManagerBase() { stop(); };
 
+    void initCfg();
     bool init();
 
     void start();
@@ -143,6 +144,9 @@ public:
     void updateServiceReadState(const std::string& my_state, bool include_self);
     bool hasAnyCachedRequest();
     shardid_t getMyShardId();
+
+    bool pushWriteReqToShard(const std::string& reqdata,
+        const std::string& coll);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

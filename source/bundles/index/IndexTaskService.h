@@ -56,10 +56,11 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     void flush();
-
-private:
     bool isNeedSharding();
     bool HookDistributeRequestForIndex();
+
+private:
+    bool SendRequestToSharding(uint32_t shardid);
     bool distributedIndex_(unsigned int numdoc, std::string scd_dir);
     bool distributedIndexImpl_(
         unsigned int numdoc,
@@ -76,6 +77,7 @@ private:
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
     ShardingConfig shard_cfg_;
+    boost::shared_ptr<ShardingStrategy> shardingStrategy_;
     boost::shared_ptr<ScdSharder> scdSharder_;
 
     friend class IndexWorkerController;

@@ -32,6 +32,31 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
+bool IndexTaskService::SendRequestToSharding(uint32_t shardid)
+{
+    Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+    if (hooktype == Request::FromAPI)
+    {
+        return true;
+    }
+    const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+    bool ret = false;
+    if (hooktype == Request::FromDistribute)
+    {
+        indexAggregator_->singleRequest(bundleConfig_->collectionName_,
+            "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret, shardid);
+    }
+    else
+    {
+        ret = true;
+    }
+    if (!ret)
+    {
+        LOG(WARNING) << "Send Request to shard node failed.";
+    }
+    return ret;
+}
+
 bool IndexTaskService::HookDistributeRequestForIndex()
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
@@ -166,42 +191,85 @@ bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp)
 {
-    if (isNeedSharding())
-    {
-        LOG(INFO) << "distribute the index task to all shard nodes.";
-        HookDistributeRequestForIndex();
-    }
- 
     return indexWorker_->reindex(documentManager, timestamp);
 }
 
 bool IndexTaskService::optimizeIndex()
 {
-    if (isNeedSharding())
-    {
-        LOG(INFO) << "distribute the index task to all shard nodes.";
-        HookDistributeRequestForIndex();
-    }
-
     return indexWorker_->optimizeIndex();
 }
 
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
+    if (isNeedSharding())
+    {
+        if (!scdSharder_)
+            createScdSharder(scdSharder_);
+        SCDDoc scddoc;
+        IndexWorker::value2SCDDoc(documentValue, scddoc);
+        shardid_t shardid = scdSharder_->sharding(scddoc);
+        if (shardid != MasterManagerBase::get()->getMyShardId())
+        {
+            // need send to the shard.
+            return SendRequestToSharding(shardid);
+        }
+    }
     return indexWorker_->createDocument(documentValue);
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
+    if (isNeedSharding())
+    {
+        if (!scdSharder_)
+            createScdSharder(scdSharder_);
+        SCDDoc scddoc;
+        IndexWorker::value2SCDDoc(documentValue, scddoc);
+        shardid_t shardid = scdSharder_->sharding(scddoc);
+        if (shardid != MasterManagerBase::get()->getMyShardId())
+        {
+            // need send to the shard.
+            return SendRequestToSharding(shardid);
+        }
+    }
+
     return indexWorker_->updateDocument(documentValue);
 }
 bool IndexTaskService::updateDocumentInplace(const Value& request)
 {
+    if (isNeedSharding())
+    {
+        if (!scdSharder_)
+            createScdSharder(scdSharder_);
+        SCDDoc scddoc;
+        IndexWorker::value2SCDDoc(request, scddoc);
+        shardid_t shardid = scdSharder_->sharding(scddoc);
+        if (shardid != MasterManagerBase::get()->getMyShardId())
+        {
+            // need send to the shard.
+            return SendRequestToSharding(shardid);
+        }
+    }
+
     return indexWorker_->updateDocumentInplace(request);
 }
 
 bool IndexTaskService::destroyDocument(const Value& documentValue)
 {
+    if (isNeedSharding())
+    {
+        if (!scdSharder_)
+            createScdSharder(scdSharder_);
+        SCDDoc scddoc;
+        IndexWorker::value2SCDDoc(documentValue, scddoc);
+        shardid_t shardid = scdSharder_->sharding(scddoc);
+        if (shardid != MasterManagerBase::get()->getMyShardId())
+        {
+            // need send to the shard.
+            return SendRequestToSharding(shardid);
+        }
+    }
+
     return indexWorker_->destroyDocument(documentValue);
 }
 

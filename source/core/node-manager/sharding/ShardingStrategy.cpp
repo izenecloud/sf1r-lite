@@ -61,6 +61,8 @@ shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardF
     //    }
     //}
 
+    // in order to avoid too much migrating while add/remove shard node,
+    // we can save the the map from docid to shardid. And save the map to file on HDFS.
     ShardFieldListT::const_iterator sfit = shardFieldList.find(shardingConfig.unique_shardkey_);
     if (sfit == shardFieldList.end())
     {
@@ -68,8 +70,19 @@ shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardF
         return 0;
     }
 
-    // get shard id
-    shardid_t shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
+    shardid_t shardIndex;
+    // get shard id from static map first to avoid migrating if add new shard node.
+    //std::map<std::string, shardid_t>::const_iterator it = static_map.find(sfit->second.substr(sfit->second.size() - 2));
+    //if (it != static_map.end())
+    //{
+    //    shardIndex = it->second;
+    //}
+    //else
+    //
+    shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
+
+    //
+    // static_map[sfit->second.substr(sfit->second.size() - 2)] = shardIndex;
     return shardingConfig.shardidList_[shardIndex];
 }
 

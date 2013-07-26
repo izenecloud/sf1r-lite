@@ -42,9 +42,9 @@ public:
 
     bool getInternalDocumentId(const std::string& collectionName, const uint128_t& scdDocumentId, uint64_t& internalId);
 
-    uint32_t getDocNum();
+    uint32_t getDocNum(const std::string& collection);
 
-    uint32_t getKeyCount(const std::string& property_name);
+    uint32_t getKeyCount(const std::string& collection, const std::string& property_name);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

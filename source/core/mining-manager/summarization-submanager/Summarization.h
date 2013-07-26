@@ -168,6 +168,9 @@ private:
     friend void DataIO_loadObject(DataIO& dio, Summarization& x);
     template<class DataIO>
     friend void DataIO_saveObject(DataIO& dio, const Summarization& x);
+
+public:
+    MSGPACK_DEFINE(fingerPrint_, propertyList_);
 };
 
 inline void swap(Summarization& a, Summarization& b)

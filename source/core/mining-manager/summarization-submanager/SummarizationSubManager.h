@@ -49,7 +49,7 @@ public:
     //        std::vector<QueryFiltering::FilteringType>& filtingList);
 
     bool GetSummarizationByRawKey(
-            const izenelib::util::UString& rawKey,
+            const std::string& rawKey,
             Summarization& result);
     
     virtual bool buildDocument(docid_t docID, const Document& doc);

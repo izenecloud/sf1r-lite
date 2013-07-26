@@ -314,15 +314,23 @@ bool IndexWorker::createScdSharder(
         return false;
     }
 
+    std::string coll = bundleConfig_->collectionName_;
+    // handle the rebuild collection name
+    size_t pos = coll.find("-rebuild");
+    if (pos != std::string::npos)
+    {
+        LOG(INFO) << "change the collection name for rebuild." << coll;
+        coll = coll.substr(0, pos);
+    }
     // sharding configuration
     if (MasterManagerBase::get()->getCollectionShardids(
             Sf1rTopology::getServiceName(Sf1rTopology::SearchService),
-            bundleConfig_->collectionName_, shard_cfg_.shardidList_))
+            coll, shard_cfg_.shardidList_))
     {
     }
     else
     {
-        LOG(ERROR) << "No shardid configured for " << bundleConfig_->collectionName_;
+        LOG(ERROR) << "No shardid configured for " << coll;
         return false;
     }
 
@@ -1290,16 +1298,6 @@ void IndexWorker::indexSCDDocFunc(int workerid)
         }
         boost::this_thread::interruption_point();
 
-        if (DistributeFileSys::get()->isEnabled() && scdSharder_)
-        {
-            if (scdSharder_->sharding(*(workerdata.docptr)) != 
-                MasterManagerBase::get()->getMyShardId())
-            {
-                // this doc is not my sharding.
-                continue;
-            }
-        }
-
         time_t new_timestamp = workerdata.timestamp;
         document.clear();
         old_rtype_doc.clear();
@@ -1369,6 +1367,16 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         SCDDocPtr docptr = *doc_iter;
         if (docptr->empty()) continue;
+
+        if (DistributeFileSys::get()->isEnabled() && scdSharder_)
+        {
+            if (scdSharder_->sharding(*docptr) != 
+                MasterManagerBase::get()->getMyShardId())
+            {
+                // this doc is not my sharding.
+                continue;
+            }
+        }
 
         int workerid = -1;
         docid_t docId;

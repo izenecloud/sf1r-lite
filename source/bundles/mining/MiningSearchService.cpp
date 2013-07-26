@@ -67,16 +67,10 @@ bool MiningSearchService::getSimilarDocIdList(
         uint32_t maxNum,
         std::vector<std::pair<uint64_t, float> >& result)
 {
-    if (!bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
-    {
-        searchWorker_->getSimilarDocIdList(documentId, maxNum, result);;
-        return true;
-    }
-    else
-    {
-        sf1r::workerid_t workerId = net::aggregator::Util::GetWorkerAndDocId(documentId).first;
-        return searchAggregator_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
-    }
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
+    sf1r::workerid_t workerId = wd.first;
+
+    return searchAggregator_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
@@ -112,13 +106,25 @@ bool MiningSearchService::getSimilarLabelStringList(
     return miningManager_->getSimilarLabelStringList(label_id, label_list);
 }
 
-bool MiningSearchService::getDocLabelList(
+bool MiningSearchService::getLabelListByDocId(
     uint32_t docid,
     std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list
 )
 {
     // TODO, aggregate by wdocid
     return miningManager_->getLabelListByDocId(docid, label_list);
+}
+
+bool MiningSearchService::getLabelListByDocId(
+    const std::string& collectionName,
+    uint64_t wdocId,
+    std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list
+)
+{
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+    return searchAggregator_->singleRequest(collectionName, "getLabelListByDocId", docId, label_list, workerId);
 }
 
 bool MiningSearchService::getLabelListWithSimByDocId(
@@ -128,6 +134,18 @@ bool MiningSearchService::getLabelListWithSimByDocId(
 {
     // TODO, aggregate by wdocid
     return miningManager_->getLabelListWithSimByDocId(docid, label_list);
+}
+
+bool MiningSearchService::getLabelListWithSimByDocId(
+    const std::string& collectionName,
+    uint64_t wdocId,
+    std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list
+)
+{
+    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
+    sf1r::workerid_t workerId = wd.first;
+    sf1r::docid_t docId = wd.second;
+    return searchAggregator_->singleRequest(collectionName, "getLabelListWithSimByDocId", docId, label_list, workerId);
 }
 
 bool MiningSearchService::getUniqueDocIdList(
@@ -388,11 +406,12 @@ void MiningSearchService::FinishQueryRecommendInject()
 
 bool MiningSearchService::GetSummarizationByRawKey(
         const std::string& collection,
-        const izenelib::util::UString& rawKey,
+        const std::string& rawKey,
         Summarization& result)
 {
+    return searchAggregator_->distributeRequest(collection, "GetSummarizationByRawKey", rawKey, result);
     ///TODO distributed request is not available
-    return miningManager_->GetSummarizationByRawKey(rawKey,result);
+    //return miningManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
 bool MiningSearchService::SetKV(const std::string& key, const std::string& value)
