@@ -2559,12 +2559,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
-/*    
-    if(category_list_[cos_value[0].first].name.find("妆") != std::string::npos || text.length() < Len)
-    {
-*/
-        ExtractKeywordsFromPage(text, res_brand);
-//    }
+
+    ExtractKeywordsFromPage(text, res_brand);
+
     category_size = cos_value.size()/6;
     for(uint32_t i=0;i<cos_value.size();i++)
     {
@@ -3056,7 +3053,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 {
                     std::string str;
                     term_list[pos].text.convertString(str, izenelib::util::UString::UTF_8);
-                    if(!(str.at(0) & 0x80) || str.compare("，")==0 || str.compare("。")==0)
+                    if((!(str.at(0) & 0x80) && str.compare(" ") != 0)|| str.compare("，")==0 || str.compare("。")==0)
                     {
                         chinese = false;
                         break;
