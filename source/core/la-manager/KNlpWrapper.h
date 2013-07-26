@@ -31,8 +31,10 @@ class KNlpWrapper
 public:
     static KNlpWrapper* get();
 
-    bool initTokenizer(const std::string& dictDir);
-    bool initClassifier(const std::string& dictDir);
+    KNlpWrapper();
+
+    void setDictDir(const std::string& dictDir);
+    bool loadDictFiles();
 
     typedef izenelib::util::KString string_t;
     typedef std::pair<string_t, double> token_score_pair_t;
@@ -58,7 +60,11 @@ public:
     void fmmBigram(std::vector<std::pair<KString,double> >& r);
 
     void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);
+
 private:
+    bool isDictLoaded_;
+    std::string dictDir_;
+
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 
     boost::scoped_ptr<ilplib::knlp::DigitalDictionary> cateDict_;

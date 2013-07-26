@@ -574,6 +574,10 @@ bool MiningManager::open()
         if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
             LOG(INFO) << "suffix match enabled.";
+
+            if (!KNlpWrapper::get()->loadDictFiles())
+                return false;
+
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
