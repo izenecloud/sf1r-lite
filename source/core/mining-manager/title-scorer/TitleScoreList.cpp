@@ -50,7 +50,7 @@ bool TitleScoreList::saveDocumentScore(unsigned int last_doc)
 
     if(fout_txt.is_open())
     {
-        for (int i = 1; i < last_doc + 1; ++i)
+        for (unsigned int i = 1; i < last_doc + 1; ++i)
         {
             fout_txt << "docid:" << i << " score:" << document_Scores_[i] << endl;
         }
@@ -97,7 +97,7 @@ bool TitleScoreList::loadDocumentScore()
     return true;
 }
 
-bool TitleScoreList::clearDocumentScore()
+void TitleScoreList::clearDocumentScore()
 {
     std::string documentScorePath = dirPath_ + "/doc.Score";
     std::string documentNumPath = dirPath_ + "/doc.size";

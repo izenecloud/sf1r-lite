@@ -34,7 +34,7 @@ public:
 
     bool saveDocumentScore(unsigned int last_doc);
     bool loadDocumentScore();
-    bool clearDocumentScore();
+    void clearDocumentScore();
 
 private:
     const std::string dirPath_;
