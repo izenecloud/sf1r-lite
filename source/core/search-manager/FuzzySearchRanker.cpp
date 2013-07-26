@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <iostream>
 
 using namespace sf1r;
 
@@ -69,11 +70,23 @@ void FuzzySearchRanker::rankByProductScore(
         }
 
         resultList[i].first = fuzzyScore + productScore;
+        //cout << "fuzzyScore:" << fuzzyScore << " productScore" << productScore<< endl;
         resultList[current++] = resultList[i];
     }
 
     resultList.resize(current);
     std::sort(resultList.begin(), resultList.end(), std::greater<ScoreDocId>());
+
+
+    if (resultList.size() > 0)
+    {
+        unsigned int topPrintDocNum = 5;
+        std::cout << "The top fuzzyScore is:" << std::endl;
+        for (unsigned int i = 0; i < topPrintDocNum && i < resultList.size(); ++i)
+        {
+            std::cout << resultList[i].first << std::endl;
+        }
+    }
 
     if (current == count)
     {

@@ -26,10 +26,13 @@ bool TitleScoreList::saveDocumentScore(unsigned int last_doc)
 {
     std::string documentScorePath = dirPath_ + "/doc.Score";
     std::string documentNumPath = dirPath_ + "/doc.size";
+    std::string documenttxt = dirPath_ + "/doc.txt";
     fstream fout;
     fstream fout_size;
+    fstream fout_txt;
     fout.open(documentScorePath.c_str(), ios::app | ios::out | ios::binary);
     fout_size.open(documentNumPath.c_str(), ios::out | ios::binary);
+    fout_txt.open(documenttxt.c_str(), ios::out);
 
     if(fout_size.is_open())
     {
@@ -43,6 +46,15 @@ bool TitleScoreList::saveDocumentScore(unsigned int last_doc)
             fout.write(reinterpret_cast< char *>(&document_Scores_[i]), sizeof(double));
         fout.close();
         lastDocScoreDocid_ = last_doc;
+    }
+
+    if(fout_txt.is_open())
+    {
+        for (int i = 1; i < last_doc + 1; ++i)
+        {
+            fout_txt << "docid:" << i << " score:" << document_Scores_[i] << endl;
+        }
+        fout_txt.close();
     }
 
     return true;

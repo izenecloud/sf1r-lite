@@ -21,7 +21,6 @@ score_t TitleRelevanceScorer::score(docid_t docId)
 {
     double thisDocScore = titleScoreList_->getScore(docId);
     double score_distance = std::abs(thisDocScore - thisScore_);
-    //cout <<"thisScore_: " << thisDocScore << ":" << thisScore_ << endl;
 
     double difPoint = 0;
     if (score_distance == 0)
@@ -32,7 +31,7 @@ score_t TitleRelevanceScorer::score(docid_t docId)
     }
     else
     {
-        double maxscore = thisScore_*4;
+        double maxscore = thisScore_*5;
         if (score_distance < maxscore)
         {
             difPoint = 1 - score_distance/maxscore;
@@ -40,13 +39,12 @@ score_t TitleRelevanceScorer::score(docid_t docId)
         else
             difPoint = 0;
 
-        if (difPoint > 0.25)
-            difPoint = 0.25;
+        if (difPoint > 0.2)
+            difPoint = 0.2;
     }
 
     int int_res = static_cast<int>(difPoint*1000);
     difPoint = (double(int_res))/1000.0;
-    //cout << "difPoint:" << difPoint << endl;
     return difPoint;
 }
 }
