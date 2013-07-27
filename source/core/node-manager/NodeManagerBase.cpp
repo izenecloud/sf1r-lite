@@ -57,6 +57,7 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
 
     setZNodePaths();
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
+    MasterManagerBase::get()->initCfg();
     LOG(INFO) << "node starting mode : " << s_enable_async_;
 }
 
@@ -631,6 +632,38 @@ bool NodeManagerBase::isAnyWriteRunningInReplicas()
     return false;
 }
 
+bool NodeManagerBase::isPrimaryReadyForCheckLog()
+{
+    if (!isDistributionEnabled_)
+        return true;
+    if (!zookeeper_)
+        return false;
+
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.empty())
+    {
+        return true;
+    }
+
+    std::string primary_host = node_list.front();
+    std::string sdata;
+    if (zookeeper_->getZNodeData(primary_host, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+        if (state == NODE_STATE_ELECTING ||
+            state == NODE_STATE_STARTED ||
+            state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH)
+        {
+            return true;
+        }
+        LOG(INFO) << "not ready for checking log, primary state is : " << state;
+    }
+    return false;
+}
+
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary, bool force)
 {
     if (!isDistributionEnabled_ || !zookeeper_)
@@ -742,6 +775,9 @@ void NodeManagerBase::updateCurrentPrimary()
 
 void NodeManagerBase::unregisterPrimary()
 {
+    if (masterStarted_)
+        MasterManagerBase::get()->updateServiceReadState("BusyForSelf", false);
+
     std::string my_registed_primary = findReCreatedSelfPrimaryNode();
     while(!my_registed_primary.empty())
     {

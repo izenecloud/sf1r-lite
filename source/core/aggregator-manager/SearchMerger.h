@@ -22,6 +22,7 @@ class DistKeywordSearchInfo;
 class KeywordSearchResult;
 class RawTextResultFromSIA;
 class GetDocumentsByIdsActionItem;
+class Summarization;
 
 class SearchMerger : public net::aggregator::BindCallProxyBase<SearchMerger>
 {
@@ -39,6 +40,9 @@ public:
         BIND_CALL_PROXY_2(getInternalDocumentId, net::aggregator::WorkerResults<uint64_t>, uint64_t)
         BIND_CALL_PROXY_2(clickGroupLabel, net::aggregator::WorkerResults<bool>, bool)
         BIND_CALL_PROXY_2(HookDistributeRequestForSearch, net::aggregator::WorkerResults<bool>, bool)
+        BIND_CALL_PROXY_2(GetSummarizationByRawKey, net::aggregator::WorkerResults<Summarization>, Summarization)
+        BIND_CALL_PROXY_2(getDistDocNum, net::aggregator::WorkerResults<uint32_t>, uint32_t)
+        BIND_CALL_PROXY_2(getDistKeyCount, net::aggregator::WorkerResults<uint32_t>, uint32_t)
         BIND_CALL_PROXY_END()
     }
 
@@ -68,7 +72,11 @@ public:
         const GetDocumentsByIdsActionItem& actionItem,
         std::map<workerid_t, GetDocumentsByIdsActionItem>& actionItemMap);
 
+    void GetSummarizationByRawKey(const net::aggregator::WorkerResults<Summarization>& workerResults, Summarization& mergeResult);
     void HookDistributeRequestForSearch(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
+    void getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult);
+    void getDistKeyCount(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult);
+
 private:
     std::size_t TOP_K_NUM;
     boost::shared_ptr<MiningManager> miningManager_;

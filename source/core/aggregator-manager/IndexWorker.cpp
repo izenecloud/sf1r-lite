@@ -21,6 +21,7 @@
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/DistributeFileSys.h>
+#include <node-manager/sharding/ScdSharder.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -304,6 +305,53 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
     return ret;
 }
 
+bool IndexWorker::createScdSharder(
+    boost::shared_ptr<ScdSharder>& scdSharder)
+{
+    if (bundleConfig_->indexShardKeys_.empty())
+    {
+        LOG(ERROR) << "No sharding key!";
+        return false;
+    }
+
+    std::string coll = bundleConfig_->collectionName_;
+    // handle the rebuild collection name
+    size_t pos = coll.find("-rebuild");
+    if (pos != std::string::npos)
+    {
+        LOG(INFO) << "change the collection name for rebuild." << coll;
+        coll = coll.substr(0, pos);
+    }
+    // sharding configuration
+    if (MasterManagerBase::get()->getCollectionShardids(
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService),
+            coll, shard_cfg_.shardidList_))
+    {
+    }
+    else
+    {
+        LOG(ERROR) << "No shardid configured for " << coll;
+        return false;
+    }
+
+    ShardingConfig::RangeListT ranges;
+    ranges.push_back(100);
+    ranges.push_back(1000);
+    shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
+    ShardingConfig::AttrListT strranges;
+    strranges.push_back("abc");
+    shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
+    shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
+
+    scdSharder.reset(new ScdSharder);
+
+    if (scdSharder && scdSharder->init(shard_cfg_))
+        return true;
+    else
+        return false;
+}
+
+
 bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp)
 {
     CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
@@ -311,6 +359,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     START_PROFILER(buildIndex);
     LOG(INFO) << "start BuildCollection";
     izenelib::util::ClockTimer timer;
+
+    if (!scdSharder_)
+    {
+        if(!createScdSharder(scdSharder_))
+        {
+            LOG(WARNING) << "scd sharder created failed. no shard will be done.";
+        }
+    }
 
     //flush all writing SCDs
     scd_writer_->Flush();
@@ -1311,6 +1367,16 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         SCDDocPtr docptr = *doc_iter;
         if (docptr->empty()) continue;
+
+        if (DistributeFileSys::get()->isEnabled() && scdSharder_)
+        {
+            if (scdSharder_->sharding(*docptr) != 
+                MasterManagerBase::get()->getMyShardId())
+            {
+                // this doc is not my sharding.
+                continue;
+            }
+        }
 
         int workerid = -1;
         docid_t docId;

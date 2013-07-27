@@ -570,6 +570,12 @@ public:
             return true;
         return false;
     }
+    static inline bool isAutoShardWriteReq(const std::string& controller, const std::string& action)
+    {
+        if (auto_shard_write_set_.find(controller + "_" + action) != auto_shard_write_set_.end())
+            return true;
+        return false;
+    }
     static void packReqLogData(const CommonReqData& reqdata, std::string& packed_data)
     {
         msgpack::sbuffer buf;
@@ -654,6 +660,7 @@ private:
 
     static std::set<std::string> write_req_set_;
     static std::set<std::string> replay_write_req_set_;
+    static std::set<std::string> auto_shard_write_set_;
 };
 
 }

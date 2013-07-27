@@ -24,23 +24,27 @@ MasterManagerBase::MasterManagerBase()
 {
 }
 
-bool MasterManagerBase::init()
+void MasterManagerBase::initCfg()
 {
-    // initialize zookeeper client
     topologyPath_ = ZooKeeperNamespace::getTopologyPath();
     serverParentPath_ = ZooKeeperNamespace::getServerParentPath();
     serverPath_ = ZooKeeperNamespace::getServerPath();
-    zookeeper_ = ZooKeeperManager::get()->createClient(this);
-
-    if (!zookeeper_)
-        return false;
 
     sf1rTopology_ = NodeManagerBase::get()->getSf1rTopology();
+
     write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode(sf1rTopology_.curNode_.nodeId_);
     write_req_queue_parent_ = ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_);
     write_req_queue_root_parent_ = ZooKeeperNamespace::getRootWriteReqQueueParent();
     write_prepare_node_ =  ZooKeeperNamespace::getWriteReqPrepareNode(sf1rTopology_.curNode_.nodeId_);
     write_prepare_node_parent_ =  ZooKeeperNamespace::getWriteReqPrepareParent();
+}
+
+bool MasterManagerBase::init()
+{
+    // initialize zookeeper client
+    zookeeper_ = ZooKeeperManager::get()->createClient(this);
+    if (!zookeeper_)
+        return false;
     stopping_ = false;
     return true;
 }
@@ -104,6 +108,11 @@ void MasterManagerBase::stop()
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     masterState_ = MASTER_STATE_INIT;
     waiting_request_num_ = 0;
+}
+
+shardid_t MasterManagerBase::getMyShardId()
+{
+    return sf1rTopology_.curNode_.nodeId_;
 }
 
 bool MasterManagerBase::getShardReceiver(
@@ -560,6 +569,43 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
             return false;
     }
     cached_write_reqlist_.pop();
+    return true;
+}
+
+bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
+    const std::string& coll)
+{
+    // boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (!zookeeper_ || !zookeeper_->isConnected())
+    {
+        LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
+            "," << reqdata;
+        return false;
+    }
+
+    ZNode znode;
+    znode.setValue(ZNode::KEY_REQ_TYPE, "api_from_shard");
+    znode.setValue(ZNode::KEY_REQ_DATA, reqdata);
+    std::vector<shardid_t> shardids;
+    getCollectionShardids(Sf1rTopology::getServiceName(Sf1rTopology::SearchService), coll, shardids);
+
+    for (size_t i = 0; i < shardids.size(); ++i)
+    {
+        if (shardids[i] == sf1rTopology_.curNode_.nodeId_)
+            continue;
+        std::string write_queue = ZooKeeperNamespace::getWriteReqQueueNode(shardids[i]);
+        if(zookeeper_->createZNode(write_queue, znode.serialize(), ZooKeeper::ZNODE_SEQUENCE))
+        {
+            LOG(INFO) << "a write request pushed to the shard queue : "
+                << zookeeper_->getLastCreatedNodePath()
+                << ", " << write_queue;
+        }
+        else
+        {
+            LOG(ERROR) << "write request pushed failed for shard queue" <<
+                "," << write_queue;
+        }
+    }
     return true;
 }
 

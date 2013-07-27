@@ -42,6 +42,25 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
+void SearchWorker::GetSummarizationByRawKey(const std::string& rawKey, Summarization& result)
+{
+    miningManager_->GetSummarizationByRawKey(rawKey, result);
+}
+
+void SearchWorker::getLabelListByDocId(const uint32_t& docId,
+    LabelListT& result)
+{
+    miningManager_->getLabelListByDocId(docId, result);
+}
+
+bool SearchWorker::getLabelListWithSimByDocId(
+    uint32_t docId,
+    LabelListWithSimT& label_list
+    )
+{
+    return miningManager_->getLabelListWithSimByDocId(docId, label_list);
+}
+
 void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result)
 {
     MasterManagerBase::get()->pushWriteReq(reqdata, "api_from_shard");

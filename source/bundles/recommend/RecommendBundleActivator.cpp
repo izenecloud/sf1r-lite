@@ -380,7 +380,8 @@ void RecommendBundleActivator::createService_(IndexSearchService* indexSearchSer
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
                                                 *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
-                                                *updateRecommendBase_, updateRecommendWorker_.get()));
+                                                *updateRecommendBase_, updateRecommendWorker_.get(),
+                                                shardStrategy_.get()));
 
     searchService_.reset(new RecommendSearchService(*config_, *userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_,
