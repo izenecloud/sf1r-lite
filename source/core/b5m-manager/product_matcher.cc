@@ -26,7 +26,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20130710000000");
+const std::string ProductMatcher::AVERSION("20130726000000");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -876,6 +876,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.scategory = scategory;
         product.cid = cid;
         product.price = price;
+        doc.getString("Picture", product.spic);
+        doc.getString("Url", product.surl);
         ParseAttributes(propstr_to_ustr(attrib_ustr), product.attributes);
 
         for (size_t i = 0; i < product.attributes.size(); ++i)

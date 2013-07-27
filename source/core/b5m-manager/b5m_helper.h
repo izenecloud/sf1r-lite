@@ -178,6 +178,16 @@ namespace sf1r {
             static std::string p("SPTitle");
             return p;
         }
+        static std::string GetSPPicPropertyName()
+        {
+            static std::string p("SPPicture");
+            return p;
+        }
+        static std::string GetSPUrlPropertyName()
+        {
+            static std::string p("SPUrl");
+            return p;
+        }
         static std::string GetTargetCategoryPropertyName()
         {
             static std::string p("TargetCategory");
