@@ -877,6 +877,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.cid = cid;
         product.price = price;
         doc.getString("Picture", product.spic);
+        if(product.spic.empty())
+        {
+            doc.getString("OriginalPicture", product.spic);
+        }
         doc.getString("Url", product.surl);
         ParseAttributes(propstr_to_ustr(attrib_ustr), product.attributes);
 
