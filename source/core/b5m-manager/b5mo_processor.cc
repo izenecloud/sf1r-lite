@@ -263,6 +263,14 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         {
             doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
         }
+        if(!product.spic.empty() && !title.empty())
+        {
+            doc.property(B5MHelper::GetSPPicPropertyName()) = str_to_propstr(product.spic);
+        }
+        if(!product.surl.empty() && !title.empty())
+        {
+            doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
+        }
         //uint128_t pid = B5MHelper::StringToUint128(spid);
         //Document::doc_prop_value_strtype ebrand;
         //if(bdb_->get(pid, ebrand))
