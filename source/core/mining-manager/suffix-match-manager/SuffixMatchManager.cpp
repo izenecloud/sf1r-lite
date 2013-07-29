@@ -162,12 +162,17 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     unsigned int minor_size = 0;
     unsigned int major_size = 0;
     unsigned int total_size = 0;
+    bool needSmooth = false;
     for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
     {
         if (i->second > 0.1)
         {
             major_score_sum += i->second;
             major_size++;
+            if (i->second > 0.5)
+            {
+                needSmooth = true;
+            }
         }
         else
         {
@@ -177,7 +182,7 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     }
     total_size = minor_size + major_size;
 
-    if (major_size == 1 && major_score_sum > 0.6)
+    if (needSmooth == true || (major_size <= 2 && major_score_sum > 0.6))
     {
         std::vector<double> minor_tokens_point; 
         for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
@@ -214,7 +219,7 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     {
         if (total_size > 8)
         {
-            rank_boundary = major_score_sum * 1 + minor_score_sum * 0.5;
+            rank_boundary = major_score_sum * 0.85 + minor_score_sum * 0.5;
         }
         else
         {
@@ -226,7 +231,7 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     {
         if (total_size > 8)
         {
-            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.6;
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.6;
         }
         else
         {

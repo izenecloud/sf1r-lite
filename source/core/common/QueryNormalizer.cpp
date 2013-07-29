@@ -409,85 +409,90 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     std::vector<AppleType> umajorAppleType;
     std::vector<std::string> types;
 
-    //types.push_back("iphone");
+    types.push_back("iphone");
     types.push_back("4");
     umajorAppleType.push_back(AppleType(UString("iphone 4 ", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone4 ", kEncodeType),types));
     
     types.clear();
-    //types.push_back("iphone");
+    types.push_back("iphone");
     types.push_back("4s");
     umajorAppleType.push_back(AppleType(UString("iphone 4s", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone4s", kEncodeType),types));
     
     types.clear();
-    //types.push_back("iphone");
+    types.push_back("iphone");
     types.push_back("5");
     umajorAppleType.push_back(AppleType(UString("iphone 5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone5", kEncodeType),types));
 
     //ipad
     types.clear();
-    //types.push_back("ipad");
+    types.push_back("ipad");
     types.push_back("2");
     umajorAppleType.push_back(AppleType(UString("ipad2", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 2", kEncodeType),types));
 
     types.clear();
-    //types.push_back("ipad");
+    types.push_back("ipad");
     types.push_back("3");
     umajorAppleType.push_back(AppleType(UString("ipad3", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 3", kEncodeType),types));
 
     types.clear();
-    //types.push_back("ipad");
+    types.push_back("ipad");
     types.push_back("4");
     umajorAppleType.push_back(AppleType(UString("ipad4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 4", kEncodeType),types));
 
     types.clear();
-    //types.push_back("ipad");
+    types.push_back("ipad");
     types.push_back("mini");
     umajorAppleType.push_back(AppleType(UString("ipadmini", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad mini", kEncodeType),types));
 
     //itouch
     types.clear();
-    //types.push_back("itouch");
+    types.push_back("itouch");
     types.push_back("4");
     umajorAppleType.push_back(AppleType(UString("itouch4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 4", kEncodeType),types));
 
 
     types.clear();
-    //types.push_back("itouch");
+    types.push_back("itouch");
     types.push_back("5");
     umajorAppleType.push_back(AppleType(UString("itouch5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 5", kEncodeType),types));
 
     //nokia
     types.clear();
-    //types.push_back("itouch");
+    types.push_back("lumia");
     types.push_back("720");
     umajorAppleType.push_back(AppleType(UString("lumia 720", kEncodeType),types));
     
     types.clear();
+    types.push_back("lumia");
     types.push_back("520");
     umajorAppleType.push_back(AppleType(UString("lumia 520", kEncodeType),types));
     
     types.clear();
+    types.push_back("lumia");
     types.push_back("920");
     umajorAppleType.push_back(AppleType(UString("lumia 920", kEncodeType),types));
     
     types.clear();
+    types.push_back("lumia");
     types.push_back("800");
     umajorAppleType.push_back(AppleType(UString("lumia 800", kEncodeType),types));
     
     types.clear();
+    types.push_back("lumia");
     types.push_back("900");
     umajorAppleType.push_back(AppleType(UString("lumia 900", kEncodeType),types));
     
     types.clear();
+    types.push_back("lumia");
     types.push_back("925");
     umajorAppleType.push_back(AppleType(UString("lumia 925", kEncodeType),types));
 
