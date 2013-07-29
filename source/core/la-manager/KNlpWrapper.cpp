@@ -138,3 +138,8 @@ std::string KNlpWrapper::cleanStopword(const std::string& str)
 {
     return garbagePattern_->erase_stop_word(str);
 }
+
+void KNlpWrapper::gauss_smooth(std::vector<double>& r)
+{
+    tokenizer_->gauss_smooth(r);
+}

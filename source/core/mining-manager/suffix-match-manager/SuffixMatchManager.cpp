@@ -5,6 +5,7 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <la-manager/KNlpWrapper.h>
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
@@ -150,19 +151,18 @@ void SuffixMatchManager::GetTokenResults(std::string pattern,
                                 double& rank_boundary)
 {
     tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
-    //
     getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
 }
 
 //getSuffixSearchRankThreshold
-void SuffixMatchManager::getSuffixSearchRankThreshold(const std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
+void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
 {
     double minor_score_sum = 0;
     double major_score_sum = 0;
     unsigned int minor_size = 0;
     unsigned int major_size = 0;
     unsigned int total_size = 0;
-    for (std::list<std::pair<UString, double> >::const_iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
     {
         if (i->second > 0.1)
         {
@@ -176,6 +176,39 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(const std::list<std::pair<
         }
     }
     total_size = minor_size + major_size;
+
+    if (major_size == 1 && major_score_sum > 0.6)
+    {
+        std::vector<double> minor_tokens_point; 
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+            minor_tokens_point.push_back(i->second);
+        KNlpWrapper::get()->gauss_smooth(minor_tokens_point);
+
+        unsigned int k = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                                        i != minor_tokens.end(); ++i, k++)
+            i->second = minor_tokens_point[k];
+
+        minor_score_sum = 0;
+        major_score_sum = 0;
+        minor_size = 0;
+        major_size = 0;
+        total_size = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            if (i->second > 0.1)
+            {
+                major_score_sum += i->second;
+                major_size++;
+            }
+            else
+            {
+                minor_score_sum += i->second;
+                minor_size++;
+            }
+        }
+        total_size = minor_size + major_size;
+    }
 
     if (major_size <= 3)
     {

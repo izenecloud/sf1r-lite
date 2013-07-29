@@ -57,6 +57,8 @@ public:
 
     std::string cleanStopword(const std::string& str);
 
+    void gauss_smooth(std::vector<double>& r);
+
     void fmmBigram(std::vector<std::pair<KString,double> >& r);
 
     void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);

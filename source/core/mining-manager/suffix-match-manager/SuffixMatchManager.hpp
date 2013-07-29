@@ -86,8 +86,8 @@ public:
             const std::list<std::pair<UString, double> >& minor_tokens,
             std::list<std::pair<UString, double> >& boundary_minor_tokens);
 
-    void getSuffixSearchRankThreshold(const std::list<std::pair<UString, 
-                            double> >& minor_tokens, double& rank_boundary);
+    void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
+                        double& rank_boundary);
 
     void GetQuerySumScore(const std::string& pattern, double &sum_score);
 
