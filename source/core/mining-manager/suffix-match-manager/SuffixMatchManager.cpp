@@ -223,7 +223,7 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
         }
         else
         {
-            rank_boundary = major_score_sum * 1 + minor_score_sum * 0.6;
+            rank_boundary = major_score_sum * 0.9 + minor_score_sum * 0.6;
         }
         
     }

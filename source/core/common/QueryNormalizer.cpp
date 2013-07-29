@@ -410,7 +410,7 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     std::vector<std::string> types;
 
     types.push_back("iphone");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("iphone 4 ", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone4 ", kEncodeType),types));
     
@@ -422,26 +422,26 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     
     types.clear();
     types.push_back("iphone");
-    types.push_back("5");
+    types.push_back("5 ");
     umajorAppleType.push_back(AppleType(UString("iphone 5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone5", kEncodeType),types));
 
     //ipad
     types.clear();
     types.push_back("ipad");
-    types.push_back("2");
+    types.push_back("2 ");
     umajorAppleType.push_back(AppleType(UString("ipad2", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 2", kEncodeType),types));
 
     types.clear();
     types.push_back("ipad");
-    types.push_back("3");
+    types.push_back("3 ");
     umajorAppleType.push_back(AppleType(UString("ipad3", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 3", kEncodeType),types));
 
     types.clear();
     types.push_back("ipad");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("ipad4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 4", kEncodeType),types));
 
@@ -454,14 +454,14 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     //itouch
     types.clear();
     types.push_back("itouch");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("itouch4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 4", kEncodeType),types));
 
 
     types.clear();
     types.push_back("itouch");
-    types.push_back("5");
+    types.push_back("5 ");
     umajorAppleType.push_back(AppleType(UString("itouch5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 5", kEncodeType),types));
 
