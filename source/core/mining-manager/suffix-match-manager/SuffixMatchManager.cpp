@@ -313,12 +313,12 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         ReadLock lock(mutex_);
         std::vector<size_t> prop_id_list;
         std::vector<RangeListT> filter_range_list;
-        if (!group_param.isGroupEmpty())
+        if (!group_param.groupLabels_.empty())
         {
             if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
                 return 0;
         }
-        if (!group_param.isAttrEmpty())
+        if (!group_param.attrLabels_.empty())
         {
             if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
                 return 0;
