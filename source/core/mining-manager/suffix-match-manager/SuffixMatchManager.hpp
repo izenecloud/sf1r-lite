@@ -70,7 +70,8 @@ public:
     void GetTokenResults(std::string pattern,
                     std::list<std::pair<UString, double> >& major_tokens,
                     std::list<std::pair<UString, double> >& manor_tokens,
-                    UString& analyzedQuery);
+                    UString& analyzedQuery,
+                    double& rank_boundary);
 
     SuffixMatchMiningTask* getMiningTask();
     
@@ -84,6 +85,9 @@ public:
             const std::list<std::pair<UString, double> >& major_tokens,
             const std::list<std::pair<UString, double> >& minor_tokens,
             std::list<std::pair<UString, double> >& boundary_minor_tokens);
+
+    void getSuffixSearchRankThreshold(const std::list<std::pair<UString, 
+                            double> >& minor_tokens, double& rank_boundary);
 
     void GetQuerySumScore(const std::string& pattern, double &sum_score);
 

@@ -145,11 +145,72 @@ size_t SuffixMatchManager::longestSuffixMatch(
 
 void SuffixMatchManager::GetTokenResults(std::string pattern,
                                 std::list<std::pair<UString, double> >& major_tokens,
-                                std::list<std::pair<UString, double> >& manor_tokens,
-                                UString& analyzedQuery)
+                                std::list<std::pair<UString, double> >& minor_tokens,
+                                UString& analyzedQuery,
+                                double& rank_boundary)
 {
-    tokenizer_->GetTokenResults(pattern, major_tokens, manor_tokens, analyzedQuery);
+    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
     //
+    getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
+}
+
+//getSuffixSearchRankThreshold
+void SuffixMatchManager::getSuffixSearchRankThreshold(const std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
+{
+    double minor_score_sum = 0;
+    double major_score_sum = 0;
+    unsigned int minor_size = 0;
+    unsigned int major_size = 0;
+    unsigned int total_size = 0;
+    for (std::list<std::pair<UString, double> >::const_iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second > 0.1)
+        {
+            major_score_sum += i->second;
+            major_size++;
+        }
+        else
+        {
+            minor_score_sum += i->second;
+            minor_size++;
+        }
+    }
+    total_size = minor_size + major_size;
+
+    if (major_size <= 3)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 1 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 1 + minor_score_sum * 0.6;
+        }
+        
+    }
+    else if (major_size <= 5)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.6;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.7;
+        }
+    }
+    else 
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.6 + minor_score_sum * 0.6;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.6 + minor_score_sum * 0.7;
+        }
+    }
 }
 
 bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)

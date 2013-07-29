@@ -54,7 +54,8 @@ public:
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         izenelib::util::UString analyzedQuery;
-        miningManager_->getSuffixManager()->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+        double rank_boundary = 0;
+        miningManager_->getSuffixManager()->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
 
         std::vector<std::pair<std::string, double> > v_major;
         std::vector<std::pair<std::string, double> > v_minor;

@@ -2243,7 +2243,8 @@ bool MiningManager::GetSuffixMatch(
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
-        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+        double rank_boundary;
+        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
         
         double queryScore = 0;
         suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
@@ -2264,13 +2265,13 @@ bool MiningManager::GetSuffixMatch(
             cout << key << " " << i->second << endl;
         }
 
+        /*
         const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
         double rank_boundary = 1.55 - tokenNum * 0.1;
-        rank_boundary = std::max(rank_boundary, 0.5);
-        rank_boundary = std::min(rank_boundary, 0.95);
-
-        LOG(INFO) << "token num: " << tokenNum
-                  << ", rank boundary: " << rank_boundary;
+        rank_boundary = std::max(rank_boundary, 0.7);
+        rank_boundary = std::min(rank_boundary, 0.85);
+        */
+        LOG(INFO) << " Rank boundary: " << rank_boundary;
 
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
