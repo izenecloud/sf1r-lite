@@ -231,7 +231,7 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     {
         if (total_size > 8)
         {
-            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.6;
+            rank_boundary = major_score_sum * 0.78 + minor_score_sum * 0.6;
         }
         else
         {
@@ -242,11 +242,11 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
     {
         if (total_size > 8)
         {
-            rank_boundary = major_score_sum * 0.6 + minor_score_sum * 0.6;
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.6;
         }
         else
         {
-            rank_boundary = major_score_sum * 0.6 + minor_score_sum * 0.7;
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.7;
         }
     }
 }

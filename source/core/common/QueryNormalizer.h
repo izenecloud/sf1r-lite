@@ -67,6 +67,11 @@ public:
         return countCharNum(query) >= LONG_QUERY_MIN_CHAR_NUM;
     }
 
+    bool isWrongQuery(const std::string& query)
+    {
+        return countCharNum(query) >= LONG_QUERY_MAX_CHAR_NUM;
+    }
+
     void getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
                         std::string& minorQuery);
 
@@ -83,7 +88,8 @@ private:
 
     enum
     {
-        LONG_QUERY_MIN_CHAR_NUM = 8 // the mininum character number for long query
+        LONG_QUERY_MIN_CHAR_NUM = 8,
+        LONG_QUERY_MAX_CHAR_NUM = 30
     };
 };
 

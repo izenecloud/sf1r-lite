@@ -2234,6 +2234,12 @@ bool MiningManager::GetSuffixMatch(
         std::string pattern = pattern_orig;
         boost::to_lower(pattern);
 
+        const bool isWrongQuery = QueryNormalizer::get()->isWrongQuery(pattern);
+        if (isWrongQuery)
+        {
+            LOG (ERROR) <<"The query is too long...";
+        }
+        
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
         if (isLongQuery)
         {

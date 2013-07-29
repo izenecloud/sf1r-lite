@@ -439,12 +439,12 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     else if (product_model.size() == 2)
     {
         for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
-            product_modelScores.push_back(std::make_pair(*i, scoreSum/10));
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/8));
     }
     else if (product_model.size() == 3)
     {
         for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
-            product_modelScores.push_back(std::make_pair(*i, scoreSum/21));
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/12));
     }
 
     scoreSum = 0;
