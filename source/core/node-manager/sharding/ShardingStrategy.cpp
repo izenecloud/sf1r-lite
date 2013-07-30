@@ -79,7 +79,10 @@ shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardF
     //}
     //else
     //
-    shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
+    if (sfit->second.length() == 32)
+        shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
+    else
+        shardIndex = shard_range.first + boost::lexical_cast<size_t>(sfit->second) % (shard_range.second - shard_range.first);
 
     //
     // static_map[sfit->second.substr(sfit->second.size() - 2)] = shardIndex;

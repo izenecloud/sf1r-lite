@@ -112,6 +112,8 @@ void RebuildTask::doTask()
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
         throw -1;
     }
+    if (NodeManagerBase::get()->isDistributed())
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
     rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -164,6 +166,8 @@ void RebuildTask::doTask()
     LOG(INFO) << "## end RebuildTask for " << collectionName_;
     //isRunning_ = false;
     //
+    if (NodeManagerBase::get()->isDistributed())
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
@@ -418,6 +422,9 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
             LOG(ERROR) << "start collection for rebuilding failed: " << rebuildCollectionName_;
             return false;
         }
+        if (NodeManagerBase::get()->isDistributed())
+            NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+
         CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
         CollectionManager::ScopedReadLock recollLock(*recollMutex);
         rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -477,6 +484,8 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
     CollectionManager::get()->startCollection(collectionName_, configFile);
     LOG(INFO) << "## end rebuild from scd for " << collectionName_;
 
+    if (NodeManagerBase::get()->isDistributed())
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
     return true;
 }

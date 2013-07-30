@@ -34,7 +34,8 @@ public:
      * @param docNum  number of docs to be dispatched, 0 for all
      * @return
      */
-    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum = 0);
+    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir,
+        const std::string& to_dir, unsigned int docNum = 0);
 
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
@@ -53,6 +54,7 @@ protected:
     std::string scdDir_;
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
+    std::string to_scdDir_;
 };
 
 /**

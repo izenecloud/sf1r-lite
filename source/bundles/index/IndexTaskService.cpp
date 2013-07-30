@@ -356,7 +356,7 @@ bool IndexTaskService::distributedIndexImpl_(
     {
         boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder_,
                 collectionName, DistributeFileSys::get()->isEnabled()));
-        if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
+        if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, bundleConfig_->indexSCDPath(), numdoc))
             return false;
     }
     // 2. send index request to multiple nodes
@@ -398,45 +398,17 @@ bool IndexTaskService::distributedIndexImpl_(
 bool IndexTaskService::createScdSharder(
     boost::shared_ptr<ScdSharder>& scdSharder)
 {
-    if (bundleConfig_->indexShardKeys_.empty())
-    {
-        LOG(ERROR) << "No sharding key!";
-        return false;
-    }
-
-    // sharding configuration
-    if (MasterManagerBase::get()->getCollectionShardids(service_,
-            bundleConfig_->collectionName_, shard_cfg_.shardidList_))
-    {
-        //cfg.shardNum_ = cfg.shardidList_.size();
-        //cfg.totalShardNum_ = NodeManagerBase::get()->getTotalShardNum();
-    }
-    else
-    {
-        LOG(ERROR) << "No shardid configured for " << bundleConfig_->collectionName_;
-        return false;
-    }
-
-    ShardingConfig::RangeListT ranges;
-    ranges.push_back(100);
-    ranges.push_back(1000);
-    shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
-    ShardingConfig::AttrListT strranges;
-    strranges.push_back("abc");
-    shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
-    shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
-
-    scdSharder.reset(new ScdSharder);
-
-    if (scdSharder && scdSharder->init(shard_cfg_))
-        return true;
-    else
-        return false;
+    return indexWorker_->createScdSharder(scdSharder);
 }
 
 izenelib::util::UString::EncodingType IndexTaskService::getEncode() const
 {
     return bundleConfig_->encoding_;
+}
+
+const std::vector<shardid_t>& IndexTaskService::getShardidListForSearch()
+{
+    return bundleConfig_->col_shard_info_.shardList_;
 }
 
 }

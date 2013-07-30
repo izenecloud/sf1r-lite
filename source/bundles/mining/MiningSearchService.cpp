@@ -3,6 +3,7 @@
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <util/driver/Request.h>
 #include <aggregator-manager/SearchWorker.h>
@@ -12,6 +13,7 @@ namespace sf1r
 {
 
 MiningSearchService::MiningSearchService()
+    :shardingstrategy_(NULL)
 {
 }
 

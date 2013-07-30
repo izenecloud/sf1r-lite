@@ -5,6 +5,7 @@
 #include <configuration-manager/RankingManagerConfig.h>
 #include <configuration-manager/CollectionPath.h>
 
+#include <node-manager/Sf1rTopology.h>
 #include <ir/index_manager/utility/IndexManagerConfig.h>
 
 #include <util/osgi/BundleConfiguration.h>
@@ -94,6 +95,8 @@ public:
     DocumentSchema documentSchema_;
 
     std::vector<std::string> indexShardKeys_;
+    // shard node info for index/search service  
+    MasterCollection  col_shard_info_;
 
     /// @brief whether log new created doc to LogServer
     bool logCreatedDoc_;

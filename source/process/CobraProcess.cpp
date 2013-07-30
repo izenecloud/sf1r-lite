@@ -405,6 +405,10 @@ void CobraProcess::startCollections()
         }
     }
 
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
 #ifdef  EXIST_LICENSE
     char* home = getenv("HOME");
     std::string licenseDir = home; licenseDir += "/sf1-license/";

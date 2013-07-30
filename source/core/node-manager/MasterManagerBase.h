@@ -58,6 +58,7 @@ public:
 
     void initCfg();
     bool init();
+    void updateTopologyCfg(const Sf1rTopology& cfg);
 
     void start();
 
@@ -104,9 +105,9 @@ public:
             std::string& host,
             unsigned int& recvPort);
 
-    bool getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList);
+    //bool getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList);
 
-    bool checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid);
+    //bool checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid);
 
     void registerIndexStatus(const std::string& collection, bool isIndexing);
 
@@ -146,7 +147,7 @@ public:
     shardid_t getMyShardId();
 
     bool pushWriteReqToShard(const std::string& reqdata,
-        const std::string& coll);
+        const std::vector<shardid_t>& shardids);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

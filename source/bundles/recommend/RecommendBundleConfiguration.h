@@ -12,6 +12,7 @@
 #include <configuration-manager/CollectionPath.h>
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <configuration-manager/DistributedNodeConfig.h>
+#include <node-manager/Sf1rTopology.h>
 
 #include <util/osgi/BundleConfiguration.h>
 
@@ -56,6 +57,7 @@ public:
     // <SF1Config><Deployment><DistributedTopology>
     DistributedNodeConfig recommendNodeConfig_;
     DistributedNodeConfig searchNodeConfig_;
+    MasterCollection  col_shard_info_;
 
     std::string userSCDPath() const
     {

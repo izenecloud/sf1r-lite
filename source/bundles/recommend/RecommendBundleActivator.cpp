@@ -293,8 +293,7 @@ void RecommendBundleActivator::createSharder_()
     const NodeManagerBase* nodeManager = NodeManagerBase::get();
     const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
 
-    shardid_t shardNum = nodeManager->getTotalShardNum();
-    shardStrategy_.reset(new RecommendShardMod(shardNum));
+    shardStrategy_.reset(new RecommendShardMod(config_->col_shard_info_.shardList_));
 
     if (config_->recommendNodeConfig_.isWorkerNode_)
     {

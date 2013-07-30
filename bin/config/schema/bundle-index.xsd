@@ -18,6 +18,7 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element ref="ShardKey" minOccurs="1" maxOccurs="unbounded"/>
+                            <xs:element ref="DistributedService" minOccurs="0" maxOccurs="unbounded"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -74,6 +75,20 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="DistributedService">
+        <xs:complexType>
+            <xs:attribute name="type">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="search"/>
+                        <xs:enumeration value="recommend"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="shardids" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+ 
     <xs:element name="IndexStrategy">
         <xs:complexType>
             <xs:attribute name="logcreateddoc" type="YesNoType" use="optional"/>

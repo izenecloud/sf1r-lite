@@ -489,9 +489,7 @@ public:
     {
         if (topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.master_.enabled_)
         {
-            Sf1rNodeMaster::MasterServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.find(service);
-            if (cit != topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.end())
-                return true;
+            return topologyConfig_.sf1rTopology_.curNode_.master_.checkService(service);
         }
         return false;
     }
@@ -514,11 +512,7 @@ public:
     {
         if (topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.worker_.enabled_)
         {
-            Sf1rNodeWorker::WorkerServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.find(service);
-            if (cit != topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.end())
-            {
-                return true;
-            }
+            return topologyConfig_.sf1rTopology_.curNode_.worker_.checkService(service);
         }
         return false;
     }
@@ -595,6 +589,11 @@ public:
         return configFile.string();
     }
 
+    void addServiceMaster(const std::string& serviceName, const MasterCollection& masterCollection);
+    void removeServiceMaster(const std::string& service, const std::string& coll);
+    void addServiceWorker(const std::string& service, const std::string& coll);
+    void removeServiceWorker(const std::string& service, const std::string& coll);
+
 private:
     /// @brief                  Parse <System> settings
     /// @param system           Pointer to the Element
@@ -632,8 +631,8 @@ private:
     /// @param system           Pointer to the Element
     void parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& sf1rNodeMaster);
     void parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& sf1rNodeWorker);
-    void parseServiceMaster(const ticpp::Element * service, Sf1rNodeMaster& sf1rNodeMaster);
-    void parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker);
+    //void parseServiceMaster(const ticpp::Element * service, const std::string& curcoll);
+    //void parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker);
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedUtil(const ticpp::Element * distributedUtil);
@@ -839,6 +838,7 @@ private:
     ///
     void parseProperty_Indexing(const ticpp::Element * indexing, PropertyConfig & propertyConfig);
 
+    void parseServiceMaster(const ticpp::Element * service, CollectionMeta& collectionMeta);
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------

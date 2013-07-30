@@ -29,6 +29,8 @@
     <IndexBundle>
       <!--ShardSchema>
         <ShardKey name="DOCID" />
+        <DistributedService type="search" shardids="1,2" />
+        <DistributedService type="recommend" shardids="1,2" />
       </ShardSchema-->
       <Schema>
         <Property name="Title">

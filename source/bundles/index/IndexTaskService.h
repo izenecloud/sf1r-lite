@@ -58,6 +58,7 @@ public:
     void flush();
     bool isNeedSharding();
     bool HookDistributeRequestForIndex();
+    const std::vector<shardid_t>& getShardidListForSearch();
 
 private:
     bool SendRequestToSharding(uint32_t shardid);
@@ -76,8 +77,6 @@ private:
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
-    ShardingConfig shard_cfg_;
-    boost::shared_ptr<ShardingStrategy> shardingStrategy_;
     boost::shared_ptr<ScdSharder> scdSharder_;
 
     friend class IndexWorkerController;

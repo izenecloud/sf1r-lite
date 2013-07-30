@@ -242,31 +242,11 @@
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="@LOCAL_HOST_IP@" workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
-    <DistributedTopology enable="n" nodenum="2">
+    <DistributedTopology enable="n">
         <CurrentSf1rNode nodeid="1" replicaid="1">
             <!--master names for B5M are www|stage|beta-->
-            <MasterServer enable="n" name="undefined">
-                <DistributedService type="search" >
-                    <!--for distributive collection, shardid is set to all as default-->
-                    <Collection name="web" distributive="n"/>
-                    <Collection name="qa" distributive="n"/>
-                    <Collection name="b5mo" distributive="n"/>
-                    <Collection name="b5mc" distributive="n"/>
-                    <Collection name="b5mp" distributive="y" shardids="1,2"/>
-                </DistributedService>
-                <!--<DistributedService type="recommend">
-                    <Collection name="b5mp" distributive="y"/>
-                </DistributedService>-->
-            </MasterServer>
-
-            <WorkerServer enable="n">
-                <DistributedService type="search" >
-                    <Collection name="b5mp"/>
-                </DistributedService>
-                <!--<DistributedService type="recommend" >
-                    <Collection name="b5mp"/>
-                </DistributedService>-->
-            </WorkerServer>
+            <MasterServer enable="n" name="undefined" />
+            <WorkerServer enable="n" />
         </CurrentSf1rNode>
     </DistributedTopology>
 

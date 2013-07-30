@@ -1,6 +1,6 @@
 #include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
-#include "SuperMasterManager.h"
+//#include "SuperMasterManager.h"
 #include "MasterManagerBase.h"
 #include "DistributeTest.hpp"
 #include "RecoveryChecker.h"
@@ -59,6 +59,16 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
     MasterManagerBase::get()->initCfg();
     LOG(INFO) << "node starting mode : " << s_enable_async_;
+}
+
+void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
+{
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        sf1rTopology_ = cfg;
+    }
+    MasterManagerBase::get()->updateTopologyCfg(cfg);
+    //SuperMasterManager::get()->updateTopologyCfg(cfg);
 }
 
 void NodeManagerBase::registerDistributeService(boost::shared_ptr<IDistributeService> sp_service,
@@ -235,7 +245,7 @@ void NodeManagerBase::stop()
     if (masterStarted_)
     {
         stopMasterManager();
-        SuperMasterManager::get()->stop();
+        //SuperMasterManager::get()->stop();
     }
 
     leaveCluster();
@@ -425,8 +435,8 @@ void NodeManagerBase::setServicesData(ZNode& znode)
             services += "," + cit->first;
 
         std::string collections;
-        std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.masterServices_[cit->first].collectionList_;
-        for (std::vector<MasterCollection>::iterator it = collectionList.begin();
+        const std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.getMasterCollList(cit->first);
+        for (std::vector<MasterCollection>::const_iterator it = collectionList.begin();
                 it != collectionList.end(); it++)
         {
             if (collections.empty())
@@ -1023,8 +1033,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         if (sf1rTopology_.curNode_.master_.hasAnyService())
         {
             startMasterManager();
-            SuperMasterManager::get()->init(sf1rTopology_);
-            SuperMasterManager::get()->start();
+            //SuperMasterManager::get()->init(sf1rTopology_);
+            //SuperMasterManager::get()->start();
             masterStarted_ = true;
         }
     }

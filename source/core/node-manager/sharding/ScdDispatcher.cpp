@@ -24,7 +24,10 @@ ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
     BOOST_ASSERT(scdSharder_);
 }
 
-bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum)
+bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList,
+    const std::string& dir,
+    const std::string& to_dir,
+    unsigned int docNum)
 {
     LOG(INFO) << "start SCD sharding";
 
@@ -34,6 +37,7 @@ bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::s
 
     // set scd dir and initialize
     scdDir_ = dir;
+    to_scdDir_ = to_dir;
     if (!initialize())
         return false;
 
@@ -216,9 +220,8 @@ bool BatchScdDispatcher::finish()
         LOG(INFO) << "DFS enabled, no need dispatch scd files.";
         return true;
     }
-    std::vector<shardid_t> shardids;
     // Send splitted scd files in sub dirs to each shard server
-    MasterManagerBase::get()->getCollectionShardids(service_, collectionName_, shardids);
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingConfig().shardidList_;
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         shardid_t shardid = shardids[i];
@@ -230,7 +233,7 @@ bool BatchScdDispatcher::finish()
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
 
             izenelib::net::distribute::DataTransfer2 transfer(host, recvPort);
-            if (not transfer.syncSend(shardScdfileMap_[shardid], collectionName_ + "/scd/index"))
+            if (not transfer.syncSend(shardScdfileMap_[shardid], to_scdDir_))
             {
                 ret = false;
                 LOG(ERROR) << "Failed to transfer scd"<<shardid;
@@ -254,8 +257,7 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
     bfs::remove_all(tempDir);
     bfs::create_directory(tempDir);
 
-    std::vector<shardid_t> shardids;
-    MasterManagerBase::get()->getCollectionShardids(service_, collectionName_, shardids);
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingConfig().shardidList_;
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         std::ostringstream oss;
