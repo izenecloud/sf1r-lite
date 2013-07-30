@@ -384,7 +384,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
         LOG(ERROR) << "exception: " << ex.what();
     }
     
-    if (classifyCategory == "R>文娱>书籍杂志" || classifyCategory == "R>文娱>音像影视")
+    if (classifyCategory == "文娱>书籍杂志" || classifyCategory == "文娱>音像影视")
     {
         std::map<UString, double> tokenScoreMap_cat;
         std::list<std::pair<UString, double> > token_results_book;
@@ -433,8 +433,10 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
 
     for (KNlpWrapper::token_score_list_t::iterator it =
              minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
+    {
         scoreSum -= it->second;
-
+        scoreSum += (it->second/200);
+    }
 
     std::ostringstream oss;
     if (product_model.size() == 1)
