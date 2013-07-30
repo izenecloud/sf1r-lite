@@ -143,30 +143,31 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         changed_match_.erase(oid);
     }
-    if(sorter_!=NULL)
-    {
-        if(type!=DELETE_SCD)
-        {
-            ScdDocument sdoc(doc, type);
-            sorter_->Append(sdoc, ts_);
-            if(old_spid!=spid&&!old_spid.empty())
-            {
-                ScdDocument old_doc;
-                old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
-                old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
-                old_doc.type=DELETE_SCD;
-                sorter_->Append(old_doc, last_ts_);
-            }
-        }
-        else
-        {
-            ScdDocument sdoc(doc, DELETE_SCD);
-            sorter_->Append(sdoc, ts_);
-        }
-    }
+    //if(sorter_!=NULL)
+    //{
+        //if(type!=DELETE_SCD)
+        //{
+            //ScdDocument sdoc(doc, type);
+            //sorter_->Append(sdoc, ts_);
+            //if(old_spid!=spid&&!old_spid.empty())
+            //{
+                //ScdDocument old_doc;
+                //old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
+                //old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
+                //old_doc.type=DELETE_SCD;
+                //sorter_->Append(old_doc, last_ts_);
+            //}
+        //}
+        //else
+        //{
+            //ScdDocument sdoc(doc, DELETE_SCD);
+            //sorter_->Append(sdoc, ts_);
+        //}
+    //}
 }
-void B5moProcessor::ProcessIU_(Document& doc, bool force_match) const
+void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
 {
+    SCD_TYPE type = UPDATE_SCD;
     doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     doc.eraseProperty(B5MHelper::GetBrandPropertyName());
     doc.eraseProperty("Attribute");
@@ -176,11 +177,17 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match) const
     {
         OMap_(*omapper_, doc);
     }
-    Document::doc_prop_value_strtype title;
-    doc.getProperty("Title", title);
+    //Document::doc_prop_value_strtype title;
+    //doc.getProperty("Title", title);
+    std::string title;
+    doc.getString("Title", title);
     //std::string stitle = propstr_to_str(title);
     //brand.convertString(sbrand, UString::UTF_8);
     //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
+    std::string sdocid;
+    doc.getString("DOCID", sdocid);
+    std::string spid;
+    std::string old_spid;
     bool is_human_edit = false;
     if(odb_->get(sdocid, spid)) 
     {
@@ -304,16 +311,17 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match) const
     doc.property("uuid") = str_to_propstr(spid);
     if(sorter_!=NULL)
     {
-        ScdDocument sdoc(doc, type);
-        sorter_->Append(sdoc, ts_);
         if(old_spid!=spid&&!old_spid.empty())
         {
             ScdDocument old_doc;
             old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
             old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
             old_doc.type=DELETE_SCD;
-            sorter_->Append(old_doc, last_ts_);
+            //last_ts_?
+            sorter_->Append(old_doc, ts_);
         }
+        ScdDocument sdoc(doc, type);
+        sorter_->Append(sdoc, ts_);
     }
 }
 
@@ -331,8 +339,16 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     namespace bfs = boost::filesystem;
     std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(output_dir);
-    boost::shared_ptr<ScdTypeWriter> writer(new ScdTypeWriter(output_dir));
+    std::string sorter_path = B5MHelper::GetB5moBlockPath(mdb_instance); 
+    B5MHelper::PrepareEmptyDir(sorter_path);
+    sorter_ = new B5moSorter(sorter_path, 200000);
     std::string omapper_path = B5MHelper::GetOMapperPath(mdb_instance);
+    if(bfs::exists(omapper_path))
+    {
+        omapper_ = new OriginalMapper();
+        omapper_->Open(omapper_path);
+    }
+    boost::shared_ptr<ScdTypeWriter> writer(new ScdTypeWriter(output_dir));
     ts_ = bfs::path(mdb_instance).filename().string();
     last_ts_="";
     if(!last_mdb_instance.empty())
@@ -361,21 +377,13 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
                         if(!OMap_(last_omapper, value.doc)) continue;
                         value.doc.type = UPDATE_SCD;
                         ProcessIU_(value.doc, true);
-                        //writer->Append(value.doc, value.doc.type);
+                        writer->Append(value.doc, value.doc.type);
                     }
                     ifs.close();
                 }
             }
 
         }
-    }
-    std::string sorter_path = B5MHelper::GetB5moBlockPath(mdb_instance); 
-    B5MHelper::PrepareEmptyDir(sorter_path);
-    sorter_ = new B5moSorter(sorter_path, 200000);
-    if(bfs::exists(omapper_path))
-    {
-        omapper_ = new OriginalMapper();
-        omapper_->Open(omapper_path);
     }
 
     //if(!matcher_->IsOpen())

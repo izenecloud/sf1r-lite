@@ -28,7 +28,7 @@ namespace sf1r {
 
     private:
 
-        void ProcessIU_(Document& doc, bool force_match = false) const;
+        void ProcessIU_(Document& doc, bool force_match = false);
 
         bool OMap_(const OriginalMapper& omapper, Document& doc) const;
 
