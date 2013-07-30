@@ -845,6 +845,21 @@ void NodeManagerBase::enterCluster(bool start_master)
     // ensure base paths
     tryInitZkNameSpace();
 
+    initServices();
+
+    nodeState_ = NODE_STATE_RECOVER_RUNNING;
+    updateCurrentPrimary();
+    LOG(INFO) << "begin recovering callback : " << self_primary_path_;
+    if (cb_on_recovering_)
+    {
+        // unlock
+        mutex_.unlock();
+        cb_on_recovering_(start_master);
+        DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
+        // relock
+        mutex_.lock();
+    }
+
     // register current sf1r node to ZooKeeper
     ZNode znode;
     setSf1rNodeData(znode);
@@ -880,21 +895,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             return;
         }
     }
-    initServices();
-
-    nodeState_ = NODE_STATE_RECOVER_RUNNING;
-    updateCurrentPrimary();
-    LOG(INFO) << "begin recovering callback : " << self_primary_path_;
-    if (cb_on_recovering_)
-    {
-        // unlock
-        mutex_.unlock();
-        cb_on_recovering_(start_master);
-        DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
-        // relock
-        mutex_.lock();
-    }
-
+ 
     updateCurrentPrimary();
     if (curr_primary_path_.empty())
     {

@@ -2610,12 +2610,12 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             bool b = false;
             if(text.length() > Len)
             {
-            cid_t cid = products_[ki.attribute_apps[j].spu_id].cid;
+                cid_t cid = products_[ki.attribute_apps[j].spu_id].cid;
                 cid = GetLevelCid_(category_list_[cid].name, 1);    
                 for(uint32_t k=0;k< category_size;k++)
                 {
                     if(cos_value[k].second < similarity_threshold)break;
-            if(cos_value[k].first == cid)
+                    if(cos_value[k].first == cid)
                     {
                         b = true;
                         break;
@@ -2648,7 +2648,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 KeywordVector::iterator itt = iter;
                 itt++;
-        if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
+                if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
                 {
                     while(itt != temp_k.end())
                     {
@@ -2886,6 +2886,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     uint32_t category_size = 1;
     uint32_t sample_capacity = 25;
     double similarity_threshold = 0.05;
+    uint32_t brand_count = 25;
     ATermList term_list;
     Analyze_(text, term_list);
 
@@ -2908,7 +2909,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
-    
+    if(cos_value[0].second >= similarity_threshold) Len = 60;
     KeywordVector temp_k;
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
@@ -2948,7 +2949,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 for(uint32_t k=0;k< category_size;k++)
                 {
                     if(cos_value[k].second < similarity_threshold)break;
-            if(cos_value[k].first == cid)
+                    if(cos_value[k].first == cid)
                     {
                         b = true;
                         break;
@@ -3010,7 +3011,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 KeywordVector::iterator itt = iter;
                 itt++;
-        if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
+                if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
                 {
                     while(itt != temp_k.end())
                     {
@@ -3048,10 +3049,39 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         if(!ki.attribute_apps.empty() && ki.attribute_apps[0].attribute_name == "品牌")
         {
             j++;
-            while(j < temp_k.size() && temp_k[j].positions[0].begin < temp_k[i].positions[0].end + 25)
+            boost::unordered_map<uint32_t, uint32_t> spus;
+            uint32_t k=0;
+            while(k<ki.attribute_apps.size())
+            {
+                if(ki.attribute_apps[k].attribute_name == "品牌")
+                {
+                    spus[ki.attribute_apps[k].spu_id] = 1;
+                }
+                k++;
+            }
+            while(j < temp_k.size() && temp_k[j].positions[0].begin < temp_k[i].positions[0].end + 35)
             {
                 if(!temp_k[j].attribute_apps.empty() && temp_k[j].attribute_apps[0].attribute_name == "品牌")
-                    break;
+                {
+                    bool same_brand = false;
+                    uint32_t k=0, bk=0;
+                    while(k<temp_k[j].attribute_apps.size())
+                    {
+                        if(temp_k[j].attribute_apps[k].attribute_name == "品牌")
+                        {
+                            bk++;
+                            if(spus.find(temp_k[j].attribute_apps[k].spu_id) != spus.end())
+                            {
+                                same_brand = true;
+                                break;
+                            }
+                            if(bk > brand_count)break;
+                        }
+                        k++;
+                    }
+                    if(!same_brand)
+                        break;
+                }
                 std::string sss="";
                 bool chinese = true;
                 uint32_t pos = temp_k[j-1].positions[0].end;
@@ -3073,6 +3103,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     std::string sk;
                     temp_k[j].text.convertString(sk, izenelib::util::UString::UTF_8);
                     term += sk;
+                    i=j;
                 }
                 else break;
                 j++;
