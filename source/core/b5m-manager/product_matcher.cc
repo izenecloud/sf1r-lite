@@ -2610,12 +2610,12 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             bool b = false;
             if(text.length() > Len)
             {
-            cid_t cid = products_[ki.attribute_apps[j].spu_id].cid;
+                cid_t cid = products_[ki.attribute_apps[j].spu_id].cid;
                 cid = GetLevelCid_(category_list_[cid].name, 1);    
                 for(uint32_t k=0;k< category_size;k++)
                 {
                     if(cos_value[k].second < similarity_threshold)break;
-            if(cos_value[k].first == cid)
+                    if(cos_value[k].first == cid)
                     {
                         b = true;
                         break;
@@ -2648,7 +2648,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 KeywordVector::iterator itt = iter;
                 itt++;
-        if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
+                if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
                 {
                     while(itt != temp_k.end())
                     {
@@ -2909,7 +2909,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         }
         cos_value.insert(iter, make_pair(it->first, tcos));
     }
-    
+    if(cos_value[0].second >= similarity_threshold) Len = 60;
     KeywordVector temp_k;
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
@@ -3011,7 +3011,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             {
                 KeywordVector::iterator itt = iter;
                 itt++;
-        if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
+                if((itt == temp_k.end() || itt->positions[0].begin >= k.positions[0].begin) && k.positions[0].begin >= iter->positions[0].end)
                 {
                     while(itt != temp_k.end())
                     {
