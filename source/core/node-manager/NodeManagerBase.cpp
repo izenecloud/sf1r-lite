@@ -57,6 +57,7 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
 
     setZNodePaths();
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
+    MasterManagerBase::get()->initCfg();
     LOG(INFO) << "node starting mode : " << s_enable_async_;
 }
 
@@ -631,6 +632,38 @@ bool NodeManagerBase::isAnyWriteRunningInReplicas()
     return false;
 }
 
+bool NodeManagerBase::isPrimaryReadyForCheckLog()
+{
+    if (!isDistributionEnabled_)
+        return true;
+    if (!zookeeper_)
+        return false;
+
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.empty())
+    {
+        return true;
+    }
+
+    std::string primary_host = node_list.front();
+    std::string sdata;
+    if (zookeeper_->getZNodeData(primary_host, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+        if (state == NODE_STATE_ELECTING ||
+            state == NODE_STATE_STARTED ||
+            state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH)
+        {
+            return true;
+        }
+        LOG(INFO) << "not ready for checking log, primary state is : " << state;
+    }
+    return false;
+}
+
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary, bool force)
 {
     if (!isDistributionEnabled_ || !zookeeper_)
@@ -742,6 +775,9 @@ void NodeManagerBase::updateCurrentPrimary()
 
 void NodeManagerBase::unregisterPrimary()
 {
+    if (masterStarted_)
+        MasterManagerBase::get()->updateServiceReadState("BusyForSelf", false);
+
     std::string my_registed_primary = findReCreatedSelfPrimaryNode();
     while(!my_registed_primary.empty())
     {
@@ -809,6 +845,21 @@ void NodeManagerBase::enterCluster(bool start_master)
     // ensure base paths
     tryInitZkNameSpace();
 
+    initServices();
+
+    nodeState_ = NODE_STATE_RECOVER_RUNNING;
+    updateCurrentPrimary();
+    LOG(INFO) << "begin recovering callback : " << self_primary_path_;
+    if (cb_on_recovering_)
+    {
+        // unlock
+        mutex_.unlock();
+        cb_on_recovering_(start_master);
+        DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
+        // relock
+        mutex_.lock();
+    }
+
     // register current sf1r node to ZooKeeper
     ZNode znode;
     setSf1rNodeData(znode);
@@ -844,21 +895,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             return;
         }
     }
-    initServices();
-
-    nodeState_ = NODE_STATE_RECOVER_RUNNING;
-    updateCurrentPrimary();
-    LOG(INFO) << "begin recovering callback : " << self_primary_path_;
-    if (cb_on_recovering_)
-    {
-        // unlock
-        mutex_.unlock();
-        cb_on_recovering_(start_master);
-        DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
-        // relock
-        mutex_.lock();
-    }
-
+ 
     updateCurrentPrimary();
     if (curr_primary_path_.empty())
     {
@@ -1886,6 +1923,12 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
         sleep(1);
         updateSelfPrimaryNodeState();
     }
+    else
+    {
+        LOG(INFO) << "waiting primary to notify me recover.";
+        sleep(30);
+        updateSelfPrimaryNodeState();
+    }
 }
 
 // note : all check is for primary node. and they 
@@ -1917,6 +1960,12 @@ void NodeManagerBase::checkSecondaryState(bool self_changed)
     case NODE_STATE_STARTED:
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Recovery);
         checkSecondaryRecovery(self_changed);
+        break;
+    case NODE_STATE_RECOVER_WAIT_PRIMARY:
+        // the secondary may became primary if 
+        // the old primary lost during recovery so 
+        // we need check for recovery.
+        checkPrimaryForRecovery(NODE_STATE_ELECTING);
         break;
     default:
         break;

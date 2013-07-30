@@ -178,6 +178,16 @@ namespace sf1r {
             static std::string p("SPTitle");
             return p;
         }
+        static std::string GetSPPicPropertyName()
+        {
+            static std::string p("SPPicture");
+            return p;
+        }
+        static std::string GetSPUrlPropertyName()
+        {
+            static std::string p("SPUrl");
+            return p;
+        }
         static std::string GetTargetCategoryPropertyName()
         {
             static std::string p("TargetCategory");
@@ -217,7 +227,20 @@ namespace sf1r {
 
         static std::string GetPidByUrl(const std::string& url)
         {
-            return "";
+            static const int MD5_DIGEST_LENGTH = 32;
+
+            md5_state_t st;
+            md5_init(&st);
+            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
+            union
+            {
+                md5_byte_t digest[MD5_DIGEST_LENGTH];
+                uint128_t md5_int_value;
+            } digest_union;			
+            memset(digest_union.digest, 0, sizeof(digest_union.digest));
+            md5_finish(&st,digest_union.digest);
+
+            return B5MHelper::Uint128ToString(digest_union.md5_int_value);
         }
 
     };

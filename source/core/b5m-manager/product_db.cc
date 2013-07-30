@@ -22,7 +22,7 @@ B5mpDocGenerator::B5mpDocGenerator()
     sub_doc_props_.insert("isGenuine");
     //sub_doc_props_.clear();
 }
-void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
+void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
@@ -31,6 +31,8 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     ProductPrice pprice;
     Document::doc_prop_value_strtype pdate;
     Document::doc_prop_value_strtype spu_title;
+    Document::doc_prop_value_strtype spu_pic;
+    Document::doc_prop_value_strtype spu_url;
     Document::doc_prop_value_strtype url;
     ProductPrice min_price;
     //std::vector<ProductMatcher::Attribute> pattributes;
@@ -64,6 +66,8 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         doc.getProperty("DOCID", oid);
         if(oid!=pid) independent=false;
         doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
+        doc.getProperty(B5MHelper::GetSPPicPropertyName(), spu_pic);
+        doc.getProperty(B5MHelper::GetSPUrlPropertyName(), spu_url);
         pdoc.merge(doc);
         itemcount+=1;
         Document::doc_prop_value_strtype usource;
@@ -105,12 +109,23 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             //ProductMatcher::MergeAttributes(pattributes, attributes);
         //}
     }
+    pdoc.property("Url") = url;
     if(!spu_title.empty())
     {
         independent=false;
         pdoc.property("Title") = spu_title;
     }
+    if(!spu_pic.empty())
+    {
+        pdoc.property("Picture") = spu_pic;
+    }
+    if(!spu_url.empty())
+    {
+        pdoc.property("Url") = spu_url;
+    }
     pdoc.eraseProperty(B5MHelper::GetSPTPropertyName());
+    pdoc.eraseProperty(B5MHelper::GetSPPicPropertyName());
+    pdoc.eraseProperty(B5MHelper::GetSPUrlPropertyName());
     pdoc.eraseProperty("uuid");
     if(!subdocs.empty()&&!independent)
     {
@@ -124,7 +139,6 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     pdoc.property("independent") = (int64_t)independent;
     if(!pdate.empty()) pdoc.property("DATE") = pdate;
     pdoc.property("Price") = pprice.ToPropString();
-    pdoc.property("Url") = url;
     std::string ssource;
     for(std::set<std::string>::const_iterator it=psource.begin();it!=psource.end();++it)
     {
@@ -138,6 +152,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
+    if(spu_only&&independent) pdoc.type = NOT_SCD;
 }
 
 ProductProperty::ProductProperty()

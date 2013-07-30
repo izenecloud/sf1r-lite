@@ -108,11 +108,11 @@ bool CategoryMapper::Index(const std::string& path, const std::string& scd_path)
                 const std::string& property_name = p->first;
                 if(property_name=="OriginalCategory")
                 {
-                    ocategory = p->second;
+                    ocategory = propstr_to_ustr(p->second);
                 }
                 else if(property_name=="Category")
                 {
-                    category = p->second;
+                    category = propstr_to_ustr(p->second);
                 }
             }
             UString::algo::compact(ocategory);
@@ -524,11 +524,11 @@ bool CategoryMapper::DoMap(const std::string& scd_path)
                 const std::string& property_name = p->first;
                 if(property_name=="OriginalCategory")
                 {
-                    ocategory = p->second;
+                    ocategory = propstr_to_ustr(p->second);
                 }
                 else if(property_name=="Category")
                 {
-                    category = p->second;
+                    category = propstr_to_ustr(p->second);
                 }
             }
             UString::algo::compact(ocategory);

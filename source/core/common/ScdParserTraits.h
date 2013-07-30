@@ -12,8 +12,8 @@
 
 // We use std::string as propertyName, UString as propertyValue.
 typedef std::string PropertyNameType;
-typedef izenelib::util::UString ScdPropertyValueType;
-//typedef std::string ScdPropertyValueType;
+//typedef izenelib::util::UString PropertyValueType;
+typedef std::string ScdPropertyValueType;
 
 typedef std::pair<PropertyNameType, ScdPropertyValueType> FieldPair;
 typedef std::vector<FieldPair> SCDDoc;

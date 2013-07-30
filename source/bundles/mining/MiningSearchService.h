@@ -41,14 +41,14 @@ public:
             const std::string& collectionName,
             uint64_t wdocId);
 
-    bool getDocLabelList(
+    bool getLabelListByDocId(
             const std::string& collectionName,
-            uint32_t docid,
+            uint64_t wdocId,
             std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
 
     bool getLabelListWithSimByDocId(
             const std::string& collectionName,
-            uint32_t docid,
+            uint64_t wdocId,
             std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
 public:
@@ -62,7 +62,7 @@ public:
 
     bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realtimeQueries);
 
-    bool getDocLabelList(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
+    bool getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
 
     bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& label_list );
 
@@ -184,7 +184,7 @@ public:
 
     bool GetSummarizationByRawKey(
             const std::string& collection,
-            const izenelib::util::UString& rawKey,
+            const std::string& rawKey,
             Summarization& result);
 
     bool SetKV(const std::string& key, const std::string& value);

@@ -43,8 +43,7 @@ struct test_string_type
     enum {check = true};
 };
 template <>
-//struct test_string_type<izenelib::util::UString>
-struct test_string_type<std::string>
+struct test_string_type<izenelib::util::UString>
 {
     enum {check = false};
 };
@@ -59,18 +58,18 @@ public:
 * default, we should make it locate at first position
 ******************************************/
     typedef boost::variant<
-        izenelib::util::UString,
-        //std::string,
+        //izenelib::util::UString,
+        std::string,
         int32_t,
         int64_t,
         float,
         double,
-        std::vector<izenelib::util::UString>,
+        //std::vector<izenelib::util::UString>,
         std::vector<uint32_t>
     > variant_type;
 
     typedef variant_type::types type_list;
-    typedef izenelib::util::UString  PropertyValueStrType;
+    typedef std::string  PropertyValueStrType;
 
     PropertyValue()
     : data_()
@@ -170,64 +169,64 @@ private:
 
 // the interface for the PropertyValue with std::string internal string type.
 //
-//inline const std::string& propstr_to_str(
-//    const PropertyValue::PropertyValueStrType& propstr,
-//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
-//{
-//    return propstr;
-//}
-//
-//inline izenelib::util::UString propstr_to_ustr(
-//    const PropertyValue::PropertyValueStrType& propstr,
-//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
-//{
-//    return izenelib::util::UString(propstr, encode);
-//}
-//
-//inline const PropertyValue::PropertyValueStrType& str_to_propstr(const std::string& prop_str,
-//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
-//{
-//    return prop_str;
-//}
-//
-//inline PropertyValue::PropertyValueStrType ustr_to_propstr(
-//    const izenelib::util::UString& prop_ustr,
-//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
-//{
-//    std::string prop_str;
-//    prop_ustr.convertString(prop_str, encode);
-//    return prop_str;
-//}
-// the interface for the PropertyValue with izenelib::util::UString internal string type.
-//
-inline std::string propstr_to_str(
-    const PropertyValue::PropertyValueStrType& propstr,
-    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
-{
-    std::string tmpstr;
-    propstr.convertString(tmpstr, encode);
-    return tmpstr;
-}
-
-inline const izenelib::util::UString& propstr_to_ustr(
+inline const std::string& propstr_to_str(
     const PropertyValue::PropertyValueStrType& propstr,
     izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
 {
     return propstr;
 }
 
-inline PropertyValue::PropertyValueStrType str_to_propstr(const std::string& prop_str,
+inline izenelib::util::UString propstr_to_ustr(
+    const PropertyValue::PropertyValueStrType& propstr,
     izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
 {
-    return izenelib::util::UString(prop_str, encode);
+    return izenelib::util::UString(propstr, encode);
 }
 
-inline const PropertyValue::PropertyValueStrType& ustr_to_propstr(
+inline const PropertyValue::PropertyValueStrType& str_to_propstr(const std::string& prop_str,
+    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+{
+    return prop_str;
+}
+
+inline PropertyValue::PropertyValueStrType ustr_to_propstr(
     const izenelib::util::UString& prop_ustr,
     izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
 {
-    return prop_ustr;
+    std::string prop_str;
+    prop_ustr.convertString(prop_str, encode);
+    return prop_str;
 }
+// the interface for the PropertyValue with izenelib::util::UString internal string type.
+//
+//inline std::string propstr_to_str(
+//    const PropertyValue::PropertyValueStrType& propstr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    std::string tmpstr;
+//    propstr.convertString(tmpstr, encode);
+//    return tmpstr;
+//}
+//
+//inline const izenelib::util::UString& propstr_to_ustr(
+//    const PropertyValue::PropertyValueStrType& propstr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return propstr;
+//}
+//
+//inline PropertyValue::PropertyValueStrType str_to_propstr(const std::string& prop_str,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return izenelib::util::UString(prop_str, encode);
+//}
+//
+//inline const PropertyValue::PropertyValueStrType& ustr_to_propstr(
+//    const izenelib::util::UString& prop_ustr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return prop_ustr;
+//}
 
 template<typename T>
 inline T& get(PropertyValue& p)

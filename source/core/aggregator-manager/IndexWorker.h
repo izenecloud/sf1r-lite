@@ -17,6 +17,7 @@
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
 #include <index-manager/IncSupportedIndexManager.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -46,6 +47,7 @@ class ScdWriterController;
 class SearchWorker;
 class DistributeRequestHooker;
 class IndexHooker;
+class ScdSharder;
 
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
@@ -119,6 +121,11 @@ public:
         return inc_supported_index_manager_;
     }
 
+    bool createScdSharder(
+        boost::shared_ptr<ScdSharder>& scdSharder);
+
+    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
+
 private:
     void createPropertyList_();
 
@@ -190,7 +197,6 @@ private:
             Document& old_rtype_doc,
             const docid_t& oldId,
             const docid_t& docId,
-            std::string& source,
             time_t& timestamp,
             const UpdateType& updateType,
             SCD_TYPE scdType);
@@ -220,8 +226,6 @@ private:
             std::vector<CharacterOffset>& sentenceOffsetList);
 
     size_t getTotalScdSize_(const std::vector<std::string>& scdlist);
-
-    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
 
     static void document2SCDDoc(const Document& document, SCDDoc& scddoc);
 
@@ -300,6 +304,8 @@ private:
     std::vector<boost::thread*> index_thread_workers_;
     bool* index_thread_status_;
     bool is_real_time_;
+    ShardingConfig shard_cfg_;
+    boost::shared_ptr<ScdSharder> scdSharder_;
 };
 
 }

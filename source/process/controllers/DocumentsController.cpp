@@ -622,7 +622,7 @@ void DocumentsController::get_topic()
     }
 
     std::vector<std::pair<uint32_t, izenelib::util::UString> > label_list;
-    bool requestSent = miningSearchService_->getDocLabelList(
+    bool requestSent = miningSearchService_->getLabelListByDocId(collectionName_, 
         internal_id, label_list
     );
 
@@ -688,7 +688,7 @@ void DocumentsController::get_topic_with_sim()
     }
 
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > label_list;
-    bool requestSent = miningSearchService_->getLabelListWithSimByDocId(
+    bool requestSent = miningSearchService_->getLabelListWithSimByDocId(collectionName_,
         internal_id, label_list
     );
 
@@ -1027,10 +1027,9 @@ void DocumentsController::get_summarization()
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
-    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
 
     Summarization result;
-    bool success = miningSearchService_->GetSummarizationByRawKey(collectionName_, udocid, result);
+    bool success = miningSearchService_->GetSummarizationByRawKey(collectionName_, sdocid, result);
     if (!success)
     {
         response().addError("Cannot get results for " + sdocid);
@@ -1078,7 +1077,7 @@ void DocumentsController::get_summarization()
  */
 void DocumentsController::get_doc_count()
 {
-    uint32_t doc_count = indexSearchService_->getDocNum();
+    uint32_t doc_count = indexSearchService_->getDocNum(collectionName_);
     response()[Keys::count] = doc_count;
 }
 
@@ -1113,7 +1112,7 @@ void DocumentsController::get_key_count()
         response().addError("Expect property name!");
         return;
     }
-    uint32_t doc_count = indexSearchService_->getKeyCount(property_name);
+    uint32_t doc_count = indexSearchService_->getKeyCount(collectionName_, property_name);
     response()[Keys::count] = doc_count;
 }
 

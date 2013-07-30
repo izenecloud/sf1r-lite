@@ -915,18 +915,18 @@ void AttributeIndexer::ProductMatchingSVM()
                 LOG(INFO)<<"Processing "<<n<<" docs"<<std::endl;
             }
             ProductDocument odoc;
-            izenelib::util::UString oid;
-            izenelib::util::UString pid;
-            izenelib::util::UString title;
-            izenelib::util::UString category;
-            izenelib::util::UString url;
-            izenelib::util::UString attrib_ustr;
+            Document::doc_prop_value_strtype oid;
+            Document::doc_prop_value_strtype pid;
+            Document::doc_prop_value_strtype title;
+            Document::doc_prop_value_strtype category;
+            Document::doc_prop_value_strtype url;
+            Document::doc_prop_value_strtype attrib_ustr;
             SCDDoc& doc = *(*doc_iter);
             SCDDoc::iterator p = doc.begin();
             for(; p!=doc.end(); ++p)
             {
                 const std::string& property_name = p->first;
-                odoc.property[property_name] = p->second;
+                odoc.property[property_name] = propstr_to_ustr(p->second);
                 if(property_name=="DOCID")
                 {
                     oid = p->second;
@@ -953,14 +953,10 @@ void AttributeIndexer::ProductMatchingSVM()
                 }
             }
             if( category.empty() || title.empty() || !pid.empty()) continue;
-            std::string soid;
-            oid.convertString(soid, izenelib::util::UString::UTF_8);
-            std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
-            std::string scategory;
-            category.convertString(scategory, izenelib::util::UString::UTF_8);
-            std::string surl;
-            url.convertString(surl, izenelib::util::UString::UTF_8);
+            std::string soid = propstr_to_str(oid);
+            std::string stitle = propstr_to_str(title);
+            std::string scategory = propstr_to_str(category);
+            std::string surl = propstr_to_str(url);
             ci_it = category_indexlist.find(scategory);
             if( ci_it==category_indexlist.end()) continue;
             //ProductPrice price;
@@ -969,7 +965,7 @@ void AttributeIndexer::ProductMatchingSVM()
 
             std::vector<std::size_t>& pindexlist = ci_it->second;
             std::vector<AttribId> aid_list;
-            GetAttribIdList(category, title, aid_list);
+            GetAttribIdList(propstr_to_ustr(category), propstr_to_ustr(title), aid_list);
             std::vector<std::pair<std::size_t, double> > match_list;
             for(std::size_t p=0;p<pindexlist.size();++p)
             {
@@ -1028,7 +1024,7 @@ void AttributeIndexer::ProductMatchingSVM()
                     //double ratio = om/pm;
                     //if(ratio<invert_price_ratio || ratio>price_ratio) continue;
                     //double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
-                    double str_sim = string_similarity_.Sim(title, product_doc.property["Title"]);
+                    double str_sim = string_similarity_.Sim(propstr_to_ustr(title), product_doc.property["Title"]);
                     //double str_sim = ss_list[pindex]->Sim(title);
                     match_list.push_back(std::make_pair(pindex, str_sim));
 
@@ -1112,16 +1108,16 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
         ProductDocument product_doc;
-        izenelib::util::UString oid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString attrib_ustr;
+        Document::doc_prop_value_strtype oid;
+        Document::doc_prop_value_strtype title;
+        Document::doc_prop_value_strtype category;
+        Document::doc_prop_value_strtype attrib_ustr;
         SCDDoc& doc = *(*doc_iter);
         SCDDoc::iterator p = doc.begin();
         for(; p!=doc.end(); ++p)
         {
             const std::string& property_name = p->first;
-            product_doc.property[property_name] = p->second;
+            product_doc.property[property_name] = propstr_to_ustr(p->second);
             if(property_name=="DOCID")
             {
                 oid = p->second;
@@ -1146,13 +1142,12 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
             //}
         }
         if( category.length()==0 || title.length()==0) continue;
-        std::string scategory;
-        category.convertString(scategory, izenelib::util::UString::UTF_8);
+        std::string scategory = propstr_to_str(category);
         ci_it = category_indexlist.find(scategory);
         if( ci_it==category_indexlist.end()) continue;
         std::vector<std::size_t>& pindexlist = ci_it->second;
         std::vector<AttribId> aid_list;
-        GetAttribIdList(category, title, aid_list);
+        GetAttribIdList(propstr_to_ustr(category), propstr_to_ustr(title), aid_list);
         for(std::size_t p=0;p<pindexlist.size();++p)
         {
             ProductDocument& product_doc = product_list_[pindexlist[p]];
@@ -1163,8 +1158,7 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
             {
                 std::cout<<"[PR]"<<std::endl;
                 std::string stitle;
-                std::string sptitle;
-                title.convertString(stitle, izenelib::util::UString::UTF_8);
+                std::string sptitle = propstr_to_str(title);
                 product_doc.property["Title"].convertString(sptitle, izenelib::util::UString::UTF_8);
                 std::cout<<scategory<<std::endl;
                 std::cout<<stitle<<std::endl;
@@ -1398,7 +1392,7 @@ void AttributeIndexer::BuildProductDocuments_()
         for(; p!=doc.end(); ++p)
         {
             const std::string& property_name = p->first;
-            product_doc.property[property_name] = p->second;
+            product_doc.property[property_name] = propstr_to_ustr(p->second);
             if(property_name=="AID")
             {
                 aid_str = propstr_to_str(p->second);

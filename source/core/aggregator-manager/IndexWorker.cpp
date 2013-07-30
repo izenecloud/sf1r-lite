@@ -21,6 +21,7 @@
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/DistributeFileSys.h>
+#include <node-manager/sharding/ScdSharder.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -304,6 +305,53 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
     return ret;
 }
 
+bool IndexWorker::createScdSharder(
+    boost::shared_ptr<ScdSharder>& scdSharder)
+{
+    if (bundleConfig_->indexShardKeys_.empty())
+    {
+        LOG(ERROR) << "No sharding key!";
+        return false;
+    }
+
+    std::string coll = bundleConfig_->collectionName_;
+    // handle the rebuild collection name
+    size_t pos = coll.find("-rebuild");
+    if (pos != std::string::npos)
+    {
+        LOG(INFO) << "change the collection name for rebuild." << coll;
+        coll = coll.substr(0, pos);
+    }
+    // sharding configuration
+    if (MasterManagerBase::get()->getCollectionShardids(
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService),
+            coll, shard_cfg_.shardidList_))
+    {
+    }
+    else
+    {
+        LOG(ERROR) << "No shardid configured for " << coll;
+        return false;
+    }
+
+    ShardingConfig::RangeListT ranges;
+    ranges.push_back(100);
+    ranges.push_back(1000);
+    shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
+    ShardingConfig::AttrListT strranges;
+    strranges.push_back("abc");
+    shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
+    shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
+
+    scdSharder.reset(new ScdSharder);
+
+    if (scdSharder && scdSharder->init(shard_cfg_))
+        return true;
+    else
+        return false;
+}
+
+
 bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp)
 {
     CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
@@ -311,6 +359,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     START_PROFILER(buildIndex);
     LOG(INFO) << "start BuildCollection";
     izenelib::util::ClockTimer timer;
+
+    if (!scdSharder_)
+    {
+        if(!createScdSharder(scdSharder_))
+        {
+            LOG(WARNING) << "scd sharder created failed. no shard will be done.";
+        }
+    }
 
     //flush all writing SCDs
     scd_writer_->Flush();
@@ -738,20 +794,19 @@ bool IndexWorker::createDocument(const Value& documentValue)
     Document old_rtype_doc;
     //IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
-    std::string source = "";
     IndexWorker::UpdateType updateType = INSERT;
     time_t timestamp = reqlog.timestamp;
-    if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
+    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
             oldId, docid, updateType))
     {
         return false;
     }
-    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, source, timestamp, updateType, INSERT_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, timestamp, updateType, INSERT_SCD))
         return false;
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, reqlog.timestamp, true);
+    bool ret = insertDoc_(0, document, timestamp, true);
     if (ret)
     {
         doMining_(reqlog.timestamp);
@@ -863,21 +918,20 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     docid_t oldId = 0;
     docid_t docid = 0;
     IndexWorker::UpdateType updateType = UNKNOWN;
-    std::string source = "";
 
-    if (prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, UPDATE_SCD,
+    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, UPDATE_SCD,
             oldId, docid, updateType))
     {
         return false;
     }
-    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, source, timestamp, updateType, UPDATE_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, docid, timestamp, updateType, UPDATE_SCD))
     {
         return false;
     }
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = updateDoc_(0, oldId, document, old_rtype_doc, reqlog.timestamp, updateType, true);
+    bool ret = updateDoc_(0, oldId, document, old_rtype_doc, timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         if (!bundleConfig_->enable_forceget_doc_)
@@ -1244,23 +1298,22 @@ void IndexWorker::indexSCDDocFunc(int workerid)
         }
         boost::this_thread::interruption_point();
 
-        std::string source = "";
         time_t new_timestamp = workerdata.timestamp;
         document.clear();
         old_rtype_doc.clear();
 
         if (!prepareDocument_(*(workerdata.docptr), document, old_rtype_doc,
-                workerdata.oldDocId, workerdata.newDocId, source,
+                workerdata.oldDocId, workerdata.newDocId,
                 new_timestamp, workerdata.updateType, workerdata.scdType))
             continue;
 
         if (workerdata.scdType == INSERT_SCD || workerdata.oldDocId == 0)
         {
-            insertDoc_(workerid, document, workerdata.timestamp);
+            insertDoc_(workerid, document, new_timestamp);
         }
         else
         {
-            if (!updateDoc_(workerid, workerdata.oldDocId, document, old_rtype_doc, workerdata.timestamp, workerdata.updateType))
+            if (!updateDoc_(workerid, workerdata.oldDocId, document, old_rtype_doc, new_timestamp, workerdata.updateType))
                 continue;
             ++numUpdatedDocs_;
         }
@@ -1315,6 +1368,16 @@ bool IndexWorker::insertOrUpdateSCD_(
         SCDDocPtr docptr = *doc_iter;
         if (docptr->empty()) continue;
 
+        if (DistributeFileSys::get()->isEnabled() && scdSharder_)
+        {
+            if (scdSharder_->sharding(*docptr) != 
+                MasterManagerBase::get()->getMyShardId())
+            {
+                // this doc is not my sharding.
+                continue;
+            }
+        }
+
         int workerid = -1;
         docid_t docId;
         docid_t oldId = 0;
@@ -1349,22 +1412,21 @@ bool IndexWorker::insertOrUpdateSCD_(
         {
             // real time can not using multi thread because of the inverted index in 
             // the real time can not handle the out-of-order docid list.
-            std::string source = "";
             time_t new_timestamp = timestamp;
             document.clear();
             old_rtype_doc.clear();
 
             if (!prepareDocument_(*(docptr), document, old_rtype_doc,
-                    oldId, docId, source, new_timestamp, updateType, scdType))
+                    oldId, docId, new_timestamp, updateType, scdType))
                 continue;
 
             if (scdType == INSERT_SCD || oldId == 0)
             {
-                insertDoc_(0, document, timestamp, true);
+                insertDoc_(0, document, new_timestamp, true);
             }
             else
             {
-                if (!updateDoc_(0, oldId, document, old_rtype_doc, timestamp, updateType, true))
+                if (!updateDoc_(0, oldId, document, old_rtype_doc, new_timestamp, updateType, true))
                     continue;
                 ++numUpdatedDocs_;
             }
@@ -1828,7 +1890,6 @@ bool IndexWorker::prepareDocument_(
         Document& old_rtype_doc,
         const docid_t& oldId,
         const docid_t& docId,
-        std::string& source,
         time_t& timestamp,
         const IndexWorker::UpdateType& updateType,
         SCD_TYPE scdType)
@@ -1886,6 +1947,8 @@ bool IndexWorker::prepareDocument_(
                 PropertyValue propData(propertyValueU);
                 document.property(dateProperty_.getName()).swap(propData);
             }
+            // using the timestamp in the scd file.
+            timestamp = ts;
             STOP_PROFILER(pid_date);
         }
         else if (isIndexSchema)
@@ -1999,7 +2062,9 @@ bool IndexWorker::prepareDocument_(
 
     if (dateExistInSCD)
     {
-        timestamp = -1;
+        // using the timestamp in the doc.
+        //timestamp = -1;
+        
     }
     else
     {

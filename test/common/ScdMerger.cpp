@@ -101,7 +101,7 @@ public:
                 Document::doc_prop_value_strtype docname = value.doc.property("DOCID").getPropertyStrValue();
                 if(docname.length()==0) continue;
                 
-                uint64_t hash = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(docname);
+                uint64_t hash = izenelib::util::HashFunction<Document::doc_prop_value_strtype>::generateHash64(docname);
                 
                 writer.Append(hash, value);
                 std::string str_docname = propstr_to_str(docname);

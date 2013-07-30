@@ -121,14 +121,14 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             //if(processed.find(id)!=processed.end()) continue;
 
             SimilarityMatcherAttach attach;
-            attach.category = doc["Category"];
+            attach.category = propstr_to_ustr(doc["Category"]);
             attach.price = price;
             Document::doc_prop_value_strtype id_str = doc["Source"];
             id_str.append(str_to_propstr("|"));
             id_str.append(doc["Title"]);
             id_str.append(str_to_propstr("|"));
             id_str.append(price.ToPropString());
-            attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
+            attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(propstr_to_ustr(id_str));
 
             std::vector<std::pair<std::string, double> > doc_vector;
             analyzer.Analyze(propstr_to_ustr(doc["Title"]), doc_vector);

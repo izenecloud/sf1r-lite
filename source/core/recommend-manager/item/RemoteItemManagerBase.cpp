@@ -119,7 +119,7 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
     ItemContainer& itemContainer
 ) const
 {
-    typedef std::vector<izenelib::util::UString> DocValues;
+    typedef std::vector<Document::doc_prop_value_strtype> DocValues;
     typedef std::vector<DocValues> PropDocTable;
 
     const PropDocTable& propDocTable = response.fullTextOfDocumentInPage_;
@@ -148,12 +148,12 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
 
         for (std::size_t docValueId = 0; docValueId < itemNum; ++docValueId)
         {
-            const izenelib::util::UString& propValue = docValues[docValueId];
+            const Document::doc_prop_value_strtype& propValue = docValues[docValueId];
 
             if (! propValue.empty())
             {
                 Document& doc = itemContainer.getItem(docValueId);
-                doc.property(propName) = ustr_to_propstr(propValue);
+                doc.property(propName) = propValue;
             }
         }
     }

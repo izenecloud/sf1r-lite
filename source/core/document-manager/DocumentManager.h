@@ -240,9 +240,9 @@ public:
             const unsigned int summaryNum,
             const unsigned int option,
             const std::vector<izenelib::util::UString>& queryTermString,
-            std::vector<izenelib::util::UString>& outSnippetList,
-            std::vector<izenelib::util::UString>& outRawSummaryList,
-            std::vector<izenelib::util::UString>& outFullTextList);
+            std::vector<Document::doc_prop_value_strtype>& outSnippetList,
+            std::vector<Document::doc_prop_value_strtype>& outRawSummaryList,
+            std::vector<Document::doc_prop_value_strtype>& outFullTextList);
 
     /**
      * @brief gets rawtext for a single doc id
@@ -253,8 +253,8 @@ public:
             const string& propertyName,
             const unsigned int option,
             const std::vector<izenelib::util::UString>& queryTerms,
-            izenelib::util::UString& outSnippet,
-            izenelib::util::UString& outFullText);
+            Document::doc_prop_value_strtype& outSnippet,
+            Document::doc_prop_value_strtype& outFullText);
 
     /**
      * @brief  returns the maximum doc Id value managed by document manager. The docId

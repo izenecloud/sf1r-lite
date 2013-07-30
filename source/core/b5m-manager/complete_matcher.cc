@@ -84,17 +84,17 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
                 LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
             }
             ProductDocument product_doc;
-            izenelib::util::UString oid;
-            izenelib::util::UString epid;
-            izenelib::util::UString title;
-            izenelib::util::UString category;
-            izenelib::util::UString attrib_ustr;
+            Document::doc_prop_value_strtype oid;
+            Document::doc_prop_value_strtype epid;
+            Document::doc_prop_value_strtype title;
+            Document::doc_prop_value_strtype category;
+            Document::doc_prop_value_strtype attrib_ustr;
             SCDDoc& doc = *(*doc_iter);
             SCDDoc::iterator p = doc.begin();
             for(; p!=doc.end(); ++p)
             {
                 const std::string& property_name = p->first;
-                product_doc.property[property_name] = p->second;
+                product_doc.property[property_name] = propstr_to_ustr(p->second);
                 if(property_name=="DOCID")
                 {
                     oid = p->second;
@@ -121,15 +121,14 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
             {
                 continue;
             }
-            std::string scategory;
-            category.convertString(scategory, izenelib::util::UString::UTF_8);
+            std::string scategory = propstr_to_str(category);
             if( !match_param.MatchCategory(scategory) )
             {
                 continue;
             }
             //logger_<<"[BPD][Title]"<<stitle<<std::endl;
             std::vector<AttrPair> attrib_list;
-            split_attr_pair(attrib_ustr, attrib_list);
+            split_attr_pair(propstr_to_ustr(attrib_ustr), attrib_list);
             UString attrib_for_match;
             for(std::size_t i=0;i<attrib_list.size();i++)
             {
@@ -164,13 +163,11 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
             pid_str.append(attrib_for_match);
             uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_str);
             std::string spid = B5MHelper::Uint128ToString(pid);
-            std::string soid;
-            oid.convertString(soid, izenelib::util::UString::UTF_8);
+            std::string soid = propstr_to_str(oid);
             ofs<<soid<<","<<spid;
             boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
             ofs<<","<<boost::posix_time::to_iso_string(now);
-            std::string stitle;
-            title.convertString(stitle, UString::UTF_8);
+            std::string stitle = propstr_to_str(title);
             ofs<<","<<stitle<<std::endl;
         }
     }

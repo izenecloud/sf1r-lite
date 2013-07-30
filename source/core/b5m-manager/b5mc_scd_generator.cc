@@ -199,9 +199,9 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
         if(ProductMatcher::GetIsbnAttribute(doc, isbn))
         {
             Document book_doc;
-            book_doc.property("Category") = str_to_propstr(B5MHelper::BookCategoryName());
+            //book_doc.property("Category") = str_to_propstr(B5MHelper::BookCategoryName());
             book_doc.property("Attribute") = doc.property("Attribute");
-            ProductMatcher::ProcessBook(book_doc, product);
+            ProductMatcher::ProcessBookStatic(book_doc, product);
         }
         else
         {

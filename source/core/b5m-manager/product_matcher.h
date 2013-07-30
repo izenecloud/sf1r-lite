@@ -431,7 +431,7 @@ namespace sf1r {
         struct SpuContributorValue
         {
             SpuContributorValue()
-            : paweight(0.0), lenweight(0.0), model_match(false), brand_match(false)
+            : paweight(0.0), model_match(false), brand_match(false)
             {
             }
             //double cweight;
@@ -439,14 +439,23 @@ namespace sf1r {
             //double tweight;
             //double kweight;
             double paweight;
-            double lenweight;
+            //double lenweight;
             bool model_match;
             bool brand_match;
-            boost::unordered_set<std::string> attribute_found;
-            bool IsAttributeFound(const std::string& a) const
+            boost::unordered_map<std::string, double> attribute_lenweight;
+            double GetLenWeight() const
             {
-                return attribute_found.find(a)!=attribute_found.end();
+                double lw = 0.0;
+                for(boost::unordered_map<std::string, double>::const_iterator it = attribute_lenweight.begin(); it!=attribute_lenweight.end(); ++it)
+                {
+                    lw += it->second;
+                }
+                return lw;
             }
+            //bool IsAttributeFound(const std::string& a) const
+            //{
+                //return attribute_found.find(a)!=attribute_found.end();
+            //}
             //double price_diff;
             //friend class boost::serialization::access;
             //template<class Archive>
@@ -474,13 +483,15 @@ namespace sf1r {
         struct SpuMatchCandidate
         {
             uint32_t spuid;
-            double price_diff;
-            double paweight;
             uint32_t cid_index;
+            double paweight;
+            double lenweight;
+            double price_diff;
             bool operator<(const SpuMatchCandidate& another) const
             {
                 if(cid_index!=another.cid_index) return cid_index<another.cid_index;
                 if(paweight!=another.paweight) return paweight>another.paweight;
+                if(lenweight!=another.lenweight) return lenweight>another.lenweight;
                 return price_diff<another.price_diff;
             }
         };
@@ -654,6 +665,8 @@ namespace sf1r {
             std::string stitle;
             std::string scategory;
             std::string fcategory; //front-end category
+            std::string spic;
+            std::string surl;
             cid_t cid;
             //double price;
             ProductPrice price;
@@ -671,7 +684,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+                ar & spid & stitle & scategory & spic & surl & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
                 //try
                 //{
                 //}
@@ -779,7 +792,8 @@ namespace sf1r {
         bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false);
         void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
-        static bool ProcessBook(const Document& doc, Product& result_product);
+        static bool ProcessBookStatic(const Document& doc, Product& result_product);
+        bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
         static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
         static void MergeAttributes(std::vector<Attribute>& eattributes, const std::vector<Attribute>& attributes);
@@ -789,7 +803,7 @@ namespace sf1r {
         bool GetKeyword(const UString& text, KeywordTag& tag);
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_model);
-        void ExtractKeywordsFromPage(const UString& text, std::map<std::string, std::vector<std::pair<UString, uint32_t> > > & res, std::list<std::pair<UString, uint32_t> >& category, std::map<UString, uint32_t>& weight);
+        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
         void SetCmaPath(const std::string& path)
@@ -868,7 +882,7 @@ namespace sf1r {
         uint32_t GetCidByMaxDepth_(uint32_t cid);
         cid_t GetCid_(const UString& category) const;
 
-        bool IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const;
+        bool IsSpuMatch_(const Product& p, const SpuContributorValue& scv, double query_len) const;
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
         bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
@@ -987,6 +1001,7 @@ namespace sf1r {
         KeywordVector all_keywords_; //not serialized
         boost::regex type_regex_;
         boost::regex vol_regex_;
+        std::string book_category_;
 
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;

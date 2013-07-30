@@ -348,6 +348,13 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
             LOG(ERROR) << "Not found collection: " << collectionName_;
             return false;
         }
+
+        if (collectionHandler->indexTaskService_->isNeedSharding())
+        {
+            LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
+            collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
+        }
+
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
 
         bfs::path tmppath = bfs::path(collPath.getCollectionDataPath());

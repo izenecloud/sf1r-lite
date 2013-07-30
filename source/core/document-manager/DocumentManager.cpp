@@ -529,32 +529,34 @@ bool DocumentManager::getRawTextOfDocuments(
         const bool summaryOn, const unsigned int summaryNum,
         const unsigned int option,
         const std::vector<izenelib::util::UString>& queryTerms,
-        std::vector<izenelib::util::UString>& outSnippetList,
-        std::vector<izenelib::util::UString>& outRawSummaryList,
-        std::vector<izenelib::util::UString>& outFullTextList)
+        std::vector<Document::doc_prop_value_strtype>& outSnippetList,
+        std::vector<Document::doc_prop_value_strtype>& outRawSummaryList,
+        std::vector<Document::doc_prop_value_strtype>& outFullTextList)
 {
     try
     {
         unsigned int docListSize = docIdList.size();
-        std::vector<izenelib::util::UString> snippetList(docListSize);
-        std::vector<izenelib::util::UString> rawSummaryList(docListSize);
-        std::vector<izenelib::util::UString> fullTextList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> snippetList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> rawSummaryList(docListSize);
+        std::vector<Document::doc_prop_value_strtype> fullTextList(docListSize);
 
         Document::doc_prop_value_strtype rawText; // raw text
         izenelib::util::UString rawUText; // raw text
-        izenelib::util::UString result; // output variable to store return value
+        Document::doc_prop_value_strtype result; // output variable to store return value
+        izenelib::util::UString resultU; 
 
         bool ret = false;
         for (unsigned int listId = 0; listId != docListSize; ++listId)
         {
             docid_t docId = docIdList[listId];
             result.clear();
+            resultU.clear();
 
             if (!getPropertyValue(docId, propertyName, rawText))
                 continue;
 
             rawUText = propstr_to_ustr(rawText, encodingType_);
-            fullTextList[listId] = rawUText;
+            fullTextList[listId] = rawText;
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
             std::vector<CharacterOffset> sentenceOffsets;
@@ -565,12 +567,13 @@ bool DocumentManager::getRawTextOfDocuments(
 
             maxSnippetLength_ = getDisplayLength_(propertyName);
             processOptionForRawText(option, queryTerms, rawUText,
-                                    sentenceOffsets, result);
+                                    sentenceOffsets, resultU);
 
+            result = ustr_to_propstr(resultU);
             if (result.size() > 0)
                 snippetList[listId] = result;
             else
-                snippetList[listId] = rawUText;
+                snippetList[listId] = rawText;
 
             //process only if summary is ON
             unsigned int numSentences = summaryNum <= 0 ? 1 : summaryNum;
@@ -580,7 +583,7 @@ bool DocumentManager::getRawTextOfDocuments(
                 getSummary(rawUText, sentenceOffsets, numSentences,
                            option, queryTerms, summary);
 
-                rawSummaryList[listId] = summary;
+                rawSummaryList[listId] = ustr_to_propstr(summary);
             }
         }
         outSnippetList.swap(snippetList);
@@ -602,8 +605,8 @@ bool DocumentManager::getRawTextOfOneDocument(
         const string& propertyName,
         const unsigned int option,
         const std::vector<izenelib::util::UString>& queryTerms,
-        izenelib::util::UString& outSnippet,
-        izenelib::util::UString& rawText)
+        Document::doc_prop_value_strtype& outSnippet,
+        Document::doc_prop_value_strtype& rawText)
 {
     rawText.clear();
     NumericPropertyTableMap::const_iterator it = numericPropertyTables_.find(propertyName);
@@ -615,19 +618,19 @@ bool DocumentManager::getRawTextOfOneDocument(
         {
 //          return false;
         }
-        rawText = izenelib::util::UString(tempStr, encodingType_);
+        rawText = str_to_propstr(tempStr, encodingType_);
     }
     else if( rtype_table_cit != rtype_string_proptable_.end() )
     {
         std::string tempStr;
         rtype_table_cit->second->getRTypeString(docId, tempStr);
-        rawText = izenelib::util::UString(tempStr, encodingType_);
+        rawText = str_to_propstr(tempStr, encodingType_);
     }
     else
     {
         Document::doc_prop_value_strtype propValue;
         if(document.getProperty(propertyName,propValue))
-            rawText = propstr_to_ustr(propValue);
+            rawText = propValue;
     }
 
     if (rawText.empty())
@@ -648,9 +651,11 @@ bool DocumentManager::getRawTextOfOneDocument(
     }
 
     maxSnippetLength_ = getDisplayLength_(propertyName);
-    processOptionForRawText(option, queryTerms, rawText, sentenceOffsets,
-                            outSnippet);
+    izenelib::util::UString tempustr;
+    processOptionForRawText(option, queryTerms, propstr_to_ustr(rawText), sentenceOffsets,
+                            tempustr);
 
+    outSnippet = ustr_to_propstr(tempustr);
     //put raw text to outSnippet if it is empty
     if (outSnippet.size() <= 0)
         outSnippet = rawText;

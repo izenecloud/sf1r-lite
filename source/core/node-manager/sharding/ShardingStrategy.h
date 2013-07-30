@@ -14,24 +14,20 @@
 #include <boost/uuid/sha1.hpp>
 
 #include <vector>
+#include <map>
 
 #include <stdint.h>
 
 namespace sf1r{
 
-typedef uint32_t shardid_t; // xxx, shard id start with 1 (1, ..., n)
-
 class ShardingStrategy
 {
 public:
-    typedef std::vector<std::pair<std::string, std::string> > ShardFieldListT;
+    typedef std::map<std::string, std::string> ShardFieldListT;
+    typedef std::vector<shardid_t>  ShardIDListT;
 
-    struct ShardingParams
-    {
-        unsigned int shardNum_;
-    };
-
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig) = 0;
+    virtual shardid_t sharding_for_write(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig) = 0;
+    virtual ShardIDListT sharding_for_get(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig) = 0;
 
     virtual ~ShardingStrategy(){}
 };
@@ -39,15 +35,8 @@ public:
 class HashShardingStrategy : public ShardingStrategy
 {
 public:
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig);
-
-private:
-    uint64_t hashmd5(const char* data, unsigned long len);
-
-    uint64_t hashsha(const char* data, unsigned long len);
-
-private:
-    boost::uuids::detail::sha1 sha1_;
+    virtual ShardIDListT sharding_for_get(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig);
+    virtual shardid_t sharding_for_write(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig);
 };
 
 }

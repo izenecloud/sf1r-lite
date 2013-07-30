@@ -85,11 +85,11 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 TuanProcessorAttach attach;
                 UString sid_str = propstr_to_ustr(category);
                 sid_str.append(UString("|", UString::UTF_8));
-                sid_str.append(city);
+                sid_str.append(propstr_to_ustr(city));
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
 
                 std::vector<std::pair<std::string, double> > doc_vector;
-                analyzer.Analyze(title, doc_vector);
+                analyzer.Analyze(propstr_to_ustr(title), doc_vector);
 
                 if( doc_vector.empty() )
                 {

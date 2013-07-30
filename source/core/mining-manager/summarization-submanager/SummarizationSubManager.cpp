@@ -188,9 +188,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 const std::string& fieldStr = p->first;// preventing copy
                 if (fieldStr == "DOCID")
                 {
-                    std::string key_str;
-                    const izenelib::util::UString & propertyValueU = p->second; // preventing copy
-                    propertyValueU.convertString(key_str, izenelib::util::UString::UTF_8);
+                    std::string key_str = propstr_to_str(p->second);
                     KeyType docid = Utilities::uuidToUint128(key_str);
                     if (del_docid_set.find(docid) != del_docid_set.end())
                         break;
@@ -864,13 +862,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 }
 
 bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
-        const UString& rawKey,
+        const std::string& rawKey,
         Summarization& result)
 {
-    std::string key_str;
-    rawKey.convertString(key_str, UString::UTF_8);
-    //LOG(INFO)<<"key_str:"<<key_str<<endl;
-    return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
+    return summarization_storage_->Get(Utilities::uuidToUint128(rawKey), result);
 }
 
 //void MultiDocSummarizationSubManager::AppendSearchFilter(

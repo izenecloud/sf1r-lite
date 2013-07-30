@@ -19,10 +19,12 @@ shardid_t ScdSharder::sharding(SCDDoc& scdDoc)
         return 0;
     }
 
+    static ShardingStrategy::ShardFieldListT shard_fieldlist;
+    ShardingStrategy::ShardFieldListT().swap(shard_fieldlist);
     // set sharding key values
-    setShardKeyValues(scdDoc);
+    setShardKeyValues(scdDoc, shard_fieldlist);
 
-    return shardingStrategy_->sharding(ShardFieldList_, shardingConfig_);
+    return shardingStrategy_->sharding_for_write(shard_fieldlist, shardingConfig_);
 }
 
 bool ScdSharder::init(ShardingConfig& shardingConfig)
@@ -34,44 +36,28 @@ bool ScdSharder::init(ShardingConfig& shardingConfig)
 
 bool ScdSharder::initShardingStrategy()
 {
-    if (shardingConfig_.getShardStrategy() == ShardingConfig::SHARDING_HASH)
-    {
-        shardingStrategy_.reset(new HashShardingStrategy);
-    }
-    else
-    {
-        LOG(ERROR) << "ShardingStrategy not specified!";
-        return false;
-    }
-
+    shardingStrategy_.reset(new HashShardingStrategy);
     return true;
 }
 
-void ScdSharder::setShardKeyValues(SCDDoc& scdDoc)
+void ScdSharder::setShardKeyValues(SCDDoc& scdDoc, ShardingStrategy::ShardFieldListT& shard_fieldlist)
 {
-    ShardFieldList_.clear();
-
-    std::string docidVal;
     SCDDoc::iterator propertyIter;
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         const std::string& propertyName = propertyIter->first;
-        std::string propertyValue = propstr_to_str(propertyIter->second);
 
-        if (shardingConfig_.hasShardKey(propertyName))
+        if (shardingConfig_.isUniqueShardKey(propertyName))
         {
-            ShardFieldList_.push_back(std::make_pair(propertyName, propertyValue));
-            //std::cout<< "ShardFieldList_ k-v:" <<propertyName<<" - "<<propertyValue<<std::endl;
+            const std::string propertyValue = propstr_to_str(propertyIter->second);
+            shard_fieldlist[propertyName] = propertyValue;
+            //std::cout<< "shard k-v:" <<propertyName<<" - "<<propertyValue<<std::endl;
+            break;
         }
-
-        if (propertyName == "DOCID")
-            docidVal = propertyValue;
     }
 
-    if (ShardFieldList_.empty())
+    if (shard_fieldlist.empty())
     {
-        // set DOCID as default shard key if missing shard keys, xxx
-        ShardFieldList_.push_back(std::make_pair("DOCID", docidVal));
-        LOG(WARNING) << "WARN: miss shard keys (properties) in doc: " << docidVal;
+        LOG(WARNING) << "WARN: miss shard keys (properties) in doc";
     }
 }

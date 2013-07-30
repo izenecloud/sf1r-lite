@@ -29,8 +29,9 @@ bool B5moSorter::StageOne()
     }
     return true;
 }
-bool B5moSorter::StageTwo(const std::string& last_m)
+bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
 {
+    spu_only_ = spu_only;
     namespace bfs=boost::filesystem;    
     std::string sorter_path = B5MHelper::GetB5moBlockPath(m_); 
     ts_ = bfs::path(m_).filename().string();
@@ -220,8 +221,11 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
         }
     }
     ScdDocument pdoc;
-    pgenerator_.Gen(odocs, pdoc);
-    if(pdoc.type==DELETE_SCD)
+    pgenerator_.Gen(odocs, pdoc, spu_only_);
+    if(pdoc.type==NOT_SCD)
+    {
+    }
+    else if(pdoc.type==DELETE_SCD)
     {
         pwriter_->Append(pdoc, pdoc.type);
     }
