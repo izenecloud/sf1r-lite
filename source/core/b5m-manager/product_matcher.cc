@@ -247,6 +247,7 @@ ProductMatcher::ProductMatcher()
 
 ProductMatcher::~ProductMatcher()
 {
+    la::UpdateDictThread::staticUDT.removeUpdateCallback("ProductMatcher-callback");
     if(aid_manager_!=NULL)
     {
         aid_manager_->close();
@@ -355,7 +356,7 @@ bool ProductMatcher::Open(const std::string& kpath)
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
             if (!addUpdateCallback_)
             {
-                la::UpdateDictThread::staticUDT.addUpdateCallback(boost::bind(&ProductMatcher::updateDict, this, _1));
+                la::UpdateDictThread::staticUDT.addUpdateCallback("ProductMatcher-callback", boost::bind(&ProductMatcher::updateDict, this, _1));
                 addUpdateCallback_ = 1;
             }
         }
