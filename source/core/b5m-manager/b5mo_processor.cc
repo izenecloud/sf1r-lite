@@ -121,6 +121,10 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     }
     else if(type!=DELETE_SCD) //I or U
     {
+        if(omapper_!=NULL)
+        {
+            doc.eraseProperty("Category");
+        }
         ProcessIU_(doc);
     }
     else
@@ -170,7 +174,6 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     SCD_TYPE type = UPDATE_SCD;
     doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     doc.eraseProperty(B5MHelper::GetBrandPropertyName());
-    doc.eraseProperty("Attribute");
     Document::doc_prop_value_strtype category;
     doc.getProperty("Category", category);
     if(category.empty()&&omapper_!=NULL)
@@ -224,6 +227,14 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             product.spid = spid;
         }
         matcher_->GetProduct(spid, product);
+    }
+    if(!product.spid.empty()&&product.stitle.empty())
+    {
+        //book matched
+    }
+    else
+    {
+        doc.eraseProperty("Attribute");
     }
     if(!product.spid.empty())
     {
