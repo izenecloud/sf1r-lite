@@ -395,7 +395,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
         double sum_score = 0;
         for (std::list<std::pair<UString, double> >::iterator i = token_results_book_minor.begin(); i != token_results_book_minor.end(); ++i)
         {
-            i->second = (i->second)/10;
+            i->second = (i->second)/200;
             if(tokenScoreMap_cat.insert(*i).second)
                 sum_score += i->second;
         }
@@ -431,6 +431,11 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
              tokenScores.begin(); it != tokenScores.end(); ++it)
         scoreSum += it->second;
 
+    for (KNlpWrapper::token_score_list_t::iterator it =
+             minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
+        scoreSum -= it->second;
+
+
     std::ostringstream oss;
     if (product_model.size() == 1)
     {
@@ -453,7 +458,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     for (KNlpWrapper::token_score_list_t::iterator it =
              minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
     {
-        it->second /= 100;
+        it->second /= 200;
         tokenScoreMap.insert(*it);
         scoreSum += it->second;
     }

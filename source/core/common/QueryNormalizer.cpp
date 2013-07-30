@@ -465,6 +465,20 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     umajorAppleType.push_back(AppleType(UString("itouch5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 5", kEncodeType),types));
 
+    types.clear();
+    types.push_back("ipod itouch");
+    types.push_back("4");
+    umajorAppleType.push_back(AppleType(UString("ipod touch4", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipod touch 4", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipodtouch 4", kEncodeType),types));
+
+    types.clear();
+    types.push_back("ipod itouch");
+    types.push_back("5");
+    umajorAppleType.push_back(AppleType(UString("ipod touch5", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipod touch 5", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipodtouch 5", kEncodeType),types));
+
     //nokia
     types.clear();
     types.push_back("lumia");
