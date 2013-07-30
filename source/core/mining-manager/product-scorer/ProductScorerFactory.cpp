@@ -201,18 +201,14 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         return NULL;
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    std::string cleanQuery = knlpWrapper->cleanGarbage(scoreParam.rawQuery_);
+    const std::string query = scoreParam.rawQuery_;
 
-    KNlpWrapper::string_t queryKStr(cleanQuery);
-    KNlpWrapper::token_score_list_t tokenScores;
-    knlpWrapper->fmmTokenize(queryKStr, tokenScores);
+    LOG(INFO) << "for query [" << query << "]";
 
-    KNlpWrapper::category_score_map_t categoryKStrMap =
-        knlpWrapper->classifyToMultiCategories(tokenScores);
+    CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
+        knlpWrapper->classifyToMultiCategories(query);
 
-    LOG(INFO) << "for query [" << cleanQuery << "]";
-
-    if (categoryKStrMap.empty())
+    if (categoryScoreMap.empty())
     {
         LOG(INFO) << "no classified category";
         return NULL;
@@ -220,15 +216,11 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
 
     std::ostringstream oss;
     oss << "classified category:";
-    CategoryClassifyScorer::CategoryScoreMap categoryScoreMap;
-    for (KNlpWrapper::category_score_map_t::const_iterator it =
-             categoryKStrMap.begin(); it != categoryKStrMap.end(); ++it)
-    {
-        std::string category = it->first.get_bytes("utf-8");
-        double score = it->second;
 
-        categoryScoreMap[category] = score;
-        oss << " " << category << "/" << std::setprecision(4) << score;
+    for (CategoryClassifyScorer::CategoryScoreMap::const_iterator it =
+             categoryScoreMap.begin(); it != categoryScoreMap.end(); ++it)
+    {
+        oss << " " << it->first << "/" << std::setprecision(4) << it->second;
     }
     LOG(INFO) << oss.str();
 

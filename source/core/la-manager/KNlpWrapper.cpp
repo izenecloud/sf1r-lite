@@ -2,6 +2,7 @@
 #include <knlp/fmm.h>
 #include <knlp/doc_naive_bayes.h>
 #include <knlp/string_patterns.h>
+#include <knlp/maxent/maxent_classify.h>
 #include <exception>
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -51,6 +52,12 @@ bool KNlpWrapper::loadDictFiles()
 
         originalToClassifyCateDict_.reset(new ilplib::knlp::Dictionary(
                                               (dirPath / "tcate_map.txt").string()));
+
+        maxentClassify_.reset(new ilplib::knlp::MaxentClassify(
+                                  (dirPath / "maxent.model").string(),
+                                  tokenizer_.get(),
+                                  garbagePattern_.get(),
+                                  (dirPath / "query.dict").string()));
     }
     catch (const std::exception& e)
     {
@@ -82,11 +89,11 @@ void KNlpWrapper::fmmBigram_with_space(std::vector<std::pair<KString,double> >& 
     tokenizer_->bigram_with_space(r);
 }
 
-KNlpWrapper::string_t KNlpWrapper::classifyToBestCategory(const token_score_list_t& tokenScores)
+std::string KNlpWrapper::classifyToBestCategory(const std::string& str)
 {
-    string_t category;
+    std::string category;
     double maxScore = 0;
-    category_score_map_t cateScores = classifyToMultiCategories(tokenScores);
+    category_score_map_t cateScores = classifyToMultiCategories(str);
 
     if (cateScores.empty())
         return category;
@@ -107,15 +114,10 @@ KNlpWrapper::string_t KNlpWrapper::classifyToBestCategory(const token_score_list
     return category;
 }
 
-KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
-    const token_score_list_t& tokenScores)
+KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(const std::string& str)
 {
     std::stringstream ss;
-    return ilplib::knlp::DocNaiveBayes::classify_multi_level(cateDict_.get(),
-                                                             termMultiCatesDict_.get(),
-                                                             termMultiCatesCondDict_.get(),
-                                                             tokenScores,
-                                                             ss);
+    return maxentClassify_->classify(str, ss, true);
 }
 
 std::string KNlpWrapper::mapFromOriginalCategory(const std::string& originalCategory)
