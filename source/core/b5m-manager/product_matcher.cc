@@ -17,6 +17,7 @@
 #include <util/functional.h>
 #include <util/ClockTimer.h>
 #include <3rdparty/json/json.h>
+#include <la/dict/UpdatableDict.h>
 using namespace sf1r;
 using namespace idmlib::sim;
 using namespace idmlib::kpe;
@@ -246,6 +247,7 @@ ProductMatcher::ProductMatcher()
 
 ProductMatcher::~ProductMatcher()
 {
+    la::UpdateDictThread::staticUDT.removeUpdateCallback("ProductMatcher-callback");
     if(aid_manager_!=NULL)
     {
         aid_manager_->close();
@@ -352,6 +354,11 @@ bool ProductMatcher::Open(const std::string& kpath)
 
             LOG(INFO)<<"synonym map size "<<synonym_pairs.size();
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
+            if (!addUpdateCallback_)
+            {
+                la::UpdateDictThread::staticUDT.addUpdateCallback("ProductMatcher-callback", boost::bind(&ProductMatcher::updateDict, this, _1));
+                addUpdateCallback_ = 1;
+            }
         }
         catch(std::exception& ex)
         {
@@ -361,6 +368,76 @@ bool ProductMatcher::Open(const std::string& kpath)
         is_open_ = true;
     }
     return true;
+}
+
+void ProductMatcher::updateDict(const std::vector<std::string>& dict_path)
+{
+    for (size_t i = 0; i < dict_path.size(); ++i)
+        if (dict_path[i].find("utf8/synonym.txt") >= 0)
+        {
+            synonym_map_.clear();
+            std::vector<std::pair<size_t, string> > synonym_pairs;
+            std::string path = path_+"/synonym_map";
+            izenelib::am::ssf::Util<>::Load(path, synonym_pairs);
+            for (size_t j = 0; j < synonym_pairs.size(); ++j)
+                synonym_map_.insert(std::make_pair(synonym_pairs[j].second, synonym_pairs[j].first));
+
+            synonym_dict_.clear();
+            std::vector<string> tmp_sets;
+            path = path_+"/synonym_dict";
+            izenelib::am::ssf::Util<>::Load(path, tmp_sets);
+            for (size_t j = 0; j < tmp_sets.size(); ++j)
+            {
+                std::vector<string> tmp_set;
+                boost::algorithm::split(tmp_set, tmp_sets[j], boost::algorithm::is_any_of("/"));
+                synonym_dict_.push_back(tmp_set);
+            }        
+        
+            std::ifstream ifs(dict_path[i].c_str());
+            std::string line;
+            while(getline(ifs, line))
+            {
+//                boost::algorithm::trim(line);
+                std::vector<std::string> vec;
+                boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+                size_t find = 0;
+                size_t id = 0;
+                for (size_t j = 0; j < vec.size(); ++j)
+                    if (synonym_map_.find(vec[j]) != synonym_map_.end())
+                    {
+                        id = synonym_map_[vec[j]];
+                        find = 1;
+                    }
+                if (1 == find)
+                {
+                    for (size_t j = 0; j < vec.size(); ++j)
+                        if (synonym_map_.find(vec[j]) == synonym_map_.end())
+                        {
+                            synonym_dict_[id].push_back(vec[j]);
+                            synonym_map_.insert(std::make_pair(vec[j], id));
+                        }
+                }
+                else
+                {
+                    size_t size = synonym_dict_.size();
+                    synonym_dict_.push_back(vec);
+                    for (size_t j = 0; j < vec.size(); ++j)
+                    {
+                        synonym_map_.insert(std::make_pair(vec[j], size));
+                    }
+                }
+            }
+/*            
+            std::cout<<"after update, synonym dict size = "<<synonym_dict_.size()<<'\n';
+            for (size_t j = 0; j < synonym_dict_.size(); ++j)
+            {
+                for (size_t k = 0; k < synonym_dict_[j].size(); ++k)
+                    std::cout<<synonym_dict_[j][k]<<' ';
+                std::cout<<'\n';
+            }
+*/            
+            break;
+        }
 }
 
 bool ProductMatcher::GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid)

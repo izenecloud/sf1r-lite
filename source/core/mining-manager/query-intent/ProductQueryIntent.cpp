@@ -55,6 +55,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
     //boost::to_lower(mode);
     //if (mode == "suffix")
     //    return;
+    
     std::string normalizedQuery;
     QueryNormalizer::get()->normalize(keywords, normalizedQuery);
     LOG(INFO)<<normalizedQuery; 
@@ -73,6 +74,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         }
     }
     
+    boost::unordered_map<std::string, std::list<std::string> > scs;
     izenelib::driver::Value& conditions = request[Keys::conditions];
     array = conditions.getPtr<Value::ArrayType>();
     if (array && (0 != array->size()))
@@ -80,7 +82,13 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         for (std::size_t i = 0; i < array->size(); i++)
         {
             std::string property = asString((*array)[i][Keys::property]);
-            bitmap.insert(make_pair(property, false));
+            const izenelib::driver::Value::ArrayType* values = (*array)[i][Keys::value].getPtr<Value::ArrayType>();
+            std::list<std::string> cs; 
+            for (std::size_t vi = 0; vi < values->size(); vi++)
+            {
+                cs.push_back(asString((*values)[vi]));
+            }
+            scs.insert(make_pair(property, cs));
         }
     }
     
@@ -107,7 +115,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
   
     if (!ret)
         return;
-    combineWMVS(wmvs, normalizedQuery);
+    combineWMVS(wmvs, scs, normalizedQuery);
     request[Keys::search][Keys::keywords] = normalizedQuery;
     
     boost::trim(normalizedQuery);
