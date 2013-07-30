@@ -2741,10 +2741,14 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
     const std::string& categoryPropName =
         rankConfig.scores[CATEGORY_SCORE].propName;
 
+    const boost::shared_ptr<const NumericPropertyTableBase>& priceTable =
+        numericTableBuilder_->createPropertyTable("Price");
+
     multiThreadMiningTaskBuilder_->addTask(
         new CategoryClassifyMiningTask(*document_manager_,
                                        *categoryClassifyTable_,
-                                       categoryPropName));
+                                       categoryPropName,
+                                       priceTable));
     return true;
 }
 

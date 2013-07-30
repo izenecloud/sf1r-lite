@@ -2,9 +2,11 @@
 #include "CategoryClassifyTable.h"
 #include <document-manager/DocumentManager.h>
 #include <la-manager/KNlpWrapper.h>
+#include <common/NumericPropertyTableBase.h>
 #include <knlp/doc_naive_bayes.h>
 #include <glog/logging.h>
 #include <boost/filesystem/path.hpp>
+#include <sstream>
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
@@ -28,10 +30,12 @@ void getDocPropValue(
 CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     DocumentManager& documentManager,
     CategoryClassifyTable& classifyTable,
-    const std::string& targetCategoryPropName)
+    const std::string& targetCategoryPropName,
+    const boost::shared_ptr<const NumericPropertyTableBase>& priceTable)
     : documentManager_(documentManager)
     , classifyTable_(classifyTable)
     , targetCategoryPropName_(targetCategoryPropName)
+    , priceTable_(priceTable)
     , startDocId_(0)
 {
 }
@@ -49,7 +53,7 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
 
     if (ruleByOriginalCategory_(doc, classifyCategory) ||
         ruleBySource_(doc, classifyCategory) ||
-        classifyByTitle_(title, classifyCategory, isRule))
+        classifyByTitle_(title, docID, classifyCategory, isRule))
     {
         classifyTable_.setCategory(docID, classifyCategory, isRule);
     }
@@ -100,20 +104,23 @@ bool CategoryClassifyMiningTask::ruleBySource_(
 
 bool CategoryClassifyMiningTask::classifyByTitle_(
     const std::string& title,
+    docid_t docID,
     std::string& classifyCategory,
     bool& isRule)
 {
     try
     {
         KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-        std::string cleanTitle = knlpWrapper->cleanGarbage(title);
-        KNlpWrapper::string_t titleKStr(cleanTitle);
+        std::ostringstream titlePrice;
+        titlePrice << title;
 
-        KNlpWrapper::token_score_list_t tokenScores;
-        knlpWrapper->fmmTokenize(titleKStr, tokenScores);
+        std::pair<double, double> pricePair;
+        if (priceTable_->getDoublePairValue(docID, pricePair))
+        {
+            titlePrice << "[[" << pricePair.second << "]]";
+        }
 
-        KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores);
-        classifyCategory = classifyKStr.get_bytes("utf-8");
+        classifyCategory = knlpWrapper->classifyToBestCategory(titlePrice.str());
         isRule = false;
         return true;
     }
