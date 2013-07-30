@@ -160,7 +160,7 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
         {
             word = it->second;
             wmvs[*keyPtr_].push_back(make_pair(word, 1));
-            query.erase(pos, found-pos+1);
+            query.erase(pos, size);
             ret = true;
         }
         else
@@ -168,7 +168,6 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
             pos = found+1;
         }
     }
-
     return ret;
 
     /*size_t pos = 0;
