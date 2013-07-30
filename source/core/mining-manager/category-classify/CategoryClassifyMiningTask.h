@@ -8,11 +8,13 @@
 
 #include "../MiningTask.h"
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
 class DocumentManager;
 class CategoryClassifyTable;
+class NumericPropertyTableBase;
 
 class CategoryClassifyMiningTask : public MiningTask
 {
@@ -20,7 +22,8 @@ public:
     CategoryClassifyMiningTask(
         DocumentManager& documentManager,
         CategoryClassifyTable& classifyTable,
-        const std::string& targetCategoryPropName);
+        const std::string& targetCategoryPropName,
+        const boost::shared_ptr<const NumericPropertyTableBase>& priceTable);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -41,6 +44,7 @@ private:
 
     bool classifyByTitle_(
         const std::string& title,
+        docid_t docID,
         std::string& classifyCategory,
         bool& isRule);
 
@@ -50,6 +54,8 @@ private:
     CategoryClassifyTable& classifyTable_;
 
     const std::string targetCategoryPropName_;
+
+    const boost::shared_ptr<const NumericPropertyTableBase> priceTable_;
 
     docid_t startDocId_;
 };

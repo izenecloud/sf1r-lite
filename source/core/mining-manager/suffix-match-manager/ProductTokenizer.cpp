@@ -362,13 +362,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
         KNlpWrapper::string_t classifyKStr;
         if (docid == 0)
         {
-            string pattern_cat = KNlpWrapper::get()->cleanGarbage(pattern);
-            KNlpWrapper::token_score_list_t tokenScores_cat;
-            KNlpWrapper::string_t kstr_cat(pattern_cat);
-            KNlpWrapper::get()->fmmTokenize(kstr_cat, tokenScores_cat);
-
-            KNlpWrapper::string_t classifyKStr = knlpWrapper->classifyToBestCategory(tokenScores_cat);
-            classifyCategory = classifyKStr.get_bytes("utf-8");
+            classifyCategory = knlpWrapper->classifyToBestCategory(pattern);
         }
         else
         {
@@ -426,7 +420,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     }
 
     double scoreSum = 0;
-    KNlpWrapper::category_score_map_t tokenScoreMap;
+    KNlpWrapper::token_score_map_t tokenScoreMap;
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
         scoreSum += it->second;
@@ -480,7 +474,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     }
 
     //maxScore = 0;
-    for (KNlpWrapper::category_score_map_t::const_iterator it =
+    for (KNlpWrapper::token_score_map_t::const_iterator it =
              tokenScoreMap.begin(); it != tokenScoreMap.end(); ++it)
     {
         std::string str = it->first.get_bytes("utf-8");

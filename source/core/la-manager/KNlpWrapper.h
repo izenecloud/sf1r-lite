@@ -20,6 +20,7 @@ namespace knlp
 {
     class Fmm;
     class GarbagePattern;
+    class MaxentClassify;
 }
 }
 
@@ -39,17 +40,17 @@ public:
     typedef izenelib::util::KString string_t;
     typedef std::pair<string_t, double> token_score_pair_t;
     typedef std::vector<token_score_pair_t> token_score_list_t;
-    typedef std::map<string_t, double> category_score_map_t;
+    typedef std::map<string_t, double> token_score_map_t;
+    typedef std::map<std::string, double> category_score_map_t;
 
     /**
      * Tokenize @p str into @p tokenScores with forward maximize match.
      */
     void fmmTokenize(const string_t& str, token_score_list_t& tokenScores);
 
-    string_t classifyToBestCategory(const token_score_list_t& tokenScores);
+    std::string classifyToBestCategory(const std::string& str);
 
-    category_score_map_t classifyToMultiCategories(
-        const token_score_list_t& tokenScores);
+    category_score_map_t classifyToMultiCategories(const std::string& str);
 
     std::string mapFromOriginalCategory(const std::string& originalCategory);
 
@@ -75,6 +76,8 @@ private:
     boost::scoped_ptr<ilplib::knlp::Dictionary> originalToClassifyCateDict_;
 
     boost::scoped_ptr<ilplib::knlp::GarbagePattern> garbagePattern_;
+
+    boost::scoped_ptr<ilplib::knlp::MaxentClassify> maxentClassify_;
 };
 
 } // namespace sf1r
