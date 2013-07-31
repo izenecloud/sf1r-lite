@@ -67,9 +67,10 @@ void refineRequest(izenelib::driver::Request& request,
             izenelib::driver::Value& groupLabels = request[Keys::conditions];
             izenelib::driver::Value& groupLabel = groupLabels();
             groupLabel[Keys::property] = array->first.name_;
-            int operands = array->first.operands_;
-            if (-1 == operands)
-                operands = std::numeric_limits<int>::max();
+            groupLabel["operator"] = "=";
+            int operands = 1;//array->first.operands_;
+            //if (-1 == operands)
+            //    operands = std::numeric_limits<int>::max();
             izenelib::driver::Value& values = groupLabel[Keys::value];
             izenelib::driver::Value& queryIntent = queryIntents();
             izenelib::driver::Value& queryIntentValues = queryIntent[array->first.name_];
@@ -78,21 +79,8 @@ void refineRequest(izenelib::driver::Request& request,
             {
                 if (i >= operands)
                     break;
-                std::string vs = item->first;
-                std::size_t pos = 0;
-                while (true)
-                {
-                    std::size_t found = vs.find_first_of('>', pos);
-                    if (std::string::npos == found)
-                    {
-                        values() = vs.substr(pos);
-                        LOG(INFO)<<vs.substr(pos);
-                        break;
-                    }
-                    values() = vs.substr(pos, found - pos);
-                    LOG(INFO)<<vs.substr(pos, found - pos);
-                    pos = found + 1;
-                }
+                values() = item->first;
+                LOG(INFO)<<item->first;
                 queryIntentValues() = item->first;
             }
         }
