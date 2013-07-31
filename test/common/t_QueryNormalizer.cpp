@@ -46,7 +46,7 @@ void checkProductType(const std::string& source, const std::vector<std::string>&
     BOOST_CHECK_EQUAL_COLLECTIONS(actual.begin(), actual.end(),
                              expect.begin(), expect.end());
 
-    std::cout << "the new query is:" << newquery << std::endl << std::endl;
+    //std::cout << "the new query is:" << newquery << std::endl << std::endl;
 }
 
 }
@@ -141,10 +141,10 @@ BOOST_AUTO_TEST_CASE(testMixInput)
 BOOST_AUTO_TEST_CASE(testGetProductType)
 {
     std::cout <<"Test :iphone5手机" << std::endl;
-    std::string source_0("iphone5手机");
+    std::string source_0("iphone 5手机");
     std::vector<std::string> actual_0;
-    actual_0.push_back("5");
-    //actual_0.push_back("iphone");
+    actual_0.push_back("5 ");
+    actual_0.push_back("iphone");
     checkProductType(source_0, actual_0);
     
     std::cout <<"Test :皇冠Haier 海尔 KFR-35GW/05FFC23 1.5匹 挂壁式 无氟直流变频 冷暖空调" << std::endl;
@@ -157,19 +157,19 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::cout <<"Test :全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 【欧式吸油烟机】 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝" << std::endl;
     std::string source_2("全网底价联保 iphone 5 FOTILE 方太 CXW-189-EH16 【欧式吸油烟机】 + JZT-FZ26GE 嵌入式燃气灶（天然气）（套餐)送充电宝");
     std::vector<std::string> actual_2;
-    actual_2.push_back("5");
+    actual_2.push_back("5 ");
     actual_2.push_back("cxw-189-eh16");
-    //actual_2.push_back("iphone");
+    actual_2.push_back("iphone");
     actual_2.push_back("jzt-fz26ge");
     checkProductType(source_2, actual_2);
 
     std::cout <<"Test :魔杰（Mogic)Q500P iphone 4/itouch5苹果 lightning接口专用 2.1音箱 卡通章鱼音箱白色" << std::endl;
-    std::string source_3("魔杰（Mogic） q500p iphone 4/itouch5苹果 lightning接口专用 2.1音箱 卡通章鱼音箱白色");
+    std::string source_3("魔杰（Mogic） q500p iphone 4/itouch 5苹果 lightning接口专用 2.1音箱 卡通章鱼音箱白色");
     std::vector<std::string> actual_3;
-    actual_3.push_back("4");
-    actual_3.push_back("5");
-    //actual_3.push_back("iphone");
-    //actual_3.push_back("itouch");
+    actual_3.push_back("4 ");
+    actual_3.push_back("5 ");
+    actual_3.push_back("iphone");
+    actual_3.push_back("itouch");
     actual_3.push_back("q500p");
     checkProductType(source_3, actual_3);
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(testGetProductType)
     std::string source_6("Apple/苹果 iphone 4s无锁16G/32G现货促销全国包邮返100送充电宝");
     std::vector<std::string> actual_6;
     actual_6.push_back("4s");
-    //actual_6.push_back("iphone");
+    actual_6.push_back("iphone");
     checkProductType(source_6, actual_6);
 
 
