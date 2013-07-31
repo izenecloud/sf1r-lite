@@ -588,10 +588,6 @@ private:
     bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
-    
-    void StartSynonym_(ProductMatcher* matcher, const std::string& path);
-    void UpdateSynonym_(ProductMatcher* matcher, const std::string& path);
-    void RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path);
 
 public:
     /// Should be initialized after construction
@@ -731,10 +727,6 @@ private:
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
     izenelib::util::CronExpression cronExpression_;
-    
-    static bool startSynonym_;
-    long lastModifiedTime_;
-    
 #if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
 #else
