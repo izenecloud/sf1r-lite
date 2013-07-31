@@ -2128,7 +2128,7 @@ void MiningManager::FinishQueryRecommendInject()
 }
 
 bool MiningManager::GetSummarizationByRawKey(
-        const izenelib::util::UString& rawKey,
+        const std::string& rawKey,
         Summarization& result)
 {
     if (!summarizationManagerTask_) return false;

@@ -1,5 +1,6 @@
 #include "IndexSearchService.h"
 
+#include <node-manager/MasterManagerBase.h>
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 
@@ -46,7 +47,7 @@ bool IndexSearchService::getSearchResult(
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
     LOG(INFO) << "Search Begin." << endl;
-    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
@@ -141,12 +142,11 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getDocumentsByIds(actionItem, resultItem);
         return !resultItem.idList_.empty();
     }
-
     /// Perform distributed search by aggregator
     typedef std::map<workerid_t, GetDocumentsByIdsActionItem> ActionItemMapT;
     typedef ActionItemMapT::iterator ActionItemMapIterT;
@@ -179,7 +179,7 @@ bool IndexSearchService::getInternalDocumentId(
 )
 {
     internalId = 0;
-    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }
@@ -192,14 +192,28 @@ bool IndexSearchService::getInternalDocumentId(
     return (internalId != 0);
 }
 
-uint32_t IndexSearchService::getDocNum()
+uint32_t IndexSearchService::getDocNum(const std::string& collection)
 {
-    return searchWorker_->getDocNum();
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+        return searchWorker_->getDocNum();
+    else
+    {
+        uint32_t total_docs;
+        searchAggregator_->distributeRequest(collection, "getDistDocNum", total_docs);
+        return total_docs;
+    }
 }
 
-uint32_t IndexSearchService::getKeyCount(const std::string& property_name)
+uint32_t IndexSearchService::getKeyCount(const std::string& collection, const std::string& property_name)
 {
-    return searchWorker_->getKeyCount(property_name);
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+        return searchWorker_->getKeyCount(property_name);
+    else
+    {
+        uint32_t total_docs;
+        searchAggregator_->distributeRequest(collection, "getDistKeyCount", property_name, total_docs);
+        return total_docs;
+    }
 }
 
 }

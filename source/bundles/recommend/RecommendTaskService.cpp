@@ -23,6 +23,7 @@
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
+#include <node-manager/sharding/RecommendShardStrategy.h>
 
 #include <sdb/SDBCursorIterator.h>
 #include <util/scheduler.h>
@@ -244,7 +245,8 @@ RecommendTaskService::RecommendTaskService(
     ItemIdGenerator& itemIdGenerator,
     QueryPurchaseCounter& queryPurchaseCounter,
     UpdateRecommendBase& updateRecommendBase,
-    UpdateRecommendWorker* updateRecommendWorker
+    UpdateRecommendWorker* updateRecommendWorker,
+    RecommendShardStrategy* recommendShardStrategy
 )
     :bundleConfig_(bundleConfig)
     ,directoryRotator_(directoryRotator)
@@ -264,6 +266,7 @@ RecommendTaskService::RecommendTaskService(
     ,purchaseMatrix_(updateRecommendBase)
     ,purchaseCoVisitMatrix_(updateRecommendBase)
     ,cronJobName_("RecommendTaskService-" + bundleConfig.collectionName_)
+    ,recommendShardStrategy_(recommendShardStrategy)
 {
     if (cronExpression_.setExpression(bundleConfig_.cronStr_))
     {
@@ -285,12 +288,30 @@ RecommendTaskService::~RecommendTaskService()
 
 bool RecommendTaskService::addUser(const User& user)
 {
+    if (bundleConfig_.cassandraConfig_.enable)
+    {
+        if (recommendShardStrategy_)
+        {
+            if (recommendShardStrategy_->shardingForUser(user.idStr_) != MasterManagerBase::get()->getMyShardId())
+                return false;
+        }
+    }
+
     bool result = userManager_.addUser(user);
     return result;
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
+    if (bundleConfig_.cassandraConfig_.enable)
+    {
+        if (recommendShardStrategy_)
+        {
+            if (recommendShardStrategy_->shardingForUser(user.idStr_) != MasterManagerBase::get()->getMyShardId())
+                return false;
+        }
+    }
+
     bool result = userManager_.updateUser(user);
     return result;
 }
@@ -405,6 +426,16 @@ bool RecommendTaskService::updateShoppingCart(
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
+    if (bundleConfig_.cassandraConfig_.enable)
+    {
+        if (!recommendShardStrategy_)
+            return false;
+        // check if my shard.
+        if (recommendShardStrategy_->shardingForUser(userIdStr) != MasterManagerBase::get()->getMyShardId())
+        {
+            return false;
+        }
+    }
     std::vector<itemid_t> itemIdVec;
     if (! convertOrderItemVec_(cartItemVec, itemIdVec))
     {
@@ -422,7 +453,7 @@ bool RecommendTaskService::updateShoppingCart(
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -443,6 +474,17 @@ bool RecommendTaskService::trackEvent(
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
+    if (bundleConfig_.cassandraConfig_.enable)
+    {
+        if (!recommendShardStrategy_)
+            return false;
+        // check if my shard.
+        if (recommendShardStrategy_->shardingForUser(userIdStr) != MasterManagerBase::get()->getMyShardId())
+        {
+            return false;
+        }
+    }
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
     {
@@ -460,7 +502,7 @@ bool RecommendTaskService::trackEvent(
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -479,6 +521,17 @@ bool RecommendTaskService::rateItem(const RateParam& param)
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
+    if (bundleConfig_.cassandraConfig_.enable)
+    {
+        if (!recommendShardStrategy_)
+            return false;
+        // check if my shard.
+        if (recommendShardStrategy_->shardingForUser(param.userIdStr) != MasterManagerBase::get()->getMyShardId())
+        {
+            return false;
+        }
+    }
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(param.itemIdStr, itemId))
     {
@@ -495,7 +548,7 @@ bool RecommendTaskService::rateItem(const RateParam& param)
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -534,7 +587,7 @@ bool RecommendTaskService::buildCollection()
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
     bool ret = false;
 
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
         // on primary
         ret = buildCollectionOnPrimary();
@@ -728,27 +781,33 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
             continue;
         }
 
+        if (bundleConfig_.cassandraConfig_.enable)
+        {
+            if (recommendShardStrategy_)
+            {
+                if (recommendShardStrategy_->shardingForUser(user.idStr_) != MasterManagerBase::get()->getMyShardId())
+                    continue;
+            }
+        }
+
         switch(scdType)
         {
         case INSERT_SCD:
-            if (addUser(user) == false)
+            if (!addUser(user))
             {
                 LOG(ERROR) << "error in adding User, USERID: " << user.idStr_;
             }
             break;
 
         case UPDATE_SCD:
-            if (updateUser(user) == false)
+            if (!updateUser(user))
             {
                 LOG(ERROR) << "error in updating User, USERID: " << user.idStr_;
             }
             break;
 
         case DELETE_SCD:
-            if (removeUser(user.idStr_) == false)
-            {
-                LOG(ERROR) << "error in removing User, USERID: " << user.idStr_;
-            }
+            removeUser(user.idStr_);
             break;
 
         default:

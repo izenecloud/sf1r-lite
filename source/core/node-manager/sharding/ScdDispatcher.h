@@ -64,7 +64,7 @@ class BatchScdDispatcher : public ScdDispatcher
 public:
     BatchScdDispatcher(
             const boost::shared_ptr<ScdSharder>& scdSharder,
-            const std::string& collectionName);
+            const std::string& collectionName, bool is_dfs_enabled);
 
     ~BatchScdDispatcher();
 
@@ -83,9 +83,10 @@ private:
 private:
     std::string service_;
     std::string collectionName_;
+    bool is_dfs_enabled_;
     std::string dispatchTempDir_;
     std::map<shardid_t, std::string> shardScdfileMap_;
-    std::vector<std::ofstream*> ofList_;
+    std::map<shardid_t, std::ofstream*> ofList_;
 };
 
 /**
@@ -93,9 +94,6 @@ private:
  */
 class InstantScdDispatcher : public ScdDispatcher
 {
-public:
-    ;
-
 protected:
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 };

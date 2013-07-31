@@ -130,6 +130,10 @@ bool Sf1Controller::callDistribute()
             writer.write(request().get(), reqdata);
             if(!MasterManagerBase::get()->pushWriteReq(reqdata))
                 response().addError("push write request to queue failed.");
+            if (ReqLogMgr::isAutoShardWriteReq(request().controller(), request().action()))
+            {
+                MasterManagerBase::get()->pushWriteReqToShard(reqdata, collectionName_);
+            }
             return true;
         }
     }

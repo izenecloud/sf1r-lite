@@ -4,6 +4,7 @@
 #include <common/ResultType.h>
 #include <common/Utilities.h>
 #include <mining-manager/MiningManager.h>
+#include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
 
@@ -437,6 +438,41 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     }
 
     return true;
+}
+
+void SearchMerger::getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)
+{
+    mergeResult = 0;
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        mergeResult += workerResults.result(w);
+    }
+}
+
+void SearchMerger::getDistKeyCount(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)
+{
+    mergeResult = 0;
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        mergeResult += workerResults.result(w);
+    }
+}
+
+void SearchMerger::GetSummarizationByRawKey(const net::aggregator::WorkerResults<Summarization>& workerResults, Summarization& mergeResult)
+{
+    mergeResult.clear();
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        // Assume and DOCID should be unique in global space
+        mergeResult = workerResults.result(w);
+        if (!mergeResult.isEmpty())
+        {
+            return;
+        }
+    }
 }
 
 void SearchMerger::HookDistributeRequestForSearch(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)

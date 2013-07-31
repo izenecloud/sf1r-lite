@@ -167,6 +167,11 @@ namespace sf1r {
             return mdb_instance+"/po_map";
         }
 
+        static std::string GetOMapperPath(const std::string& mdb_instance)
+        {
+            return mdb_instance+"/omapper";
+        }
+
         static std::string GetBrandPropertyName()
         {
             static std::string p("Brand");
@@ -176,6 +181,16 @@ namespace sf1r {
         static std::string GetSPTPropertyName()
         {
             static std::string p("SPTitle");
+            return p;
+        }
+        static std::string GetSPPicPropertyName()
+        {
+            static std::string p("SPPicture");
+            return p;
+        }
+        static std::string GetSPUrlPropertyName()
+        {
+            static std::string p("SPUrl");
             return p;
         }
         static std::string GetTargetCategoryPropertyName()

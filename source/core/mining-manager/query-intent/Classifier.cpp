@@ -1,4 +1,6 @@
 #include "Classifier.h"
+#include <glog/logging.h>
+
 namespace sf1r
 {
 
@@ -197,11 +199,13 @@ namespace NQI
         return false;
     }
     
-    void combineWMVS(WMVContainer& wmvs, std::string& remainKeywords)
+    void combineWMVS(WMVContainer& wmvs, boost::unordered_map<std::string, std::list<std::string> >& scs, std::string& remainKeywords)
     {
+        //std::cout<<remainKeywords<<"\n";
         WMVCIterator it = wmvs.begin();
         for (; it != wmvs.end(); it++)
         {
+            //printWMV(it->second);
             if (!combineWMV(it->second, it->first.operands_))
             {
                 resumeKeywords(it->second, remainKeywords);
@@ -213,8 +217,36 @@ namespace NQI
                 }
             }
             else
-                deleteKeywords(it->second);
+            {
+                boost::unordered_map<std::string, std::list<std::string> >::iterator sIt = scs.find(it->first.name_);
+                if ( scs.end() == sIt )
+                {
+                    deleteKeywords(it->second);
+                    continue;
+                }
+                WMVIterator wmv = it->second.begin();
+                for (; wmv != it->second.end(); wmv++)
+                {
+                    if (REMOVED_WORD_WEIGHT  == wmv->second)
+                        continue;
+                    std::list<std::string>::iterator svIt = sIt->second.begin();
+                    for (; svIt != sIt->second.end(); svIt++)
+                    {
+                        //LOG(INFO)<<*svIt<<" "<<wmv->first;
+                        if ((*svIt) == wmv->first)
+                            break;
+                    }
+
+                    if (sIt->second.end() == svIt)
+                    {
+                        resumeKeywords(it->second, remainKeywords);
+                        break;
+                    }
+                }
+                wmvs.erase(it);
+            }
         }
+        //std::cout<<remainKeywords<<"\n";
     }
     
     void printWMV(WMVType& wmv)

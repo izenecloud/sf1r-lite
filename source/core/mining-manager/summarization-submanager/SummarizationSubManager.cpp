@@ -862,13 +862,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 }
 
 bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
-        const UString& rawKey,
+        const std::string& rawKey,
         Summarization& result)
 {
-    std::string key_str;
-    rawKey.convertString(key_str, UString::UTF_8);
-    //LOG(INFO)<<"key_str:"<<key_str<<endl;
-    return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
+    return summarization_storage_->Get(Utilities::uuidToUint128(rawKey), result);
 }
 
 //void MultiDocSummarizationSubManager::AppendSearchFilter(

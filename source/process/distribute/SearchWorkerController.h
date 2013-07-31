@@ -33,6 +33,9 @@ public:
         ADD_WORKER_HANDLER(visitDoc)
         ADD_WORKER_HANDLER(getSimilarDocIdList)
         ADD_WORKER_HANDLER(HookDistributeRequestForSearch)
+        ADD_WORKER_HANDLER(GetSummarizationByRawKey)
+        ADD_WORKER_HANDLER(getLabelListByDocId)
+        ADD_WORKER_HANDLER(getLabelListWithSimByDocId)
 
         ADD_WORKER_HANDLER_END()
     }
@@ -56,6 +59,12 @@ public:
     WORKER_CONTROLLER_METHOD_3(getSimilarDocIdList, searchWorker_->getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
 
     WORKER_CONTROLLER_METHOD_3(HookDistributeRequestForSearch, searchWorker_->HookDistributeRequestForSearch, int, std::string, bool)
+
+    WORKER_CONTROLLER_METHOD_2(GetSummarizationByRawKey, searchWorker_->GetSummarizationByRawKey, std::string, Summarization)
+    WORKER_CONTROLLER_METHOD_2(getLabelListByDocId, searchWorker_->getLabelListByDocId, uint32_t, SearchWorker::LabelListT)
+    WORKER_CONTROLLER_METHOD_2(getLabelListWithSimByDocId, searchWorker_->getLabelListWithSimByDocId, uint32_t, SearchWorker::LabelListWithSimT)
+    WORKER_CONTROLLER_METHOD_1(getDistDocNum, searchWorker_->getDistDocNum, uint32_t)
+    WORKER_CONTROLLER_METHOD_2(getDistKeyCount, searchWorker_->getDistKeyCount, std::string, uint32_t)
 
 protected:
     virtual bool checkWorker(std::string& error);

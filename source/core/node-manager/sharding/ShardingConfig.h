@@ -10,73 +10,56 @@
 
 #include <set>
 #include <vector>
+#include <map>
 
 #include <boost/algorithm/string.hpp>
 
 namespace sf1r
 {
+typedef uint32_t shardid_t; // xxx, shard id start with 1 (1, ..., n)
 
 class ShardingConfig
 {
 public:
-    enum ShardingStrategyType
-    {
-        SHARDING_HASH
-    };
-
-public:
+    typedef std::vector<int>  RangeListT;
+    typedef std::map<std::string, RangeListT> RangeShardKeyContainerT;
+    typedef std::vector<std::string> AttrListT;
+    typedef std::map<std::string, AttrListT> AttributeShardKeyContainerT;
     ShardingConfig()
-        : totalShardNum_(0)
-        , shardNum_(0)
-        , shardStrategyType_(SHARDING_HASH)
     {}
 
-    void setShardNum(unsigned int shardNum) { shardNum_ = shardNum; }
-
-    unsigned int getShardNum() { return shardNum_; }
-
-    void addShardKey(const std::string& shardKey)
+    // note : the range property used for sharding should be unchangable.
+    void addRangeShardKey(const std::string& prop_key, const RangeListT& range_list)
     {
-        shardKeys_.insert(shardKey);
     }
-
-    std::set<std::string>& getShardKeys()
+    // note : the attribute property used for sharding should be unchangable.
+    void addAttributeShardKey(const std::string& prop_key, const AttrListT& attr_list)
     {
-        return shardKeys_;
     }
-
-    bool hasShardKey(const std::string& shardKey)
+    void setUniqueShardKey(const std::string& prop_key)
     {
-        std::set<std::string>::iterator it;
-        for (it = shardKeys_.begin(); it != shardKeys_.end(); it++)
-        {
-            // case insensitive
-            if (boost::iequals(*it, shardKey))
-                return true;
-        }
-        return false;
+        unique_shardkey_ = prop_key;
     }
-
-    void clearShardKeys() { shardKeys_.clear(); }
-
-    bool isShardKeysEmpty() { return shardKeys_.empty(); }
-
-    void setShardStrategy(ShardingStrategyType shardStrategyType)
+    bool isRangeShardKey(const std::string& prop_key) const
     {
-        shardStrategyType_ = shardStrategyType;
+        return range_shardkeys_.find(prop_key) != range_shardkeys_.end();
     }
-
-    ShardingStrategyType getShardStrategy()
+    bool isAttributeShardKey(const std::string& prop_key) const
     {
-        return shardStrategyType_;
+        return attribute_shardkeys_.find(prop_key) != attribute_shardkeys_.end();
+    }
+    bool isUniqueShardKey(const std::string& prop_key) const
+    {
+        return unique_shardkey_ == prop_key;
     }
 
 public:
-    unsigned int totalShardNum_;
-    unsigned int shardNum_;
-    std::vector<uint32_t> shardidList_;
-    std::set<std::string> shardKeys_;
-    ShardingStrategyType shardStrategyType_;
+
+    std::vector<shardid_t> shardidList_;
+
+    std::string unique_shardkey_;
+    RangeShardKeyContainerT range_shardkeys_;
+    AttributeShardKeyContainerT attribute_shardkeys_;
 };
 
 }

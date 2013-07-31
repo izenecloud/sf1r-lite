@@ -12,6 +12,7 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <la-manager/AnalysisInformation.h>
 #include <common/ResultType.h>
+#include <mining-manager/summarization-submanager/Summarization.h>
 
 #include <util/get.h>
 #include <net/aggregator/Typedef.h>
@@ -43,6 +44,9 @@ class SearchWorker : public net::aggregator::BindCallProxyBase<SearchWorker>
 public:
     SearchWorker(IndexBundleConfiguration* bundleConfig);
 
+    typedef std::vector<std::pair<uint32_t, izenelib::util::UString> > LabelListT;
+    typedef std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > LabelListWithSimT;
+
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
         BIND_CALL_PROXY_BEGIN(SearchWorker, proxy)
@@ -56,6 +60,11 @@ public:
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
         BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
         BIND_CALL_PROXY_3(HookDistributeRequestForSearch, int, std::string, bool)
+        BIND_CALL_PROXY_2(GetSummarizationByRawKey, std::string, Summarization)
+        BIND_CALL_PROXY_2(getLabelListByDocId, uint32_t, LabelListT)
+        BIND_CALL_PROXY_2(getLabelListWithSimByDocId, uint32_t, LabelListWithSimT)
+        BIND_CALL_PROXY_1(getDistDocNum, uint32_t)
+        BIND_CALL_PROXY_2(getDistKeyCount, std::string, uint32_t)
         BIND_CALL_PROXY_END()
     }
 
@@ -89,6 +98,15 @@ public:
 
     void HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result);
 
+    void GetSummarizationByRawKey(const std::string& rawKey, Summarization& result);
+
+    void getLabelListByDocId(const uint32_t& docId,
+        LabelListT& result);
+
+    bool getLabelListWithSimByDocId(
+        uint32_t docId,
+        LabelListWithSimT& label_list
+        );
     /** @} */
 
     void makeQueryIdentity(
@@ -106,7 +124,15 @@ public:
     void clearFilterCache();
 
     uint32_t getDocNum();
+    void  getDistDocNum(uint32_t& total_docs)
+    {
+        total_docs = getDocNum();
+    }
     uint32_t getKeyCount(const std::string& property_name);
+    void getDistKeyCount(const std::string& property_name, uint32_t& total_docs)
+    {
+        total_docs = getKeyCount(property_name);
+    }
 
 private:
     bool getSearchResult_(

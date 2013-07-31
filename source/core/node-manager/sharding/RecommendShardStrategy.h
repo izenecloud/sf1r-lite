@@ -10,6 +10,7 @@
 
 #include <node-manager/Sf1rTopology.h>
 #include <recommend-manager/common/RecTypes.h>
+#include <boost/lexical_cast.hpp>
 
 namespace sf1r
 {
@@ -32,6 +33,7 @@ public:
      * @return the shard id, its range should be [1, @c shardNum_]
      */
     virtual shardid_t getShardId(itemid_t itemId) = 0;
+    virtual shardid_t shardingForUser(const std::string& user_id) = 0;
 
 protected:
     shardid_t shardNum_;
@@ -48,6 +50,10 @@ public:
     virtual shardid_t getShardId(itemid_t itemId)
     {
         return (itemId % shardNum_) + 1;
+    }
+    virtual shardid_t shardingForUser(const std::string& user_id)
+    {
+        return (boost::lexical_cast<uint32_t>(user_id) % shardNum_);
     }
 };
 

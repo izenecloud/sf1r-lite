@@ -35,7 +35,8 @@
  		std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >::iterator it;
 // 		LOG(INFO)<<"content: "<<page<<endl;
  		matcher_->ExtractKeywordsFromPage(uspage, res_ca, res_brand, res_model);
- 		LOG(INFO)<<"keywords count: "<<res_ca.size() + res_brand.size() + res_model.size()<<endl;
+//        matcher_->ExtractKeywordsFromPage(uspage, res_brand);
+        LOG(INFO)<<"keywords count: "<<res_ca.size() + res_brand.size() + res_model.size()<<endl;
 
  		Value& keywords = response()[Keys::keywords];
  		for(it=res_ca.begin();it!=res_ca.end();it++)
@@ -83,7 +84,7 @@
  		std::list<std::pair<UString, uint32_t> >::iterator it;
  		LOG(INFO)<<"content: "<<page<<endl;
  		matcher_->ExtractKeywordsFromPage(uspage, res, ca, we);
- 		
+
  		Value& category = response()[Keys::category];
  		for(it=ca.begin();it!=ca.end();it++)
  		{
@@ -94,7 +95,7 @@
  			c[Keys::value] = value;
  			c[Keys::pos] = boost::lexical_cast<std::string>(it->second);
  		}
- 		
+
  		Value& products = response()[Keys::products];
  		std::map<std::string, std::vector<std::pair<UString, uint32_t> > >::iterator iter;
  		for(iter=res.begin();iter!=res.end();iter++)
@@ -117,4 +118,3 @@
 */
  	}
  }// end of namespace sf1r
-

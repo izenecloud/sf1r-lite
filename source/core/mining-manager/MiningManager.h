@@ -357,7 +357,7 @@ public:
 
     void FinishQueryRecommendInject();
 
-    bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
+    bool GetSummarizationByRawKey(const std::string& rawKey, Summarization& result);
 
     uint32_t GetSignatureForQuery(
             const KeywordSearchActionItem& item,
