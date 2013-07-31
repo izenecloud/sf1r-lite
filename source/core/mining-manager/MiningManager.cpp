@@ -229,6 +229,8 @@ MiningManager::~MiningManager()
     close();
 }
 
+bool MiningManager::startSynonym_ = 0;
+
 void MiningManager::close()
 {
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
@@ -685,6 +687,12 @@ bool MiningManager::open()
             {
                 matcher->SetUsePriceSim(false);
                 //matcher->SetCategoryMaxDepth(2);
+                if (matcher && !startSynonym_)
+                    {
+                        std::string path = system_resource_path_ + "/dict/product/synonym.txt";
+                        StartSynonym_(matcher, path);
+                        startSynonym_ = 1;                    
+                    }
             }
             product_categorizer_->SetProductMatcher(matcher);
             if (suffixMatchManager_)
@@ -776,6 +784,39 @@ bool MiningManager::open()
         return false;
     }
     return true;
+}
+
+void MiningManager::RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    size_t checkInterval = 600;
+    try
+    {
+        while (true)
+        {
+            boost::this_thread::sleep(boost::posix_time::seconds(checkInterval));
+            UpdateSynonym_(matcher, path);
+        }
+    }
+    catch (boost::thread_interrupted& e)
+    {
+        return;
+    }
+}
+
+void MiningManager::StartSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    boost::thread thread_(boost::bind(&MiningManager::RunUpdateSynonym_, this, matcher, path));
+}
+
+void MiningManager::UpdateSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    if (!boost::filesystem::exists(path)) 
+        return;
+    long curModifiedTime = la::getFileLastModifiedTime(path);
+    if (curModifiedTime == lastModifiedTime_ || !matcher) 
+        return;
+    lastModifiedTime_ = curModifiedTime;
+    matcher->UpdateSynonym(path);
 }
 
 bool MiningManager::DoMiningCollectionFromAPI()

@@ -806,7 +806,9 @@ namespace sf1r {
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
-        void updateDict(const std::vector<std::string>& dict_path);
+        void UpdateSynonym(const std::string& dict_path);
+
+        
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
         bool IsIndexDone() const;
@@ -1006,8 +1008,8 @@ namespace sf1r {
 
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
-        bool addUpdateCallback_;
-
+        izenelib::util::ReadWriteLock lock_;
+    
         std::vector<FeatureVector> feature_vectors_;
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
