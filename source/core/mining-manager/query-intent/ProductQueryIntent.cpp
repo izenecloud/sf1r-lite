@@ -72,10 +72,20 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
             bitmap.insert(make_pair(property, true));
         }
     }
+    izenelib::driver::Value& conditions = request[Keys::conditions];
+    array = conditions.getPtr<Value::ArrayType>();
+    if (array && (0 != array->size()))
+    {
+        for (std::size_t i = 0; i < array->size(); i++)
+        {
+            std::string property = asString((*array)[i][Keys::property]);
+            bitmap.insert(make_pair(property, false));
+        }
+    }
     
     boost::unordered_map<std::string, std::list<std::string> > scs;
-    izenelib::driver::Value& conditions = request[Keys::search][Keys::group_label];
-    array = conditions.getPtr<Value::ArrayType>();
+    izenelib::driver::Value& groupLabels = request[Keys::search][Keys::group_label];
+    array = groupLabels.getPtr<Value::ArrayType>();
     if (array && (0 != array->size()))
     {
         for (std::size_t i = 0; i < array->size(); i++)
