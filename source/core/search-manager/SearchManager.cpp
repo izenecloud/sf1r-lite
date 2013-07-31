@@ -45,6 +45,9 @@ void SearchManager::setMiningManager(
     fuzzySearchRanker_.setFuzzyScoreWeight(
         miningManager->getMiningSchema().product_ranking_config);
 
+    fuzzySearchRanker_.enableCategoryClassify(
+        miningManager->GetCategoryClassifyTable() != NULL);
+
     fuzzySearchRanker_.setCustomRankManager(
         miningManager->GetCustomRankManager());
 

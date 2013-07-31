@@ -14,12 +14,14 @@ enum ProductScoreType
     MERCHANT_SCORE = 0,
     CUSTOM_SCORE,
     CATEGORY_SCORE,
+    CATEGORY_CLASSIFY_SCORE,
     RELEVANCE_SCORE,
     POPULARITY_SCORE,
     FUZZY_SCORE,
     OFFER_ITEM_COUNT_SCORE,
     DIVERSITY_SCORE,
     RANDOM_SCORE,
+    TITLE_RELEVANCE_SCORE,
     PRODUCT_SCORE_NUM
 };
 
@@ -33,6 +35,8 @@ struct ProductScoreConfig
     std::string propName;
 
     score_t weight;
+
+    bool isDebug; /// whether print debug message
 
     std::vector<ProductScoreConfig> factors;
 
@@ -52,6 +56,7 @@ private:
         ar & type;
         ar & propName;
         ar & weight;
+        ar & isDebug;
         ar & factors;
     }
 };

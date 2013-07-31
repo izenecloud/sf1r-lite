@@ -108,12 +108,14 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "merchant",     // MERCHANT_SCORE
     "custom",       // CUSTOM_SCORE
     "category",     // CATEGORY_SCORE
+    "category_classify", // CATEGORY_CLASSIFY_SCORE
     "relevance",    // RELEVANCE_SCORE
     "popularity",   // POPULARITY_SCORE
     "fuzzy",        // FUZZY_SCORE
     "offer_item_count", // OFFER_ITEM_COUNT_SCORE
     "diversity",    // DIVERSITY_SCORE
-    "random"        // RANDOM_SCORE
+    "random",        // RANDOM_SCORE
+    "title_relevance" // TITLE_RELEVANCE_SCORE
 };
 
 ProductRankingConfig::ProductRankingConfig()

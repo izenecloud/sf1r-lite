@@ -5,6 +5,7 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <la-manager/KNlpWrapper.h>
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
@@ -14,7 +15,7 @@
 #include <3rdparty/am/btree/btree_map.h>
 #include <util/ustring/algo.hpp>
 #include <glog/logging.h>
-
+#include <math.h>
 
 using namespace cma;
 using namespace izenelib::util;
@@ -145,11 +146,109 @@ size_t SuffixMatchManager::longestSuffixMatch(
 
 void SuffixMatchManager::GetTokenResults(std::string pattern,
                                 std::list<std::pair<UString, double> >& major_tokens,
-                                std::list<std::pair<UString, double> >& manor_tokens,
-                                UString& analyzedQuery)
+                                std::list<std::pair<UString, double> >& minor_tokens,
+                                UString& analyzedQuery,
+                                double& rank_boundary)
 {
-    tokenizer_->GetTokenResults(pattern, major_tokens, manor_tokens, analyzedQuery);
-    //
+    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+    getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
+}
+
+//getSuffixSearchRankThreshold
+void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
+{
+    double minor_score_sum = 0;
+    double major_score_sum = 0;
+    unsigned int minor_size = 0;
+    unsigned int major_size = 0;
+    unsigned int total_size = 0;
+    bool needSmooth = false;
+    for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second > 0.1)
+        {
+            major_score_sum += i->second;
+            major_size++;
+            if (i->second > 0.5)
+            {
+                needSmooth = true;
+            }
+        }
+        else
+        {
+            minor_score_sum += i->second;
+            minor_size++;
+        }
+    }
+    total_size = minor_size + major_size;
+
+    if (needSmooth == true || (major_size <= 2 && major_score_sum > 0.6))
+    {
+        std::vector<double> minor_tokens_point; 
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+            minor_tokens_point.push_back(i->second);
+        KNlpWrapper::get()->gauss_smooth(minor_tokens_point);
+
+        unsigned int k = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                                        i != minor_tokens.end(); ++i, k++)
+            i->second = minor_tokens_point[k];
+
+        minor_score_sum = 0;
+        major_score_sum = 0;
+        minor_size = 0;
+        major_size = 0;
+        total_size = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            if (i->second > 0.1)
+            {
+                major_score_sum += i->second;
+                major_size++;
+            }
+            else
+            {
+                minor_score_sum += i->second;
+                minor_size++;
+            }
+        }
+        total_size = minor_size + major_size;
+    }
+
+    if (major_size <= 3)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.85 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.9 + minor_score_sum * 0.6;
+        }
+        
+    }
+    else if (major_size <= 5)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.75 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.7;
+        }
+    }
+    else 
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.7;
+        }
+    }
 }
 
 bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
@@ -393,7 +492,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             cit != res_list_map.end(); ++cit)
     {
         if (cit->second > rank_boundary)
+        {
             res_list.push_back(std::make_pair(cit->second, cit->first));
+        }
     }
     if (res_list.empty())
         return total_match;
@@ -785,6 +886,11 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
+void SuffixMatchManager::GetQuerySumScore(const std::string& pattern, double &sum_score)
+{
+    tokenizer_->GetQuerySumScore(pattern, sum_score);
+}
+
 SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
@@ -793,6 +899,7 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
     }
     return NULL;
 }
+
 
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {
@@ -840,7 +947,6 @@ double SuffixMatchManager::getSuffixSearchRankThreshold(
     double minor_score = 0;
     unsigned int major_highscore_size = 0;
     unsigned int major_size = major_tokens.size();
-    unsigned int minor_size = minor_tokens.size();
 
     for (std::list<std::pair<UString, double> >::const_iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
     {

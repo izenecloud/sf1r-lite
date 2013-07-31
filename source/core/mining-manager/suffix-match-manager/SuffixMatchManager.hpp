@@ -2,7 +2,6 @@
 #define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 
 #include "SuffixMatchMiningTask.hpp"
-
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
@@ -21,6 +20,7 @@ class FilterManager;
 class FMIndexManager;
 class ProductTokenizer;
 class ProductMatcher;
+class CategoryClassifyTable;
 
 namespace faceted
 {
@@ -70,7 +70,8 @@ public:
     void GetTokenResults(std::string pattern,
                     std::list<std::pair<UString, double> >& major_tokens,
                     std::list<std::pair<UString, double> >& manor_tokens,
-                    UString& analyzedQuery);
+                    UString& analyzedQuery,
+                    double& rank_boundary);
 
     SuffixMatchMiningTask* getMiningTask();
     
@@ -84,6 +85,16 @@ public:
             const std::list<std::pair<UString, double> >& major_tokens,
             const std::list<std::pair<UString, double> >& minor_tokens,
             std::list<std::pair<UString, double> >& boundary_minor_tokens);
+
+    void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
+                        double& rank_boundary);
+
+    void GetQuerySumScore(const std::string& pattern, double &sum_score);
+
+    ProductTokenizer* getProductTokenizer()
+    {
+        return tokenizer_;
+    }
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;

@@ -24,16 +24,16 @@ namespace sf1r
 class CategoryScoreEvaluator : public ProductScoreEvaluator
 {
 public:
-    CategoryScoreEvaluator(score_t weight, bool isLongQuery);
+    CategoryScoreEvaluator(score_t weight, bool isDiverseInPage);
 
     virtual score_t evaluate(ProductScore& productScore);
 
 private:
     const score_t weight_;
 
-    const bool isLongQuery_;
+    const bool isDiverseInPage_;
 
-    int longQueryResultCount_;
+    int resultCount_;
 };
 
 } // namespace sf1r

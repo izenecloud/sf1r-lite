@@ -5,6 +5,7 @@
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "MiningTaskBuilder.h"
+#include "MultiThreadMiningTaskBuilder.h"
 #include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
@@ -46,10 +47,15 @@
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
 #include "product-ranker/ProductRankerFactory.h"
+#include "category-classify/CategoryClassifyTable.h"
+#include "category-classify/CategoryClassifyMiningTask.h"
+#include "title-scorer/TitleScoreList.h"
+#include "title-scorer/TitleScoreMiningTask.h"
 
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "suffix-match-manager/ProductTokenizer.h"
 #include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
@@ -81,6 +87,7 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
+#include <la-manager/KNlpWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -170,6 +177,8 @@ MiningManager::MiningManager(
     , customRankManager_(NULL)
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
+    , categoryClassifyTable_(NULL)
+    , titleScoreList_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
@@ -182,12 +191,14 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
+    , multiThreadMiningTaskBuilder_(NULL)
     , hasDeletedDocDuringMining_(false)
 {
 }
 
 MiningManager::~MiningManager()
 {
+    if (multiThreadMiningTaskBuilder_) delete multiThreadMiningTaskBuilder_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
@@ -196,6 +207,8 @@ MiningManager::~MiningManager()
     if (queryIntentManager_) delete queryIntentManager_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
+    if (categoryClassifyTable_) delete categoryClassifyTable_;
+    if (titleScoreList_) delete titleScoreList_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
@@ -215,6 +228,8 @@ MiningManager::~MiningManager()
 
     close();
 }
+
+bool MiningManager::startSynonym_ = 0;
 
 void MiningManager::close()
 {
@@ -293,9 +308,12 @@ bool MiningManager::open()
         /**Miningtask Builder*/
         if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
             mining_schema_.group_enable ||
-            mining_schema_.attr_enable )
+            mining_schema_.attr_enable ||
+            mining_schema_.product_ranking_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
+            multiThreadMiningTaskBuilder_ = new MultiThreadMiningTaskBuilder(
+                document_manager_, miningConfig_.mining_task_param.threadNum);
         }
 
         product_categorizer_ = new QueryCategorizer;
@@ -508,14 +526,6 @@ bool MiningManager::open()
         if (customDocIdConverter_) delete customDocIdConverter_;
         customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
-        const ProductRankingConfig& rankConfig =
-            mining_schema_.product_ranking_config;
-
-        if (!initMerchantScoreManager_(rankConfig) ||
-            !initGroupLabelKnowledge_(rankConfig) ||
-            !initProductScorerFactory_(rankConfig) ||
-            !initProductRankerFactory_(rankConfig))
-            return false;
         if (mining_schema_.query_intent_enable)
         {
             if (queryIntentManager_) delete queryIntentManager_;
@@ -566,6 +576,10 @@ bool MiningManager::open()
         if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
             LOG(INFO) << "suffix match enabled.";
+
+            if (!KNlpWrapper::get()->loadDictFiles())
+                return false;
+
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
@@ -621,7 +635,7 @@ bool MiningManager::open()
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-
+                
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
                     if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
@@ -673,6 +687,12 @@ bool MiningManager::open()
             {
                 matcher->SetUsePriceSim(false);
                 //matcher->SetCategoryMaxDepth(2);
+                if (matcher && !startSynonym_)
+                    {
+                        std::string path = system_resource_path_ + "/dict/product/synonym.txt";
+                        StartSynonym_(matcher, path);
+                        startSynonym_ = 1;                    
+                    }
             }
             product_categorizer_->SetProductMatcher(matcher);
             if (suffixMatchManager_)
@@ -710,6 +730,18 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
+
+        /** product rank */
+        const ProductRankingConfig& rankConfig =
+            mining_schema_.product_ranking_config;
+
+        if (!initMerchantScoreManager_(rankConfig) ||
+            !initGroupLabelKnowledge_(rankConfig) ||
+            !initCategoryClassifyTable_(rankConfig) ||
+            !initTitleRelevanceScore_(rankConfig) ||
+            !initProductScorerFactory_(rankConfig) ||
+            !initProductRankerFactory_(rankConfig))
+            return false;
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -752,6 +784,39 @@ bool MiningManager::open()
         return false;
     }
     return true;
+}
+
+void MiningManager::RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    size_t checkInterval = 600;
+    try
+    {
+        while (true)
+        {
+            boost::this_thread::sleep(boost::posix_time::seconds(checkInterval));
+            UpdateSynonym_(matcher, path);
+        }
+    }
+    catch (boost::thread_interrupted& e)
+    {
+        return;
+    }
+}
+
+void MiningManager::StartSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    boost::thread thread_(boost::bind(&MiningManager::RunUpdateSynonym_, this, matcher, path));
+}
+
+void MiningManager::UpdateSynonym_(ProductMatcher* matcher, const std::string& path)
+{
+    if (!boost::filesystem::exists(path)) 
+        return;
+    long curModifiedTime = la::getFileLastModifiedTime(path);
+    if (curModifiedTime == lastModifiedTime_ || !matcher) 
+        return;
+    lastModifiedTime_ = curModifiedTime;
+    matcher->UpdateSynonym(path);
 }
 
 bool MiningManager::DoMiningCollectionFromAPI()
@@ -807,6 +872,12 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask()
 {
+   
+    if (multiThreadMiningTaskBuilder_)
+    {
+        multiThreadMiningTaskBuilder_->buildCollection();
+    }
+
     if (miningTaskBuilder_)
     {
         miningTaskBuilder_->buildCollection();
@@ -2200,54 +2271,32 @@ bool MiningManager::GetSuffixMatch(
         if (pattern_orig.empty())
             return 0;
 
+        LOG(INFO) << "original query string: " << pattern_orig;
         std::string pattern = pattern_orig;
         boost::to_lower(pattern);
 
-        LOG(INFO) << "original query string: " << pattern_orig;
-
-        std::string pattern_new;
-        std::vector<std::string> productTypes;
-        if (QueryNormalizer::get()->isLongQuery(pattern))
-            QueryNormalizer::get()->getProductTypes(pattern, productTypes, pattern_new);
-        else
-            pattern_new = pattern;
-
-        LOG(INFO) << "Get Product Model end";
-        unsigned int productType_size = productTypes.size();
-
+        const bool isWrongQuery = QueryNormalizer::get()->isWrongQuery(pattern);
+        if (isWrongQuery)
+        {
+            LOG (ERROR) <<"The query is too long...";
+        }
+        
+        const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+        if (isLongQuery)
+        {
+            pattern = KNlpWrapper::get()->cleanStopword(pattern);
+            LOG(INFO) << "clear stop word for long query: " << pattern;
+        }
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
-        if (!pattern_new.empty())
-            suffixMatchManager_->GetTokenResults(pattern_new, major_tokens, minor_tokens, analyzedQuery);
-
-        for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
-        {
-            analyzedQuery += UString(" ", izenelib::util::UString::UTF_8);
-            analyzedQuery += UString(*i, izenelib::util::UString::UTF_8);
-        }
+        double rank_boundary;
+        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
         
-        if (productType_size == 1)
-        {
-            UString ukey(productTypes[0], izenelib::util::UString::UTF_8);
-            major_tokens.push_back(std::make_pair(ukey, 6.0));
-        }
-        else if(productType_size == 2)
-        {
-            for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
-            {
-                UString ukey(*i, izenelib::util::UString::UTF_8);
-                major_tokens.push_back(std::make_pair(ukey, 5.0));
-            }
-        }
-        else
-        {
-            for (std::vector<std::string>::iterator i = productTypes.begin(); i != productTypes.end(); ++i)
-            {
-                UString ukey(*i, izenelib::util::UString::UTF_8);
-                major_tokens.push_back(std::make_pair(ukey, 4.0));
-            }
-        }
+        double queryScore = 0;
+        suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
+        actionOperation.actionItem_.queryScore_ = queryScore;
+        std::cout << "The query's product score is:" << queryScore <<std::endl;
 
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
@@ -2255,144 +2304,73 @@ bool MiningManager::GetSuffixMatch(
             (i->first).convertString(key, izenelib::util::UString::UTF_8);
             cout << key << " " << i->second << endl;
         }
-        cout<<"-----"<<endl;
+        std::cout << "-----" << std::endl;
         for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
         {
             std::string key;
             (i->first).convertString(key, izenelib::util::UString::UTF_8);
             cout << key << " " << i->second << endl;
         }
-        
-        std::list<std::pair<UString, double> > boundary_major_tokens;
-        std::list<std::pair<UString, double> > boundary_minor_tokens;
 
-        if (!QueryNormalizer::get()->isLongQuery(pattern))
+        /*
+        const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
+        double rank_boundary = 1.55 - tokenNum * 0.1;
+        rank_boundary = std::max(rank_boundary, 0.7);
+        rank_boundary = std::min(rank_boundary, 0.85);
+        */
+        LOG(INFO) << " Rank boundary: " << rank_boundary;
+
+        bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
+        bool isAndSearch = true;
+        bool isOrSearch = true;
+
+        if (isLongQuery)
         {
-            double rank_boundary_short = 0.2;
-            std::cout << std::endl;
-            LOG (INFO) << "[SHORT SEARCH] First, for short query: 2 3 and some with space  ";
-            std::list<std::pair<UString, double> > major_tokens_short;
-            std::list<std::pair<UString, double> > minor_tokens_short;
-
-            std::vector<std::string> tokens;
-            QueryNormalizer::get()->tokenizeQuery(pattern, tokens);
-            
-            bool useShort = true;
-            if (tokens.size() == 1 && QueryNormalizer::get()->countCharNum(tokens[0]) < 4)
-            {
-                UString ukey(pattern, izenelib::util::UString::UTF_8);
-                major_tokens_short.push_back(std::make_pair(ukey, 0.3));
-            }
-            else if (tokens.size() > 1)
-            {
-                for (std::vector<std::string>::iterator i = tokens.begin(); i != tokens.end(); ++i)
-                {
-                    if (QueryNormalizer::get()->countCharNum(*i) > 3)
-                    {
-                        useShort = false;
-                        break;
-                    }
-                }
-                if (useShort)
-                {
-                    for (unsigned int i = 0; i < tokens.size(); ++i)
-                    {
-                        UString ukey(tokens[i], izenelib::util::UString::UTF_8);
-                        major_tokens_short.push_back(std::make_pair(ukey, 0.3));
-                    }
-                }
-            }
-            else
-                useShort = false;
-
-            if ( useShort)
-            {
-                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                            major_tokens_short,
-                                            minor_tokens_short,
-                                            search_in_properties,
-                                            max_docs,
-                                            actionOperation.actionItem_.searchingMode_.filtermode_,
-                                            filter_param,
-                                            actionOperation.actionItem_.groupParam_,
-                                            res_list,
-                                            rank_boundary_short);
-            }
-            
-            if (res_list.empty())
-            {
-                LOG (INFO) << "USE all major_tokens search for short query" ;
-                std::list<std::pair<UString, double> > major_tokens_frune;
-                std::list<std::pair<UString, double> > minor_tokens_frune;
-        
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-                    major_tokens_frune.push_back(*i);
-                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-                    major_tokens_frune.push_back(*i);
-
-                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                            major_tokens_frune,
-                                            minor_tokens_frune,
-                                            search_in_properties,
-                                            max_docs,
-                                            actionOperation.actionItem_.searchingMode_.filtermode_,
-                                            filter_param,
-                                            actionOperation.actionItem_.groupParam_,
-                                            res_list,
-                                            rank_boundary_short);
-                if (res_list.empty() && actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
-                {
-                    rank_boundary_short = suffixMatchManager_->getSuffixSearchRankThreshold(
-                                                        major_tokens, minor_tokens, 
-                                                        boundary_minor_tokens);
-                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                                    boundary_major_tokens,
-                                                    boundary_minor_tokens,
-                                                    search_in_properties,
-                                                    max_docs,
-                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                    filter_param,
-                                                    actionOperation.actionItem_.groupParam_,
-                                                    res_list,
-                                                    rank_boundary_short);
-                }
-            }
+            useSynonym = false;
+            isAndSearch = false;
         }
-        else if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
+
+        if (isAndSearch)
         {
-            double rank_boundary = suffixMatchManager_->getSuffixSearchRankThreshold(major_tokens, minor_tokens, 
-                                                        boundary_minor_tokens);
-            LOG(INFO) << "[threshold] DO FUZZY SEARCH WITH rank_boundary :" << rank_boundary;
+            LOG(INFO) << "for short query, try AND search first";
+            std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
+            std::list<std::pair<UString, double> > short_query_minor_tokens;
+
+            for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin();
+                 it != minor_tokens.end(); ++it)
+            {
+                short_query_major_tokens.push_back(*it);
+            }
+
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                                    boundary_major_tokens,
-                                                    boundary_minor_tokens,
-                                                    search_in_properties,
-                                                    max_docs,
-                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                    filter_param,
-                                                    actionOperation.actionItem_.groupParam_,
-                                                    res_list,
-                                                    rank_boundary);
+                useSynonym,
+                short_query_major_tokens,
+                short_query_minor_tokens,
+                search_in_properties,
+                max_docs,
+                actionOperation.actionItem_.searchingMode_.filtermode_,
+                filter_param,
+                actionOperation.actionItem_.groupParam_,
+                res_list,
+                rank_boundary);
+
+            isOrSearch = res_list.empty();
         }
-        else
+
+        if (isOrSearch)
         {
-            double rank_boundary = 0.4;
-            cout << "rank_boundary :" << rank_boundary <<endl;
+            LOG(INFO) << "for long query or short AND result is empty, try OR search";
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                                    major_tokens,
-                                                    minor_tokens,
-                                                    search_in_properties,
-                                                    max_docs,
-                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                    filter_param,
-                                                    actionOperation.actionItem_.groupParam_,
-                                                    res_list,
-                                                    rank_boundary);
+                useSynonym,
+                major_tokens,
+                minor_tokens,
+                search_in_properties,
+                max_docs,
+                actionOperation.actionItem_.searchingMode_.filtermode_,
+                filter_param,
+                actionOperation.actionItem_.groupParam_,
+                res_list,
+                rank_boundary);
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
@@ -2738,6 +2716,80 @@ bool MiningManager::initGroupLabelKnowledge_(const ProductRankingConfig& rankCon
         }
     }
 
+    return true;
+}
+
+bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable || suffixMatchManager_ == NULL)
+        return true;
+    const ProductScoreConfig& titleRevelanceConfig =
+        rankConfig.scores[TITLE_RELEVANCE_SCORE];
+
+    if (titleRevelanceConfig.weight ==0)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path TitleScorerDir(parentDir / "title_scorer");
+    bfs::create_directories(TitleScorerDir);
+
+    titleScoreList_ = new TitleScoreList(TitleScorerDir.string(),
+                                        titleRevelanceConfig.propName,
+                                        titleRevelanceConfig.isDebug);
+
+     if (!titleScoreList_->open())
+    {
+        LOG(ERROR) << "open " << TitleScorerDir << " failed";
+        return false;
+    }
+    LOG (INFO) << "USE Title Score ,....";
+    MiningTask* miningTask_score =  new TitleScoreMiningTask(document_manager_, 
+                                            suffixMatchManager_->getProductTokenizer(), 
+                                            titleScoreList_);
+    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
+
+    suffixMatchManager_->getProductTokenizer()->setCategoryClassifyTable(categoryClassifyTable_);
+
+    return true;
+}
+
+bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable)
+        return true;
+
+    const ProductScoreConfig& classifyConfig =
+        rankConfig.scores[CATEGORY_CLASSIFY_SCORE];
+
+    if (classifyConfig.weight == 0)
+        return true;
+
+    if (categoryClassifyTable_) delete categoryClassifyTable_;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path classifyDir(parentDir / "category_classify");
+    bfs::create_directories(classifyDir);
+
+    categoryClassifyTable_ = new CategoryClassifyTable(classifyDir.string(),
+                                                       classifyConfig.propName,
+                                                       classifyConfig.isDebug);
+    if (!categoryClassifyTable_->open())
+    {
+        LOG(ERROR) << "open " << classifyDir << " failed";
+        return false;
+    }
+
+    const std::string& categoryPropName =
+        rankConfig.scores[CATEGORY_SCORE].propName;
+
+    const boost::shared_ptr<const NumericPropertyTableBase>& priceTable =
+        numericTableBuilder_->createPropertyTable("Price");
+
+    multiThreadMiningTaskBuilder_->addTask(
+        new CategoryClassifyMiningTask(*document_manager_,
+                                       *categoryClassifyTable_,
+                                       categoryPropName,
+                                       priceTable));
     return true;
 }
 

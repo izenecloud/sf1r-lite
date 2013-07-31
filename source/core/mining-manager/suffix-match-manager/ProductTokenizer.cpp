@@ -1,7 +1,9 @@
 #include "ProductTokenizer.h"
 #include <common/CMAKnowledgeFactory.h>
 #include <b5m-manager/product_matcher.h>
-
+#include <la-manager/KNlpWrapper.h>
+#include <mining-manager/category-classify/CategoryClassifyTable.h>
+#include <common/QueryNormalizer.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <iostream>
@@ -19,6 +21,7 @@ ProductTokenizer::ProductTokenizer(
     , analyzer_(NULL)
     , knowledge_(NULL)
     , matcher_(NULL)
+    , categoryClassifyTable_(NULL)
 {
     Init_(dict_path);
 }
@@ -26,6 +29,11 @@ ProductTokenizer::ProductTokenizer(
 ProductTokenizer::~ProductTokenizer()
 {
     if (analyzer_) delete analyzer_;
+}
+
+void ProductTokenizer::setCategoryClassifyTable(CategoryClassifyTable* table)
+{
+    categoryClassifyTable_ = table;
 }
 
 void ProductTokenizer::Init_(const std::string& dict_path)
@@ -292,7 +300,16 @@ bool ProductTokenizer::GetTokenResults(
         std::list<std::pair<UString,double> >& minor_tokens,
         UString& refined_results)
 {
-    if (matcher_ && GetTokenResultsByMatcher_(pattern, major_tokens, minor_tokens, refined_results))
+    std::list<std::pair<UString,double> > temp_major_tokens;
+    std::list<std::pair<UString,double> > temp_minor_tokens;
+    UString temp_refined_results;
+
+    GetTokenResultsByKNlp_(pattern, minor_tokens, temp_refined_results);
+
+    if (matcher_ && GetTokenResultsByMatcher_(pattern,
+                                              temp_major_tokens,
+                                              temp_minor_tokens,
+                                              refined_results))
     {
         return true;
     }
@@ -300,12 +317,175 @@ bool ProductTokenizer::GetTokenResults(
     switch (type_)
     {
     case TOKENIZER_DICT:
-        return GetTokenResultsByDict_(pattern, minor_tokens, refined_results);
+        return GetTokenResultsByDict_(pattern,
+                                      temp_minor_tokens,
+                                      refined_results);
     case TOKENIZER_CMA:
-        return GetTokenResultsByCMA_(pattern, minor_tokens, refined_results);
+        return GetTokenResultsByCMA_(pattern,
+                                     temp_minor_tokens,
+                                     refined_results);
     }
 
     return false;
+}
+void ProductTokenizer::GetQuerySumScore(const std::string& pattern, double &sum_score, docid_t docid)
+{
+    std::list<std::pair<UString,double> > token_results;
+    UString refined_results;
+    sum_score = GetTokenResultsByKNlp_(pattern, token_results, refined_results, docid);
+    //cout << "pattern: " << pattern << " docid :" << docid << " sum_score:" << sum_score << endl;
+}
+
+double ProductTokenizer::GetTokenResultsByKNlp_(
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& token_results,
+        UString& refined_results,
+        docid_t docid)
+{
+    std::string newPattern;
+    std::string minor_pattern;
+    std::vector<std::string> product_model;
+    sf1r::QueryNormalizer::get()->getProductTypes(pattern, product_model, minor_pattern);
+
+    KNlpWrapper::token_score_list_t tokenScores;
+    KNlpWrapper::token_score_list_t product_modelScores;
+    KNlpWrapper::token_score_list_t minor_patternScore;
+
+    KNlpWrapper::string_t kstr(pattern);
+    KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
+
+    ///deal with "书籍杂志" category
+    std::string classifyCategory;
+     try
+    {
+        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+        KNlpWrapper::string_t classifyKStr;
+        if (docid == 0)
+        {
+            classifyCategory = knlpWrapper->classifyToBestCategory(pattern);
+        }
+        else
+        {
+            if (categoryClassifyTable_ != NULL)
+            {
+                classifyCategory = categoryClassifyTable_->getCategoryNoLock(docid).first;
+                //cout << "classifyCategory: " << classifyCategory <<endl; 
+            }
+        }
+    }
+    catch(std::exception& ex)
+    {
+        LOG(ERROR) << "exception: " << ex.what();
+    }
+    
+    if (classifyCategory == "文娱>书籍杂志" || classifyCategory == "文娱>音像影视")
+    {
+        std::map<UString, double> tokenScoreMap_cat;
+        std::list<std::pair<UString, double> > token_results_book;
+        std::list<std::pair<UString, double> > token_results_book_minor;
+        if (!minor_pattern.empty())
+            GetTokenResultsByCMA_(minor_pattern, token_results_book_minor, refined_results);
+        GetTokenResultsByCMA_(pattern, token_results_book, refined_results);
+        double sum_score = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = token_results_book_minor.begin(); i != token_results_book_minor.end(); ++i)
+        {
+            i->second = (i->second)/200;
+            if(tokenScoreMap_cat.insert(*i).second)
+                sum_score += i->second;
+        }
+        for (std::list<std::pair<UString, double> >::iterator i = token_results_book.begin(); i != token_results_book.end(); ++i)
+        {
+            if (tokenScoreMap_cat.insert(*i).second)
+                sum_score += i->second;
+        }
+        for (std::map<UString, double>::iterator i = tokenScoreMap_cat.begin(); i != tokenScoreMap_cat.end(); ++i)
+        {
+            token_results.push_back(std::make_pair(i->first, i->second/sum_score));  
+        }
+        return sum_score;
+    }
+    ///deal with "书籍杂志" category end;
+
+    if (!minor_pattern.empty())
+    {
+        KNlpWrapper::string_t kmstr(minor_pattern);
+        KNlpWrapper::get()->fmmTokenize(kmstr, minor_patternScore);
+    }
+
+    std::vector<KNlpWrapper::string_t> t_product_model;
+    for (std::vector<std::string>::iterator i = product_model.begin(); i != product_model.end(); ++i)
+    {
+        KNlpWrapper::string_t kpmstr(*i);
+        t_product_model.push_back(kpmstr);
+    }
+
+    double scoreSum = 0;
+    KNlpWrapper::token_score_map_t tokenScoreMap;
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+        scoreSum += it->second;
+
+    for (KNlpWrapper::token_score_list_t::iterator it =
+             minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
+    {
+        scoreSum -= it->second;
+        scoreSum += (it->second/200);
+    }
+
+    std::ostringstream oss;
+    if (product_model.size() == 1)
+    {
+        product_modelScores.push_back(std::make_pair(t_product_model[0], scoreSum/5));
+    }
+    else if (product_model.size() == 2)
+    {
+        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/8));
+    }
+    else if (product_model.size() == 3)
+    {
+        for (std::vector<KNlpWrapper::string_t>::iterator i = t_product_model.begin(); i != t_product_model.end(); ++i)
+            product_modelScores.push_back(std::make_pair(*i, scoreSum/12));
+    }
+
+    scoreSum = 0;
+
+    /// add all term and its score;
+    for (KNlpWrapper::token_score_list_t::iterator it =
+             minor_patternScore.begin(); it != minor_patternScore.end(); ++it)
+    {
+        it->second /= 200;
+        tokenScoreMap.insert(*it);
+        scoreSum += it->second;
+    }
+
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             product_modelScores.begin(); it != product_modelScores.end(); ++it)
+    {
+        if(tokenScoreMap.insert(*it).second)
+            scoreSum += it->second;
+    }
+
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+    {
+        if(tokenScoreMap.insert(*it).second)
+            scoreSum += it->second;
+    }
+
+    //maxScore = 0;
+    for (KNlpWrapper::token_score_map_t::const_iterator it =
+             tokenScoreMap.begin(); it != tokenScoreMap.end(); ++it)
+    {
+        std::string str = it->first.get_bytes("utf-8");
+        UString ustr(str, UString::UTF_8);
+        double score = it->second / scoreSum;
+        token_results.push_back(std::make_pair(ustr, score));
+        oss << str << " ";
+    }
+
+    refined_results.assign(oss.str(), UString::UTF_8);
+    return scoreSum;
 }
 
 bool ProductTokenizer::GetTokenResultsByCMA_(
@@ -314,14 +494,15 @@ bool ProductTokenizer::GetTokenResultsByCMA_(
         UString& refined_results)
 {
     Sentence pattern_sentence(pattern.c_str());
+
     analyzer_->runWithSentence(pattern_sentence);
-    LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
+    //LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); ++i)
     {
-        printf("%s, ", pattern_sentence.getLexicon(0, i));
+        //printf("%s, ", pattern_sentence.getLexicon(0, i));
         token_results.push_back(std::make_pair(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8), (double)2.0));
     }
-    cout << endl;
+    //cout << endl;
 
     if (!token_results.empty())
     {
@@ -332,13 +513,13 @@ bool ProductTokenizer::GetTokenResultsByCMA_(
         }
     }
 
-    LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
+    //LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
     for (int i = 0; i < pattern_sentence.getCount(1); i++)
     {
-        printf("%s, ", pattern_sentence.getLexicon(1, i));
+        //printf("%s, ", pattern_sentence.getLexicon(1, i));
         token_results.push_back(std::make_pair(UString(pattern_sentence.getLexicon(1, i), UString::UTF_8), (double)1.0));
     }
-    cout << endl;
+    //cout << endl;
 
     return true;
 }

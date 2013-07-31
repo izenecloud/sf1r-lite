@@ -7,6 +7,7 @@ using namespace sf1r;
 ProductScoreConfig::ProductScoreConfig()
     : type(PRODUCT_SCORE_NUM)
     , weight(0)
+    , isDebug(false)
 {}
 
 std::string ProductScoreConfig::toStr() const

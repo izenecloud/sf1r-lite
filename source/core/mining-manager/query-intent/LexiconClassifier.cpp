@@ -139,6 +139,7 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
     std::size_t end = query.size();
     bool ret = false;
     bool isBreak = false;
+    std::string removedWords = "";
 
     while ((pos < end) && (!isBreak))
     {
@@ -158,9 +159,12 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
         boost::unordered_map<std::string, std::string>::iterator it = lexicons_.find(word);
         if (lexicons_.end() != it)
         {
+            removedWords += " ";
+            removedWords += word;
+            
             word = it->second;
             wmvs[*keyPtr_].push_back(make_pair(word, 1));
-            query.erase(pos, found-pos+1);
+            query.erase(pos, size);
             ret = true;
         }
         else
@@ -168,7 +172,8 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
             pos = found+1;
         }
     }
-
+    reserveKeywords(wmvs[*keyPtr_], removedWords);
+    
     return ret;
 
     /*size_t pos = 0;

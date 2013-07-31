@@ -9,6 +9,7 @@
 #define SF1R_PRODUCT_RANK_PARAM_H
 
 #include <common/inttypes.h>
+#include <query-manager/SearchingEnumerator.h>
 #include <vector>
 
 namespace sf1r
@@ -26,16 +27,20 @@ struct ProductRankParam
 
     const std::string& query_;
 
+    SearchingMode::SearchingModeType searchMode_;
+
     ProductRankParam(
         std::vector<docid_t>& docIds,
         std::vector<score_t>& topKScores,
         bool isRandomRank,
-        const std::string& query)
+        const std::string& query,
+        SearchingMode::SearchingModeType searchMode)
         : docIds_(docIds)
         , topKScores_(topKScores)
         , docNum_(docIds.size())
         , isRandomRank_(isRandomRank)
         , query_(query)
+        , searchMode_(searchMode)
     {}
 
     bool isValid() const

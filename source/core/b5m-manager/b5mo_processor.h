@@ -8,6 +8,7 @@
 //#include "brand_db.h"
 #include "product_matcher.h"
 #include "b5mo_sorter.h"
+#include "original_mapper.h"
 //#include "history_db_helper.h"
 
 namespace sf1r {
@@ -27,6 +28,10 @@ namespace sf1r {
 
     private:
 
+        void ProcessIU_(Document& doc, bool force_match = false);
+
+        bool OMap_(const OriginalMapper& omapper, Document& doc) const;
+
     private:
         OfferDb* odb_;
         ProductMatcher* matcher_;
@@ -34,6 +39,7 @@ namespace sf1r {
         std::string ts_;
         std::string last_ts_;
         B5moSorter* sorter_;
+        OriginalMapper* omapper_;
         int mode_;
         std::string human_match_file_;
         boost::unordered_set<std::string> mobile_source_;

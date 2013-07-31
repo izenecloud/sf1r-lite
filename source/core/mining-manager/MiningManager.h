@@ -104,6 +104,8 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class CategoryClassifyTable;
+class TitleScoreList;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
@@ -111,6 +113,7 @@ class IncrementalFuzzyManager;
 class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
+class MultiThreadMiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
@@ -464,6 +467,16 @@ public:
         return productScoreManager_;
     }
 
+    CategoryClassifyTable* GetCategoryClassifyTable()
+    {
+        return categoryClassifyTable_;
+    }
+
+    TitleScoreList* GetTitleScoreList()
+    {
+        return titleScoreList_;
+    }
+
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
@@ -586,9 +599,15 @@ private:
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
     bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
+    bool initCategoryClassifyTable_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+    bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
 
+    void StartSynonym_(ProductMatcher* matcher, const std::string& path);
+    void UpdateSynonym_(ProductMatcher* matcher, const std::string& path);
+    void RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path);
+    
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;
@@ -689,6 +708,12 @@ private:
     /** Product Score Table Manager */
     ProductScoreManager* productScoreManager_;
 
+    /** Table stores one classified category for each doc */
+    CategoryClassifyTable* categoryClassifyTable_;
+
+    /** list stores all the documents' productTokenizer score*/
+    TitleScoreList* titleScoreList_;
+
     /** the knowledge of top labels for category boosting */
     GroupLabelKnowledge* groupLabelKnowledge_;
 
@@ -726,7 +751,15 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+
+    /** MultiThreadMiningTaskBuilder */
+    MultiThreadMiningTaskBuilder* multiThreadMiningTaskBuilder_;
+
     izenelib::util::CronExpression cronExpression_;
+    
+    static bool startSynonym_;
+    long lastModifiedTime_;
+    
 #if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
 #else

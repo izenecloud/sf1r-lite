@@ -312,10 +312,13 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
         return relevanceScorerPtr.release();
 
     ProductScoreParam scoreParam(actionItem.env_.normalizedQueryString_,
+                                 actionItem.env_.queryString_,
                                  actionItem.env_.querySource_,
                                  actionItem.groupParam_.boostGroupLabels_,
                                  propSharedLockSet,
-                                 relevanceScorerPtr.release());
+                                 relevanceScorerPtr.release(),
+                                 actionItem.searchingMode_.mode_,
+                                 actionItem.queryScore_);
     return productScorerFactory_->createScorer(scoreParam);
 }
 

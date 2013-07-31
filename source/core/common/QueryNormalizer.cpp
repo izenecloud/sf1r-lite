@@ -216,9 +216,9 @@ bool QueryNormalizer::isProductType(const std::string &str)
 }
 
 void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std::string>& productTypes,
-                                std::string& newquery)
+                                std::string& minorQuery)
 {
-    std::cout << "DO GET PRODUCT MODEL..." << std::endl;
+    //std::cout << "DO GET PRODUCT MODEL..." << std::endl;
     std::vector<std::string> tokens;
 
     std::string majorQuery;
@@ -240,28 +240,25 @@ void QueryNormalizer::getProductTypes(const std::string & query, std::vector<std
     getProductTypesForApple(majorQuery, finalMajorQuery, productTypes);
     ///std::cout << "finalMajorQuery" <<  finalMajorQuery<< std::endl;
 
-    tokenizeQuery(finalMajorQuery, tokens);
+    tokenizeQuery(majorQuery, tokens);
 
     for (std::vector<std::string>::iterator i = tokens.begin(); i != tokens.end(); ++i)
     {
         if (isProductType(*i) && i->size() > PRODUCT_MODEL_SIZE)
             productTypes.push_back(*i);
-        else
+        /*else
         {
             newquery += *i;
             newquery += " ";
-        }
+        }*/
     }
     std::sort(productTypes.begin(), productTypes.end());
-    productTypes.erase(std::unique(productTypes.begin(), productTypes.end()), productTypes.end());
-    
+
     if (!minorQuery_k.empty() || !minorQuery_p.empty())
     {
-        newquery += "(";
-        newquery += minorQuery_k;
-        newquery += " ";
-        newquery += minorQuery_p;
-        newquery += ")";
+        minorQuery += minorQuery_k;
+        minorQuery += " ";
+        minorQuery += minorQuery_p;
     }
 }
 
@@ -413,7 +410,7 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     std::vector<std::string> types;
 
     types.push_back("iphone");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("iphone 4 ", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone4 ", kEncodeType),types));
     
@@ -425,26 +422,26 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     
     types.clear();
     types.push_back("iphone");
-    types.push_back("5");
+    types.push_back("5 ");
     umajorAppleType.push_back(AppleType(UString("iphone 5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("iphone5", kEncodeType),types));
 
     //ipad
     types.clear();
     types.push_back("ipad");
-    types.push_back("5");
+    types.push_back("2 ");
     umajorAppleType.push_back(AppleType(UString("ipad2", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 2", kEncodeType),types));
 
     types.clear();
     types.push_back("ipad");
-    types.push_back("3");
+    types.push_back("3 ");
     umajorAppleType.push_back(AppleType(UString("ipad3", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 3", kEncodeType),types));
 
     types.clear();
     types.push_back("ipad");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("ipad4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("ipad 4", kEncodeType),types));
 
@@ -457,16 +454,62 @@ void QueryNormalizer::getProductTypesForApple(const std::string& query, std::str
     //itouch
     types.clear();
     types.push_back("itouch");
-    types.push_back("4");
+    types.push_back("4 ");
     umajorAppleType.push_back(AppleType(UString("itouch4", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 4", kEncodeType),types));
 
 
     types.clear();
     types.push_back("itouch");
-    types.push_back("5");
+    types.push_back("5 ");
     umajorAppleType.push_back(AppleType(UString("itouch5", kEncodeType),types));
     umajorAppleType.push_back(AppleType(UString("itouch 5", kEncodeType),types));
+
+    types.clear();
+    types.push_back("ipod itouch");
+    types.push_back("4");
+    umajorAppleType.push_back(AppleType(UString("ipod touch4", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipod touch 4", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipodtouch 4", kEncodeType),types));
+
+    types.clear();
+    types.push_back("ipod itouch");
+    types.push_back("5");
+    umajorAppleType.push_back(AppleType(UString("ipod touch5", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipod touch 5", kEncodeType),types));
+    umajorAppleType.push_back(AppleType(UString("ipodtouch 5", kEncodeType),types));
+
+    //nokia
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("720");
+    umajorAppleType.push_back(AppleType(UString("lumia 720", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("520");
+    umajorAppleType.push_back(AppleType(UString("lumia 520", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("920");
+    umajorAppleType.push_back(AppleType(UString("lumia 920", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("800");
+    umajorAppleType.push_back(AppleType(UString("lumia 800", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("900");
+    umajorAppleType.push_back(AppleType(UString("lumia 900", kEncodeType),types));
+    
+    types.clear();
+    types.push_back("lumia");
+    types.push_back("925");
+    umajorAppleType.push_back(AppleType(UString("lumia 925", kEncodeType),types));
+
 
     unsigned char bitmap[32];
     for (int i = 0; i < 32; ++i)
