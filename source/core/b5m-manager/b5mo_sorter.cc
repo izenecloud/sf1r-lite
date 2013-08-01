@@ -194,6 +194,7 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     for(uint32_t i=0;i<docs.size();i++)
     {
         const Value& v = docs[i];
+        //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
         const ScdDocument& doc = v.doc;
         ODocMerge_(odocs, doc);
         if(v.ts<ts_)
