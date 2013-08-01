@@ -1357,7 +1357,7 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
 //   if (pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
     if (true)
     {
-        std::cout << "Start to compute similarity index, please wait..."<< std::endl;
+        LOG(INFO) << "Start to compute similarity index, please wait..."<< std::endl;
         // we should be able get information from index manager by property name only
         std::vector<uint32_t> property_ids(property_names.size());
         PropertyConfigBase property_config;
@@ -1382,9 +1382,9 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
 
         for (size_t i = 0; i < property_ids.size(); i++)
         {
-            std::cout << "SIM Getting property: " << property_names[i] << std::endl;
+            LOG(INFO) << "SIM Getting property: " << property_names[i] << std::endl;
             float fieldAveLength=pIndexReader->getAveragePropertyLength(property_ids[i]);
-            std::cout<<"Average Length: "<<fieldAveLength<<std::endl;
+            LOG(INFO) <<"Average Length: "<<fieldAveLength<<std::endl;
             boost::shared_ptr<base_reader_type> reader(new base_reader_type(
                         miningConfig_.similarity_param.termnum_limit,
                         miningConfig_.similarity_param.docnum_limit,
@@ -1400,7 +1400,7 @@ bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* 
 
         similarityIndex_->index(readers, pIndexReader->numDocs());
 
-        std::cout << "Finish computing similarity index." << std::endl;
+        LOG(INFO) << "Finish computing similarity index." << std::endl;
     }
     return true;
 }
