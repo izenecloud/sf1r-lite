@@ -791,7 +791,7 @@ void SF1Config::parseServiceMaster(const ticpp::Element * service, Sf1rNodeMaste
             }
         }
 
-        downCase(masterCollection.name_);
+        //downCase(masterCollection.name_);
         service_info.collectionList_.push_back(masterCollection);
     }
     sf1rNodeMaster.masterServices_[service_info.serviceName_] = service_info;
@@ -806,7 +806,7 @@ void SF1Config::parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorke
     {
         std::string collection;
         getAttribute(collection_it.Get(), "name", collection);
-        downCase(collection);
+        //downCase(collection);
         service_info.collectionList_.push_back(collection);
     }
     sf1rNodeWorker.workerServices_[service_info.serviceName_] = service_info;

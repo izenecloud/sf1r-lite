@@ -32,7 +32,6 @@ bool TitleScoreList::saveDocumentScore(unsigned int last_doc)
     fstream fout_txt;
     fout.open(documentScorePath.c_str(), ios::app | ios::out | ios::binary);
     fout_size.open(documentNumPath.c_str(), ios::out | ios::binary);
-    fout_txt.open(documenttxt.c_str(), ios::out);
 
     if(fout_size.is_open())
     {
@@ -48,13 +47,17 @@ bool TitleScoreList::saveDocumentScore(unsigned int last_doc)
         lastDocScoreDocid_ = last_doc;
     }
 
-    if(fout_txt.is_open())
+    if (isDebug_ == true)
     {
-        for (unsigned int i = 1; i < last_doc + 1; ++i)
+        fout_txt.open(documenttxt.c_str(), ios::out);
+        if(fout_txt.is_open())
         {
-            fout_txt << "docid:" << i << " score:" << document_Scores_[i] << endl;
+            for (unsigned int i = 1; i < last_doc + 1; ++i)
+            {
+                fout_txt << "docid:" << i << " score:" << document_Scores_[i] << endl;
+            }
+            fout_txt.close();
         }
-        fout_txt.close();
     }
 
     return true;
@@ -88,8 +91,6 @@ bool TitleScoreList::loadDocumentScore()
         }
         fin.close();
     }
-    else
-        LOG (WARNING) << "open DocumentScore file failed";
 
     if (document_Scores_.size() != lastDocScoreDocid_ + 1)
         return false;
@@ -135,9 +136,9 @@ bool TitleScoreList::insert(unsigned int index, double value)
 
 double TitleScoreList::getScore(unsigned int index)
 {
-    if (index < document_Scores_.size())
+    if (index < lastDocScoreDocid_ && index < document_Scores_.size())
         return document_Scores_[index];
-    return -1;
+    return 0;
 }
 
 docid_t TitleScoreList::getLastDocId_()
