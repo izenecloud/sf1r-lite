@@ -2318,6 +2318,12 @@ bool MiningManager::GetSuffixMatch(
         rank_boundary = std::max(rank_boundary, 0.7);
         rank_boundary = std::min(rank_boundary, 0.85);
         */
+
+        if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == false)
+        {
+            rank_boundary = 0;
+        }
+
         LOG(INFO) << " Rank boundary: " << rank_boundary;
 
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
