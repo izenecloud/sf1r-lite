@@ -15,7 +15,7 @@ namespace
 {
 const std::string kOriginalCategoryPropName("Category");
 const std::string kSourcePropName("Source");
-const std::string kClassifyCategoryValueBook("R>文娱>书籍杂志");
+const std::string kClassifyCategoryValueBook("文娱>书籍杂志");
 
 void getDocPropValue(
     const Document& doc,
@@ -120,7 +120,10 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
             titlePrice << "[[" << pricePair.second << "]]";
         }
 
-        classifyCategory = knlpWrapper->classifyToBestCategory(titlePrice.str());
+        KNlpWrapper::category_score_map_t categoryScoreMap =
+            knlpWrapper->classifyToMultiCategories(titlePrice.str(), true);
+
+        classifyCategory = knlpWrapper->getBestCategory(categoryScoreMap);
         isRule = false;
         return true;
     }

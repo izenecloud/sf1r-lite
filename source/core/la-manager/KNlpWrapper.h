@@ -48,9 +48,11 @@ public:
      */
     void fmmTokenize(const string_t& str, token_score_list_t& tokenScores);
 
-    std::string classifyToBestCategory(const std::string& str);
+    category_score_map_t classifyToMultiCategories(
+        const std::string& str,
+        bool isLongStr);
 
-    category_score_map_t classifyToMultiCategories(const std::string& str);
+    std::string getBestCategory(const category_score_map_t& categoryScoreMap);
 
     std::string mapFromOriginalCategory(const std::string& originalCategory);
 
@@ -77,7 +79,9 @@ private:
 
     boost::scoped_ptr<ilplib::knlp::GarbagePattern> garbagePattern_;
 
-    boost::scoped_ptr<ilplib::knlp::MaxentClassify> maxentClassify_;
+    boost::scoped_ptr<ilplib::knlp::MaxentClassify> longStrClassifier_;
+
+    boost::scoped_ptr<ilplib::knlp::MaxentClassify> shortStrClassifier_;
 };
 
 } // namespace sf1r
