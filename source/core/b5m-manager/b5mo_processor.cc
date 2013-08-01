@@ -184,6 +184,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     //doc.getProperty("Title", title);
     std::string title;
     doc.getString("Title", title);
+    if(!title.empty())
+    {
+        force_match = true;
+    }
     //std::string stitle = propstr_to_str(title);
     //brand.convertString(sbrand, UString::UTF_8);
     //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
@@ -400,6 +404,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
                         writer->Append(value.doc, value.doc.type);
                     }
                     ifs.close();
+                    odb_->flush();
                 }
             }
 

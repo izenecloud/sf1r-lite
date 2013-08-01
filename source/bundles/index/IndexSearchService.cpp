@@ -182,6 +182,7 @@ bool IndexSearchService::getInternalDocumentId(
     if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
+        internalId = net::aggregator::Util::GetWDocId(searchAggregator_->getLocalWorker(), (uint32_t)internalId);
     }
     else
     {

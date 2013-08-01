@@ -33,6 +33,8 @@ private:
     const CategoryClassifyTable& categoryClassifyTable_;
 
     const CategoryScoreMap categoryScoreMap_;
+
+    bool hasGoldCategory_;
 };
 
 } // namespace sf1r
