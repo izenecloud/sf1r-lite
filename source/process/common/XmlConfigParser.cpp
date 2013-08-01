@@ -1146,7 +1146,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     int64_t memorypool = 0;
     params.Get<int64_t>("IndexStrategy/memorypoolsize", memorypool);
     indexmanager_config.indexStrategy_.memory_ = memorypool;
-    indexmanager_config.indexStrategy_.indexDocLength_ = true;
+    indexmanager_config.indexStrategy_.indexDocLength_ = false;
     indexmanager_config.indexStrategy_.skipInterval_ = 8;
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
@@ -1174,6 +1174,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get("CollectionDataDirectory", directories);
     params.Get("IndexStrategy/logcreateddoc", indexBundleConfig.logCreatedDoc_);
     params.Get("IndexStrategy/autorebuild", indexBundleConfig.isAutoRebuild_);
+    params.Get("IndexStrategy/indexdoclength", indexmanager_config.indexStrategy_.indexDocLength_);
 
     if (!directories.empty())
     {
@@ -2646,12 +2647,12 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
 
     // handle exceptions
     //
-    if (!bFilter && analyzer.empty())
-    {
-        stringstream msg;
-        msg << propertyConfig.getName() << ": filter=\"yes/no\" or analyzer=\"\" required.";
-        throw XmlConfigParserException(msg.str());
-    }
+    //if (!bFilter && analyzer.empty())
+    //{
+    //    stringstream msg;
+    //    msg << propertyConfig.getName() << ": filter=\"yes/no\" or analyzer=\"\" required.";
+    //    throw XmlConfigParserException(msg.str());
+    //}
 
     if (propertyConfig.propertyType_ != STRING_PROPERTY_TYPE && !analyzer.empty())
     {
