@@ -2729,6 +2729,8 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
     if (titleRevelanceConfig.weight ==0)
         return true;
 
+    if (titleScoreList_) delete titleScoreList_;
+    
     const bfs::path parentDir(collectionDataPath_);
     const bfs::path TitleScorerDir(parentDir / "title_scorer");
     bfs::create_directories(TitleScorerDir);
