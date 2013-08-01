@@ -421,7 +421,7 @@ public:
             ss << "------------------------------------------------" << endl;
             for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].values_.begin();
                     iter != filteringList_[i].values_.end(); iter++ )
-                ss << *iter << endl;
+                ss << *iter << ", type:" << iter->which() << endl;
             ss << "------------------------------------------------" << endl;
         }
         ss << "------------------------------------------------" << endl;
