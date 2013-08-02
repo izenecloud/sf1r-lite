@@ -2413,8 +2413,17 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
+        bool isItemCount = false;
+        for (std::vector<QueryFiltering::FilteringType>::const_iterator i = filter_param.begin(); i != filter_param.end(); ++i)
+        {
+            if (i->property_ == "itemcount" && i->operation_ == GREATER_THAN)
+            {
+                isItemCount = true;
+            }
+        }
+
         searchManager_->fuzzySearchRanker_.rankByProductScore(
-            actionOperation.actionItem_, res_list);
+            actionOperation.actionItem_, res_list, isItemCount);
 
         if ((groupManager_ || attrManager_) && groupFilterBuilder_)
         {

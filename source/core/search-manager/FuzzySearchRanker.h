@@ -47,7 +47,8 @@ public:
 
     void rankByProductScore(
         const KeywordSearchActionItem& actionItem,
-        std::vector<ScoreDocId>& resultList);
+        std::vector<ScoreDocId>& resultList,
+        bool isCompare = false);
 
     /** rank by property value such Price */
     void rankByPropValue(
