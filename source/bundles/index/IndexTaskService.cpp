@@ -83,7 +83,7 @@ bool IndexTaskService::HookDistributeRequestForIndex()
     return ret;
 }
 
-bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
+bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, bool disable_sharding)
 {
     bool result = true;
 
@@ -106,12 +106,15 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
     {
         if (DistributeRequestHooker::get()->isHooked())
         {
-            if (DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+            if (DistributeRequestHooker::get()->getHookType() == Request::FromDistribute &&
+                !disable_sharding)
             {
                 result = distributedIndex_(numdoc, scd_path);
             }
             else
             {
+                if (disable_sharding)
+                    LOG(INFO) << "==== The sharding is disabled! =====";
                 //if (DistributeFileSys::get()->isEnabled())
                 //{
                 //    // while dfs enabled, the master will shard the scd file under the main scd_path
@@ -371,14 +374,8 @@ bool IndexTaskService::distributedIndexImpl_(
 
     if (!DistributeFileSys::get()->isEnabled())
         scd_dir = bundleConfig_->indexSCDPath();
-    //else
-    //{
-    //    std::string myshard;
-    //    myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
-    //    scd_dir = (bfs::path(scd_dir)/bfs::path(DISPATCH_TEMP_DIR + myshard)).string();
-    //}
+
     bool ret = true;
-    
     // starting local index.
     indexWorker_->index(scd_dir, numdoc, ret);
 

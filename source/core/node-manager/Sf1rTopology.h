@@ -470,6 +470,7 @@ public:
     void rescanRelatedShardNodes()
     {
         all_shard_nodes_.clear();
+        all_shard_nodes_.insert(curNode_.nodeId_);
         const std::vector<MasterCollection>& coll_list = curNode_.master_.getMasterCollList(Sf1rTopology::getServiceName(SearchService));
         for(size_t i = 0; i < coll_list.size(); ++i)
         {
