@@ -51,12 +51,11 @@ ProductRankerFactory::ProductRankerFactory(
 
 ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param)
 {
+    const bool diverseInPage = isDiverseInPage_(param);
     std::auto_ptr<ProductRanker> ranker(
         new ProductRanker(param, config_.isDebug));
 
-    const bool isLongQuery = QueryNormalizer::get()->isLongQuery(param.query_);
-
-    addCategoryEvaluator_(*ranker, isLongQuery);
+    addCategoryEvaluator_(*ranker, diverseInPage);
 
     if (param.isRandomRank_)
     {
@@ -64,7 +63,7 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     }
     else
     {
-        addOfferItemCountEvaluator_(*ranker, isLongQuery);
+        addOfferItemCountEvaluator_(*ranker, diverseInPage);
         addDiversityEvaluator_(*ranker);
         addMerchantScoreEvaluator_(*ranker);
     }
@@ -72,11 +71,19 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     return ranker.release();
 }
 
-void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isLongQuery) const
+bool ProductRankerFactory::isDiverseInPage_(const ProductRankParam& param) const
 {
-    const score_t minWeight = minCustomCategoryWeight(config_);
+    return param.searchMode_ == SearchingMode::SUFFIX_MATCH ||
+        QueryNormalizer::get()->isLongQuery(param.query_);
+}
 
-    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isLongQuery));
+void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
+{
+    const score_t minWeight = isDiverseInPage ?
+        config_.scores[CUSTOM_SCORE].weight :
+        minCustomCategoryWeight(config_);
+
+    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isDiverseInPage));
 }
 
 void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
@@ -87,9 +94,9 @@ void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
     ranker.addEvaluator(new RandomScoreEvaluator);
 }
 
-void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker, bool isLongQuery) const
+void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    if (!offerItemCountTable_ || isLongQuery)
+    if (!offerItemCountTable_ || isDiverseInPage)
         return;
 
    ranker.addEvaluator(new OfferItemCountEvaluator(offerItemCountTable_));

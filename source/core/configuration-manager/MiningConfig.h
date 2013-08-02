@@ -259,6 +259,26 @@ private:
     }
 };
 
+/**
+ * @brief for configuration <MiningTaskPara>
+ */
+class MiningTaskPara
+{
+public:
+    std::size_t threadNum;
+
+    MiningTaskPara() : threadNum(1) {}
+
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & threadNum;
+    }
+};
+
 class MiningConfig
 {
 
@@ -303,6 +323,8 @@ public:
     QueryCorrectionPara query_correction_param;
 
     ProductRankingPara product_ranking_param;
+
+    MiningTaskPara mining_task_param;
 };
 
 } // namespace

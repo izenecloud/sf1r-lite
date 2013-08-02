@@ -1,4 +1,5 @@
 #include <mining-manager/suffix-match-manager/ProductTokenizer.h>
+#include <la-manager/KNlpWrapper.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 
@@ -32,6 +33,8 @@ static const char* Attribute [] = {
     "def"
 };
 
+static const char* KNLP_DICT_DIR = "../package/resource/dict/term_category";
+
 void BuildDict(const std::string& home)
 {
     {
@@ -62,6 +65,13 @@ void BuildDict(const std::string& home)
         ofs << Attribute[i] << std::endl;
      ofs.close();
     }
+}
+
+void LoadKnlpDict(const std::string& dir)
+{
+    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+    knlpWrapper->setDictDir(dir);
+    BOOST_REQUIRE(knlpWrapper->loadDictFiles());
 }
 
 namespace sf1r{
@@ -208,6 +218,7 @@ BOOST_AUTO_TEST_CASE(tokenize)
     boost::filesystem::remove_all(dict_dir);
     bfs::create_directories(dict_dir);
     BuildDict(DIR_PREFIX);
+    LoadKnlpDict(KNLP_DICT_DIR);
 
     ProductTokenizer tokenizer(ProductTokenizer::TOKENIZER_DICT,DIR_PREFIX);
     ProductTokenizerTest test(tokenizer);

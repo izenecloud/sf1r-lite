@@ -3,10 +3,15 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <icma/icma.h>
+#include <la-manager/KNlpWrapper.h>
 #include <la-manager/LAPool.h>
 #include <mining-manager/util/split_ustr.h>
+#include <util/ustring/UString.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
+#include "ProductTokenizer.h"
+#include <fstream>
+#include <boost/lexical_cast.hpp>
 namespace sf1r
 {
 
@@ -55,7 +60,8 @@ bool SuffixMatchMiningTask::preProcess()
 
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
-        if (last_docid == document_manager_->getMaxDocId())
+
+        if (last_docid == document_manager_->getMaxDocId()) 
         {
             // check if there is any new deleted doc.
             std::vector<size_t> doclen_list(del_docid_list.size(), 0);
@@ -131,7 +137,7 @@ bool SuffixMatchMiningTask::preProcess()
 bool SuffixMatchMiningTask::postProcess()
 {
     if (!is_incrememtalTask_)
-    {    
+    {   
         if (need_rebuild && !new_fmi_manager->buildCollectionAfter())
             return false;
         new_filter_manager->setRebuildFlag(filter_manager_.get());

@@ -48,7 +48,8 @@ namespace NQI   //NamespaceQueryIntent
     bool calculateWeight(WVType& lv, WVType& rv);
     bool calculateWeight(WVType& wv, ValueType& v);
     
-    void combineWMVS(WMVContainer& wmvs, std::string& remainKeywords);
+    //void combineWMVS(WMVContainer& wmvs, std::string& remainKeywords);
+    void combineWMVS(WMVContainer& wmvs, boost::unordered_map<std::string, std::list<std::string> >& scs, std::string& remainKeywords);
     bool combineWMV(WMVType& wmv, int number);
     bool commonAncester(WMVType& wmv, int number);
     void printWMV(WMVType& wmv);

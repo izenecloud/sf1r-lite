@@ -36,7 +36,8 @@ bool TopKReranker::rerank(
         ProductRankParam rankParam(resultItem.topKDocs_,
                                    resultItem.topKRankScoreList_,
                                    actionItem.isRandomRank_,
-                                   actionItem.env_.normalizedQueryString_);
+                                   actionItem.env_.normalizedQueryString_,
+                                   actionItem.searchingMode_.mode_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankParam));

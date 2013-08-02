@@ -45,7 +45,7 @@ public:
 
     int priority()
     {
-        return 0;
+        return 1;
     }
 private:
     TrieContainer trie_;

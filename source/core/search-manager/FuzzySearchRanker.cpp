@@ -14,12 +14,14 @@
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <iostream>
 
 using namespace sf1r;
 
 FuzzySearchRanker::FuzzySearchRanker(SearchManagerPreProcessor& preprocessor)
     : preprocessor_(preprocessor)
     , fuzzyScoreWeight_(0)
+    , isCategoryClassify_(false)
     , customRankManager_(NULL)
 {
 }
@@ -32,7 +34,8 @@ void FuzzySearchRanker::setFuzzyScoreWeight(const ProductRankingConfig& rankConf
 
 void FuzzySearchRanker::rankByProductScore(
     const KeywordSearchActionItem& actionItem,
-    std::vector<ScoreDocId>& resultList)
+    std::vector<ScoreDocId>& resultList,
+    bool isCompare)
 {
     PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<ProductScorer> productScorer(
@@ -41,7 +44,7 @@ void FuzzySearchRanker::rankByProductScore(
     if (!productScorer)
         return;
 
-    std::set<docid_t> excludeDocIds;
+std::set<docid_t> excludeDocIds;
     getExcludeDocIds_(actionItem.env_.normalizedQueryString_,
                       excludeDocIds);
 
@@ -55,15 +58,44 @@ void FuzzySearchRanker::rankByProductScore(
         if (excludeDocIds.find(docId) != excludeDocIds.end())
             continue;
 
-        double fuzzyScore = resultList[i].first * fuzzyScoreWeight_;
+        double fuzzyScore = resultList[i].first;
         double productScore = productScorer->score(docId);
 
+        if (isCategoryClassify_)
+        {
+            // ignore the docs with zero category score
+            if (isCompare)
+            {
+                if (productScore < 0.9)
+                    continue;
+            }
+            else
+            {
+                if (productScore < 0.00009)
+                    productScore = -1;
+            }
+           
+            fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
+        }
+
         resultList[i].first = fuzzyScore + productScore;
+        //cout << "fuzzyScore:" << fuzzyScore << " productScore" << productScore<< endl;
         resultList[current++] = resultList[i];
     }
 
     resultList.resize(current);
     std::sort(resultList.begin(), resultList.end(), std::greater<ScoreDocId>());
+
+
+    if (resultList.size() > 0)
+    {
+        unsigned int topPrintDocNum = 5;
+        std::cout << "The top fuzzyScore is:" << std::endl;
+        for (unsigned int i = 0; i < topPrintDocNum && i < resultList.size(); ++i)
+        {
+            std::cout << resultList[i].first << std::endl;
+        }
+    }
 
     if (current == count)
     {

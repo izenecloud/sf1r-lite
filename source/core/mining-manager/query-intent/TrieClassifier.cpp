@@ -149,6 +149,18 @@ void TrieClassifier::loadLexicon()
                     category += NODE_DELIMITER;
                     category += word;
                 }
+                
+                //only leaf node
+                if (FORMAT_LSB == words.front())
+                {
+                    std::queue<std::string> ws(words);
+                    ws.pop();
+                    if (FORMAT_RSB != ws.front())
+                    {
+                        continue;
+                    }
+                }
+
                 TrieIterator it = trie_.find(word);
                 if (trie_.end() == it)
                 {
@@ -226,7 +238,7 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
     std::string removedWords = "";
     while ((pos < query.size()) && (!isBreak))
     {
-        std::size_t found = query.find(KEYWORD_DELIMITER, pos);
+        /*std::size_t found = query.find(KEYWORD_DELIMITER, pos);
         std::size_t size = 0;
         if (std::string::npos == found)
         {
@@ -237,9 +249,11 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
         {
             size = found - pos;
         }
-        std::string word = query.substr(pos, size);
+        std::string word = query.substr(pos, size);*/
+        std::string word = query;
+        std::size_t size = query.size();
 
-        std::list<std::string>::iterator voter = voters.begin();
+        /*std::list<std::string>::iterator voter = voters.begin();
         for (; voter != voters.end(); voter++)
         {
             if (*voter == word)
@@ -259,7 +273,7 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
         {
             pos = found+1;
             continue;
-        }
+        }*/
 
         TrieIterator it = trie_.find(word);
         if (trie_.end() != it)
@@ -312,8 +326,9 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
             {
                 voters.push_back(word);
             }
-            pos = found+1;
+            //pos = found+1;
         }
+        break;
     }
     
     //std::cout<<"vote begin\n";

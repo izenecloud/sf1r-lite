@@ -1,5 +1,4 @@
 #include "ProductScoreSum.h"
-
 using namespace sf1r;
 
 ProductScoreSum::ProductScoreSum(const ProductScoreConfig& config)

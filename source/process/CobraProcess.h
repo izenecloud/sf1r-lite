@@ -21,6 +21,8 @@ public:
     bool initialize(const std::string& configFileDir);
 
 private:
+    bool initKNlpWrapper();
+
     bool initLogManager();
 
     bool initLicenseManager();

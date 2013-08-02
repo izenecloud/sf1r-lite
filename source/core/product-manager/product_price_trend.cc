@@ -175,6 +175,8 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
         PropMapType::const_iterator prop_map_it = prop_map_.find(row_list[i].getDocId());
         if(prop_map_it == prop_map_.end()) continue;
         const PropItemType& prop_item = prop_map_it->second;
+        if (row_list[i].getPriceHistory().empty())
+            continue;
         const pair<time_t, ProductPrice>& price_record = row_list[i].getPriceHistory()[0];
         const ProductPriceType& old_price = price_record.second.value.first;
         float price_cut = old_price == 0 ? 0 : 1 - prop_item.first / old_price;

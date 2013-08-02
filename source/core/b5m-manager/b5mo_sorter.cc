@@ -39,7 +39,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
     {
         ts_ = bfs::path(m_).parent_path().filename().string();
     }
-    std::string cmd = "sort -m --buffer-size=1000M "+sorter_path+"/*";
+    std::string cmd = "sort --key=1,3 -m --buffer-size=1000M "+sorter_path+"/*";
     if(!last_m.empty())
     {
         std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_m); 
@@ -107,18 +107,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
     OBag_(buffer);
     mirror_ofs_.close();
     pwriter_->Close();
-    //char buffer[128];
-    //std::string result = "";
-    //while(!feof(pipe))
-    //{
-        //if(fgets(buffer, 128, pipe)!=NULL)
-        //{
-            //result += buffer;
-        //}
-    //}
     pclose(pipe);
-    //boost::algorithm::trim(result);
-    //std::size_t c = boost::lexical_cast<std::size_t>(result);
     return true;
 }
 
@@ -205,6 +194,7 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     for(uint32_t i=0;i<docs.size();i++)
     {
         const Value& v = docs[i];
+        //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
         const ScdDocument& doc = v.doc;
         ODocMerge_(odocs, doc);
         if(v.ts<ts_)

@@ -9,6 +9,7 @@
 #define SF1R_PRODUCT_SCORE_PARAM_H
 
 #include "../group-manager/GroupParam.h"
+#include <query-manager/SearchingEnumerator.h>
 #include <string>
 
 namespace sf1r
@@ -21,8 +22,14 @@ struct ProductScoreParam
     /** used to create @c CustomScorer and @c CategoryScorer */
     const std::string& query_;
 
+    /** used to create @c CategoryClassifyScorer */
+    const std::string& rawQuery_;
+
     /** used to create @c CategoryScorer */
     const std::string& querySource_;
+
+    /** the score of query after query tokenizer, used for TitlScore relevance*/
+    const double queryScore_;
 
     /** used to create @c CategoryScorer */
     const faceted::GroupParam::GroupPathVec& boostGroupLabels_;
@@ -33,17 +40,25 @@ struct ProductScoreParam
     /** the relevance scorer, it could be NULL if not existed */
     ProductScorer* relevanceScorer_;
 
+    SearchingMode::SearchingModeType searchMode_;
+
     ProductScoreParam(
         const std::string& query,
+        const std::string& rawQuery,
         const std::string& querySource,
         const faceted::GroupParam::GroupPathVec& boostGroupLabels,
         PropSharedLockSet& propSharedLockSet,
-        ProductScorer* relevanceScorer)
+        ProductScorer* relevanceScorer,
+        SearchingMode::SearchingModeType searchMode, 
+        const double queryScore = 0)
         : query_(query)
+        , rawQuery_(rawQuery)
         , querySource_(querySource)
+        , queryScore_(queryScore)
         , boostGroupLabels_(boostGroupLabels)
         , propSharedLockSet_(propSharedLockSet)
         , relevanceScorer_(relevanceScorer)
+        , searchMode_(searchMode)
     {}
 };
 

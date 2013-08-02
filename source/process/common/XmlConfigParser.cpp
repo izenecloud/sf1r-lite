@@ -1577,10 +1577,13 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     }
     QueryCorrectionSubmanager::getInstance();
 
-
     // for product ranking
     params.GetString("ProductRankingPara/cron",
                      mining_config.product_ranking_param.cron);
+
+    // for mining task
+    params.Get<std::size_t>("MiningTaskPara/threadnum",
+                            mining_config.mining_task_param.threadNum);
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
@@ -2311,6 +2314,7 @@ void CollectionConfig::parseScoreAttr(
 {
     getAttribute(scoreNode, "property", scoreConfig.propName, false);
     getAttribute_FloatType(scoreNode, "weight", scoreConfig.weight, false);
+    getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

@@ -18,6 +18,10 @@ namespace sf1r {
         {
             input_.push_back(scd_path);
         }
+        void SetOutput(const boost::shared_ptr<ScdTypeWriter>& writer)
+        {
+            writer_ = writer;
+        }
 
         void SetOutput(const std::string& output_path)
         {

@@ -25,6 +25,8 @@ public:
     ProductScoreSum(const ProductScoreConfig& config);
     ~ProductScoreSum();
 
+    bool empty() const { return scorers_.empty(); }
+
     void addScorer(ProductScorer* scorer);
 
     virtual score_t score(docid_t docId);
