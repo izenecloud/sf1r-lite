@@ -355,6 +355,12 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
 
         if (collectionHandler->indexTaskService_->isNeedSharding())
         {
+            if (!MasterManagerBase::get()->isAllShardNodeOK(collectionHandler->indexTaskService_->getShardidListForSearch()))
+            {
+                LOG(ERROR) << "some of sharding node is not ready for rebuild.";
+                return false;
+            }
+
             LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
             collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
         }

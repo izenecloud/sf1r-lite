@@ -146,6 +146,7 @@ public:
     bool hasAnyCachedRequest();
     shardid_t getMyShardId();
 
+    bool isAllShardNodeOK(const std::vector<shardid_t>& shardids);
     bool pushWriteReqToShard(const std::string& reqdata,
         const std::vector<shardid_t>& shardids);
 

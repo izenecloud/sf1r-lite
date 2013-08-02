@@ -42,7 +42,42 @@ void MasterManagerBase::initCfg()
 void MasterManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    LOG(INFO) << "topology changed.";
+    LOG(INFO) << cfg.toString();
+    bool shard_changed = false;
+    if (cfg.all_shard_nodes_ != sf1rTopology_.all_shard_nodes_)
+        shard_changed = true;
+
     sf1rTopology_ = cfg;
+
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return;
+
+    if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS ||
+        masterState_ == MASTER_STATE_STARTED)
+    {
+        if (stopping_)
+            return;
+        if (shard_changed)
+            detectWorkers();
+    }
+
+    ZNode znode;
+    std::string olddata;
+    if(zookeeper_->getZNodeData(serverRealPath_, olddata, ZooKeeper::WATCH))
+    {
+        if (olddata.empty())
+            return;
+        znode.loadKvString(olddata);
+        setServicesData(znode);
+        zookeeper_->setZNodeData(serverRealPath_, znode.serialize());
+    }
+    else
+    {
+        LOG(WARNING) << "get old server service data error";
+    }
+
+    resetAggregatorConfig();
 }
 
 bool MasterManagerBase::init()
@@ -578,10 +613,33 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
     return true;
 }
 
+bool MasterManagerBase::isAllShardNodeOK(const std::vector<shardid_t>& shardids)
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+    for (size_t i = 0; i < shardids.size(); ++i)
+    {
+        if (shardids[i] == sf1rTopology_.curNode_.nodeId_)
+            continue;
+        WorkerMapT::const_iterator it = workerMap_.find(shardids[i]);
+        if (it == workerMap_.end())
+        {
+            LOG(INFO) << "shardid not found while check for ok. " << shardids[i];
+        }
+        if (!it->second->worker_.isGood_)
+        {
+            LOG(INFO) << "shardid not ready." << shardids[i];
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
     const std::vector<shardid_t>& shardids)
 {
-    // boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<

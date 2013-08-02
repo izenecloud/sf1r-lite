@@ -66,6 +66,10 @@ void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
         sf1rTopology_ = cfg;
+        if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
+        {
+            detectMasters();
+        }
     }
     MasterManagerBase::get()->updateTopologyCfg(cfg);
     //SuperMasterManager::get()->updateTopologyCfg(cfg);

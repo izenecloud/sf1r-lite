@@ -348,6 +348,12 @@ bool IndexTaskService::distributedIndexImpl_(
         }
     }
 
+    if (!MasterManagerBase::get()->isAllShardNodeOK(bundleConfig_->col_shard_info_.shardList_))
+    {
+        LOG(ERROR) << "some of sharding node is not ready for index.";
+        return false;
+    }
+
     std::string scd_dir = masterScdPath;
     std::vector<std::string> outScdFileList;
     //
