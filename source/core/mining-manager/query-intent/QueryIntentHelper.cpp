@@ -89,9 +89,11 @@ static void refineConditions(izenelib::driver::Value& conditions,
         {
             if (i >= operands)
                 break;
-            values() = item->first;
-            queryIntentValues() = item->first;
-            LOG(INFO)<<item->first;
+            std::string vs = item->first;
+            boost::trim(vs);
+            values() = vs;
+            queryIntentValues() = vs;
+            LOG(INFO)<<vs;
         }
     }
 }
