@@ -209,12 +209,13 @@ namespace NQI
             if (!combineWMV(it->second, it->first.operands_))
             {
                 resumeKeywords(it->second, remainKeywords);
-                deleteKeywords(it->second);
+                wmvs.erase(it);
+                //deleteKeywords(it->second);
                 //printWMV(it->second);
-                if (!commonAncester(it->second, it->first.operands_))
-                {
-                    wmvs.erase(it);
-                }
+                //if (!commonAncester(it->second, it->first.operands_))
+                //{
+                //    wmvs.erase(it);
+                //}
             }
             else
             {

@@ -149,6 +149,18 @@ void TrieClassifier::loadLexicon()
                     category += NODE_DELIMITER;
                     category += word;
                 }
+                
+                //only leaf node
+                if (FORMAT_LSB == words.front())
+                {
+                    std::queue<std::string> ws(words);
+                    ws.pop();
+                    if (FORMAT_RSB != ws.front())
+                    {
+                        continue;
+                    }
+                }
+
                 TrieIterator it = trie_.find(word);
                 if (trie_.end() == it)
                 {

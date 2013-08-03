@@ -22,6 +22,8 @@ namespace sf1r
 
 class SearchWorker;
 class MiningManager;
+class ShardingStrategy;
+
 class MiningSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -200,6 +202,11 @@ public:
             int limit,
             std::vector<std::vector<std::string> >& pathVec);
 
+    void setShardingStrategy(ShardingStrategy* shardingstrategy)
+    {
+        shardingstrategy_ = shardingstrategy;
+    }
+
 private:
     bool HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;
@@ -207,6 +214,7 @@ private:
 
     boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    ShardingStrategy* shardingstrategy_;
 
     friend class MiningBundleActivator;
 };

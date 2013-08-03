@@ -78,8 +78,14 @@ void CommandsController::indexSearch_()
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-        if(!taskService->index(documentCount, asString(request()[Keys::index_scd_path])))
+        bool disable_sharding = false;
+        disable_sharding = asBool(request()[Keys::disable_sharding]);
+        if(!taskService->index(documentCount,
+                asString(request()[Keys::index_scd_path]),
+                disable_sharding))
+        {
             response().addError("index in search failed.");
+        }
         else
         {
             if (MasterManagerBase::get()->isDistributed())

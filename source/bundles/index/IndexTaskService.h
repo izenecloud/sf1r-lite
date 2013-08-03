@@ -30,7 +30,7 @@ public:
     ~IndexTaskService();
 
 
-    bool index(unsigned int numdoc, std::string scd_dir);
+    bool index(unsigned int numdoc, std::string scd_dir, bool disable_sharding);
 
     bool index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
     bool reindex_from_scd(const std::vector<std::string>& scdlist, int64_t timestamp);
@@ -58,6 +58,7 @@ public:
     void flush();
     bool isNeedSharding();
     bool HookDistributeRequestForIndex();
+    const std::vector<shardid_t>& getShardidListForSearch();
 
 private:
     bool SendRequestToSharding(uint32_t shardid);
@@ -76,8 +77,6 @@ private:
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
-    ShardingConfig shard_cfg_;
-    boost::shared_ptr<ShardingStrategy> shardingStrategy_;
     boost::shared_ptr<ScdSharder> scdSharder_;
 
     friend class IndexWorkerController;

@@ -316,19 +316,15 @@ bool IndexWorker::createScdSharder(
 
     std::string coll = bundleConfig_->collectionName_;
     // handle the rebuild collection name
-    size_t pos = coll.find("-rebuild");
-    if (pos != std::string::npos)
-    {
-        LOG(INFO) << "change the collection name for rebuild." << coll;
-        coll = coll.substr(0, pos);
-    }
+    //size_t pos = coll.find("-rebuild");
+    //if (pos != std::string::npos)
+    //{
+    //    LOG(INFO) << "change the collection name for rebuild." << coll;
+    //    coll = coll.substr(0, pos);
+    //}
+    shard_cfg_.shardidList_ = bundleConfig_->col_shard_info_.shardList_;
     // sharding configuration
-    if (MasterManagerBase::get()->getCollectionShardids(
-            Sf1rTopology::getServiceName(Sf1rTopology::SearchService),
-            coll, shard_cfg_.shardidList_))
-    {
-    }
-    else
+    if (shard_cfg_.shardidList_.empty())
     {
         LOG(ERROR) << "No shardid configured for " << coll;
         return false;

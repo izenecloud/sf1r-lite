@@ -10,6 +10,7 @@
 #include "process/common/XmlSchema.h"
 #include "core/license-manager/LicenseCustManager.h"
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/NodeManagerBase.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/RecoveryChecker.h>
@@ -182,6 +183,11 @@ void CollectionController::start_collection()
         return;
     }
 
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
+
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
 }
 
@@ -254,6 +260,11 @@ void CollectionController::stop_collection()
     }
 
     RecoveryChecker::get()->removeConfigFromAPI(collection);
+
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
 
     DISTRIBUTE_WRITE_FINISH(ret);
 }
@@ -370,6 +381,11 @@ void CollectionController::update_collection_conf()
         LOG(ERROR) << "start collection failed after config updated." << collection;
         response().addError("start collection failed after config updated.");
         return;
+    }
+
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     }
 
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);

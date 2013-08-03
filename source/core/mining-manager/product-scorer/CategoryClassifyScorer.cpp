@@ -7,8 +7,9 @@ using namespace sf1r;
 namespace
 {
 const score_t kReduceScoreForNotRule = 0.01;
-const score_t kMinClassifyScore = 0.0001;
 }
+
+const score_t CategoryClassifyScorer::kMinClassifyScore = 0.0001;
 
 CategoryClassifyScorer::CategoryClassifyScorer(
     const ProductScoreConfig& config,
@@ -50,7 +51,8 @@ score_t CategoryClassifyScorer::score(docid_t docId)
     {
         result = kMinClassifyScore;
     }
-    int int_res = static_cast<int>(result*10000);
-    score_t re_result = (double(int_res))/10000.0;
-    return re_result;
+
+    int intResult = static_cast<int>(result / kMinClassifyScore);
+    result = intResult * kMinClassifyScore;
+    return result;
 }

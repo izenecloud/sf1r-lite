@@ -29,6 +29,8 @@ public:
 
     ~ProductRanker();
 
+    const ProductRankParam& getParam() const { return rankParam_; }
+
     void addEvaluator(ProductScoreEvaluator* evaluator);
 
     void rank();
