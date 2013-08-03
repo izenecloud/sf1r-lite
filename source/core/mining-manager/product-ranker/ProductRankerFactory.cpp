@@ -7,6 +7,7 @@
 #include "MerchantScoreEvaluator.h"
 #include "RandomScoreEvaluator.h"
 #include "../group-manager/PropValueTable.h"
+#include "../product-scorer/CategoryClassifyScorer.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <common/NumericPropertyTableBase.h>
 #include <common/QueryNormalizer.h>
@@ -73,15 +74,25 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
 
 bool ProductRankerFactory::isDiverseInPage_(const ProductRankParam& param) const
 {
-    return param.searchMode_ == SearchingMode::SUFFIX_MATCH ||
-        QueryNormalizer::get()->isLongQuery(param.query_);
+    return QueryNormalizer::get()->isLongQuery(param.query_);
 }
 
 void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    const score_t minWeight = isDiverseInPage ?
-        config_.scores[CUSTOM_SCORE].weight :
-        minCustomCategoryWeight(config_);
+    score_t minWeight = 0;
+
+    if (isDiverseInPage)
+    {
+        minWeight = config_.scores[CUSTOM_SCORE].weight;
+    }
+    else if (ranker.getParam().searchMode_ == SearchingMode::SUFFIX_MATCH)
+    {
+        minWeight = CategoryClassifyScorer::kMinClassifyScore;
+    }
+    else
+    {
+        minWeight = minCustomCategoryWeight(config_);
+    }
 
     ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isDiverseInPage));
 }
