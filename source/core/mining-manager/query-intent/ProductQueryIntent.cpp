@@ -133,9 +133,9 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
     if (!ret)
         return;
     combineWMVS(wmvs, scs, normalizedQuery);
+    boost::trim(normalizedQuery);
     request[Keys::search][Keys::keywords] = normalizedQuery;
     
-    boost::trim(normalizedQuery);
     if (normalizedQuery.empty() )
     {
         request[Keys::search][Keys::keywords] = "*";

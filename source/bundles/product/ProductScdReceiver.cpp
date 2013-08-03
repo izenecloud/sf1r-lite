@@ -46,7 +46,7 @@ bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
         return true;
     }
     else
-        return index_service_->index(0, "");
+        return index_service_->index(0, "", false);
 }
 
 bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)

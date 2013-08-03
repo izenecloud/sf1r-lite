@@ -362,7 +362,10 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
         KNlpWrapper::string_t classifyKStr;
         if (docid == 0)
         {
-            classifyCategory = knlpWrapper->classifyToBestCategory(pattern);
+            const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+            KNlpWrapper::category_score_map_t categoryScoreMap =
+                knlpWrapper->classifyToMultiCategories(pattern, isLongQuery);
+            classifyCategory = knlpWrapper->getBestCategory(categoryScoreMap);
         }
         else
         {

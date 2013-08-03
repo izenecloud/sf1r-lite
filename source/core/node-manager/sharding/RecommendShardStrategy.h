@@ -21,11 +21,11 @@ namespace sf1r
 class RecommendShardStrategy
 {
 public:
-    RecommendShardStrategy(shardid_t shardNum) : shardNum_(shardNum) {}
+    RecommendShardStrategy(std::vector<shardid_t> shardids) : shardids_(shardids) {}
 
     virtual ~RecommendShardStrategy() {}
 
-    shardid_t getShardNum() const { return shardNum_; }
+    shardid_t getShardNum() const { return shardids_.size(); }
 
     /**
      * get shard id for @p itemId.
@@ -36,7 +36,7 @@ public:
     virtual shardid_t shardingForUser(const std::string& user_id) = 0;
 
 protected:
-    shardid_t shardNum_;
+    std::vector<shardid_t> shardids_;
 };
 
 /**
@@ -45,15 +45,15 @@ protected:
 class RecommendShardMod : public RecommendShardStrategy
 {
 public:
-    RecommendShardMod(shardid_t shardNum) : RecommendShardStrategy(shardNum) {}
+    RecommendShardMod(std::vector<shardid_t> shardids) : RecommendShardStrategy(shardids) {}
 
     virtual shardid_t getShardId(itemid_t itemId)
     {
-        return (itemId % shardNum_) + 1;
+        return shardids_[itemId % shardids_.size()];
     }
     virtual shardid_t shardingForUser(const std::string& user_id)
     {
-        return (boost::lexical_cast<uint32_t>(user_id) % shardNum_);
+        return shardids_[boost::lexical_cast<uint32_t>(user_id) % shardids_.size()];
     }
 };
 

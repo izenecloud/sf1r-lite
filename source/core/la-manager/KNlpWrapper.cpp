@@ -53,11 +53,16 @@ bool KNlpWrapper::loadDictFiles()
         originalToClassifyCateDict_.reset(new ilplib::knlp::Dictionary(
                                               (dirPath / "tcate_map.txt").string()));
 
-        maxentClassify_.reset(new ilplib::knlp::MaxentClassify(
+        longStrClassifier_.reset(new ilplib::knlp::MaxentClassify(
                                   (dirPath / "maxent.model").string(),
                                   tokenizer_.get(),
-                                  garbagePattern_.get(),
-                                  (dirPath / "query.dict").string()));
+                                  garbagePattern_.get()));
+
+        shortStrClassifier_.reset(new ilplib::knlp::MaxentClassify(
+                                    (dirPath / "maxent.query.model").string(),
+                                    tokenizer_.get(),
+                                    garbagePattern_.get(),
+                                    (dirPath / "query.dict").string()));
     }
     catch (const std::exception& e)
     {
@@ -89,20 +94,29 @@ void KNlpWrapper::fmmBigram_with_space(std::vector<std::pair<KString,double> >& 
     tokenizer_->bigram_with_space(r);
 }
 
-std::string KNlpWrapper::classifyToBestCategory(const std::string& str)
+KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(
+    const std::string& str,
+    bool isLongStr)
+{
+    std::stringstream ss;
+    return isLongStr ?
+        longStrClassifier_->classify(str, ss, true) :
+        shortStrClassifier_->classify(str, ss, true, 1);
+}
+
+std::string KNlpWrapper::getBestCategory(const category_score_map_t& categoryScoreMap)
 {
     std::string category;
     double maxScore = 0;
-    category_score_map_t cateScores = classifyToMultiCategories(str);
 
-    if (cateScores.empty())
+    if (categoryScoreMap.empty())
         return category;
 
-    category_score_map_t::const_iterator it = cateScores.begin();
+    category_score_map_t::const_iterator it = categoryScoreMap.begin();
     category = it->first;
     maxScore = it->second;
 
-    for (++it; it != cateScores.end(); ++it)
+    for (++it; it != categoryScoreMap.end(); ++it)
     {
         if (it->second > maxScore)
         {
@@ -112,12 +126,6 @@ std::string KNlpWrapper::classifyToBestCategory(const std::string& str)
     }
 
     return category;
-}
-
-KNlpWrapper::category_score_map_t KNlpWrapper::classifyToMultiCategories(const std::string& str)
-{
-    std::stringstream ss;
-    return maxentClassify_->classify(str, ss, true);
 }
 
 std::string KNlpWrapper::mapFromOriginalCategory(const std::string& originalCategory)

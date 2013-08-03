@@ -34,7 +34,8 @@ void FuzzySearchRanker::setFuzzyScoreWeight(const ProductRankingConfig& rankConf
 
 void FuzzySearchRanker::rankByProductScore(
     const KeywordSearchActionItem& actionItem,
-    std::vector<ScoreDocId>& resultList)
+    std::vector<ScoreDocId>& resultList,
+    bool isCompare)
 {
     PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<ProductScorer> productScorer(
@@ -43,7 +44,7 @@ void FuzzySearchRanker::rankByProductScore(
     if (!productScorer)
         return;
 
-    std::set<docid_t> excludeDocIds;
+std::set<docid_t> excludeDocIds;
     getExcludeDocIds_(actionItem.env_.normalizedQueryString_,
                       excludeDocIds);
 
@@ -63,9 +64,17 @@ void FuzzySearchRanker::rankByProductScore(
         if (isCategoryClassify_)
         {
             // ignore the docs with zero category score
-            if (productScore < 0.00009)
-                continue;
-
+            if (isCompare)
+            {
+                if (productScore < 0.9)
+                    continue;
+            }
+            else
+            {
+                if (productScore < 0.00009)
+                    productScore = -1;
+            }
+           
             fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         }
 

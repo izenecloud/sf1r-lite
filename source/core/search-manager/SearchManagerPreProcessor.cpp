@@ -114,6 +114,8 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             if (!propertyConfig.isIndex() || propertyConfig.isAnalyzed())
                 continue;
 
+            LOG(INFO) << "add sort property : " << iter->first;
+
             PropertyDataType propertyType = propertyConfig.getType();
             switch (propertyType)
             {
@@ -199,6 +201,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
         distSearchInfo.sortPropertyList_.push_back(
             std::make_pair(sortPropertyName, pSortProperty->isReverse()));
 
+        LOG(INFO) << "adding sort property : " << sortPropertyName;
         if (sortPropertyName == "CUSTOM_RANK" || sortPropertyName == "RANK")
             continue;
 

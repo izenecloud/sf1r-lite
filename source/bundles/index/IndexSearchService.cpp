@@ -199,7 +199,7 @@ uint32_t IndexSearchService::getDocNum(const std::string& collection)
         return searchWorker_->getDocNum();
     else
     {
-        uint32_t total_docs;
+        uint32_t total_docs = 0;
         searchAggregator_->distributeRequest(collection, "getDistDocNum", total_docs);
         return total_docs;
     }
@@ -211,7 +211,7 @@ uint32_t IndexSearchService::getKeyCount(const std::string& collection, const st
         return searchWorker_->getKeyCount(property_name);
     else
     {
-        uint32_t total_docs;
+        uint32_t total_docs = 0;
         searchAggregator_->distributeRequest(collection, "getDistKeyCount", property_name, total_docs);
         return total_docs;
     }

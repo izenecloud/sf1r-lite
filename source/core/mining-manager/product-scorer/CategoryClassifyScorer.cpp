@@ -9,6 +9,8 @@ namespace
 const score_t kReduceScoreForNotRule = 0.01;
 }
 
+const score_t CategoryClassifyScorer::kMinClassifyScore = 0.0001;
+
 CategoryClassifyScorer::CategoryClassifyScorer(
     const ProductScoreConfig& config,
     const CategoryClassifyTable& categoryClassifyTable,
@@ -16,7 +18,17 @@ CategoryClassifyScorer::CategoryClassifyScorer(
     : ProductScorer(config)
     , categoryClassifyTable_(categoryClassifyTable)
     , categoryScoreMap_(categoryScoreMap)
+    , hasGoldCategory_(false)
 {
+    for (CategoryScoreMap::const_iterator it = categoryScoreMap_.begin();
+         it != categoryScoreMap_.end(); ++it)
+    {
+        if (it->second == 1)
+        {
+            hasGoldCategory_ = true;
+            break;
+        }
+    }
 }
 
 score_t CategoryClassifyScorer::score(docid_t docId)
@@ -28,14 +40,19 @@ score_t CategoryClassifyScorer::score(docid_t docId)
         categoryScoreMap_.find(categoryRFlag.first);
 
     if (it == categoryScoreMap_.end())
-        return 0;
+        return hasGoldCategory_ ? 0 : kMinClassifyScore;
 
     score_t result = it->second;
     if (!categoryRFlag.second)
     {
         result -= kReduceScoreForNotRule;
     }
-    int int_res = static_cast<int>(result*10000);
-    score_t re_result = (double(int_res))/10000.0;
-    return re_result;
+    if (result < kMinClassifyScore)
+    {
+        result = kMinClassifyScore;
+    }
+
+    int intResult = static_cast<int>(result / kMinClassifyScore);
+    result = intResult * kMinClassifyScore;
+    return result;
 }

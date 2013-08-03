@@ -197,7 +197,7 @@ bool SearchThreadMaster::fetchSearchResult(
 
     DistKeywordSearchInfo& distSearchInfo = searchResult.distSearchInfo_;
     boost::shared_ptr<Sorter> pSorter(threadParam.pSorter);
-    if (distSearchInfo.effective_ && pSorter)
+    if (pSorter)
     {
         try
         {

@@ -109,10 +109,11 @@ public:
         return sf1rTopology_.curNode_;
     }
 
-    unsigned int getTotalShardNum() const
-    {
-        return sf1rTopology_.nodeNum_;
-    }
+    void updateTopologyCfg(const Sf1rTopology& cfg);
+    //unsigned int getTotalShardNum() const
+    //{
+        //return sf1rTopology_.nodeNum_;
+    //}
 
     bool isPrimary();
     bool isOtherPrimaryAvailable();

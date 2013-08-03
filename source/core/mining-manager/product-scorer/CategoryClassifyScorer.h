@@ -20,6 +20,8 @@ class CategoryClassifyTable;
 class CategoryClassifyScorer : public ProductScorer
 {
 public:
+    static const score_t kMinClassifyScore;
+
     typedef std::map<std::string, double> CategoryScoreMap;
 
     CategoryClassifyScorer(
@@ -33,6 +35,8 @@ private:
     const CategoryClassifyTable& categoryClassifyTable_;
 
     const CategoryScoreMap categoryScoreMap_;
+
+    bool hasGoldCategory_;
 };
 
 } // namespace sf1r

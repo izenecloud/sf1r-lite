@@ -201,12 +201,13 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
         return NULL;
 
     KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    const std::string query = scoreParam.rawQuery_;
+    const std::string& query = scoreParam.rawQuery_;
 
     LOG(INFO) << "for query [" << query << "]";
 
+    const bool isLongQuery = QueryNormalizer::get()->isLongQuery(query);
     CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
-        knlpWrapper->classifyToMultiCategories(query);
+        knlpWrapper->classifyToMultiCategories(query, isLongQuery);
 
     if (categoryScoreMap.empty())
     {
