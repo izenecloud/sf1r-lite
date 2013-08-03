@@ -169,6 +169,17 @@ bool ProductTokenizer::GetSynonymSet(const UString& pattern, std::vector<UString
     return matcher_->GetSynonymSet(pattern, synonym_set, setid);
 }
 
+bool ProductTokenizer::GetSynonymId(const UString& pattern, int& setid)
+{
+    if (!matcher_)
+    {
+        LOG(INFO)<<"matcher_ = NULL";        
+        return false;
+    }
+
+    return matcher_->GetSynonymId(pattern, setid);
+}
+
 void ProductTokenizer::DoBigram_(
         const UString& pattern,
         std::list<std::pair<UString, double> >& tokens,
