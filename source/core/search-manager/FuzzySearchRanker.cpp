@@ -10,6 +10,7 @@
 #include <common/PropSharedLockSet.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include "mining-manager/custom-rank-manager/CustomRankManager.h"
+#include "mining-manager/product-scorer/CategoryClassifyScorer.h"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -44,7 +45,7 @@ void FuzzySearchRanker::rankByProductScore(
     if (!productScorer)
         return;
 
-std::set<docid_t> excludeDocIds;
+    std::set<docid_t> excludeDocIds;
     getExcludeDocIds_(actionItem.env_.normalizedQueryString_,
                       excludeDocIds);
 
@@ -64,17 +65,12 @@ std::set<docid_t> excludeDocIds;
         if (isCategoryClassify_)
         {
             // ignore the docs with zero category score
-            if (isCompare)
+            if (productScore < CategoryClassifyScorer::kMinClassifyScore ||
+                (isCompare && productScore < 0.9))
             {
-                if (productScore < 0.9)
-                    continue;
+                continue;
             }
-            else
-            {
-                if (productScore < 0.00009)
-                    productScore = -1;
-            }
-           
+
             fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         }
 
