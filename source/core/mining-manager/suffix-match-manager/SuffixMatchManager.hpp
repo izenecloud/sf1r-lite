@@ -100,6 +100,7 @@ private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;
     bool GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
+    bool GetSynonymId_(const UString& pattern, int& setid);
     void ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size);
     bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
