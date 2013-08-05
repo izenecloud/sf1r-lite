@@ -70,9 +70,8 @@ void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
             nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
             // while recovering we should do nothing while topology changed.
-            return;
         }
-        if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
+        else if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
         {
             detectMasters();
         }
