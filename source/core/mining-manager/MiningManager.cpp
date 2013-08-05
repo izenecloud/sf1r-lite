@@ -2329,7 +2329,8 @@ bool MiningManager::GetSuffixMatch(
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
         bool isOrSearch = false;
-
+        bool isItemCount = false;
+        
         if (isLongQuery)
         {
             useSynonym = false;
@@ -2337,8 +2338,6 @@ bool MiningManager::GetSuffixMatch(
             isOrSearch = true;
         }
 
-        std::vector<std::pair<double, uint32_t> > res_list_1;
-        std::vector<std::pair<double, uint32_t> > res_list_2;
         if (isAndSearch)
         {
             LOG(INFO) << "for short query, try AND search first";
@@ -2352,16 +2351,17 @@ bool MiningManager::GetSuffixMatch(
             }
 
             std::vector<QueryFiltering::FilteringType> filter_param_1(filter_param);
-            
+            const std::string& itemcount = getOfferItemCountPropName_();
+            if (!itemcount.empty())
             {
                 FilteringType onefilter;
-                onefilter.property_ = "itemcount";
+                onefilter.property_ = itemcount;
                 onefilter.operation_ = GREATER_THAN;
                 onefilter.values_.push_back(PropertyValue(1));
                 filter_param_1.push_back(onefilter);
-            }
 
-            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                std::vector<std::pair<double, uint32_t> > res_list_1;
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                     useSynonym,
                     short_query_major_tokens,
                     short_query_minor_tokens,
@@ -2373,21 +2373,26 @@ bool MiningManager::GetSuffixMatch(
                     res_list_1,
                     rank_boundary);
 
-            isItemCount = true;
-            searchManager_->fuzzySearchRanker_.rankByProductScore(
-                actionOperation.actionItem_, res_list_1, isItemCount);
+                isItemCount = true;
+                searchManager_->fuzzySearchRanker_.rankByProductScore(
+                    actionOperation.actionItem_, res_list_1, isItemCount);
+
+                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_1.begin(); i != res_list_1.end(); ++i)
+                    res_list.push_back(*i);
+            }
 
             //search again for itemcount == 1;
             std::vector<QueryFiltering::FilteringType> filter_param_2(filter_param);
-            
+            if (!itemcount.empty())
             {
                 FilteringType onefilter;
-                onefilter.property_ = "itemcount";
+                onefilter.property_ = itemcount;
                 onefilter.operation_ = EQUAL;
                 onefilter.values_.push_back(PropertyValue(1));
                 filter_param_2.push_back(onefilter);
             }
 
+            std::vector<std::pair<double, uint32_t> > res_list_2;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                     useSynonym,
                     short_query_major_tokens,
@@ -2403,9 +2408,6 @@ bool MiningManager::GetSuffixMatch(
             isItemCount = false;
             searchManager_->fuzzySearchRanker_.rankByProductScore(
                 actionOperation.actionItem_, res_list_2, isItemCount);
-
-            for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_1.begin(); i != res_list_1.end(); ++i)
-                res_list.push_back(*i);
 
             for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_2.begin(); i != res_list_2.end(); ++i)
                 res_list.push_back(*i);
@@ -2957,15 +2959,12 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     return true;
 }
 
-bool MiningManager::isProductRankByOfferItemCount_() const
+const std::string& MiningManager::getOfferItemCountPropName_() const
 {
     const ProductRankingConfig& rankConfig =
         mining_schema_.product_ranking_config;
 
-    const std::string& offerCountPropName =
-        rankConfig.scores[OFFER_ITEM_COUNT_SCORE].propName;
-
-    return rankConfig.isEnable && !offerCountPropName.empty();
+    return rankConfig.scores[OFFER_ITEM_COUNT_SCORE].propName;
 }
 
 void MiningManager::flush()
