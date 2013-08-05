@@ -2957,6 +2957,17 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     return true;
 }
 
+bool MiningManager::isProductRankByOfferItemCount_() const
+{
+    const ProductRankingConfig& rankConfig =
+        mining_schema_.product_ranking_config;
+
+    const std::string& offerCountPropName =
+        rankConfig.scores[OFFER_ITEM_COUNT_SCORE].propName;
+
+    return rankConfig.isEnable && !offerCountPropName.empty();
+}
+
 void MiningManager::flush()
 {
     LOG(INFO) << "begin flush in MiningManager .... ";
