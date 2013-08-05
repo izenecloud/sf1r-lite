@@ -779,6 +779,10 @@ namespace sf1r {
         ~ProductMatcher();
         bool IsOpen() const;
         bool Open(const std::string& path);
+        void ForceOpen()
+        {
+            is_open_ = true;
+        }
         //static void Clear(const std::string& path, int mode=3);
         static std::string GetVersion(const std::string& path);
         static std::string GetAVersion(const std::string& path);

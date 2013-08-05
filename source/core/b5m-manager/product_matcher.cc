@@ -2171,6 +2171,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         result_products.resize(1, pbook);
         return true;
     }
+    if(trie_.empty()) return false;
     Document::doc_prop_value_strtype ptitle;
     Document::doc_prop_value_strtype pcategory;
     doc.getProperty("Category", pcategory);

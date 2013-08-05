@@ -24,6 +24,7 @@ class Document
 
 public:
     typedef PropertyValue::PropertyValueStrType doc_prop_value_strtype;
+    typedef PropertyValue::PropertyValueStrType str_type;
     typedef property_named_map::const_iterator property_const_iterator;
     typedef property_named_map::iterator property_iterator;
 

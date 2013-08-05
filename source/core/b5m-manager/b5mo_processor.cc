@@ -580,6 +580,10 @@ bool B5moProcessor::OMap_(const OriginalMapper& omapper, Document& doc) const
         doc.property("Category") = str_to_propstr(category);
         return true;
     }
-    return false;
+    else
+    {
+        doc.property("Category") = str_to_propstr("");
+        return false;
+    }
 }
 
