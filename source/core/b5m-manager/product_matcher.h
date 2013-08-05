@@ -810,6 +810,7 @@ namespace sf1r {
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
+        bool GetSynonymId(const UString& pattern, int& setid);
         void UpdateSynonym(const std::string& dict_path);
 
         

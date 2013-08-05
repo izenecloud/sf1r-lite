@@ -2328,14 +2328,17 @@ bool MiningManager::GetSuffixMatch(
 
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
-        bool isOrSearch = true;
+        bool isOrSearch = false;
 
         if (isLongQuery)
         {
             useSynonym = false;
             isAndSearch = false;
+            isOrSearch = true;
         }
 
+        std::vector<std::pair<double, uint32_t> > res_list_1;
+        std::vector<std::pair<double, uint32_t> > res_list_2;
         if (isAndSearch)
         {
             LOG(INFO) << "for short query, try AND search first";
@@ -2348,19 +2351,44 @@ bool MiningManager::GetSuffixMatch(
                 short_query_major_tokens.push_back(*it);
             }
 
-            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                useSynonym,
-                short_query_major_tokens,
-                short_query_minor_tokens,
-                search_in_properties,
-                max_docs,
-                actionOperation.actionItem_.searchingMode_.filtermode_,
-                filter_param,
-                actionOperation.actionItem_.groupParam_,
-                res_list,
-                rank_boundary);
+            std::vector<QueryFiltering::FilteringType> filter_param_tmp;
+            if (filter_param.size() == 0) // use my filter_param
+            {
+                FilteringType onefilter;
+                onefilter.property_ = "itemcount";
+                onefilter.operation_ = GREATER_THAN;
+                onefilter.values_.push_back(PropertyValue(1));
+                filter_param_tmp.push_back(onefilter);
+            }
 
-            isOrSearch = res_list.empty();
+            if (filter_param.size() != 0)
+            {
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    useSynonym,
+                    short_query_major_tokens,
+                    short_query_minor_tokens,
+                    search_in_properties,
+                    max_docs,
+                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                    filter_param,
+                    actionOperation.actionItem_.groupParam_,
+                    res_list,
+                    rank_boundary);
+            }
+            else
+            {
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    useSynonym,
+                    short_query_major_tokens,
+                    short_query_minor_tokens,
+                    search_in_properties,
+                    max_docs,
+                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                    filter_param_tmp,
+                    actionOperation.actionItem_.groupParam_,
+                    res_list_1,
+                    rank_boundary);
+            } 
         }
 
         if (isOrSearch)
@@ -2414,6 +2442,7 @@ bool MiningManager::GetSuffixMatch(
         }
 
         bool isItemCount = false;
+        
         for (std::vector<QueryFiltering::FilteringType>::const_iterator i = filter_param.begin(); i != filter_param.end(); ++i)
         {
             if (i->property_ == "itemcount" && i->operation_ == GREATER_THAN)
@@ -2421,9 +2450,61 @@ bool MiningManager::GetSuffixMatch(
                 isItemCount = true;
             }
         }
+        
+        if (isAndSearch)
+        {
+            if (filter_param.size() == 0)
+            {
+                isItemCount = true;
+            }
+            searchManager_->fuzzySearchRanker_.rankByProductScore(
+                actionOperation.actionItem_, res_list_1, isItemCount);
+        }
+        else
+        {
+            searchManager_->fuzzySearchRanker_.rankByProductScore(
+                actionOperation.actionItem_, res_list, isItemCount);
+        }
 
-        searchManager_->fuzzySearchRanker_.rankByProductScore(
-            actionOperation.actionItem_, res_list, isItemCount);
+        //search agian
+        if (isAndSearch)
+        {
+            LOG(INFO) << "for short query, try AND search first";
+            std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
+            std::list<std::pair<UString, double> > short_query_minor_tokens;
+
+            for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin();
+                 it != minor_tokens.end(); ++it)
+            {
+                short_query_major_tokens.push_back(*it);
+            }
+
+            if (filter_param.size() == 0)
+            {
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    useSynonym,
+                    short_query_major_tokens,
+                    short_query_minor_tokens,
+                    search_in_properties,
+                    max_docs,
+                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                    filter_param,
+                    actionOperation.actionItem_.groupParam_,
+                    res_list_2,
+                    rank_boundary);
+            
+                isItemCount = false;
+                searchManager_->fuzzySearchRanker_.rankByProductScore(
+                    actionOperation.actionItem_, res_list_2, isItemCount);
+
+                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_1.begin(); i != res_list_1.end(); ++i)
+                    res_list.push_back(*i);
+
+                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_2.begin(); i != res_list_2.end(); ++i)
+                    res_list.push_back(*i);
+            }
+        }
+
 
         if ((groupManager_ || attrManager_) && groupFilterBuilder_)
         {

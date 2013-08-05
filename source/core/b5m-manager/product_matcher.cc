@@ -366,15 +366,14 @@ bool ProductMatcher::Open(const std::string& kpath)
 
 void ProductMatcher::UpdateSynonym(const std::string& dict_path)
 {
-            izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(lock_);
-            
-            synonym_map_.clear();
+            std::map<string, size_t> synonym_map;
             std::vector<std::pair<size_t, string> > synonym_pairs;
             std::string path = path_+"/synonym_map";
             izenelib::am::ssf::Util<>::Load(path, synonym_pairs);
             for (size_t j = 0; j < synonym_pairs.size(); ++j)
-                synonym_map_.insert(std::make_pair(synonym_pairs[j].second, synonym_pairs[j].first));
-            synonym_dict_.clear();
+                synonym_map.insert(std::make_pair(synonym_pairs[j].second, synonym_pairs[j].first));
+                
+            std::vector<std::vector<string> > synonym_dict;
             std::vector<string> tmp_sets;
             path = path_+"/synonym_dict";
             izenelib::am::ssf::Util<>::Load(path, tmp_sets);
@@ -382,51 +381,51 @@ void ProductMatcher::UpdateSynonym(const std::string& dict_path)
             {
                 std::vector<string> tmp_set;
                 boost::algorithm::split(tmp_set, tmp_sets[j], boost::algorithm::is_any_of("/"));
-                synonym_dict_.push_back(tmp_set);
+                synonym_dict.push_back(tmp_set);
             }        
+            
             std::ifstream ifs(dict_path.c_str());
             std::string line;
             while(getline(ifs, line))
             {
 //                boost::algorithm::trim(line);
+                boost::algorithm::to_lower(line);
                 std::vector<std::string> vec;
                 boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
                 size_t find = 0;
                 size_t id = 0;
                 for (size_t j = 0; j < vec.size(); ++j)
-                    if (synonym_map_.find(vec[j]) != synonym_map_.end())
+                    if (synonym_map.find(vec[j]) != synonym_map.end())
                     {
-                        id = synonym_map_[vec[j]];
+                        id = synonym_map[vec[j]];
                         find = 1;
                     }
                 if (1 == find)
                 {
                     for (size_t j = 0; j < vec.size(); ++j)
-                        if (synonym_map_.find(vec[j]) == synonym_map_.end())
+                        if (synonym_map.find(vec[j]) == synonym_map.end())
                         {
-                            synonym_dict_[id].push_back(vec[j]);
-                            synonym_map_.insert(std::make_pair(vec[j], id));
+                            synonym_dict[id].push_back(vec[j]);
+                            synonym_map.insert(std::make_pair(vec[j], id));
                         }
                 }
                 else
                 {
-                    size_t size = synonym_dict_.size();
-                    synonym_dict_.push_back(vec);
+                    size_t size = synonym_dict.size();
+                    synonym_dict.push_back(vec);
                     for (size_t j = 0; j < vec.size(); ++j)
                     {
-                        synonym_map_.insert(std::make_pair(vec[j], size));
+                        synonym_map.insert(std::make_pair(vec[j], size));
                     }
                 }
             }
-//            std::cout<<"after update, synonym dict size = "<<synonym_dict_.size()<<'\n';
-/*            
-            for (size_t j = 0; j < synonym_dict_.size(); ++j)
+                        
             {
-                for (size_t k = 0; k < synonym_dict_[j].size(); ++k)
-                    std::cout<<synonym_dict_[j][k]<<' ';
-                std::cout<<'\n';
+                izenelib::util::ScopedWriteLock<izenelib::util::ReadWriteLock> lock(lock_);
+                synonym_map_ = synonym_map;
+                synonym_dict_ = synonym_dict;
+                std::cout<<"after update, synonym dict size = "<<synonym_dict_.size()<<'\n';
             }
-*/
 }
 
 bool ProductMatcher::GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
@@ -456,6 +455,29 @@ bool ProductMatcher::GetSynonymSet(const UString& pattern, std::vector<UString>&
     }
     return true;
 }
+
+bool ProductMatcher::GetSynonymId(const UString& pattern, int& setid)
+{
+    izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(lock_);
+    
+    if (synonym_map_.empty() || synonym_dict_.empty())
+    {
+        LOG(INFO)<<"synonym dict is empty!";
+        return false;
+    }
+    string st;
+    pattern.convertString(st, UString::UTF_8);
+    if (synonym_map_.find(st) == synonym_map_.end())
+    {
+        return false;
+    }
+    else
+    {
+        setid = synonym_map_[st];
+    }
+    return true;
+}
+
 //void ProductMatcher::Clear(const std::string& path, int omode)
 //{
     //int mode = omode;
