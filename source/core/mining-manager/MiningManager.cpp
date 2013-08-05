@@ -2283,10 +2283,12 @@ bool MiningManager::GetSuffixMatch(
         
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
         if (isLongQuery)
-        {
             pattern = KNlpWrapper::get()->cleanStopword(pattern);
-            LOG(INFO) << "clear stop word for long query: " << pattern;
-        }
+        else
+            pattern = KNlpWrapper::get()->cleanGarbage(pattern);
+
+        LOG(INFO) << "clear stop word for long query: " << pattern;
+        
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
