@@ -82,6 +82,7 @@ void KNlpWrapper::fmmTokenize(const string_t& str, token_score_list_t& tokenScor
     string_t norm(str);
     ilplib::knlp::Normalize::normalize(norm);
     tokenizer_->fmm(norm, tokenScores);
+    tokenScores = tokenizer_->subtokens(tokenScores);
 }
 
 void KNlpWrapper::fmmBigram(std::vector<std::pair<KString,double> >& r)

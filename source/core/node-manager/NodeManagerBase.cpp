@@ -66,13 +66,17 @@ void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
         sf1rTopology_ = cfg;
-        if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
+        if (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
+            nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
+        {
+            // while recovering we should do nothing while topology changed.
+        }
+        else if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
         {
             detectMasters();
         }
     }
     MasterManagerBase::get()->updateTopologyCfg(cfg);
-    //SuperMasterManager::get()->updateTopologyCfg(cfg);
 }
 
 void NodeManagerBase::registerDistributeService(boost::shared_ptr<IDistributeService> sp_service,
@@ -930,8 +934,10 @@ void NodeManagerBase::enterCluster(bool start_master)
         if (getPrimaryState() == NODE_STATE_ELECTING)
         {
             LOG(INFO) << "primary changed while I am recovering, sync to new primary.";
+            mutex_.unlock();
             if (cb_on_recover_wait_primary_)
                 cb_on_recover_wait_primary_();
+            mutex_.lock();
         }
         else
         {
@@ -1597,8 +1603,10 @@ void NodeManagerBase::checkForPrimaryElecting()
             {
                 LOG(WARNING) << "begin re-enter to the cluster after I became new primary";
                 // primary is waiting sync to recovery.
+                mutex_.unlock();
                 if (cb_on_recover_wait_primary_)
                     cb_on_recover_wait_primary_();
+                mutex_.lock();
                 enterClusterAfterRecovery(!masterStarted_);
             }
             checkSecondaryState(false);
@@ -1925,8 +1933,10 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
     {
         LOG(INFO) << "wait sync primary success or primary is changed while recovering." << self_primary_path_;
         // primary is waiting sync to recovery.
+        mutex_.unlock();
         if (cb_on_recover_wait_primary_)
             cb_on_recover_wait_primary_();
+        mutex_.lock();
         LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
         //nodeState_ = NODE_STATE_STARTED;
         enterClusterAfterRecovery(!masterStarted_);

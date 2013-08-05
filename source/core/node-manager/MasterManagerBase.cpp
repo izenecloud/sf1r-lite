@@ -1250,7 +1250,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                     LOG (ERROR) << "[Replica " << replicaIdList_[i] << "] [Node " << sf1rNode->nodeId_
                                 << "] did not enable worker server, this happened because of the mismatch configuration.";
                     LOG (ERROR) << "In the same cluster, the sf1r node with the same nodeid must have the same configuration.";
-                    throw std::runtime_error("error configuration : mismatch with the same nodeid.");
+                    //throw std::runtime_error("error configuration : mismatch with the same nodeid.");
                 }
             }
         }
