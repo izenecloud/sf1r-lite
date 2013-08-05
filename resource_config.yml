@@ -16,9 +16,11 @@ sub_modules:
     - spu-classifier
     - wikigraph
     - dict
+    - query-intent
 push_sub_modules:
     - ise
     - kpe
+    - query-intent
     - nec
     - opinion
     - qa
