@@ -240,29 +240,42 @@ public:
             Document::str_type pstr2 = it2->second.get<Document::str_type>();
             std::string str1 = propstr_to_str(pstr1);
             std::string str2 = propstr_to_str(pstr2);
-            std::vector<std::string> vec1;
-            std::vector<std::string> vec2;
-            boost::algorithm::split(vec1, str1, boost::algorithm::is_any_of("|"));
-            boost::algorithm::split(vec2, str2, boost::algorithm::is_any_of("|"));
-            if(vec1.empty()) vec1.push_back("");
-            if(vec2.empty()) vec2.push_back("");
-            bool find_equal = false;
-            for(uint32_t i=0;i<vec1.size();i++)
+            if(it->first=="Source")
             {
-                for(uint32_t j=0;j<vec2.size();j++)
-                {
-                    if(vec1[i]==vec2[j])
-                    {
-                        find_equal = true;
-                        break;
-                    }
-                }
-                if(find_equal) break;
+                std::vector<std::string> vec1;
+                std::vector<std::string> vec2;
+                boost::algorithm::split(vec1, str1, boost::algorithm::is_any_of(","));
+                boost::algorithm::split(vec2, str2, boost::algorithm::is_any_of(","));
+                std::sort(vec1.begin(), vec1.end());
+                std::sort(vec2.begin(), vec2.end());
+                if(vec1!=vec2) return false;
             }
-            if(!find_equal) 
+            else
             {
-                std::cerr<<"property "<<it->first<<" not match: "<<it->second<<","<<it2->second<<std::endl;
-                return false;
+                std::vector<std::string> vec1;
+                std::vector<std::string> vec2;
+                boost::algorithm::split(vec1, str1, boost::algorithm::is_any_of("|"));
+                boost::algorithm::split(vec2, str2, boost::algorithm::is_any_of("|"));
+                if(vec1.empty()) vec1.push_back("");
+                if(vec2.empty()) vec2.push_back("");
+                bool find_equal = false;
+                for(uint32_t i=0;i<vec1.size();i++)
+                {
+                    for(uint32_t j=0;j<vec2.size();j++)
+                    {
+                        if(vec1[i]==vec2[j])
+                        {
+                            find_equal = true;
+                            break;
+                        }
+                    }
+                    if(find_equal) break;
+                }
+                if(!find_equal) 
+                {
+                    std::cerr<<"property "<<it->first<<" not match: "<<it->second<<","<<it2->second<<std::endl;
+                    return false;
+                }
             }
         }
         return true;
@@ -479,6 +492,24 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.input_docs.push_back(
         GenDoc(UPDATE_SCD,"eee", "BOOK11","PUB"
             , "英语教材","101"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"111", "BOOKA","PUB"
+            , "书籍","999"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"222", "BOOKB","京东商城"
+            , "书籍","999"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"333", "BOOKC","京东商城"
+            , "书籍","999"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"444", "BOOKD","京东商城"
+            , "书籍","999"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"555", "BOOKE","卓越亚马逊"
+            , "书籍","999"));
+        item.input_docs.push_back(
+        GenDoc(UPDATE_SCD,"666", "BOOKF","DD"
+            , "书籍","999"));
         item.omapper.push_back(MapperData("AMAZON", "手机", "手机数码>手机"));
         item.omapper.push_back(MapperData("JD", "电视机", "大家电>平板电视"));
         item.odocs.push_back(
@@ -496,6 +527,24 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK11","PUB"
             , "","101", B5MHelper::GetPidByIsbn("101")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"111", "BOOKA","PUB"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"222", "BOOKB","京东商城"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"333", "BOOKC","京东商城"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"444", "BOOKD","京东商城"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"555", "BOOKE","卓越亚马逊"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
+        item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"666", "BOOKF","DD"
+            , "","999", B5MHelper::GetPidByIsbn("999")));
 
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
@@ -509,6 +558,9 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("103"), "BOOK2","DD"
             ,"",1));
+        item.pdocs.push_back(
+        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "BOOKA|BOOKB|BOOKC|BOOKD|BOOKE|BOOKF","PUB,京东商城,卓越亚马逊,DD"
+            ,"",6));
         tester.Test(item);
     }
     {
