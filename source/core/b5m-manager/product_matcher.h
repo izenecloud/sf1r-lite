@@ -18,6 +18,7 @@
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/util/idm_id_manager.h>
 #include <document-manager/Document.h>
+#include <document-manager/ScdDocument.h>
 #include <idmlib/keyphrase-extraction/kpe_task.h>
 #include <idmlib/similarity/string_similarity.h>
 #include <ext/pb_ds/assoc_container.hpp>
@@ -787,7 +788,7 @@ namespace sf1r {
         static std::string GetVersion(const std::string& path);
         static std::string GetAVersion(const std::string& path);
         static std::string GetRVersion(const std::string& path);
-        bool Index(const std::string& path, const std::string& scd_path, int mode);
+        bool Index(const std::string& path, const std::string& scd_path, int mode, int thread_num);
         void Test(const std::string& scd_path);
         bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
@@ -859,7 +860,8 @@ namespace sf1r {
         //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
-        void IndexOffer_(const std::string& offer_scd);
+        void IndexOffer_(const std::string& offer_scd, int thread_num);
+        void OfferProcess_(ScdDocument& doc);
         void IndexFuzzy_();
         void ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range);
 
@@ -1014,8 +1016,10 @@ namespace sf1r {
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
         izenelib::util::ReadWriteLock lock_;
+        boost::mutex offer_mutex_;
     
         std::vector<FeatureVector> feature_vectors_;
+        std::vector<uint32_t> fv_count_;
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
 

@@ -5,12 +5,13 @@
 #include <vector>
 #include <common/ScdParser.h>
 #include <common/ScdTypeWriter.h>
+#include <boost/threadpool.hpp>
 
 namespace sf1r {
     class ScdDocProcessor {
     public:
-        typedef boost::function<void (Document&, SCD_TYPE&) > ProcessorType;
-        ScdDocProcessor(const ProcessorType& p):p_(p)
+        typedef boost::function<void (ScdDocument&) > ProcessorType;
+        ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), thread_num_(thread_num), pool_(thread_num)
         {
         }
 
@@ -46,12 +47,12 @@ namespace sf1r {
                     for( ScdParser::iterator doc_iter = parser.begin();
                       doc_iter!= parser.end(); ++doc_iter, ++n)
                     {
-                        SCD_TYPE type = scd_type;
                         if(n%100000==0)
                         {
                             LOG(INFO)<<"Find Documents "<<n<<std::endl;
                         }
-                        Document doc;
+                        ScdDocument doc;
+                        doc.type = scd_type;
                         SCDDoc& scddoc = *(*doc_iter);
                         SCDDoc::iterator p = scddoc.begin();
                         for(; p!=scddoc.end(); ++p)
@@ -59,14 +60,21 @@ namespace sf1r {
                             const std::string& property_name = p->first;
                             doc.property(property_name) = p->second;
                         }
-                        p_(doc, type);
-                        if(writer_)
-                        {
-                            writer_->Append(doc, type);
-                        }
+                        ProcessDoc(doc);
                     }
                 }
             }
+            FinishDocs();
+        }
+
+        void ProcessDoc(ScdDocument& doc)
+        {
+            pool_.schedule(boost::bind(&ScdDocProcessor::DoProcessDoc_, this, doc));
+        }
+
+        void FinishDocs()
+        {
+            pool_.wait();
             if(writer_)
             {
                 writer_->Close();
@@ -75,12 +83,24 @@ namespace sf1r {
 
 
     private:
+        void DoProcessDoc_(ScdDocument& doc)
+        {
+            p_(doc);
+            if(writer_)
+            {
+                boost::unique_lock<boost::mutex> lock(mutex_);
+                writer_->Append(doc);
+            }
+        }
 
 
     private:
         ProcessorType p_;
         std::vector<std::string> input_;
         boost::shared_ptr<ScdTypeWriter> writer_;
+        int thread_num_;
+        boost::threadpool::thread_pool<> pool_;
+        boost::mutex mutex_;
         //std::string output_;
     };
 

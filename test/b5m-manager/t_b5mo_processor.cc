@@ -397,8 +397,8 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     Document::doc_prop_value_strtype brand(str_to_propstr("联想"));
     //bdb->set(pid, brand);
 
-    Document doc;
-    SCD_TYPE type=INSERT_SCD;
+    ScdDocument doc;
+    doc.type=INSERT_SCD;
     doc.property("Title") = str_to_propstr("苹果 iphone4s", UString::UTF_8);
     doc.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
     doc.property("Price") = str_to_propstr("100.0", UString::UTF_8);
@@ -410,7 +410,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     B5moProcessor processor(odb.get(), matcher, mode, NULL);
 
 
-    processor.Process(doc,type);
+    processor.Process(doc);
 
     check(doc,"京东","100.00","苹果 iphone4s","","品牌:苹果","");//1,0x05f29098f1f606d9daeb41e49e9a24f87,"
     uint128_t bdocid;
@@ -419,15 +419,15 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     //bdb->get(bdocid, brand);
     //BOOST_CHECK_EQUAL( propstr_to_str(brand),"联想");
     doc.property("Category") = str_to_propstr("平板电脑/MID", UString::UTF_8);
-    type=UPDATE_SCD;
+    doc.type=UPDATE_SCD;
     doc.property("Source") = str_to_propstr("天猫", UString::UTF_8);
     doc.property("Price") = str_to_propstr("106.0", UString::UTF_8);
-    processor.Process(doc,type);
+    processor.Process(doc);
     check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
 
 
-    type=INSERT_SCD;
-    Document doc2;
+    ScdDocument doc2;
+    doc2.type = INSERT_SCD;
     docid=2;
     doc2.property("Source") = str_to_propstr("天猫", UString::UTF_8);
     doc2.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
@@ -436,33 +436,34 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     doc2.property("Attribute") = str_to_propstr("品牌:三星", UString::UTF_8);
     odb->insert(2, pid);
     odb->flush();
-    processor.Process(doc2,type);
+    processor.Process(doc2);
     check(doc2,"天猫","154.00","","手机","品牌:三星","");
    
 
-    type=DELETE_SCD;
-    processor.Process(doc,type);
+    doc.type=DELETE_SCD;
+    processor.Process(doc);
     //bdb->get(bdocid, brand);
     //BOOST_CHECK_EQUAL(propstr_to_str(brand),"联想");
-    Document doc3;
-    type=INSERT_SCD;
+    ScdDocument doc3;
+    doc3.type=INSERT_SCD;
     doc3.property("Source") = str_to_propstr("当当", UString::UTF_8);
     doc3.property("DOCID") = str_to_propstr("03", UString::UTF_8);
     doc3.property("Price") = str_to_propstr("15434.0", UString::UTF_8);
     doc3.property("Category") = str_to_propstr("男装>夹克", UString::UTF_8);
     doc3.property("Attribute") = str_to_propstr("品牌:brand1", UString::UTF_8);
-    processor.Process(doc3,type);
+    processor.Process(doc3);
 //当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile
 
     check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1","");
-    processor.Process(doc,type);
-    Document doc4;
+    doc.type = INSERT_SCD;
+    processor.Process(doc);
+    ScdDocument doc4;
+    doc4.type = INSERT_SCD;
     doc4.property("Title") = str_to_propstr("SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版");
     doc4.property("DOCID") = str_to_propstr("04", UString::UTF_8);
     doc4.property("Price") = str_to_propstr("1324.0", UString::UTF_8);
     doc4.property("Category") = str_to_propstr("平板电脑/MID");
-    type=INSERT_SCD;
-    processor.Process(doc,type);
+    processor.Process(doc);
 
     //bdb->flush();
     //bdb.reset(new BrandDb(bdb_path));

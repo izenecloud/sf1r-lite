@@ -105,6 +105,7 @@ namespace sf1r {
         boost::shared_ptr<ScdTypeWriter> pwriter_;
         B5mpDocGenerator pgenerator_;
         Json::Reader json_reader_;
+        boost::mutex mutex_;
     };
 
 }

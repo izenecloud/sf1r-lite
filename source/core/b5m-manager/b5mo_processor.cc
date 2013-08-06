@@ -38,8 +38,9 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
     ifs.close();
 }
 
-void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
+void B5moProcessor::Process(ScdDocument& doc)
 {
+    SCD_TYPE type = doc.type;
     static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;
     //reset type
@@ -360,7 +361,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
 }
 
-bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance)
+bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
 {
     if(!odb_->is_open())
     {
@@ -486,8 +487,8 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         //odb_->flush();
     //}
 
-    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1, _2);
-    ScdDocProcessor sd_processor(p);
+    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+    ScdDocProcessor sd_processor(p, thread_num);
     sd_processor.AddInput(scd_path);
     sd_processor.SetOutput(writer);
     sd_processor.Process();

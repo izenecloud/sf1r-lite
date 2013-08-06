@@ -1,4 +1,5 @@
 #include "product_matcher.h"
+#include "scd_doc_processor.h"
 #include <util/hashFunction.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -676,7 +677,7 @@ void ProductMatcher::Init_()
     //nf_.clear();
 
 }
-bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode)
+bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode, int thread_num)
 {
     path_ = kpath;
     if(!boost::filesystem::exists(kpath))
@@ -958,7 +959,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         std::string stitle = propstr_to_str(title);
         std::string spid = propstr_to_str(pid);
-        uint128_t ipid = B5MHelper::StringToUint128(spid);
+        //uint128_t ipid = B5MHelper::StringToUint128(spid);
         std::string sattribute = propstr_to_str(attrib_ustr);
         Product product;
         product.spid = spid;
@@ -1140,7 +1141,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     std::string offer_scd = scd_path+"/OFFER.SCD";
     if(boost::filesystem::exists(offer_scd))
     {
-        IndexOffer_(offer_scd);
+        IndexOffer_(offer_scd, thread_num);
     }
     std::string path = path_+"/products";
     izenelib::am::ssf::Util<>::Save(path, products_);
@@ -1450,104 +1451,115 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
+void ProductMatcher::OfferProcess_(ScdDocument& doc)
+{
+    std::string scategory;
+    doc.getString("Category", scategory);
+    std::string stitle;
+    doc.getString("Title", stitle);
+    if(scategory.empty()||stitle.empty()) return;
+    UString title(stitle, UString::UTF_8);
+    CategoryIndex::const_iterator cit = category_index_.find(scategory);;
+    if(cit==category_index_.end()) return;
+#ifdef B5M_DEBUG
+    //std::string stitle;
+    //title.convertString(stitle, UString::UTF_8);
+    //std::cerr<<"index offer title "<<stitle<<std::endl;
+#endif
+    uint32_t cid = cit->second;
+    OfferCategoryApp app;
+    app.cid = cid;
+    app.count = 1;
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
+    KeywordVector keyword_vector;
+    GetKeywords(term_list, keyword_vector, false);
+    //process feature vector
+    cid_t cid1 = GetLevelCid_(scategory, 1);
+    cid_t cid2 = GetLevelCid_(scategory, 2);
+    FeatureVector feature_vector;
+    GenFeatureVector_(keyword_vector, feature_vector);
+    boost::unique_lock<boost::mutex> lock(offer_mutex_);
+    for(uint32_t i=0;i<keyword_vector.size();i++)
+    {
+        const TermList& tl = keyword_vector[i].term_list;
+        trie_[tl].offer_category_apps.push_back(app);
+    }
+    if(cid1!=0)
+    {
+        FeatureVectorAdd_(feature_vectors_[cid1], feature_vector);
+        fv_count_[cid1]++;
+    }
+    if(cid2!=0)
+    {
+        FeatureVectorAdd_(feature_vectors_[cid2], feature_vector);
+        fv_count_[cid2]++;
+    }
+    
 
-void ProductMatcher::IndexOffer_(const std::string& offer_scd)
+    //if(use_ngram_)
+    //{
+        //for(uint32_t i=0;i<keyword_vector.size();i++)
+        //{
+            //const KeywordTag& ki = keyword_vector[i];
+            //for(uint32_t j=i+1;j<keyword_vector.size();j++)
+            //{
+                //const KeywordTag& kj = keyword_vector[j];
+                //std::vector<uint32_t> ids(2);
+                //ids[0] = ki.id;
+                //ids[1] = kj.id;
+                //if(ids[1]<ids[0]) std::swap(ids[0], ids[1]);
+                //nf[ids].push_back(std::make_pair(cid, 1));
+            //}
+        //}
+    //}
+}
+
+void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
 {
     LOG(INFO)<<"index offer begin"<<std::endl;
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(offer_scd);
-    uint32_t n=0;
-    NgramFrequent nf;
+    //NgramFrequent nf;
     feature_vectors_.resize(category_list_.size());
-    std::vector<uint32_t> fv_count(category_list_.size(), 0);
-    for( ScdParser::iterator doc_iter = parser.begin();
-      doc_iter!= parser.end(); ++doc_iter, ++n)
-    {
-        //if(n>=15000) break;
-        if(n%100000==0)
-        {
-            LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
-        }
-        //Document doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        SCDDoc::iterator p = scddoc.begin();
-        Document::doc_prop_value_strtype title;
-        Document::doc_prop_value_strtype category;
-        for(; p!=scddoc.end(); ++p)
-        {
-            const std::string& property_name = p->first;
-            if(property_name=="Title")
-            {
-                title = p->second;
-            }
-            else if(property_name=="Category")
-            {
-                category = p->second;
-            }
-        }
-        if(category.empty()||title.empty()) continue;
-        std::string scategory = propstr_to_str(category);
-        CategoryIndex::const_iterator cit = category_index_.find(scategory);;
-        if(cit==category_index_.end()) continue;
-#ifdef B5M_DEBUG
-        //std::string stitle;
-        //title.convertString(stitle, UString::UTF_8);
-        //std::cerr<<"index offer title "<<stitle<<std::endl;
-#endif
-        uint32_t cid = cit->second;
-        OfferCategoryApp app;
-        app.cid = cid;
-        app.count = 1;
-        std::vector<Term> term_list;
-        Analyze_(propstr_to_ustr(title), term_list);
-        KeywordVector keyword_vector;
-        GetKeywords(term_list, keyword_vector, false);
-        for(uint32_t i=0;i<keyword_vector.size();i++)
-        {
-            const TermList& tl = keyword_vector[i].term_list;
-            trie_[tl].offer_category_apps.push_back(app);
-        }
-        //process feature vector
-        cid_t cid1 = GetLevelCid_(scategory, 1);
-        cid_t cid2 = GetLevelCid_(scategory, 2);
-        FeatureVector feature_vector;
-        GenFeatureVector_(keyword_vector, feature_vector);
-        if(cid1!=0)
-        {
-            FeatureVectorAdd_(feature_vectors_[cid1], feature_vector);
-            fv_count[cid1]++;
-        }
-        if(cid2!=0)
-        {
-            FeatureVectorAdd_(feature_vectors_[cid2], feature_vector);
-            fv_count[cid2]++;
-        }
-        
+    fv_count_.resize(category_list_.size(), 0);
+    ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
+    processor.AddInput(offer_scd);
+    processor.Process();
+    //ScdParser parser(izenelib::util::UString::UTF_8);
+    //parser.load(offer_scd);
+    //uint32_t n=0;
+    //for( ScdParser::iterator doc_iter = parser.begin();
+      //doc_iter!= parser.end(); ++doc_iter, ++n)
+    //{
+        ////if(n>=15000) break;
+        //if(n%100000==0)
+        //{
+            //LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
+        //}
+        ////Document doc;
+        //SCDDoc& scddoc = *(*doc_iter);
+        //SCDDoc::iterator p = scddoc.begin();
+        //Document::doc_prop_value_strtype title;
+        //Document::doc_prop_value_strtype category;
+        //for(; p!=scddoc.end(); ++p)
+        //{
+            //const std::string& property_name = p->first;
+            //if(property_name=="Title")
+            //{
+                //title = p->second;
+            //}
+            //else if(property_name=="Category")
+            //{
+                //category = p->second;
+            //}
+        //}
 
-        if(use_ngram_)
-        {
-            for(uint32_t i=0;i<keyword_vector.size();i++)
-            {
-                const KeywordTag& ki = keyword_vector[i];
-                for(uint32_t j=i+1;j<keyword_vector.size();j++)
-                {
-                    const KeywordTag& kj = keyword_vector[j];
-                    std::vector<uint32_t> ids(2);
-                    ids[0] = ki.id;
-                    ids[1] = kj.id;
-                    if(ids[1]<ids[0]) std::swap(ids[0], ids[1]);
-                    nf[ids].push_back(std::make_pair(cid, 1));
-                }
-            }
-        }
-
-    }
+    //}
     for(uint32_t i=0;i<feature_vectors_.size();i++)
     {
         FeatureVector& feature_vector = feature_vectors_[i];
         for(uint32_t j=0;j<feature_vector.size();j++)
         {
-            feature_vector[j].second/=fv_count[i];
+            feature_vector[j].second/=fv_count_[i];
         }
         FeatureVectorNorm_(feature_vector);
     }
@@ -1581,95 +1593,95 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         tag.offer_category_apps.swap(new_apps);
     }
 
-    if(use_ngram_)
-    {
-        uint32_t new_kid = all_keywords_.size();
-        for(NgramFrequent::iterator it = nf.begin();it!=nf.end();it++)
-        {
-            const std::vector<uint32_t>& ids = it->first;
-            FrequentValue& value = it->second;
-            std::sort(value.begin(), value.end());
-            FrequentValue new_value;
-            new_value.reserve(value.size());
-            for(uint32_t i=0;i<value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = value[i];
-                if(new_value.empty())
-                {
-                    new_value.push_back(v);
-                }
-                else
-                {
-                    if(new_value.back().first==v.first)
-                    {
-                        new_value.back().second+=v.second;
-                    }
-                    else
-                    {
-                        new_value.push_back(v);
-                    }
-                }
-            }
-            uint32_t freq = 0;
-            for(uint32_t i=0;i<new_value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                freq += v.second;
-            }
-            double entropy = 0.0;
-            for(uint32_t i=0;i<new_value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                double p = (double)v.second/freq;
-                entropy += p*std::log(p);
-            }
-            entropy*=-1.0;
+    //if(use_ngram_)
+    //{
+        //uint32_t new_kid = all_keywords_.size();
+        //for(NgramFrequent::iterator it = nf.begin();it!=nf.end();it++)
+        //{
+            //const std::vector<uint32_t>& ids = it->first;
+            //FrequentValue& value = it->second;
+            //std::sort(value.begin(), value.end());
+            //FrequentValue new_value;
+            //new_value.reserve(value.size());
+            //for(uint32_t i=0;i<value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = value[i];
+                //if(new_value.empty())
+                //{
+                    //new_value.push_back(v);
+                //}
+                //else
+                //{
+                    //if(new_value.back().first==v.first)
+                    //{
+                        //new_value.back().second+=v.second;
+                    //}
+                    //else
+                    //{
+                        //new_value.push_back(v);
+                    //}
+                //}
+            //}
+            //uint32_t freq = 0;
+            //for(uint32_t i=0;i<new_value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                //freq += v.second;
+            //}
+            //double entropy = 0.0;
+            //for(uint32_t i=0;i<new_value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                //double p = (double)v.second/freq;
+                //entropy += p*std::log(p);
+            //}
+            //entropy*=-1.0;
 
-            if(freq>=20 && entropy<1.0)
-            {
-#ifdef B5M_DEBUG
-                std::cerr<<"NGRAM";
-                for(uint32_t i=0;i<ids.size();i++)
-                {
-                    uint32_t id = ids[i];
-                    const KeywordTag& k = all_keywords_[id];
-                    std::cerr<<","<<GetText_(k.term_list);
-                }
-                std::cerr<<" - "<<freq<<","<<entropy<<std::endl;
-#endif
+            //if(freq>=20 && entropy<1.0)
+            //{
+//#ifdef B5M_DEBUG
+                //std::cerr<<"NGRAM";
+                //for(uint32_t i=0;i<ids.size();i++)
+                //{
+                    //uint32_t id = ids[i];
+                    //const KeywordTag& k = all_keywords_[id];
+                    //std::cerr<<","<<GetText_(k.term_list);
+                //}
+                //std::cerr<<" - "<<freq<<","<<entropy<<std::endl;
+//#endif
 
-                double rev_entropy = 10.0;
-                if(entropy>0.0)
-                {
-                    rev_entropy = 1.0/entropy;
-                }
-                if(rev_entropy>10.0) rev_entropy = 10.0;
-                double weight = std::log((double)freq)*rev_entropy;
-                KeywordTag ngram_tag;
-                ngram_tag.id = new_kid++;
-                ngram_tag.kweight = weight;
-                for(uint32_t i=0;i<ids.size();i++)
-                {
-                    uint32_t id = ids[i];
-                    const KeywordTag& k = all_keywords_[id];
-                    ngram_tag.term_list.push_back(0);
-                    ngram_tag.term_list.insert(ngram_tag.term_list.end(), k.term_list.begin(), k.term_list.end());
+                //double rev_entropy = 10.0;
+                //if(entropy>0.0)
+                //{
+                    //rev_entropy = 1.0/entropy;
+                //}
+                //if(rev_entropy>10.0) rev_entropy = 10.0;
+                //double weight = std::log((double)freq)*rev_entropy;
+                //KeywordTag ngram_tag;
+                //ngram_tag.id = new_kid++;
+                //ngram_tag.kweight = weight;
+                //for(uint32_t i=0;i<ids.size();i++)
+                //{
+                    //uint32_t id = ids[i];
+                    //const KeywordTag& k = all_keywords_[id];
+                    //ngram_tag.term_list.push_back(0);
+                    //ngram_tag.term_list.insert(ngram_tag.term_list.end(), k.term_list.begin(), k.term_list.end());
 
-                }
-                for(uint32_t i=0;i<new_value.size();i++)
-                {
-                    const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                    OfferCategoryApp app;
-                    app.cid = v.first;
-                    app.count = v.second;
-                    ngram_tag.offer_category_apps.push_back(app);
-                }
-                trie_[ngram_tag.term_list] = ngram_tag;
+                //}
+                //for(uint32_t i=0;i<new_value.size();i++)
+                //{
+                    //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                    //OfferCategoryApp app;
+                    //app.cid = v.first;
+                    //app.count = v.second;
+                    //ngram_tag.offer_category_apps.push_back(app);
+                //}
+                //trie_[ngram_tag.term_list] = ngram_tag;
 
-            }
-        }
-        LOG(INFO)<<"find ngram keyword "<<new_kid-all_keywords_.size()<<std::endl;
-    }
+            //}
+        //}
+        //LOG(INFO)<<"find ngram keyword "<<new_kid-all_keywords_.size()<<std::endl;
+    //}
     LOG(INFO)<<"index offer end"<<std::endl;
 }
 

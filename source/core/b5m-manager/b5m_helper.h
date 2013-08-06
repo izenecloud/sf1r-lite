@@ -69,7 +69,7 @@ namespace sf1r {
         {
             namespace bfs = boost::filesystem;
             if(!bfs::exists(scd_path)) return;
-            if( bfs::is_regular_file(scd_path) && ScdParser::checkSCDFormat(scd_path))
+            if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
             {
                 scd_list.push_back(scd_path);
             }

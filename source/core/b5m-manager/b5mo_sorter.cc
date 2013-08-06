@@ -11,6 +11,7 @@ B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
 
 void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     if(buffer_.size()==mcount_)
     {
         WaitUntilSortFinish_();
@@ -21,6 +22,7 @@ void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
 
 bool B5moSorter::StageOne()
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     WaitUntilSortFinish_();
     if(!buffer_.empty())
     {

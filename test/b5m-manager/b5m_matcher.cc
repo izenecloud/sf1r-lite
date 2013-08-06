@@ -295,6 +295,7 @@ int do_main(int ac, char** av)
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
+        ("thread-num", po::value<int>(), "specify thread num")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
@@ -374,6 +375,7 @@ int do_main(int ac, char** av)
     bool noprice = false;
     bool spu_only = false;
     uint16_t max_depth = 0;
+    int thread_num = 1;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -382,6 +384,10 @@ int do_main(int ac, char** av)
     } 
     if (vm.count("mode")) {
         mode = vm["mode"].as<int>();
+    } 
+    if (vm.count("thread-num")) {
+        thread_num = vm["thread-num"].as<int>();
+        std::cout<<"thread_num:"<<thread_num<<std::endl;
     } 
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
@@ -637,7 +643,7 @@ int do_main(int ac, char** av)
         //{
             //matcher.LoadCategoryGroup(category_group);
         //}
-        if(!matcher.Index(knowledge_dir, scd_path, mode))
+        if(!matcher.Index(knowledge_dir, scd_path, mode, thread_num))
         {
             return EXIT_FAILURE;
         }
@@ -1064,7 +1070,7 @@ int do_main(int ac, char** av)
         {
             processor.SetHumanMatchFile(human_match);
         }
-        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance))
+        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
         {
             return EXIT_FAILURE;
         }
