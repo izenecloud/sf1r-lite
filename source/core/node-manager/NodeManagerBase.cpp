@@ -67,7 +67,8 @@ void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
         boost::unique_lock<boost::mutex> lock(mutex_);
         sf1rTopology_ = cfg;
         if (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
-            nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
+            nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+            nodeState_ == NODE_STATE_RECOVER_FINISHING)
         {
             // while recovering we should do nothing while topology changed.
         }
@@ -353,8 +354,11 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
             setElectingState();
-            while (nodeState_ == NODE_STATE_RECOVER_RUNNING || nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING
-                || !MasterManagerBase::get()->disableNewWrite())
+            while (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
+                nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
+                nodeState_ == NODE_STATE_ABORTING ||
+                nodeState_ == NODE_STATE_RECOVER_FINISHING ||
+                !MasterManagerBase::get()->disableNewWrite())
             {
                 LOG (INFO) << " session expired while processing request or recovering, wait processing finish.";
                 waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(10));
@@ -524,12 +528,14 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
 
     std::string service_state;
     if (nodeState_ == NODE_STATE_RECOVER_RUNNING || 
+        nodeState_ == NODE_STATE_RECOVER_FINISHING ||
         nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ||
         nodeState_ == NODE_STATE_ELECTING ||
         nodeState_ == NODE_STATE_UNKNOWN ||
         nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
         nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
         nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT ||
+        nodeState_ == NODE_STATE_ABORTING ||
         nodeState_ == NODE_STATE_INIT ||
         nodeState_ == NODE_STATE_STARTING)
     {
@@ -607,7 +613,8 @@ bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
             state == NODE_STATE_UNKNOWN)
         {
             if (nodeState_ != NODE_STATE_RECOVER_RUNNING &&
-                nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+                nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY &&
+                nodeState_ != NODE_STATE_RECOVER_FINISHING)
             {
                 LOG(INFO) << "primary is busy while get primary. " << state;
                 primary_host.clear();
@@ -710,6 +717,7 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool
                 uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
                 if (state == NODE_STATE_RECOVER_RUNNING ||
                     state == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+                    state == NODE_STATE_RECOVER_FINISHING ||
                     state == NODE_STATE_STARTING_WAIT_RETRY ||
                     state == NODE_STATE_STARTING
                    )
@@ -853,7 +861,8 @@ void NodeManagerBase::enterCluster(bool start_master)
     }
 
     if (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
-        nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
+        nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+        nodeState_ == NODE_STATE_RECOVER_FINISHING)
     {
         LOG(WARNING) << "try to reenter cluster while node is recovering!" << sf1rTopology_.curNode_.toString();
         stopping_ = false;
@@ -934,10 +943,6 @@ void NodeManagerBase::enterCluster(bool start_master)
         if (getPrimaryState() == NODE_STATE_ELECTING)
         {
             LOG(INFO) << "primary changed while I am recovering, sync to new primary.";
-            mutex_.unlock();
-            if (cb_on_recover_wait_primary_)
-                cb_on_recover_wait_primary_();
-            mutex_.lock();
         }
         else
         {
@@ -955,7 +960,16 @@ void NodeManagerBase::enterCluster(bool start_master)
 
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
+    if (nodeState_ == NODE_STATE_RECOVER_FINISHING)
+        return;
     stopping_ = false;
+    nodeState_ = NODE_STATE_RECOVER_FINISHING;
+
+    mutex_.unlock();
+    if (cb_on_recover_wait_primary_)
+        cb_on_recover_wait_primary_();
+    mutex_.lock();
+
     nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
@@ -1416,8 +1430,11 @@ void NodeManagerBase::resetWriteState(bool need_re_enter)
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
         {
             LOG(INFO) << "abort request on current primary because of lost registered primary.";
+            nodeState_ = NODE_STATE_ABORTING;
+            mutex_.unlock();
             if(cb_on_wait_replica_abort_)
                 cb_on_wait_replica_abort_();
+            mutex_.lock();
             nodeState_ = NODE_STATE_STARTED;
         }
         break;
@@ -1434,8 +1451,11 @@ void NodeManagerBase::resetWriteState(bool need_re_enter)
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
+            nodeState_ = NODE_STATE_ABORTING;
+            mutex_.unlock();
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
+            mutex_.lock();
             nodeState_ = NODE_STATE_STARTED;
         }
         break;
@@ -1515,9 +1535,8 @@ void NodeManagerBase::checkForPrimaryElectingInAsyncMode()
     LOG(INFO) << "primary is electing current node state: " << nodeState_;
     switch(nodeState_)
     {
-    case NODE_STATE_RECOVER_RUNNING:
-        break;
     case NODE_STATE_PROCESSING_REQ_RUNNING:
+    case NODE_STATE_ABORTING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
         setElectingState();
         return;
@@ -1566,9 +1585,8 @@ void NodeManagerBase::checkForPrimaryElecting()
     LOG(INFO) << "primary is electing current node state: " << nodeState_;
     switch(nodeState_)
     {
-    case NODE_STATE_RECOVER_RUNNING:
-        break;
     case NODE_STATE_PROCESSING_REQ_RUNNING:
+    case NODE_STATE_ABORTING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
         setElectingState();
         return;
@@ -1603,10 +1621,6 @@ void NodeManagerBase::checkForPrimaryElecting()
             {
                 LOG(WARNING) << "begin re-enter to the cluster after I became new primary";
                 // primary is waiting sync to recovery.
-                mutex_.unlock();
-                if (cb_on_recover_wait_primary_)
-                    cb_on_recover_wait_primary_();
-                mutex_.lock();
                 enterClusterAfterRecovery(!masterStarted_);
             }
             checkSecondaryState(false);
@@ -1664,7 +1678,9 @@ bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
     if (primary_state == NODE_STATE_ELECTING || need_check_electing_)
     {
         if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
-            nodeState_ == NODE_STATE_RECOVER_RUNNING)
+            nodeState_ == NODE_STATE_ABORTING ||
+            nodeState_ == NODE_STATE_RECOVER_RUNNING ||
+            nodeState_ == NODE_STATE_RECOVER_FINISHING)
         {
             LOG(INFO) << "current node busy while check electing." << nodeState_;
             return false;
@@ -1875,15 +1891,21 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
     {
         LOG(INFO) << "primary state changed to electing while waiting primary during process request." << self_primary_path_;
         LOG(INFO) << "current request aborted !";
+        nodeState_ = NODE_STATE_ABORTING;
+        mutex_.unlock();
         if (cb_on_abort_request_)
             cb_on_abort_request_();
+        mutex_.lock();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
     {
         LOG(INFO) << "primary aborted the request while waiting finish process." << self_primary_path_;
+        nodeState_ = NODE_STATE_ABORTING;
+        mutex_.unlock();
         if (cb_on_abort_request_)
             cb_on_abort_request_();
+        mutex_.lock();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
@@ -1914,8 +1936,11 @@ void NodeManagerBase::checkPrimaryForAbortWrite(NodeStateType primary_state)
         primary_state == NODE_STATE_ELECTING)
     {
         LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
+        nodeState_ = NODE_STATE_ABORTING;
+        mutex_.unlock();
         if (cb_on_abort_request_)
             cb_on_abort_request_();
+        mutex_.lock();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else
@@ -1933,10 +1958,6 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
     {
         LOG(INFO) << "wait sync primary success or primary is changed while recovering." << self_primary_path_;
         // primary is waiting sync to recovery.
-        mutex_.unlock();
-        if (cb_on_recover_wait_primary_)
-            cb_on_recover_wait_primary_();
-        mutex_.lock();
         LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
         //nodeState_ = NODE_STATE_STARTED;
         enterClusterAfterRecovery(!masterStarted_);
@@ -2464,8 +2485,11 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     if (s_enable_async_)
     {
         LOG(INFO) << "abortting request :" << self_primary_path_;
+        nodeState_ = NODE_STATE_ABORTING;
+        mutex_.unlock();
         if(cb_on_wait_replica_abort_)
             cb_on_wait_replica_abort_();
+        mutex_.lock();
         updateNodeStateToNewState(NODE_STATE_STARTED);
         updateNodeState();
         return;
@@ -2501,8 +2525,11 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     if (all_secondary_ready)
     {
         LOG(INFO) << "all secondary abort request. primary is ready for new request: " << curr_primary_path_;
+        nodeState_ = NODE_STATE_ABORTING;
+        mutex_.unlock();
         if(cb_on_wait_replica_abort_)
             cb_on_wait_replica_abort_();
+        mutex_.lock();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else if (!self_changed)
