@@ -212,7 +212,7 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
     if (categoryScoreMap.empty())
     {
         LOG(INFO) << "no classified category";
-        return NULL;
+        //return NULL;
     }
 
     std::ostringstream oss;

@@ -40,7 +40,11 @@ score_t CategoryClassifyScorer::score(docid_t docId)
         categoryScoreMap_.find(categoryRFlag.first);
 
     if (it == categoryScoreMap_.end())
-        return hasGoldCategory_ ? 0 : kMinClassifyScore;
+    {
+        if (hasGoldCategory_ || "文娱>书籍杂志" == categoryRFlag.first || "文娱>音像影视" == categoryRFlag.first)
+            return 0;
+        return kMinClassifyScore;
+    }
 
     score_t result = it->second;
     if (!categoryRFlag.second)
