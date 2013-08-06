@@ -334,6 +334,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
     }
+    if(!product.smarket_time.empty() && !title.empty())
+    {
+        doc.property("MarketTime") = str_to_propstr(product.smarket_time);
+    }
     if(!product.sbrand.empty() && !title.empty())
     {
         doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
