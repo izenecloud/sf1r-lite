@@ -33,6 +33,9 @@ CategoryClassifyScorer::CategoryClassifyScorer(
 
 score_t CategoryClassifyScorer::score(docid_t docId)
 {
+    if (categoryScoreMap_.empty())
+        return kMinClassifyScore;
+
     const CategoryClassifyTable::category_rflag_t& categoryRFlag =
         categoryClassifyTable_.getCategoryNoLock(docId);
 
