@@ -28,6 +28,7 @@ public:
 
     void flush();
 
+    bool getForTest(const uint32_t& termid, std::vector<uint32_t>& docs);
     bool get(const uint32_t& termid, const std::string& propname, uint32_t propid, std::vector<uint32_t>& docs);
 
     void dumpToFile(const std::string& basepath);
@@ -47,7 +48,6 @@ public:
 
     size_t getNumItems(const std::string& propname);
 
-private:
     boost::shared_ptr<iii::Indexer> indexer_;
     CollectionMeta collmeta_;
 };

@@ -234,6 +234,21 @@ void TestDumpIndex::dumpToFile(const std::string& basepath)
     std::cout << "all dump thread finished." << std::endl;
 }
 
+bool TestDumpIndex::getForTest(const uint32_t& termid, std::vector<uint32_t>& docs)
+{
+    const IndexBundleSchema& indexSchema = collmeta_.indexBundleConfig_->indexSchema_;
+    for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
+        iter != iterEnd; ++iter)
+    {
+        if (iter->isIndex() &&
+            iter->isAnalyzed() && iter->getName() == "Title")
+        {
+            return get(termid, iter->getName(), iter->getPropertyId(), docs);
+        }
+    }
+    return false;
+}
+
 bool TestDumpIndex::get(const uint32_t& termid, const std::string& property,
     unsigned int propertyId, std::vector<uint32_t>& docs)
 {
@@ -334,17 +349,42 @@ BOOST_AUTO_TEST_CASE(test_dump)
     {
     TestDumpIndex merge_test("./index_merge_test", 128000000);
 
-    uint32_t test_times = 3;
+    uint32_t test_times = 8;
     uint32_t start_doc = 0;
     uint32_t each_part_num = 100;
-    for (size_t cnt = 0; cnt < test_times; ++cnt)
+    std::vector<std::vector<uint32_t> > all_deleted_docs;
+    std::vector<std::vector<uint32_t> > all_keeped_docs;
+    all_keeped_docs.resize(test_times*each_part_num*4 + 1);
+    all_deleted_docs.reserve(test_times*2);
+    for (size_t i = 1; i < test_times*each_part_num*4; ++i)
+        all_keeped_docs[i].reserve(test_times*each_part_num*4 - i);
+    for (size_t cnt = 1; cnt < test_times; ++cnt)
     {
+        // do realtime index every 3 times
+        if (cnt % 3 == 0)
+        {
+            merge_test.indexer_->setIndexMode("realtime");
+        }
+        else
+        {
+            merge_test.indexer_->setIndexMode("default");
+        }
+        if (!merge_test.indexer_->isRealTime())
+        {
+            merge_test.indexer_->setIndexMode("realtime");
+            merge_test.flush();
+            merge_test.indexer_->deletebinlog();
+            merge_test.indexer_->setIndexMode("default");
+        }
         std::vector<uint32_t> insert_docs_part;
         std::vector<uint32_t> update_docs_part;
         std::vector<uint32_t> del_docs_part;
+        insert_docs_part.reserve(each_part_num*3);
+        update_docs_part.reserve(each_part_num);
+        del_docs_part.reserve(each_part_num);
         for(uint32_t i = start_doc; i < start_doc + each_part_num * 3; ++i)
         {
-            if (start_doc == 0)
+            if (i == 0)
                 continue;
             insert_docs_part.push_back(i);
         }
@@ -366,6 +406,8 @@ BOOST_AUTO_TEST_CASE(test_dump)
             for(size_t j = 1; j <= insert_docs_part[i]; ++j)
             {
                 termid_list.push_back(j);
+                if (insert_docs_part[i] < start_doc + each_part_num)
+                    all_keeped_docs[j].push_back(insert_docs_part[i]);
             }
             merge_test.addDoc(insert_docs_part[i], termid_list);
         }
@@ -375,23 +417,62 @@ BOOST_AUTO_TEST_CASE(test_dump)
             for(size_t j = 1; j <= update_docs_part[i] + each_part_num*2; ++j)
             {
                 termid_list.push_back(j);
+                all_keeped_docs[j].push_back(update_docs_part[i] + each_part_num*2);
             }
             merge_test.updateDoc(update_docs_part[i], update_docs_part[i] + each_part_num*2, termid_list);
         }
+        all_deleted_docs.push_back(std::vector<uint32_t>());
+        all_deleted_docs.back().swap(update_docs_part);
         for(size_t i = 0; i < del_docs_part.size(); ++i)
         {
             merge_test.delDoc(del_docs_part[i]);
         }
+        all_deleted_docs.push_back(std::vector<uint32_t>());
+        all_deleted_docs.back().swap(del_docs_part);
 
-        merge_test.flush();
+        if (!merge_test.indexer_->isRealTime())
+            merge_test.flush();
+        else
+            merge_test.indexer_->flush(false);
+        merge_test.indexer_->getIndexReader();
         start_doc += each_part_num*4;
+        if (cnt % 31 == 0)
+            merge_test.optimizeIndex();
     }
 
-    LOG(INFO) << "wait 30s to optimizeIndex";
-    sleep(30);
+    LOG(INFO) << "wait to optimizeIndex";
+    sleep(10);
     merge_test.optimizeIndex();
     //check merged index.
 
+    LOG(INFO) << "begin check result.";
+    for (uint32_t tid = 1; tid < test_times*each_part_num*4; ++tid)
+    {
+        std::vector<uint32_t> docs;
+        bool ret = merge_test.getForTest(tid, docs);
+        BOOST_CHECK(ret);
+        for (size_t i = 0; i < docs.size(); ++i)
+        {
+            BOOST_CHECK(docs[i] >= tid);
+            // test for deleted docs
+            for (size_t j = 0; j < all_deleted_docs.size(); ++j)
+            {
+                if (!all_deleted_docs[j].empty() && all_deleted_docs[j][all_deleted_docs[j].size() - 1] < docs[i])
+                    continue;
+                BOOST_CHECK(!std::binary_search(all_deleted_docs[j].begin(),
+                        all_deleted_docs[j].end(), docs[i]));
+                if (all_deleted_docs[j].empty() || all_deleted_docs[j][0] > docs[i])
+                    break;
+            }
+            // test for keeped docs.
+            //
+            //for(size_t k = 0; k < all_keeped_docs[tid].size(); ++k)
+            //{
+            //}
+            BOOST_CHECK(docs[i] == all_keeped_docs[tid][i]);
+            BOOST_CHECK(docs[i] < test_times*each_part_num*4);
+        }
+    }
     merge_test.dumpToFile("./index_merge_test/out-");
 
     }
