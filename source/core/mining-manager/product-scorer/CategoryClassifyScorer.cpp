@@ -14,11 +14,13 @@ const score_t CategoryClassifyScorer::kMinClassifyScore = 0.0001;
 CategoryClassifyScorer::CategoryClassifyScorer(
     const ProductScoreConfig& config,
     const CategoryClassifyTable& categoryClassifyTable,
-    const CategoryScoreMap& categoryScoreMap)
+    const CategoryScoreMap& categoryScoreMap,
+    bool hasGroupLabel)
     : ProductScorer(config)
     , categoryClassifyTable_(categoryClassifyTable)
     , categoryScoreMap_(categoryScoreMap)
     , hasGoldCategory_(false)
+    , hasGroupLabel_(hasGroupLabel)
 {
     for (CategoryScoreMap::const_iterator it = categoryScoreMap_.begin();
          it != categoryScoreMap_.end(); ++it)
@@ -44,8 +46,11 @@ score_t CategoryClassifyScorer::score(docid_t docId)
 
     if (it == categoryScoreMap_.end())
     {
-        if (hasGoldCategory_ || "文娱>书籍杂志" == categoryRFlag.first || "文娱>音像影视" == categoryRFlag.first)
+        if (!hasGroupLabel_ && (hasGoldCategory_ ||
+                                "文娱>书籍杂志" == categoryRFlag.first ||
+                                "文娱>音像影视" == categoryRFlag.first))
             return 0;
+
         return kMinClassifyScore;
     }
 

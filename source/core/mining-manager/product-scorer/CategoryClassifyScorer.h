@@ -27,7 +27,8 @@ public:
     CategoryClassifyScorer(
         const ProductScoreConfig& config,
         const CategoryClassifyTable& categoryClassifyTable,
-        const CategoryScoreMap& categoryScoreMap);
+        const CategoryScoreMap& categoryScoreMap,
+        bool hasGroupLabel);
 
     virtual score_t score(docid_t docId);
 
@@ -37,6 +38,8 @@ private:
     const CategoryScoreMap categoryScoreMap_;
 
     bool hasGoldCategory_;
+
+    bool hasGroupLabel_;
 };
 
 } // namespace sf1r
