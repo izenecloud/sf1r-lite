@@ -159,49 +159,66 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     if(spu_only&&independent) pdoc.type = NOT_SCD;
 }
 
+bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
+{
+    std::string xstr;
+    std::string ystr;
+    x.getString("Price", xstr);
+    y.getString("Price", ystr);
+    ProductPrice xprice;
+    xprice.Parse(xstr);
+    ProductPrice yprice;
+    yprice.Parse(ystr);
+    if(!xprice.Positive()) return false;
+    if(!yprice.Positive()) return true;
+    return xprice.Min()<yprice.Min();
+
+}
+
 void B5mpDocGenerator::SelectSubDocs_(std::vector<Document>& subdocs) const
 {
     static const uint32_t max = 3u;
     if(subdocs.size()<=max) return;
-    //std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
-    boost::unordered_map<std::string, SubDocSelector> source_map;
-    for(uint32_t i=0;i<subdocs.size();i++)
-    {
-        const Document& doc = subdocs[i];
-        std::string source;
-        doc.getString("Source", source);
-        source_map[source].docs.push_back(doc);
-    }
-    std::vector<SubDocSelector> list;
-    for(boost::unordered_map<std::string, SubDocSelector>::iterator it = source_map.begin();it!=source_map.end();++it)
-    {
-        boost::unordered_map<std::string, int>::const_iterator wit = subdoc_weighter_.find(it->first);
-        int weight = 0;
-        if(wit!=subdoc_weighter_.end())
-        {
-            weight = wit->second;
-        }
-        it->second.weight = weight;
-        list.push_back(it->second);
-    }
-    std::sort(list.begin(), list.end());
-    std::vector<Document> new_subdocs;
-    while(true)
-    {
-        if(new_subdocs.size()==max) break;
-        bool find = false;
-        for(uint32_t i=0;i<list.size();i++)
-        {
-            if(new_subdocs.size()==max) break;
-            SubDocSelector& s = list[i];
-            if(s.docs.empty()) continue;
-            new_subdocs.push_back(s.docs.back());
-            s.docs.resize(s.docs.size()-1);
-            find = true;
-        }
-        if(!find) break;
-    }
-    subdocs.swap(new_subdocs);
+    std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
+    subdocs.resize(max);
+    //boost::unordered_map<std::string, SubDocSelector> source_map;
+    //for(uint32_t i=0;i<subdocs.size();i++)
+    //{
+        //const Document& doc = subdocs[i];
+        //std::string source;
+        //doc.getString("Source", source);
+        //source_map[source].docs.push_back(doc);
+    //}
+    //std::vector<SubDocSelector> list;
+    //for(boost::unordered_map<std::string, SubDocSelector>::iterator it = source_map.begin();it!=source_map.end();++it)
+    //{
+        //boost::unordered_map<std::string, int>::const_iterator wit = subdoc_weighter_.find(it->first);
+        //int weight = 0;
+        //if(wit!=subdoc_weighter_.end())
+        //{
+            //weight = wit->second;
+        //}
+        //it->second.weight = weight;
+        //list.push_back(it->second);
+    //}
+    //std::sort(list.begin(), list.end());
+    //std::vector<Document> new_subdocs;
+    //while(true)
+    //{
+        //if(new_subdocs.size()==max) break;
+        //bool find = false;
+        //for(uint32_t i=0;i<list.size();i++)
+        //{
+            //if(new_subdocs.size()==max) break;
+            //SubDocSelector& s = list[i];
+            //if(s.docs.empty()) continue;
+            //new_subdocs.push_back(s.docs.back());
+            //s.docs.resize(s.docs.size()-1);
+            //find = true;
+        //}
+        //if(!find) break;
+    //}
+    //subdocs.swap(new_subdocs);
 }
 
 ProductProperty::ProductProperty()

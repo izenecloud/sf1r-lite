@@ -99,6 +99,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
             if (NULL == values || 0 == values->size())
                 continue;
             //LOG(INFO)<<values->size();
+            if(!values) return;
             for (std::size_t vi = 0; vi < values->size(); vi++)
             {
                 //LOG(INFO)<<(asString((*values)[vi]));

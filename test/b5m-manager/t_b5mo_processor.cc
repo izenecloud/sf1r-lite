@@ -520,31 +520,31 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
             , "大家电>平板电视","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"ccc", "BOOK1","DD"
-            , "","101", B5MHelper::GetPidByIsbn("101")));
+            , "","", B5MHelper::GetPidByIsbn("101")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"ddd", "BOOK2","DD"
-            , "","103", B5MHelper::GetPidByIsbn("103")));
+            , "","", B5MHelper::GetPidByIsbn("103")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK11","PUB"
-            , "","101", B5MHelper::GetPidByIsbn("101")));
+            , "","", B5MHelper::GetPidByIsbn("101")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"111", "BOOKA","PUB"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"222", "BOOKB","京东商城"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"333", "BOOKC","京东商城"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"444", "BOOKD","京东商城"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"555", "BOOKE","卓越亚马逊"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"666", "BOOKF","DD"
-            , "","999", B5MHelper::GetPidByIsbn("999")));
+            , "","", B5MHelper::GetPidByIsbn("999")));
 
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
