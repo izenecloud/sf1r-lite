@@ -96,6 +96,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
             //LOG(INFO)<<property;
             const izenelib::driver::Value::ArrayType* values = (*array)[i][Keys::value].getPtr<Value::ArrayType>();
             //LOG(INFO)<<values->size();
+            if(!values) return;
             for (std::size_t vi = 0; vi < values->size(); vi++)
             {
                 //LOG(INFO)<<(asString((*values)[vi]));
