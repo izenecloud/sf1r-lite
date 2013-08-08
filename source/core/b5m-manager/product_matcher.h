@@ -49,6 +49,7 @@ namespace sf1r {
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
         typedef boost::unordered_map<TermList, UString> KeywordText;
         typedef std::vector<std::pair<uint32_t, double> > FeatureVector;
+        typedef std::vector<double> NFeatureVector;
 
         struct Position
         {
@@ -901,6 +902,11 @@ namespace sf1r {
         void GenFeatureVector_(const std::vector<KeywordTag>& keywords, FeatureVector& feature_vector) const;
         void FeatureVectorAdd_(FeatureVector& o, const FeatureVector& a) const;
         void FeatureVectorNorm_(FeatureVector& v) const;
+        void GenFeatureVector_(const std::vector<KeywordTag>& keywords, NFeatureVector& feature_vector) const;
+        void FeatureVectorAdd_(NFeatureVector& o, const NFeatureVector& a) const;
+        void FeatureVectorAdd_(NFeatureVector& o, const std::vector<KeywordTag>& keywords) const;
+        void FeatureVectorNorm_(NFeatureVector& v) const;
+        void FeatureVectorConvert_(const NFeatureVector& n, FeatureVector& v) const;
         double Cosine_(const FeatureVector& v1, const FeatureVector& v2) const;
 
         static uint32_t TextLength_(const std::string& text)
@@ -1019,7 +1025,9 @@ namespace sf1r {
         boost::mutex offer_mutex_;
     
         std::vector<FeatureVector> feature_vectors_;
+        std::vector<NFeatureVector> nfeature_vectors_;
         std::vector<uint32_t> fv_count_;
+        std::vector<std::vector<uint32_t> > oca_;
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
 

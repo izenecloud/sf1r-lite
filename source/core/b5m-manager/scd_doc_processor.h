@@ -5,13 +5,15 @@
 #include <vector>
 #include <common/ScdParser.h>
 #include <common/ScdTypeWriter.h>
+#include <document-manager/ScdDocument.h>
 #include <boost/threadpool.hpp>
+#include "b5m_threadpool.h"
 
 namespace sf1r {
     class ScdDocProcessor {
     public:
         typedef boost::function<void (ScdDocument&) > ProcessorType;
-        ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), thread_num_(thread_num), pool_(thread_num)
+        ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0)
         {
         }
 
@@ -51,14 +53,14 @@ namespace sf1r {
                         {
                             LOG(INFO)<<"Find Documents "<<n<<std::endl;
                         }
-                        ScdDocument doc;
-                        doc.type = scd_type;
+                        ScdDocument* doc = new ScdDocument;
+                        doc->type = scd_type;
                         SCDDoc& scddoc = *(*doc_iter);
                         SCDDoc::iterator p = scddoc.begin();
                         for(; p!=scddoc.end(); ++p)
                         {
                             const std::string& property_name = p->first;
-                            doc.property(property_name) = p->second;
+                            doc->property(property_name) = p->second;
                         }
                         ProcessDoc(doc);
                     }
@@ -67,9 +69,14 @@ namespace sf1r {
             FinishDocs();
         }
 
-        void ProcessDoc(ScdDocument& doc)
+        void ProcessDoc(ScdDocument* doc)
         {
-            pool_.schedule(boost::bind(&ScdDocProcessor::DoProcessDoc_, this, doc));
+            //static const std::size_t num_wait = 100000;
+            //count_++;
+            //if(count_%num_wait==0) pool_.wait();
+            pool_.schedule(doc);
+            //pool_.schedule(boost::bind(&ScdDocProcessor::DoProcessDoc_, this, doc));
+            //DoProcessDoc_(doc);
         }
 
         void FinishDocs()
@@ -99,8 +106,10 @@ namespace sf1r {
         std::vector<std::string> input_;
         boost::shared_ptr<ScdTypeWriter> writer_;
         int thread_num_;
-        boost::threadpool::thread_pool<> pool_;
+        //boost::threadpool::thread_pool<> pool_;
+        B5mThreadPool<ScdDocument> pool_;
         boost::mutex mutex_;
+        std::size_t count_;
         //std::string output_;
     };
 

@@ -47,6 +47,7 @@ namespace sf1r {
         std::ofstream match_ofs_;
         std::ofstream cmatch_ofs_;
         boost::unordered_set<uint128_t> changed_match_;
+        boost::shared_mutex mutex_;
     };
 
 }

@@ -131,6 +131,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     else
     {
         doc.clearExceptDOCID();
+        boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
         if(spid.empty()) type=NOT_SCD;
@@ -201,13 +202,16 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     std::string spid;
     std::string old_spid;
     bool is_human_edit = false;
-    if(odb_->get(sdocid, spid)) 
     {
-        OfferDb::FlagType flag = 0;
-        odb_->get_flag(sdocid, flag);
-        if(flag==1)
+        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        if(odb_->get(sdocid, spid)) 
         {
-            is_human_edit = true;
+            OfferDb::FlagType flag = 0;
+            odb_->get_flag(sdocid, flag);
+            if(flag==1)
+            {
+                is_human_edit = true;
+            }
         }
     }
     old_spid = spid;
@@ -310,7 +314,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             }
 
         }
-        match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
+        //match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
     }
     else
     {
@@ -341,8 +345,9 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(old_spid!=spid)
     {
+        boost::unique_lock<boost::shared_mutex> lock(mutex_);
         odb_->insert(sdocid, spid);
-        cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
+        //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
     if(sorter_!=NULL)
