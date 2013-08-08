@@ -234,7 +234,7 @@ bool SearchParser::parse(const Value& search)
                 return false;
             }
 
-            if (!propertyConfig.bIndex_)
+            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
             {
                 warning() = "Property is not indexed, ignore it: " +
                             propertyConfig.getName();

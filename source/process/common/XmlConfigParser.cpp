@@ -1990,6 +1990,22 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
             mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
             mining_schema.suffixmatch_schema.suffix_match_enable = true;
+            
+            PropertyConfig property;
+            property.setName(property_name);
+            IndexBundleSchema::iterator sp = collectionMeta.indexBundleConfig_->indexSchema_.find(property);
+            if ( collectionMeta.indexBundleConfig_->indexSchema_.end() != sp)
+            {
+                PropertyConfig p(*sp);
+                p.bSuffixIndex_ = true;
+                collectionMeta.indexBundleConfig_->indexSchema_.erase(sp);
+                collectionMeta.indexBundleConfig_->indexSchema_.insert(p);
+            }
+            else
+            {
+                property.bSuffixIndex_ = true;
+                collectionMeta.indexBundleConfig_->indexSchema_.insert(property);
+            }
         }
 
         std::sort(mining_schema.suffixmatch_schema.suffix_match_properties.begin(), mining_schema.suffixmatch_schema.suffix_match_properties.end());
