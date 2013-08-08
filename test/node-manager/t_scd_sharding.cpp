@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     // In this test, there is no Worker and scd transmission will fail,
     // but it dosen't matter, because we only need to test sharding.
     std::vector<std::string> outScdFileList;
-    scdDispatcher->dispatch(outScdFileList, dir, maxDoc);
+    scdDispatcher->dispatch(outScdFileList, dir, dir + "/out", maxDoc);
 
     return 0;
 }

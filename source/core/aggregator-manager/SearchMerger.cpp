@@ -156,7 +156,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
             }
         }
 
-        //cout << "maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
+        std::cout << "maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
         if (maxi == size_t(-1))
         {
             break;

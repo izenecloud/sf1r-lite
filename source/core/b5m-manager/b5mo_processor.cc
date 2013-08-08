@@ -173,6 +173,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
 {
     SCD_TYPE type = UPDATE_SCD;
     doc.eraseProperty(B5MHelper::GetSPTPropertyName());
+    doc.eraseProperty(B5MHelper::GetSPUrlPropertyName());
+    doc.eraseProperty(B5MHelper::GetSPPicPropertyName());
+    doc.eraseProperty("FilterAttribute");
+    doc.eraseProperty("DisplayAttribute");
     doc.eraseProperty(B5MHelper::GetBrandPropertyName());
     Document::doc_prop_value_strtype category;
     doc.getProperty("Category", category);
@@ -317,11 +321,22 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(!product.spic.empty() && !title.empty())
     {
+        //TODO remove this restrict
+        std::vector<std::string> spic_vec;
+        boost::algorithm::split(spic_vec, product.spic, boost::algorithm::is_any_of(","));
+        if(spic_vec.size()>1)
+        {
+            product.spic = spic_vec[0];
+        }
         doc.property(B5MHelper::GetSPPicPropertyName()) = str_to_propstr(product.spic);
     }
     if(!product.surl.empty() && !title.empty())
     {
         doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
+    }
+    if(!product.smarket_time.empty() && !title.empty())
+    {
+        doc.property("MarketTime") = str_to_propstr(product.smarket_time);
     }
     if(!product.sbrand.empty() && !title.empty())
     {
@@ -569,6 +584,10 @@ bool B5moProcessor::OMap_(const OriginalMapper& omapper, Document& doc) const
         doc.property("Category") = str_to_propstr(category);
         return true;
     }
-    return false;
+    else
+    {
+        doc.property("Category") = str_to_propstr("");
+        return false;
+    }
 }
 

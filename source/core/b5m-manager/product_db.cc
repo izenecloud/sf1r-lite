@@ -21,6 +21,9 @@ B5mpDocGenerator::B5mpDocGenerator()
     sub_doc_props_.insert("isCOD");
     sub_doc_props_.insert("isGenuine");
     //sub_doc_props_.clear();
+    subdoc_weighter_.insert(std::make_pair("卓越亚马逊", 10));
+    subdoc_weighter_.insert(std::make_pair("京东商城", 9));
+    subdoc_weighter_.insert(std::make_pair("天猫", 8));
 }
 void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
@@ -61,6 +64,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             {
                 subdocs.push_back(subdoc);
             }
+            SelectSubDocs_(subdocs);
         }
         Document::doc_prop_value_strtype oid;
         doc.getProperty("DOCID", oid);
@@ -153,6 +157,51 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.clearExceptDOCID();
     }
     if(spu_only&&independent) pdoc.type = NOT_SCD;
+}
+
+void B5mpDocGenerator::SelectSubDocs_(std::vector<Document>& subdocs) const
+{
+    static const uint32_t max = 3u;
+    if(subdocs.size()<=max) return;
+    //std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
+    boost::unordered_map<std::string, SubDocSelector> source_map;
+    for(uint32_t i=0;i<subdocs.size();i++)
+    {
+        const Document& doc = subdocs[i];
+        std::string source;
+        doc.getString("Source", source);
+        source_map[source].docs.push_back(doc);
+    }
+    std::vector<SubDocSelector> list;
+    for(boost::unordered_map<std::string, SubDocSelector>::iterator it = source_map.begin();it!=source_map.end();++it)
+    {
+        boost::unordered_map<std::string, int>::const_iterator wit = subdoc_weighter_.find(it->first);
+        int weight = 0;
+        if(wit!=subdoc_weighter_.end())
+        {
+            weight = wit->second;
+        }
+        it->second.weight = weight;
+        list.push_back(it->second);
+    }
+    std::sort(list.begin(), list.end());
+    std::vector<Document> new_subdocs;
+    while(true)
+    {
+        if(new_subdocs.size()==max) break;
+        bool find = false;
+        for(uint32_t i=0;i<list.size();i++)
+        {
+            if(new_subdocs.size()==max) break;
+            SubDocSelector& s = list[i];
+            if(s.docs.empty()) continue;
+            new_subdocs.push_back(s.docs.back());
+            s.docs.resize(s.docs.size()-1);
+            find = true;
+        }
+        if(!find) break;
+    }
+    subdocs.swap(new_subdocs);
 }
 
 ProductProperty::ProductProperty()

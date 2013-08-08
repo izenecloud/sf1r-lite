@@ -29,6 +29,18 @@ namespace
  * score), we would select at most 9 top labels.
  */
 const score_t kTopLabelLimit = 9;
+
+const std::string kCategoryPropName("Category");
+
+bool checkGroupLabel(const faceted::GroupParam& groupParam)
+{
+    faceted::GroupParam::GroupLabelMap::const_iterator it =
+        groupParam.groupLabels_.find(kCategoryPropName);
+
+    return it != groupParam.groupLabels_.end() &&
+        !it->second.empty();
+}
+
 }
 
 ProductScorerFactory::ProductScorerFactory(
@@ -68,25 +80,7 @@ ProductScorer* ProductScorerFactory::createScorer(
 
     if (scoreParam.searchMode_ == SearchingMode::SUFFIX_MATCH)
     {
-        ProductScorer* scorer = createFuzzyModeScorer_(scoreParam);
-        if (scorer)
-        {
-            scoreSum->addScorer(scorer);
-        }
-
-        scorer = createCustomScorer_(config_.scores[CUSTOM_SCORE],
-                                     scoreParam.query_);
-        if (scorer)
-        {
-            scoreSum->addScorer(scorer);
-        }
-
-        scorer = createTitleRelevanceScorer_(config_.scores[TITLE_RELEVANCE_SCORE],
-                                            scoreParam.queryScore_);
-        if (scorer)
-        {
-            scoreSum->addScorer(scorer);
-        }
+        createFuzzyModeScorer_(*scoreSum, scoreParam);
     }
     else
     {
@@ -107,18 +101,36 @@ ProductScorer* ProductScorerFactory::createScorer(
     return scoreSum.release();
 }
 
-ProductScorer* ProductScorerFactory::createFuzzyModeScorer_(
+void ProductScorerFactory::createFuzzyModeScorer_(
+    ProductScoreSum& scoreSum,
     const ProductScoreParam& scoreParam)
 {
-    if (categoryClassifyTable_)
+    ProductScorer* scorer = categoryClassifyTable_ ?
+        createCategoryClassifyScorer_(config_.scores[CATEGORY_CLASSIFY_SCORE], scoreParam) :
+        createCategoryScorer_(config_.scores[CATEGORY_SCORE], scoreParam);
+    if (scorer)
     {
-        return createCategoryClassifyScorer_(config_.scores[CATEGORY_CLASSIFY_SCORE],
-                                             scoreParam);
+        scoreSum.addScorer(scorer);
     }
-    else
+
+    scorer = createCustomScorer_(config_.scores[CUSTOM_SCORE],
+                                 scoreParam.query_);
+    if (scorer)
     {
-        return createCategoryScorer_(config_.scores[CATEGORY_SCORE],
-                                     scoreParam);
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createTitleRelevanceScorer_(config_.scores[TITLE_RELEVANCE_SCORE],
+                                         scoreParam.queryScore_);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createPopularityScorer_(config_.scores[POPULARITY_SCORE]);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
     }
 }
 
@@ -190,7 +202,7 @@ ProductScorer* ProductScorerFactory::createTitleRelevanceScorer_(
     if (titleScoreList_ == NULL)
         return NULL;
 
-    return new TitleRelevanceScorer(scoreConfig, titleScoreList_, score);   
+    return new TitleRelevanceScorer(scoreConfig, titleScoreList_, score);
 }
 
 ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
@@ -212,7 +224,7 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
     if (categoryScoreMap.empty())
     {
         LOG(INFO) << "no classified category";
-        return NULL;
+        //return NULL;
     }
 
     std::ostringstream oss;
@@ -225,10 +237,13 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
     }
     LOG(INFO) << oss.str();
 
+    const bool hasGroupLabel = checkGroupLabel(scoreParam.groupParam_);
+
     scoreParam.propSharedLockSet_.insertSharedLock(categoryClassifyTable_);
     return new CategoryClassifyScorer(scoreConfig,
                                       *categoryClassifyTable_,
-                                      categoryScoreMap);
+                                      categoryScoreMap,
+                                      hasGroupLabel);
 }
 
 ProductScorer* ProductScorerFactory::createRelevanceScorer_(

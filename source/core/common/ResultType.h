@@ -459,6 +459,8 @@ public:
     {
         using std::swap;
         rawQueryString_.swap(other.rawQueryString_);
+        pruneQueryString_.swap(other.pruneQueryString_);
+        distSearchInfo_.swap(other.distSearchInfo_);
         swap(encodingType_, other.encodingType_);
         collectionName_.swap(other.collectionName_);
         analyzedQuery_.swap(other.analyzedQuery_);
@@ -507,7 +509,7 @@ public:
 //          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
 
     MSGPACK_DEFINE(
-            rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
+            rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
             queryTermIdList_, totalCount_, counterResults_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,

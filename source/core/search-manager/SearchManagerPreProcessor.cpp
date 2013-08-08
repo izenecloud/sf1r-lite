@@ -114,6 +114,8 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             if (!propertyConfig.isIndex() || propertyConfig.isAnalyzed())
                 continue;
 
+            LOG(INFO) << "add sort property : " << iter->first;
+
             PropertyDataType propertyType = propertyConfig.getType();
             switch (propertyType)
             {
@@ -199,6 +201,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
         distSearchInfo.sortPropertyList_.push_back(
             std::make_pair(sortPropertyName, pSortProperty->isReverse()));
 
+        LOG(INFO) << "adding sort property : " << sortPropertyName;
         if (sortPropertyName == "CUSTOM_RANK" || sortPropertyName == "RANK")
             continue;
 
@@ -314,7 +317,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     ProductScoreParam scoreParam(actionItem.env_.normalizedQueryString_,
                                  actionItem.env_.queryString_,
                                  actionItem.env_.querySource_,
-                                 actionItem.groupParam_.boostGroupLabels_,
+                                 actionItem.groupParam_,
                                  propSharedLockSet,
                                  relevanceScorerPtr.release(),
                                  actionItem.searchingMode_.mode_,

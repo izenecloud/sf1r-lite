@@ -57,7 +57,8 @@ bool TitleScoreMiningTask::preProcess()
     {
         titleScoreList_->resize(document_manager_->getMaxDocId() + 1);
     }
-
+    if (getLastDocId() > document_manager_->getMaxDocId())
+        return false;
     return true;
 }
 

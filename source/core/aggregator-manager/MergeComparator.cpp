@@ -16,6 +16,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         std::string property = iter->first;
         SortPropertyData* pPropertyComparator = new SortPropertyData(iter->first, iter->second);
 
+        std::cout << "=== merge sort property : " << property << std::endl;
         void* dataList = NULL;
         if (property == "RANK")
         {
@@ -74,7 +75,6 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         if (dataList !=  NULL)
         {
             pPropertyComparator->setDataList(dataList);
-
             sortProperties_.push_back(pPropertyComparator);
         }
         else
@@ -103,6 +103,8 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
         SortPropertyData* pSortProperty1 = comp1->sortProperties_[i];
         SortPropertyData* pSortProperty2 = comp2->sortProperties_[i];
 
+        std::cout << "comparing property: " << pSortProperty1->getProperty() << std::endl;
+
         SortPropertyData::DataType dataType1 = pSortProperty1->getDataType();
         SortPropertyData::DataType dataType2 = pSortProperty2->getDataType();
         if (dataType1 != dataType2)
@@ -116,24 +118,21 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
             int32_t v1 = ((int32_t*)dataList1)[idx1];
             int32_t v2 = ((int32_t*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? v1 < v2 : v1 > v2;
         }
         else if (dataType1 == SortPropertyData::DATA_TYPE_INT64)
         {
             int64_t v1 = ((int64_t*)dataList1)[idx1];
             int64_t v2 = ((int64_t*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? v1 < v2 : v1 > v2;
         }
         else if (dataType1 == SortPropertyData::DATA_TYPE_FLOAT)
         {
             float v1 = ((float*)dataList1)[idx1];
             float v2 = ((float*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? v1 < v2 : v1 > v2;
         }
     }
 

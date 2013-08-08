@@ -604,6 +604,8 @@ private:
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
 
+    const std::string& getOfferItemCountPropName_() const;
+
     void StartSynonym_(ProductMatcher* matcher, const std::string& path);
     void UpdateSynonym_(ProductMatcher* matcher, const std::string& path);
     void RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path);

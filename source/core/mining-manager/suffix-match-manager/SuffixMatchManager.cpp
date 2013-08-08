@@ -261,31 +261,62 @@ bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UStr
     return tokenizer_->GetSynonymSet(pattern, synonym_set, setid);
 }
 
+bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
+{
+    if (!tokenizer_)
+    {
+        LOG(INFO)<<"tokenizer_ = NULL";
+        return false;
+    }
+    return tokenizer_->GetSynonymId(pattern, setid);
+}
+
 void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
 {
     const size_t tmp_size = major_size;
-    std::vector<size_t> set_id;
+    std::map<UString, bool> is_add;
+
     for (size_t j = 0; j < tokens.size(); ++j)
     {
+        if (is_add.find(tokens[j].first) != is_add.end()) continue;
         std::vector<UString> synonym_set;
         std::vector<std::pair<UString, double> > tmp_tokens;
-        int id = -1, find_flag = -1;
+
+        int id = -1;
         if (!GetSynonymSet_(tokens[j].first, synonym_set, id))//term doesn't have synonym
         {
             tmp_tokens.push_back(tokens[j]);
             refine_tokens.push_back(tmp_tokens);
             continue;
         }
-        for (size_t i = 0; i < set_id.size(); ++i)//check if the synonym set has been added
-            if (set_id[i] == id)
-            {
-                find_flag = i;
-                break;
-            }
+           
+
+        double tmp_score = 0;
             
-        if (-1 == find_flag)//the synonym set hasn't been added
+        for (size_t i = 0; i < tokens.size(); ++i)
         {
-            set_id.push_back(id);
+            int tmp_id = -1;
+            GetSynonymId_(tokens[i].first, tmp_id);
+            if (tmp_id == id)
+                tmp_score += tokens[i].second;
+        }
+        for (size_t i = 0; i < tokens.size(); ++i)
+        {
+            int tmp_id = -1;
+            GetSynonymId_(tokens[i].first, tmp_id);
+            if (tmp_id == id)
+            {
+                tmp_tokens.push_back(std::make_pair(tokens[i].first, tmp_score));
+                is_add.insert(std::make_pair(tokens[i].first, 1));
+            }
+        }
+        for (size_t i = 0; i < synonym_set.size(); ++i)
+            if (is_add.find(synonym_set[i]) == is_add.end())
+                tmp_tokens.push_back(std::make_pair(synonym_set[i], tmp_score * 0.95));
+            
+        refine_tokens.push_back(tmp_tokens);
+    }
+/*                    
             for (size_t i = 0; i < synonym_set.size(); ++i)
             {
                 if (synonym_set[i] == tokens[j].first)
@@ -310,7 +341,7 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
                 }
         }
     }
-    
+*/    
 }
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
@@ -333,7 +364,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     std::vector<vector<std::pair<UString, double> > > synonym_tokens;
     size_t major_size = 0;    
    
-   
+
     if (use_synonym)
     {
         std::vector<std::pair<UString, double> > tmp_tokens;
@@ -343,6 +374,15 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
             tmp_tokens.push_back((*it));       
         ExpandSynonym_(tmp_tokens, synonym_tokens, major_size);
+/*        
+        for (size_t i = 0; i < synonym_tokens.size(); ++i)
+            for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
+            {
+                string s;
+                synonym_tokens[i][j].first.convertString(s, UString::UTF_8);
+                LOG(INFO)<<i<<' '<<j<<' '<<s<<' '<<synonym_tokens[i][j].second;
+            }
+*/            
     }
 
     size_t total_match = 0;

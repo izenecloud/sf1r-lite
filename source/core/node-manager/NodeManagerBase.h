@@ -75,7 +75,8 @@ public:
         // waiting recovery replica to finish sync to latest.
         NODE_STATE_RECOVER_WAIT_REPLICA_FINISH,
         // recovery finished correctly.
-        NODE_STATE_RECOVER_FINISH,
+        NODE_STATE_RECOVER_FINISHING,
+        NODE_STATE_ABORTING,
 
         NODE_STATE_UNKNOWN,
     };
@@ -109,10 +110,11 @@ public:
         return sf1rTopology_.curNode_;
     }
 
-    unsigned int getTotalShardNum() const
-    {
-        return sf1rTopology_.nodeNum_;
-    }
+    void updateTopologyCfg(const Sf1rTopology& cfg);
+    //unsigned int getTotalShardNum() const
+    //{
+        //return sf1rTopology_.nodeNum_;
+    //}
 
     bool isPrimary();
     bool isOtherPrimaryAvailable();

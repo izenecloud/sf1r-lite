@@ -14,14 +14,28 @@
 
 namespace sf1r {
 
+    struct SubDocSelector
+    {
+        int weight;
+        std::vector<Document> docs;
+        bool operator<(const SubDocSelector& x) const
+        {
+            return weight>x.weight;
+        }
+
+    };
+
     class B5mpDocGenerator
     {
     public:
         B5mpDocGenerator();
         void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only=false);
+    private:
+        void SelectSubDocs_(std::vector<Document>& subdocs) const;
 
     private:
         boost::unordered_set<std::string> sub_doc_props_;
+        boost::unordered_map<std::string, int> subdoc_weighter_;
     };
 
     class ProductProperty

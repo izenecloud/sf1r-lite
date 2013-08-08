@@ -34,7 +34,7 @@ bool BoostLabelSelector::selectLabel(
     std::size_t limit,
     std::vector<category_id_t>& boostLabels)
 {
-    if (convertLabelIds_(scoreParam.boostGroupLabels_, boostLabels) ||
+    if (convertLabelIds_(scoreParam.groupParam_.boostGroupLabels_, boostLabels) ||
         getFreqLabel_(scoreParam.query_, limit, boostLabels) ||
         classifyQueryToLabel_(scoreParam.query_, boostLabels) ||
         getKnowledgeLabel_(scoreParam.querySource_, boostLabels))

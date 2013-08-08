@@ -25,3 +25,4 @@ push_sub_modules:
     - opinion
     - qa
     - dict
+    - query-intent

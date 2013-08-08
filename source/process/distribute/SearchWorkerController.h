@@ -36,6 +36,8 @@ public:
         ADD_WORKER_HANDLER(GetSummarizationByRawKey)
         ADD_WORKER_HANDLER(getLabelListByDocId)
         ADD_WORKER_HANDLER(getLabelListWithSimByDocId)
+        ADD_WORKER_HANDLER(getDistDocNum)
+        ADD_WORKER_HANDLER(getDistKeyCount)
 
         ADD_WORKER_HANDLER_END()
     }

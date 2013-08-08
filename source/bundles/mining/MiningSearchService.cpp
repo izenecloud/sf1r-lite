@@ -3,6 +3,7 @@
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <util/driver/Request.h>
 #include <aggregator-manager/SearchWorker.h>
@@ -12,6 +13,7 @@ namespace sf1r
 {
 
 MiningSearchService::MiningSearchService()
+    :shardingstrategy_(NULL)
 {
 }
 
@@ -71,7 +73,7 @@ bool MiningSearchService::getSimilarDocIdList(
     std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
     sf1r::workerid_t workerId = wd.first;
 
-    if (!MasterManagerBase::get()->isDistributed())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getSimilarDocIdList(documentId, maxNum, result);
         return true;
@@ -132,7 +134,7 @@ bool MiningSearchService::getLabelListByDocId(
     sf1r::workerid_t workerId = wd.first;
     sf1r::docid_t docId = wd.second;
 
-    if (!MasterManagerBase::get()->isDistributed())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getLabelListByDocId(docId, label_list);
         return true;
@@ -159,7 +161,7 @@ bool MiningSearchService::getLabelListWithSimByDocId(
     std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(wdocId);
     sf1r::workerid_t workerId = wd.first;
     sf1r::docid_t docId = wd.second;
-    if (!MasterManagerBase::get()->isDistributed())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
         return searchWorker_->getLabelListWithSimByDocId(docId, label_list);
     return searchAggregator_->singleRequest(collectionName, "getLabelListWithSimByDocId", docId, label_list, workerId);
 }
@@ -425,7 +427,7 @@ bool MiningSearchService::GetSummarizationByRawKey(
         const std::string& rawKey,
         Summarization& result)
 {
-    if (!MasterManagerBase::get()->isDistributed())
+    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->GetSummarizationByRawKey(rawKey, result);
         return true;

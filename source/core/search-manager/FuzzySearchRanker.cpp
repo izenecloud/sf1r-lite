@@ -10,6 +10,7 @@
 #include <common/PropSharedLockSet.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include "mining-manager/custom-rank-manager/CustomRankManager.h"
+#include "mining-manager/product-scorer/CategoryClassifyScorer.h"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -34,7 +35,8 @@ void FuzzySearchRanker::setFuzzyScoreWeight(const ProductRankingConfig& rankConf
 
 void FuzzySearchRanker::rankByProductScore(
     const KeywordSearchActionItem& actionItem,
-    std::vector<ScoreDocId>& resultList)
+    std::vector<ScoreDocId>& resultList,
+    bool isCompare)
 {
     PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<ProductScorer> productScorer(
@@ -63,8 +65,11 @@ void FuzzySearchRanker::rankByProductScore(
         if (isCategoryClassify_)
         {
             // ignore the docs with zero category score
-            if (productScore < 0.00009)
+            if (productScore < CategoryClassifyScorer::kMinClassifyScore ||
+                (isCompare && productScore < 0.9))
+            {
                 continue;
+            }
 
             fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         }
