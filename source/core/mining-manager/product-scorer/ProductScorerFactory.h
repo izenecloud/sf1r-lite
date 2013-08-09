@@ -22,6 +22,7 @@ class TitleScoreList;
 class ProductScoreConfig;
 class ProductScoreManager;
 class CategoryClassifyTable;
+class ProductScoreSum;
 struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
@@ -42,7 +43,8 @@ public:
     ProductScorer* createScorer(const ProductScoreParam& scoreParam);
 
 private:
-    ProductScorer* createFuzzyModeScorer_(
+    void createFuzzyModeScorer_(
+        ProductScoreSum& scoreSum,
         const ProductScoreParam& scoreParam);
 
     ProductScorer* createScorerImpl_(

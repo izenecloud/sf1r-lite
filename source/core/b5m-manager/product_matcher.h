@@ -669,6 +669,7 @@ namespace sf1r {
             std::string fcategory; //front-end category
             std::string spic;
             std::string surl;
+            std::string smarket_time;
             cid_t cid;
             //double price;
             ProductPrice price;
@@ -686,7 +687,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & spic & surl & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+                ar & spid & stitle & scategory & spic & surl & smarket_time & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
                 //try
                 //{
                 //}

@@ -75,7 +75,8 @@ public:
         // waiting recovery replica to finish sync to latest.
         NODE_STATE_RECOVER_WAIT_REPLICA_FINISH,
         // recovery finished correctly.
-        NODE_STATE_RECOVER_FINISH,
+        NODE_STATE_RECOVER_FINISHING,
+        NODE_STATE_ABORTING,
 
         NODE_STATE_UNKNOWN,
     };

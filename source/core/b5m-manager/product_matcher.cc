@@ -973,6 +973,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             doc.getString("OriginalPicture", product.spic);
         }
         doc.getString("Url", product.surl);
+        doc.getString("MarketTime", product.smarket_time);
         ParseAttributes(propstr_to_ustr(attrib_ustr), product.attributes);
 
         for (size_t i = 0; i < product.attributes.size(); ++i)

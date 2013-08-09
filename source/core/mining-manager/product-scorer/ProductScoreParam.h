@@ -31,8 +31,8 @@ struct ProductScoreParam
     /** the score of query after query tokenizer, used for TitlScore relevance*/
     const double queryScore_;
 
-    /** used to create @c CategoryScorer */
-    const faceted::GroupParam::GroupPathVec& boostGroupLabels_;
+    /** used to create @c CategoryScorer and @c CategoryClassifyScorer */
+    const faceted::GroupParam& groupParam_;
 
     /** for concurrent access on category data by @c CategoryScorer */
     PropSharedLockSet& propSharedLockSet_;
@@ -46,16 +46,16 @@ struct ProductScoreParam
         const std::string& query,
         const std::string& rawQuery,
         const std::string& querySource,
-        const faceted::GroupParam::GroupPathVec& boostGroupLabels,
+        const faceted::GroupParam& groupParam,
         PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer,
-        SearchingMode::SearchingModeType searchMode, 
+        SearchingMode::SearchingModeType searchMode,
         const double queryScore = 0)
         : query_(query)
         , rawQuery_(rawQuery)
         , querySource_(querySource)
         , queryScore_(queryScore)
-        , boostGroupLabels_(boostGroupLabels)
+        , groupParam_(groupParam)
         , propSharedLockSet_(propSharedLockSet)
         , relevanceScorer_(relevanceScorer)
         , searchMode_(searchMode)

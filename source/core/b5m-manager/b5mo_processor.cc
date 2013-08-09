@@ -241,14 +241,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         }
         matcher_->GetProduct(spid, product);
     }
-    if(!product.spid.empty()&&product.stitle.empty())
-    {
-        //book matched
-    }
-    else
-    {
-        doc.eraseProperty("Attribute");
-    }
+    doc.eraseProperty("Attribute");
     if(!product.spid.empty())
     {
         //has SPU matched
@@ -339,6 +332,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
     }
+    if(!product.smarket_time.empty() && !title.empty())
+    {
+        doc.property("MarketTime") = str_to_propstr(product.smarket_time);
+    }
     if(!product.sbrand.empty() && !title.empty())
     {
         doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
@@ -364,6 +361,14 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         ScdDocument sdoc(doc, type);
         sorter_->Append(sdoc, ts_);
     }
+    //delete Attribute after write block
+    //if(!product.spid.empty()&&product.stitle.empty())
+    //{
+        ////book matched
+    //}
+    //else
+    //{
+    //}
 }
 
 bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)

@@ -62,6 +62,7 @@ public:
         : displayLength_(0)
         , summaryNum_(0)
         , bIndex_(false)
+        , bSuffixIndex_(false)
         , bSnippet_(false)
         , bSummary_(false)
         , bHighlight_(false)
@@ -78,6 +79,7 @@ public:
         , displayLength_(0)
         , summaryNum_(0)
         , bIndex_(false)
+        , bSuffixIndex_(false)
         , bSnippet_(false)
         , bSummary_(false)
         , bHighlight_(false)
@@ -245,7 +247,7 @@ public:
     {
         return bIndex_;
     }
-
+    
     /**
      * @brief Sets the length of the display text of the property
      *
@@ -471,6 +473,7 @@ public:
         swap(propertyType_, rhs.propertyType_);
         swap(originalName_, rhs.originalName_);
         swap(bIndex_, rhs.bIndex_);
+        swap(bSuffixIndex_, rhs.bSuffixIndex_);
         swap(displayLength_, rhs.displayLength_);
         swap(summaryNum_, rhs.summaryNum_);
         swap(bSnippet_, rhs.bSnippet_);
@@ -498,6 +501,7 @@ private:
         ar & propertyType_;
         ar & originalName_;
         ar & bIndex_;
+        ar & bSuffixIndex_;
         ar & displayLength_;
         ar & summaryNum_;
         ar & bSnippet_;
@@ -527,6 +531,9 @@ public:
 
     ///@brief   A flag indicating whether the Property will be indexed or not.
     bool bIndex_;
+    
+    ///@brief   A flag indicating whether the Property will be indexed or not in Suffix.
+    bool bSuffixIndex_;
 
     /// @brief  A flag indicating whether the property generates snippet
     bool bSnippet_;
