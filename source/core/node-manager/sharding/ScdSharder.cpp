@@ -7,7 +7,8 @@
 
 using namespace sf1r;
 
-ScdSharder::ScdSharder()
+ScdSharder::ScdSharder(boost::shared_ptr<ShardingStrategy> shardingStrategy)
+    :shardingStrategy_(shardingStrategy)
 {
 }
 
@@ -24,30 +25,19 @@ shardid_t ScdSharder::sharding(SCDDoc& scdDoc)
     // set sharding key values
     setShardKeyValues(scdDoc, shard_fieldlist);
 
-    return shardingStrategy_->sharding_for_write(shard_fieldlist, shardingConfig_);
-}
-
-bool ScdSharder::init(ShardingConfig& shardingConfig)
-{
-    shardingConfig_ = shardingConfig;
-
-    return initShardingStrategy();
-}
-
-bool ScdSharder::initShardingStrategy()
-{
-    shardingStrategy_.reset(new HashShardingStrategy);
-    return true;
+    return shardingStrategy_->sharding_for_write(shard_fieldlist);
 }
 
 void ScdSharder::setShardKeyValues(SCDDoc& scdDoc, ShardingStrategy::ShardFieldListT& shard_fieldlist)
 {
+    if (!shardingStrategy_)
+        return;
     SCDDoc::iterator propertyIter;
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         const std::string& propertyName = propertyIter->first;
 
-        if (shardingConfig_.isUniqueShardKey(propertyName))
+        if (shardingStrategy_->shard_cfg_.isUniqueShardKey(propertyName))
         {
             const std::string propertyValue = propstr_to_str(propertyIter->second);
             shard_fieldlist[propertyName] = propertyValue;

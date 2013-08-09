@@ -59,7 +59,14 @@ public:
     bool backup_all(bool force_remove);
 
     CollectionHandler* findHandler(const std::string& key) const;
-    
+
+    bool generateMigrateSCD(const std::string& collectionName,
+        const std::vector<uint16_t>& scd_list,
+        std::map<uint16_t, std::string>& generated_insert_scds,
+        std::map<uint16_t, std::string>& generated_del_scds);
+    bool addNewShardingNodes(const std::string& collectionName,
+        const std::vector<shardid_t>& new_sharding_nodes);
+
     handler_const_iterator handlerBegin() const;
     handler_const_iterator handlerEnd() const;
 

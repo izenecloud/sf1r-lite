@@ -85,6 +85,28 @@ public:
     {
         return flush_compute_mutex_;
     }
+    bool generateMigrateScds(const std::string& coll, 
+        const std::map<std::string, std::vector<uint16_t> >& from,
+        std::map<uint16_t, std::string>& generated_insert_scds,
+        std::map<uint16_t, std::string>& generated_del_scds);
+
+    typedef boost::function<bool(const std::string&,
+        const std::vector<uint16_t>&,
+        std::map<uint16_t, std::string>&,
+        std::map<uint16_t, std::string>&)> GenMigrateSCDFuncT;
+    void setGenMigrateScdCB(GenMigrateSCDFuncT cb)
+    {
+        scd_generator_ = cb;
+    }
+    void notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata);
+    void sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp);
+    bool GenMigrateSCD(const std::string& coll,
+        const std::vector<uint16_t>& scd_list,
+        std::map<uint16_t, std::string>& generated_insert_scds,
+        std::map<uint16_t, std::string>& generated_del_scds)
+    {
+        return scd_generator_(coll, scd_list, generated_insert_scds, generated_del_scds);
+    }
 
 private:
     void saveCachedCheckSum();
@@ -103,6 +125,10 @@ private:
     std::vector<ReportStatusRspData>  status_rsp_list_;
     std::set<std::string>  ignore_list_;
     std::map<std::string, FileCheckData> cached_checksum_;
+    GenMigrateSCDFuncT scd_generator_;
+    boost::mutex generate_scd_mutex_;
+    boost::condition_variable generate_scd_cond_;
+    std::vector<GenerateSCDRspData>  generate_scd_rsp_list_;
 };
 
 }

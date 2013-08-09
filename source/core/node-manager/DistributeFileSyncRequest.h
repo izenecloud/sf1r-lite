@@ -90,6 +90,24 @@ struct ReportStatusRspData : public RpcServerRequestData
     MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list, check_collection_list);
 };
 
+struct GenerateSCDReqData : public RpcServerRequestData
+{
+    std::string req_host;
+    std::string coll;
+    std::vector<uint16_t> migrate_scd_list;
+    MSGPACK_DEFINE(req_host, migrate_scd_list);
+};
+
+struct GenerateSCDRspData : public RpcServerRequestData
+{
+    bool success;
+    std::string  rsp_host;
+    std::map<uint16_t, std::string> generated_insert_scds;
+    std::map<uint16_t, std::string> generated_del_scds;
+    MSGPACK_DEFINE(success, rsp_host, generated_insert_scds, generated_del_scds);
+};
+
+
 class FileSyncServerRequest : public RpcServerRequest
 {
 public:
@@ -107,6 +125,8 @@ public:
         METHOD_REPORT_STATUS_REQ,
         METHOD_REPORT_STATUS_RSP,
         METHOD_GET_RUNNING_REQLOG,
+        METHOD_GENERATE_MIGRATE_SCD_REQ,
+        METHOD_GENERATE_MIGRATE_SCD_RSP,
         COUNT_OF_METHODS
     };
     static const method_t method_names[COUNT_OF_METHODS];
@@ -194,6 +214,24 @@ public:
     {
     }
 };
+class GenerateSCDRequest : public RpcRequestRequestT<GenerateSCDReqData, FileSyncServerRequest>
+{
+public:
+    GenerateSCDRequest()
+        :RpcRequestRequestT<GenerateSCDReqData, FileSyncServerRequest>(METHOD_GENERATE_MIGRATE_SCD_REQ)
+    {
+    }
+};
+
+class GenerateSCDRsp : public RpcRequestRequestT<GenerateSCDRspData, FileSyncServerRequest>
+{
+public:
+    GenerateSCDRsp()
+        :RpcRequestRequestT<GenerateSCDRspData, FileSyncServerRequest>(METHOD_GENERATE_MIGRATE_SCD_RSP)
+    {
+    }
+};
+
 
 
 

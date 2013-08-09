@@ -148,7 +148,16 @@ public:
 
     bool isAllShardNodeOK(const std::vector<shardid_t>& shardids);
     bool pushWriteReqToShard(const std::string& reqdata,
-        const std::vector<shardid_t>& shardids);
+        const std::vector<shardid_t>& shardids, bool for_migrate = false,
+        bool include_self = false);
+
+    bool notifyAllShardingBeginMigrate(const std::vector<shardid_t>& shardids);
+    bool waitForMigrateReady(const std::vector<shardid_t>& shardids);
+    bool waitForNewShardingNodes(const std::vector<shardid_t>& shardids);
+    void waitForMigrateIndexing(const std::vector<shardid_t>& shardids);
+    void notifyAllShardingEndMigrate();
+    bool isMineNewSharding();
+    std::string getShardNodeIP(shardid_t shardid);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -227,11 +236,14 @@ protected:
     //void checkForWriteReqFinished();
     void checkForNewWriteReq();
     bool cacheNewWriteFromZNode();
-    bool isAllWorkerIdle();
+    bool isAllWorkerIdle(bool include_self = true);
     //bool isAllWorkerFinished();
-    bool isAllWorkerInState(int state);
+    bool isAllWorkerInState(bool include_self, int state);
     std::string findReCreatedServerPath();
     void updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self);
+    bool isShardingNodeOK(const std::vector<shardid_t>& shardids);
+    bool isWriteQueueEmpty(const std::vector<shardid_t>& shardids);
+    bool getNodeState(const std::string& nodepath, uint32_t& state);
 
 protected:
     Sf1rTopology sf1rTopology_;
@@ -261,6 +273,7 @@ protected:
     std::string write_req_queue_;
     std::string write_prepare_node_;
     std::string write_prepare_node_parent_;
+    std::string migrate_prepare_node_;
     bool stopping_;
     bool write_prepared_;
     bool new_write_disabled_;

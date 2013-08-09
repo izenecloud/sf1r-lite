@@ -37,6 +37,7 @@ void MasterManagerBase::initCfg()
     write_req_queue_root_parent_ = ZooKeeperNamespace::getRootWriteReqQueueParent();
     write_prepare_node_ =  ZooKeeperNamespace::getWriteReqPrepareNode(sf1rTopology_.curNode_.nodeId_);
     write_prepare_node_parent_ =  ZooKeeperNamespace::getWriteReqPrepareParent();
+    migrate_prepare_node_ = ZooKeeperNamespace::getSF1RClusterPath() + "/migrate_sharding";
 }
 
 void MasterManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
@@ -638,12 +639,18 @@ bool MasterManagerBase::isAllShardNodeOK(const std::vector<shardid_t>& shardids)
 }
 
 bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
-    const std::vector<shardid_t>& shardids)
+    const std::vector<shardid_t>& shardids, bool for_migrate, bool include_self)
 {
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
             "," << reqdata;
+        return false;
+    }
+
+    if (!for_migrate && zookeeper_->isZNodeExists(migrate_prepare_node_, ZooKeeper::WATCH))
+    {
+        LOG(INFO) << "Faile to push write for the running migrate.";
         return false;
     }
 
@@ -655,7 +662,7 @@ bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
 
     for (size_t i = 0; i < shardids.size(); ++i)
     {
-        if (shardids[i] == sf1rTopology_.curNode_.nodeId_)
+        if (!include_self && shardids[i] == sf1rTopology_.curNode_.nodeId_)
             continue;
         std::string write_queue = ZooKeeperNamespace::getWriteReqQueueNode(shardids[i]);
         if(zookeeper_->createZNode(write_queue, znode.serialize(), ZooKeeper::ZNODE_SEQUENCE))
@@ -692,6 +699,12 @@ bool MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
             "," << reqdata;
+        return false;
+    }
+
+    if (zookeeper_->isZNodeExists(migrate_prepare_node_, ZooKeeper::WATCH))
+    {
+        LOG(INFO) << "Faile to push write for the running migrate.";
         return false;
     }
 
@@ -789,9 +802,9 @@ bool MasterManagerBase::endWriteReq()
     return true;
 }
 
-bool MasterManagerBase::isAllWorkerIdle()
+bool MasterManagerBase::isAllWorkerIdle(bool include_self)
 {
-    if (!isAllWorkerInState(NodeManagerBase::NODE_STATE_STARTED))
+    if (!isAllWorkerInState(include_self, NodeManagerBase::NODE_STATE_STARTED))
     {
         LOG(INFO) << "one of primary worker not ready for new write request.";
         return false;
@@ -799,18 +812,33 @@ bool MasterManagerBase::isAllWorkerIdle()
     return true;
 }
 
-bool MasterManagerBase::isAllWorkerInState(int state)
+bool MasterManagerBase::getNodeState(const std::string& nodepath, uint32_t& state)
+{
+    std::string sdata;
+    if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
+    {
+        ZNode nodedata;
+        nodedata.loadKvString(sdata);
+        state = nodedata.getUInt32Value(ZNode::KEY_NODE_STATE);
+        return true;
+    }
+    return false;
+}
+
+bool MasterManagerBase::isAllWorkerInState(bool include_self, int state)
 {
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
-        std::string nodepath = getNodePath(it->second->replicaId_,  it->first);
-        std::string sdata;
-        if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
+        if (!include_self && it->first == sf1rTopology_.curNode_.nodeId_)
         {
-            ZNode nodedata;
-            nodedata.loadKvString(sdata);
-            if (nodedata.getUInt32Value(ZNode::KEY_NODE_STATE) != (uint32_t)state)
+            continue;
+        }
+        std::string nodepath = getNodePath(it->second->replicaId_,  it->first);
+        uint32_t nodestate;
+        if (getNodeState(nodepath, nodestate))
+        {
+            if (nodestate != (uint32_t)state)
             {
                 LOG(INFO) << "worker not ready for state : " << state << ", " << nodepath;
                 return false;
@@ -1353,7 +1381,15 @@ void MasterManagerBase::setServicesData(ZNode& znode)
     }
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
-    znode.setValue(ZNode::KEY_SERVICE_STATE, "ReadyForRead");
+
+    std::string new_state = "ReadyForRead";
+    if (isMineNewSharding())
+    {
+        new_state = "BusyForSelf";
+        LOG(INFO) << "I am the new sharding node waiting migrate.";
+    }
+
+    znode.setValue(ZNode::KEY_SERVICE_STATE, new_state);
     if (sf1rTopology_.curNode_.master_.hasAnyService())
     {
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
@@ -1395,8 +1431,13 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
     }
 
     std::string new_state = my_state;
+    if (isMineNewSharding())
+    {
+        new_state = "BusyForSelf";
+        LOG(INFO) << "I am the new sharding node waiting migrate.";
+    }
     std::string old_state = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-    if (my_state == "BusyForShard" || my_state == "ReadyForRead")
+    if (new_state == "BusyForShard" || new_state == "ReadyForRead")
     {
         WorkerMapT::const_iterator it = workerMap_.begin();
         bool all_ready = true;
@@ -1660,3 +1701,197 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
     }
 }
 
+std::string MasterManagerBase::getShardNodeIP(shardid_t shardid)
+{
+    if (zookeeper_)
+    {
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(getPrimaryNodeParentPath(shardid), node_list);
+        if (node_list.empty())
+            return "";
+        std::string sdata;
+        if (zookeeper_->getZNodeData(node_list[0], sdata, ZooKeeper::WATCH))
+        {
+            ZNode nodedata;
+            nodedata.loadKvString(sdata);
+            return nodedata.getStrValue(ZNode::KEY_HOST);
+        }
+    }
+    return "";
+}
+
+bool MasterManagerBase::isShardingNodeOK(const std::vector<shardid_t>& shardids)
+{
+    for (size_t i = 0; i < shardids.size(); ++i)
+    {
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(getPrimaryNodeParentPath(shardids[i]), node_list);
+        if (node_list.empty())
+            return false;
+        uint32_t nodestate;
+        if (!getNodeState(node_list[0], nodestate))
+            return false;
+        if (nodestate != (uint32_t)NodeManagerBase::NODE_STATE_STARTED)
+            return false;
+    }
+    return true;
+}
+
+bool MasterManagerBase::isWriteQueueEmpty(const std::vector<shardid_t>& shardids)
+{
+    for (size_t i = 0; i < shardids.size(); ++i)
+    {
+        std::string write_req_queue = ZooKeeperNamespace::getCurrWriteReqQueueParent(shardids[i]);
+        std::vector<std::string> reqchild;
+        zookeeper_->getZNodeChildren(write_req_queue, reqchild, ZooKeeper::NOT_WATCH);
+        if (reqchild.empty())
+        {
+            if (write_req_queue == write_req_queue_parent_)
+                zookeeper_->getZNodeChildren(write_req_queue, reqchild, ZooKeeper::WATCH);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool MasterManagerBase::isMineNewSharding()
+{
+    if (zookeeper_)
+    {
+        ZNode znode;
+        std::string olddata;
+        if(zookeeper_->getZNodeData(migrate_prepare_node_, olddata, ZooKeeper::WATCH))
+        {
+            znode.loadKvString(olddata);
+            std::string new_shardids = znode.getStrValue(ZNode::KEY_NEW_SHARDING_NODEIDS);
+            if (new_shardids.empty())
+                return false;
+
+            static const char delim = ',';
+            std::stringstream ss(new_shardids);
+            std::string item;
+            while(getline(ss, item, delim)) {
+                if (item.empty()) {
+                    // skip empty elements
+                    continue;
+                }
+                if (sf1rTopology_.curNode_.nodeId_ == boost::lexical_cast<shardid_t>(item));
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            LOG(WARNING) << "get migrate data error";
+        }
+    }
+    return false;
+}
+
+bool MasterManagerBase::notifyAllShardingBeginMigrate(const std::vector<shardid_t>& shardids)
+{
+    if (!isMinePrimary())
+    {
+        LOG(INFO) << "not primary master while begin migrate.";
+        return false;
+    }
+
+    if(!isAllShardNodeOK(shardids))
+        return false;
+
+    ZNode znode;
+    if (!zookeeper_->createZNode(migrate_prepare_node_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
+    {
+        if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
+        {
+            LOG(INFO) << "There is another migrate running, failed on server: " << serverRealPath_;
+        }
+        zookeeper_->isZNodeExists(migrate_prepare_node_, ZooKeeper::WATCH);
+        return false;
+    }
+ 
+    return true;
+}
+
+bool MasterManagerBase::waitForMigrateReady(const std::vector<shardid_t>& shardids)
+{
+    while (true)
+    {
+        LOG(INFO) << "waiting for ready to migrate...";
+        sleep(30);
+
+        {
+            boost::lock_guard<boost::mutex> lock(state_mutex_);
+            if (stopping_)
+                return false;
+        }
+        if (!isWriteQueueEmpty(shardids))
+            continue;
+        if (!isShardingNodeOK(shardids))
+            continue;
+        return true;
+    }
+}
+
+bool MasterManagerBase::waitForNewShardingNodes(const std::vector<shardid_t>& shardids)
+{
+    while (true)
+    {
+        ZNode znode;
+        std::string olddata;
+        if(zookeeper_->getZNodeData(migrate_prepare_node_, olddata, ZooKeeper::WATCH))
+        {
+            znode.loadKvString(olddata);
+        }
+        else
+        {
+            LOG(WARNING) << "get old migrate data error";
+        }
+
+        // the nodeid in the migrate_prepare_node_ will be used to tell
+        // sharding node is not ok for read service.
+        std::string new_shardids;
+        for (size_t i = 0; i < shardids.size(); ++i)
+        {
+            if (new_shardids.empty())
+                new_shardids = boost::lexical_cast<std::string>(shardids[i]);
+            else
+                new_shardids += "," + boost::lexical_cast<std::string>(shardids[i]);
+        }
+
+        znode.setValue(ZNode::KEY_NEW_SHARDING_NODEIDS, new_shardids);
+        zookeeper_->setZNodeData(migrate_prepare_node_, znode.serialize());
+
+        LOG(INFO) << "waiting for new sharding node to startup ...";
+        sleep(30);
+        if (stopping_)
+            return false;
+        if (!isShardingNodeOK(shardids))
+            continue;
+        return true;
+    }
+}
+
+void MasterManagerBase::waitForMigrateIndexing(const std::vector<shardid_t>& shardids)
+{
+    while (true)
+    {
+        LOG(INFO) << "waiting for new sharding node to finish indexing...";
+        sleep(10);
+        if (!isWriteQueueEmpty(shardids))
+            continue;
+        if (!isShardingNodeOK(shardids))
+            continue;
+        return;
+    }
+}
+
+void MasterManagerBase::notifyAllShardingEndMigrate()
+{
+    zookeeper_->deleteZNode(migrate_prepare_node_);
+    LOG(INFO) << "migrate end.";
+}

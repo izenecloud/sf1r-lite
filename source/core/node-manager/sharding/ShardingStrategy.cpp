@@ -1,20 +1,26 @@
 #include "ShardingStrategy.h"
 
-#include <common/Utilities.h>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
+#include <map>
+#include <fstream>
 #include <3rdparty/udt/md5.h>
-//#include <openssl/sha.h>
+#include <boost/filesystem.hpp>
 
+//#define MAX_INDEX  0xFFFF
 using namespace sf1r;
 
-shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig)
+shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardFieldList)
 {
+    if (shard_cfg_.shardidList_.empty())
+        return 0;
+    if (shard_cfg_.shardidList_.size() == 1)
+        return shard_cfg_.shardidList_.back();
     std::pair<size_t, size_t> shard_range;
     shard_range.first = 0;
-    shard_range.second = shardingConfig.shardidList_.size();
+    shard_range.second = shard_cfg_.shardidList_.size();
     //for(ShardingConfig::RangeShardKeyContainerT::const_iterator cit = shardingConfig.range_shardkeys_.begin();
     //    cit != shardingConfig.range_shardkeys_.end(); ++cit)
     //{
@@ -63,48 +69,32 @@ shardid_t HashShardingStrategy::sharding_for_write(const ShardFieldListT& shardF
 
     // in order to avoid too much migrating while add/remove shard node,
     // we can save the the map from docid to shardid. And save the map to file on HDFS.
-    ShardFieldListT::const_iterator sfit = shardFieldList.find(shardingConfig.unique_shardkey_);
+    ShardFieldListT::const_iterator sfit = shardFieldList.find(shard_cfg_.unique_shardkey_);
     if (sfit == shardFieldList.end())
     {
         LOG(ERROR) << "The shard unique key must exist.";
         return 0;
     }
 
-    shardid_t shardIndex;
-    // get shard id from static map first to avoid migrating if add new shard node.
-    //std::map<std::string, shardid_t>::const_iterator it = static_map.find(sfit->second.substr(sfit->second.size() - 2));
-    //if (it != static_map.end())
-    //{
-    //    shardIndex = it->second;
-    //}
-    //else
-    //
-    if (sfit->second.length() == 32)
-        shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
-    else
-    {
-        try
-        {
-            shardIndex = shard_range.first + boost::lexical_cast<size_t>(sfit->second) % (shard_range.second - shard_range.first);
-        }
-        catch(const std::exception& e)
-        {
-            LOG(WARNING) << "convert unique id failed.";
-            shardIndex = shard_range.first + ((size_t)sfit->second[sfit->second.size() - 1]) % (shard_range.second - shard_range.first);
-        }
-    }
+    size_t shardIndex = convertUniqueIDForSharding(sfit->second);
+    shardIndex = shard_range.first + shardIndex % (shard_range.second - shard_range.first);
 
-    //
-    // static_map[sfit->second.substr(sfit->second.size() - 2)] = shardIndex;
-    return shardingConfig.shardidList_[shardIndex];
+    return shard_cfg_.shardidList_[shardIndex];
 }
 
-HashShardingStrategy::ShardIDListT HashShardingStrategy::sharding_for_get(const ShardFieldListT& shardFieldList, const ShardingConfig& shardingConfig)
+HashShardingStrategy::ShardIDListT HashShardingStrategy::sharding_for_get(const ShardFieldListT& shardFieldList)
 {
+    ShardIDListT shardids_for_get;
+    if (shard_cfg_.shardidList_.empty())
+        return shardids_for_get;
+    if (shard_cfg_.shardidList_.size() == 1)
+    {
+        shardids_for_get.push_back(shard_cfg_.shardidList_.back());
+        return shardids_for_get;
+    }
     std::pair<size_t, size_t> shard_range;
     shard_range.first = 0;
-    shard_range.second = shardingConfig.shardidList_.size();
-    ShardIDListT shardids_for_get;
+    shard_range.second = shard_cfg_.shardidList_.size();
     // check range, if no range given, we need get the shard ranges for each different range.
     //
     //
@@ -113,13 +103,130 @@ HashShardingStrategy::ShardIDListT HashShardingStrategy::sharding_for_get(const 
     //
     // check unique id, for each range above get the unique shard in that range.
     // if no unique id, all shards in the ranges should be returned.
-    ShardFieldListT::const_iterator sfit = shardFieldList.find(shardingConfig.unique_shardkey_);
+    ShardFieldListT::const_iterator sfit = shardFieldList.find(shard_cfg_.unique_shardkey_);
     if (sfit != shardFieldList.end())
     {
-        shardid_t shardIndex = shard_range.first + Utilities::uuidToUint128(sfit->second) % (shard_range.second - shard_range.first);
-        shardids_for_get.push_back(shardingConfig.shardidList_[shardIndex]);
+        size_t shardIndex = convertUniqueIDForSharding(sfit->second);
+        shardIndex = shard_range.first + shardIndex % (shard_range.second - shard_range.first);
+        shardids_for_get.push_back(shard_cfg_.shardidList_[shardIndex]);
         return shardids_for_get;
     }
 
-    return shardingConfig.shardidList_;
+    return shard_cfg_.shardidList_;
+}
+
+const int MapShardingStrategy::MAX_MAP_SIZE;
+
+bool MapShardingStrategy::init()
+{
+    if (map_file_path_.empty())
+        return false;
+    if (!boost::filesystem::exists(map_file_path_))
+    {
+        LOG(INFO) << "no sharding map, prepare it for the first time.";
+        // 
+        if (shard_cfg_.shardidList_.size() <= 1)
+            return true;
+        saved_sharding_map_.clear();
+        saved_sharding_map_.resize(MAX_MAP_SIZE, 0);
+        for(size_t i = 0; i < (size_t)MAX_MAP_SIZE; ++i)
+        {
+            saved_sharding_map_[i] = shard_cfg_.shardidList_[i % shard_cfg_.shardidList_.size()];
+        }
+        save();
+    }
+    else
+        readShardingMapFile(map_file_path_, saved_sharding_map_);
+    return true;
+}
+
+void MapShardingStrategy::save()
+{
+    if (saved_sharding_map_.empty())
+        return;
+    saveShardingMapToFile(map_file_path_, saved_sharding_map_);
+}
+
+shardid_t MapShardingStrategy::sharding_for_write(const ShardFieldListT& shardFieldList)
+{
+    // in order to avoid too much migrating while add/remove shard node,
+    // we can save the the map from docid to shardid. And save the map to file on HDFS.
+    ShardFieldListT::const_iterator sfit = shardFieldList.find(shard_cfg_.unique_shardkey_);
+    if (sfit == shardFieldList.end())
+    {
+        LOG(ERROR) << "The shard unique key must exist.";
+        return 0;
+    }
+
+    return sharding_for_write(sfit->second, shard_cfg_);
+}
+
+shardid_t MapShardingStrategy::sharding_for_write(const std::string& uid, const ShardingConfig& shardingConfig)
+{
+    if (shardingConfig.shardidList_.size() == 1)
+        return shardingConfig.shardidList_.back();
+
+    if (saved_sharding_map_.empty())
+        return 0;
+
+    size_t index = convertUniqueIDForSharding(uid);
+    return saved_sharding_map_[index % saved_sharding_map_.size()];
+}
+
+MapShardingStrategy::ShardIDListT MapShardingStrategy::sharding_for_get(const ShardFieldListT& shardFieldList)
+{
+    ShardIDListT shardids_for_get;
+    ShardFieldListT::const_iterator sfit = shardFieldList.find(shard_cfg_.unique_shardkey_);
+    if (sfit != shardFieldList.end())
+    {
+        shardid_t selected_id = sharding_for_write(sfit->second, shard_cfg_);
+        if (selected_id > 0)
+            shardids_for_get.push_back(selected_id);
+        return shardids_for_get;
+    }
+
+    return shard_cfg_.shardidList_;
+}
+
+void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
+    std::vector<shardid_t>& sharding_map)
+{
+    std::ifstream ifs;
+    try
+    {
+        ifs.open(fullpath.c_str());
+        if (!ifs.is_open())
+            return;
+        size_t index = 0;
+        shardid_t shardid = 0;
+        sharding_map.clear();
+        sharding_map.resize(MAX_MAP_SIZE, 0);
+        while (ifs.good())
+        {
+            ifs >> index >> shardid;
+            if (shardid != 0 && index < (size_t)MAX_MAP_SIZE)
+                sharding_map[index] = shardid;
+        }
+    }
+    catch(const std::exception& e)
+    {
+    }
+    if (ifs.is_open())
+        ifs.close();
+}
+
+void MapShardingStrategy::saveShardingMapToFile(const std::string& fullpath,
+    const std::vector<shardid_t>& sharding_map)
+{
+    std::ofstream ofs;
+    ofs.open(fullpath.c_str());
+    for(size_t i = 0; i < sharding_map.size(); ++i)
+    {
+        if (sharding_map[i] > 0)
+        {
+            ofs << i << " " << sharding_map[i] << std::endl;
+        }
+    }
+    ofs.close();
+
 }

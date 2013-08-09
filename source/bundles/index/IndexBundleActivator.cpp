@@ -305,6 +305,7 @@ bool IndexBundleActivator::init_()
     searchService_->searchWorker_->pQA_ = pQA_;
 
     taskService_ = new IndexTaskService(config_);
+    indexWorker_->sharding_strategy_ = taskService_->sharding_strategy_;
 
     taskService_->indexAggregator_ = indexAggregator_;
     taskService_->indexWorker_ = indexWorker_;

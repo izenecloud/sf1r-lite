@@ -12,6 +12,7 @@
 #include <license-manager/LicenseCustManager.h>
 #include <license-manager/LicenseTool.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -33,6 +34,9 @@ CollectionManager::CollectionManager()
 
     RecoveryChecker::get()->setColCallback(
         boost::bind(&CollectionManager::flushCollection, this, _1));
+
+    DistributeFileSyncMgr::get()->setGenMigrateScdCB(
+        boost::bind(&CollectionManager::generateMigrateSCD, this, _1, _2, _3, _4));
 }
 
 CollectionManager::~CollectionManager()
@@ -374,6 +378,38 @@ std::string CollectionManager::checkCollectionConsistency(const std::string& col
 void CollectionManager::deleteCollection(const std::string& collectionName)
 {
 
+}
+
+bool CollectionManager::addNewShardingNodes(const std::string& collectionName,
+    const std::vector<shardid_t>& new_sharding_nodes)
+{
+    ScopedReadLock lock(*getCollectionMutex(collectionName));
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if (iter != collectionHandlers_.end())
+    {
+        if (iter->second->indexTaskService_)
+        {
+            return iter->second->indexTaskService_->addNewShardingNodes(new_sharding_nodes);
+        }
+    }
+    return false;
+}
+
+bool CollectionManager::generateMigrateSCD(const std::string& collectionName,
+    const std::vector<uint16_t>& scd_list,
+    std::map<uint16_t, std::string>& generated_insert_scds,
+    std::map<uint16_t, std::string>& generated_del_scds)
+{
+    ScopedReadLock lock(*getCollectionMutex(collectionName));
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if (iter != collectionHandlers_.end())
+    {
+        if (iter->second->indexTaskService_)
+        {
+            return iter->second->indexTaskService_->generateMigrateSCD(scd_list, generated_insert_scds, generated_del_scds);
+        }
+    }
+    return false;
 }
 
 CollectionHandler* CollectionManager::findHandler(const std::string& key) const

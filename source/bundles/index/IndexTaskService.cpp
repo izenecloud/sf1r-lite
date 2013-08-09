@@ -10,6 +10,7 @@
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <node-manager/DistributeFileSys.h>
 #include <util/driver/Request.h>
+#include <common/Utilities.h>
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -26,6 +27,30 @@ IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig)
 : bundleConfig_(bundleConfig)
 {
     service_ = Sf1rTopology::getServiceName(Sf1rTopology::SearchService);
+
+    //ShardingConfig::RangeListT ranges;
+    //ranges.push_back(100);
+    //ranges.push_back(1000);
+    //shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
+    //ShardingConfig::AttrListT strranges;
+    //strranges.push_back("abc");
+    //shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
+
+    if (DistributeFileSys::get()->isEnabled() && !bundleConfig_->indexShardKeys_.empty())
+    {
+        const std::string& coll = bundleConfig_->collectionName_;
+        sharding_map_dir_ = DistributeFileSys::get()->getFixedCopyPath("/sharding_map/");
+        if (!bfs::exists(sharding_map_dir_))
+        {
+            bfs::create_directories(sharding_map_dir_);
+        }
+        sharding_strategy_.reset(new MapShardingStrategy(sharding_map_dir_ + coll));
+        sharding_strategy_->shard_cfg_.shardidList_ = bundleConfig_->col_shard_info_.shardList_;
+        if (sharding_strategy_->shard_cfg_.shardidList_.empty())
+            throw "sharding config is error!";
+        sharding_strategy_->shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
+        sharding_strategy_->init();
+    }
 }
 
 IndexTaskService::~IndexTaskService()
@@ -86,6 +111,8 @@ bool IndexTaskService::HookDistributeRequestForIndex()
 bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, bool disable_sharding)
 {
     bool result = true;
+
+    indexWorker_->disableSharding(disable_sharding);
 
     if (DistributeFileSys::get()->isEnabled())
     {
@@ -189,6 +216,7 @@ bool IndexTaskService::isNeedSharding()
 
 bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list, int64_t timestamp)
 {
+    indexWorker_->disableSharding(false);
     return indexWorker_->buildCollection(0, scd_list, timestamp);
 }
 
@@ -412,6 +440,271 @@ izenelib::util::UString::EncodingType IndexTaskService::getEncode() const
 const std::vector<shardid_t>& IndexTaskService::getShardidListForSearch()
 {
     return bundleConfig_->col_shard_info_.shardList_;
+}
+
+typedef std::map<shardid_t, std::vector<uint16_t> > ShardingTopologyT;
+static void printSharding(const ShardingTopologyT& sharding_topology)
+{
+    for(ShardingTopologyT::const_iterator cit = sharding_topology.begin();
+        cit != sharding_topology.end(); ++cit)
+    {
+        std::cout << "sharding : " << cit->first << " is holding : ";
+        for (size_t i = 0; i < cit->second.size(); ++i)
+        {
+            std::cout << cit->second[i] << ", ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
+    size_t new_vnode_for_sharding,
+    ShardingTopologyT& current_sharding_topology,
+    ShardingTopologyT& new_sharding_topology,
+    std::map<uint16_t, std::pair<shardid_t, shardid_t> >& migrate_data_list)
+{
+    // move the vnode from src sharding node to dest sharding node.
+    size_t migrate_to = 0;
+
+    for(ShardingTopologyT::iterator it = current_sharding_topology.begin();
+        it != current_sharding_topology.end(); ++it)
+    {
+        size_t migrate_start = it->second.size() - 1;
+        while (migrate_to < new_sharding_nodes.size())
+        {
+            // this old sharding has not enough data so do not migrate from this node.
+            if (it->second.size() <= new_vnode_for_sharding)
+                break;
+            size_t old_start = migrate_start;
+            for (size_t vnode_index = old_start;
+                vnode_index > new_vnode_for_sharding;
+                --vnode_index)
+            {
+                migrate_data_list[it->second[vnode_index]] = std::pair<shardid_t, shardid_t>(it->first, new_sharding_nodes[migrate_to]);
+                LOG(INFO) << "vnode : " << it->second[vnode_index] << " will be moved from " << it->first << " to " << new_sharding_nodes[migrate_to];
+                new_sharding_topology[new_sharding_nodes[migrate_to]].push_back(it->second[vnode_index]);
+                --migrate_start;
+                if (new_sharding_topology[new_sharding_nodes[migrate_to]].size() >= new_vnode_for_sharding)
+                {
+                    // the new sharding node got enough data. move to next.
+                    ++migrate_to;
+                    if (migrate_to >= new_sharding_nodes.size())
+                        break;
+                }
+            }
+            it->second.erase(it->second.begin() + migrate_start, it->second.end());
+        }
+        if (migrate_to >= new_sharding_nodes.size())
+            break;
+    }
+}
+
+bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sharding_nodes)
+{
+    if (!sharding_strategy_ || sharding_strategy_->shard_cfg_.shardidList_.size() == 0)
+    {
+        LOG(ERROR) << "no sharding config.";
+        return false;
+    }
+    if (new_sharding_nodes.empty())
+    {
+        LOG(INFO) << "empty new sharding nodes.";
+        return false;
+    }
+    for (size_t i = 0; i < new_sharding_nodes.size(); ++i)
+    {
+        if (std::find(bundleConfig_->col_shard_info_.shardList_.begin(),
+                bundleConfig_->col_shard_info_.shardList_.end(),
+                new_sharding_nodes[i]) != bundleConfig_->col_shard_info_.shardList_.end())
+        {
+            LOG(ERROR) << "new sharding nodes exists in the old sharding config.";
+            return false;
+        }
+    }
+
+    size_t current_sharding_num = sharding_strategy_->shard_cfg_.shardidList_.size();
+    // reading current sharding config(include the load on these nodes), 
+    // and determine which nodes need 
+    // migrate which part of their data.
+    // (nodeid, the scd docid suffix list that need migrate.)
+    std::vector<shardid_t> current_sharding_map;
+    std::string map_file = sharding_map_dir_ + bundleConfig_->collectionName_;
+    MapShardingStrategy::readShardingMapFile(map_file, current_sharding_map);
+
+    if (current_sharding_map.empty())
+    {
+        LOG(ERROR) << "sharding map is empty!";
+        return false;
+    }
+    if (current_sharding_map.size() < current_sharding_num + new_sharding_nodes.size())
+    {
+        LOG(ERROR) << "the actual sharding num is larger than virtual nodes." << current_sharding_map.size();
+        return false;
+    }
+    size_t current_vnode_for_sharding = current_sharding_map.size()/current_sharding_num;
+    size_t new_vnode_for_sharding = current_sharding_map.size()/(current_sharding_num + new_sharding_nodes.size());
+    ShardingTopologyT current_sharding_topology;
+    for (size_t i = 0; i < current_sharding_map.size(); ++i)
+    {
+        current_sharding_topology[current_sharding_map[i]].push_back(i);
+    }
+
+    LOG(INFO) << "Before migrate, the average vnodes for each sharding is: " << current_vnode_for_sharding
+       << " and sharding topology is : ";
+    printSharding(current_sharding_topology);
+
+    // move the vnode from src sharding node to dest sharding node.
+    std::map<uint16_t, std::pair<shardid_t, shardid_t> > migrate_data_list;
+    ShardingTopologyT new_sharding_topology;
+
+    migrateSharding(new_sharding_nodes, new_vnode_for_sharding,
+        current_sharding_topology,
+        new_sharding_topology, migrate_data_list);
+
+    LOG(INFO) << "After migrate, the average vnodes for each sharding will be: " << new_vnode_for_sharding 
+       << " and sharding topology will be : ";
+    printSharding(current_sharding_topology);
+    printSharding(new_sharding_topology);
+
+    std::map<shardid_t, std::vector<uint16_t> > migrate_from_list;
+    std::map<std::string, std::vector<uint16_t> > migrate_from_list_2;
+    std::map<shardid_t, std::vector<uint16_t> > migrate_to_list;
+    for(std::map<uint16_t, std::pair<shardid_t, shardid_t> >::const_iterator cit = migrate_data_list.begin();
+        cit != migrate_data_list.end(); ++cit)
+    {
+        migrate_from_list[cit->second.first].push_back(cit->first);
+        std::string shardip = MasterManagerBase::get()->getShardNodeIP(cit->second.first);
+        if (shardip.empty())
+        {
+            LOG(ERROR) << "get source shard node ip error. " << cit->second.first;
+            return false;
+        }
+        migrate_from_list_2[shardip].push_back(cit->first);
+        migrate_to_list[cit->second.second].push_back(cit->first);
+    }
+
+    // this will disallow any new write. This may fail if other migrate 
+    // running or not all sharding nodes alive.
+    if(!MasterManagerBase::get()->notifyAllShardingBeginMigrate(getShardidListForSearch()))
+    {
+        return false;
+    }
+
+    // (vnode, generated scd path list)
+    std::map<uint16_t, std::string> generated_insert_scds;
+    // the scds used for remove on the src node.
+    std::map<uint16_t, std::string> generated_del_scds;
+    bool ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
+        migrate_from_list_2,
+        generated_insert_scds,
+        generated_del_scds);
+
+    if (!ret)
+    {
+        LOG(ERROR) << "generate the migrate SCD files failed.";
+        return false;
+    }
+
+    // wait for all sharding nodes to finish their write queue.
+    if(!MasterManagerBase::get()->waitForMigrateReady(getShardidListForSearch()))
+    {
+        LOG(INFO) << " wait for migrate get ready failed.";
+        return false;
+    }
+
+    // wait new sharding nodes to started.
+    if (!MasterManagerBase::get()->waitForNewShardingNodes(new_sharding_nodes))
+    {
+        LOG(INFO) << "wait for new sharding nodes to startup failed.";
+        return false;
+    }
+
+    indexShardingNodes(migrate_to_list, generated_insert_scds);
+
+    MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
+
+    indexShardingNodes(migrate_from_list, generated_del_scds);
+    // update config will cause the collection to restart, so 
+    // the IndexTaskService will be destructed.
+    updateShardingConfig(new_sharding_nodes);
+
+    // allow new write running.
+    MasterManagerBase::get()->notifyAllShardingEndMigrate();
+
+    return true;
+}
+
+void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<uint16_t> >& migrate_to,
+    const std::map<uint16_t, std::string>& generated_insert_scds)
+{
+    std::string tmp_migrate_scd_dir = DistributeFileSys::get()->getFixedCopyPath("/migrate_scds/"
+        + bundleConfig_->collectionName_ + "/" + boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
+
+    bfs::create_directories(tmp_migrate_scd_dir);
+
+    std::map<shardid_t, std::vector<uint16_t> >::const_iterator cit = migrate_to.begin();
+    for (; cit != migrate_to.end(); ++cit)
+    {
+        LOG(INFO) << "prepare scd files for sharding node : " << cit->first;
+        std::string shard_scd_dir = tmp_migrate_scd_dir + "/shard" + boost::lexical_cast<std::string>(cit->first) + "/";
+        bfs::create_directories(shard_scd_dir);
+        for (size_t i = 0; i < cit->second.size(); ++i)
+        {
+            std::map<uint16_t, std::string>::const_iterator scdit = generated_insert_scds.find(cit->second[i]);
+            if (scdit == generated_insert_scds.end())
+            {
+                LOG(WARNING) << "sharding scd not found, " << cit->first << ", vnode : " << cit->second[i];
+                continue;
+            }
+            LOG(INFO) << "add migrate scd : " << scdit->second;
+            bfs::rename(scdit->second, bfs::path(shard_scd_dir)/bfs::path(scdit->second).filename());
+        }
+        // send index command.
+        std::string json_req = "{\"collection\":\"" + bundleConfig_->collectionName_
+            + "\",\"index_scd_path\":\"" + shard_scd_dir
+            + "\",\"disable_sharding\":true"
+            + ",\"header\":{\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+
+        std::vector<shardid_t> shardid;
+        shardid.push_back(cit->first);
+        MasterManagerBase::get()->pushWriteReqToShard(json_req, shardid, true, true);
+    }
+}
+
+void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes)
+{
+    const std::vector<shardid_t>& curr_shard_nodes = getShardidListForSearch();
+    std::string sharding_cfg;
+    for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
+    {
+        if (sharding_cfg.empty())
+            sharding_cfg = boost::lexical_cast<std::string>(curr_shard_nodes[i]);
+        else
+            sharding_cfg += "," + boost::lexical_cast<std::string>(curr_shard_nodes[i]);
+    }
+    for (size_t i = 0; i < new_sharding_nodes.size(); ++i)
+    {
+        if (sharding_cfg.empty())
+            sharding_cfg = boost::lexical_cast<std::string>(new_sharding_nodes[i]);
+        else
+            sharding_cfg += "," + boost::lexical_cast<std::string>(new_sharding_nodes[i]);
+    }
+    LOG(INFO) << "new sharding cfg is : " << sharding_cfg;
+    //
+    // send index command.
+    std::string json_req = "{\"collection\":\"" + bundleConfig_->collectionName_
+        + "\",\"new_sharding_cfg\":\"" + sharding_cfg
+        + "\",\"header\":{\"action\":\"update_sharding_cfg\",\"controller\":\"collection\"},\"uri\":\"collection/update_sharding_cfg\"}";
+
+    MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
+    MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
+}
+
+bool IndexTaskService::generateMigrateSCD(const std::vector<uint16_t>& scd_list,
+    std::map<uint16_t, std::string>& generated_insert_scds,
+    std::map<uint16_t, std::string>& generated_del_scds)
+{
+    return indexWorker_->generateMigrateSCD(scd_list, generated_insert_scds, generated_del_scds);
 }
 
 }

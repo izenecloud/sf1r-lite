@@ -157,6 +157,28 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }
 
+static void doGenMigrateSCD(const GenerateSCDReqData& reqdata)
+{
+    GenerateSCDRsp rsp_req;
+    {
+        rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
+        rsp_req.param_.success = false;
+        if (DistributeFileSyncMgr::get()->GenMigrateSCD(reqdata.coll,
+                reqdata.migrate_scd_list, rsp_req.param_.generated_insert_scds,
+                rsp_req.param_.generated_del_scds))
+        {
+            rsp_req.param_.success = true;
+        }
+        else
+        {
+            LOG(ERROR) << "generate migrate scd file failed on " << rsp_req.param_.rsp_host;
+        }
+    }
+
+    DistributeFileSyncMgr::get()->sendGenerateSCDRsp(reqdata.req_host,
+        SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
+}
+
 FileSyncServer::FileSyncServer(const std::string& host, uint16_t port, uint32_t threadNum)
     : host_(host)
     , port_(port)
@@ -341,6 +363,22 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             ReportStatusRspData& rspdata = params.get<0>();
             DistributeFileSyncMgr::get()->notifyReportStatusRsp(rspdata);
+            req.result(true);
+        }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GENERATE_MIGRATE_SCD_REQ])
+        {
+            msgpack::type::tuple<GenerateSCDReqData> params;
+            req.params().convert(&params);
+            GenerateSCDReqData& reqdata = params.get<0>();
+            threadpool_.schedule(boost::bind(&doGenMigrateSCD, reqdata));
+            req.result(true);
+        }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GENERATE_MIGRATE_SCD_RSP])
+        {
+            msgpack::type::tuple<GenerateSCDRspData> params;
+            req.params().convert(&params);
+            GenerateSCDRspData& rspdata = params.get<0>();
+            DistributeFileSyncMgr::get()->notifyGenerateSCDRsp(rspdata);
             req.result(true);
         }
         else
@@ -1159,6 +1197,132 @@ void DistributeFileSyncMgr::notifyFinishReceive(const std::string& filepath)
     wait_finish_notify_[filepath] = true;
     cond_.notify_all();
     LOG(INFO) << "a file finish notify for : " << filepath;
+}
+
+bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
+    const std::map<std::string, std::vector<uint16_t> >& from,
+    std::map<uint16_t, std::string>& generated_insert_scds,
+    std::map<uint16_t, std::string>& generated_del_scds)
+{
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
+        return false;
+    if (!DistributeFileSys::get()->isEnabled())
+        return false;
+
+    uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+
+    {
+        boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+        generate_scd_rsp_list_.clear();
+    }
+
+    std::vector<uint16_t> local_scds;
+    int wait_num = 0;
+    for(std::map<std::string, std::vector<uint16_t> >::const_iterator cit = from.begin();
+        cit != from.end(); ++cit)
+    {
+        GenerateSCDRequest req;
+        req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+        req.param_.coll = coll;
+        req.param_.migrate_scd_list = cit->second;
+        if (cit->first == SuperNodeManager::get()->getLocalHostIP())
+        {
+            local_scds = cit->second;
+            continue;
+        }
+        bool rsp_ret = false;
+        try
+        {
+            conn_mgr_->syncRequest(cit->first, port, req, rsp_ret);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error while checking status: " << e.what()
+                << ", ip: " << cit->first;
+            return false;
+        }
+        if (rsp_ret)
+            ++wait_num;
+    }
+
+    generated_insert_scds.clear();
+    generated_del_scds.clear();
+    if (!local_scds.empty())
+    {
+        // generate the migrate scds on the current node.
+        if(!scd_generator_(coll, local_scds, generated_insert_scds, generated_del_scds))
+        {
+            LOG(INFO) << "generate the migrate scd files on local failed.";
+            return false;
+        }
+    }
+    int max_wait = 500;
+    // wait for response.
+    while(wait_num > 0)
+    {
+        std::vector<GenerateSCDRspData> rspdata;
+        {
+            boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+            while (generate_scd_rsp_list_.empty())
+            {
+                if (--max_wait < 0)
+                {
+                    LOG(INFO) << "wait max time!! no longer wait, no rsp num: " << wait_num;
+                    return false;
+                }
+                LOG(INFO) << "waiting generated scd files ...";
+                generate_scd_cond_.timed_wait(lk, boost::posix_time::seconds(30));
+            }
+            // reset wait time if got any rsp.
+            max_wait = 30;
+            rspdata.swap(generate_scd_rsp_list_);
+        }
+        LOG(INFO) << "status report got rsp: " << rspdata.size();
+        for(size_t i = 0; i < rspdata.size(); ++i)
+        {
+            LOG(INFO) << "checking rsp for host :" << rspdata[i].rsp_host;
+            if (!rspdata[i].success)
+            {
+                LOG(WARNING) << "rsp return false from this host!!";
+                return false;
+            }
+            for (std::map<uint16_t, std::string>::const_iterator scdit = rspdata[i].generated_insert_scds.begin();
+                scdit != rspdata[i].generated_insert_scds.end(); ++scdit)
+            {
+                generated_insert_scds[scdit->first] = scdit->second;
+            }
+            for (std::map<uint16_t, std::string>::const_iterator scdit = rspdata[i].generated_del_scds.begin();
+                scdit != rspdata[i].generated_del_scds.end(); ++scdit)
+            {
+                generated_del_scds[scdit->first] = scdit->second;
+            }
+        }
+        wait_num -= rspdata.size();
+    }
+    LOG(INFO) << "generate migrate scd request finished";
+    return true;
+}
+
+void DistributeFileSyncMgr::notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata)
+{
+    boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+    generate_scd_rsp_list_.push_back(rspdata);
+    generate_scd_cond_.notify_all();
+}
+
+void DistributeFileSyncMgr::sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp)
+{
+    if (conn_mgr_ == NULL)
+        return;
+    bool rsp_ret = false;
+    try
+    {
+        conn_mgr_->syncRequest(ip, port, rsp, rsp_ret);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "send response failed to host : " << ip;
+    }
 }
 
 }

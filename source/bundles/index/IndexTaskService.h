@@ -59,6 +59,14 @@ public:
     bool isNeedSharding();
     bool HookDistributeRequestForIndex();
     const std::vector<shardid_t>& getShardidListForSearch();
+    bool addNewShardingNodes(const std::vector<shardid_t>& new_sharding_nodes);
+    boost::shared_ptr<ShardingStrategy> getShardingStrategy()
+    {
+        return sharding_strategy_;
+    }
+    bool generateMigrateSCD(const std::vector<uint16_t>& scd_list,
+        std::map<uint16_t, std::string>& generated_insert_scds,
+        std::map<uint16_t, std::string>& generated_del_scds);
 
 private:
     bool SendRequestToSharding(uint32_t shardid);
@@ -71,13 +79,19 @@ private:
     bool createScdSharder(
         boost::shared_ptr<ScdSharder>& scdSharder);
 
+    void updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes);
+    void indexShardingNodes(const std::map<shardid_t, std::vector<uint16_t> >& migrate_to,
+        const std::map<uint16_t, std::string>& generated_insert_scds);
+
 private:
     std::string service_;
     IndexBundleConfiguration* bundleConfig_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::shared_ptr<IndexWorker> indexWorker_;
+    boost::shared_ptr<ShardingStrategy> sharding_strategy_;
     boost::shared_ptr<ScdSharder> scdSharder_;
+    std::string sharding_map_dir_;
 
     friend class IndexWorkerController;
     friend class CollectionTaskScheduler;

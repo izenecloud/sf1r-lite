@@ -13,7 +13,6 @@ namespace sf1r
 {
 
 MiningSearchService::MiningSearchService()
-    :shardingstrategy_(NULL)
 {
 }
 

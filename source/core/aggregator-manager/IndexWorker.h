@@ -125,6 +125,14 @@ public:
         boost::shared_ptr<ScdSharder>& scdSharder);
 
     static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
+    void disableSharding(bool disable_sharding)
+    {
+        disable_sharding_ = disable_sharding;
+    }
+
+    bool generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
+        std::map<uint16_t, std::string>& generated_insert_scds,
+        std::map<uint16_t, std::string>& generated_del_scds);
 
 private:
     void createPropertyList_();
@@ -304,8 +312,9 @@ private:
     std::vector<boost::thread*> index_thread_workers_;
     bool* index_thread_status_;
     bool is_real_time_;
-    ShardingConfig shard_cfg_;
+    boost::shared_ptr<ShardingStrategy> sharding_strategy_;
     boost::shared_ptr<ScdSharder> scdSharder_;
+    bool disable_sharding_;
 };
 
 }
