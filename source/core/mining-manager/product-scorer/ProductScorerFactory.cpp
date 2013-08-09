@@ -29,6 +29,18 @@ namespace
  * score), we would select at most 9 top labels.
  */
 const score_t kTopLabelLimit = 9;
+
+const std::string kCategoryPropName("Category");
+
+bool checkGroupLabel(const faceted::GroupParam& groupParam)
+{
+    faceted::GroupParam::GroupLabelMap::const_iterator it =
+        groupParam.groupLabels_.find(kCategoryPropName);
+
+    return it != groupParam.groupLabels_.end() &&
+        !it->second.empty();
+}
+
 }
 
 ProductScorerFactory::ProductScorerFactory(
@@ -225,10 +237,13 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
     }
     LOG(INFO) << oss.str();
 
+    const bool hasGroupLabel = checkGroupLabel(scoreParam.groupParam_);
+
     scoreParam.propSharedLockSet_.insertSharedLock(categoryClassifyTable_);
     return new CategoryClassifyScorer(scoreConfig,
                                       *categoryClassifyTable_,
-                                      categoryScoreMap);
+                                      categoryScoreMap,
+                                      hasGroupLabel);
 }
 
 ProductScorer* ProductScorerFactory::createRelevanceScorer_(
