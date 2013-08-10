@@ -461,7 +461,8 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
     size_t new_vnode_for_sharding,
     ShardingTopologyT& current_sharding_topology,
     ShardingTopologyT& new_sharding_topology,
-    std::map<uint16_t, std::pair<shardid_t, shardid_t> >& migrate_data_list)
+    std::map<uint16_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
+    std::vector<shardid_t>& sharding_map)
 {
     // move the vnode from src sharding node to dest sharding node.
     size_t migrate_to = 0;
@@ -482,6 +483,7 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
             {
                 migrate_data_list[it->second[vnode_index]] = std::pair<shardid_t, shardid_t>(it->first, new_sharding_nodes[migrate_to]);
                 LOG(INFO) << "vnode : " << it->second[vnode_index] << " will be moved from " << it->first << " to " << new_sharding_nodes[migrate_to];
+                sharding_map[it->second[vnode_index]] = new_sharding_nodes[migrate_to];
                 new_sharding_topology[new_sharding_nodes[migrate_to]].push_back(it->second[vnode_index]);
                 --migrate_start;
                 if (new_sharding_topology[new_sharding_nodes[migrate_to]].size() >= new_vnode_for_sharding)
@@ -559,7 +561,8 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
 
     migrateSharding(new_sharding_nodes, new_vnode_for_sharding,
         current_sharding_topology,
-        new_sharding_topology, migrate_data_list);
+        new_sharding_topology, migrate_data_list,
+        current_sharding_map);
 
     LOG(INFO) << "After migrate, the average vnodes for each sharding will be: " << new_vnode_for_sharding 
        << " and sharding topology will be : ";
@@ -624,6 +627,8 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
 
     indexShardingNodes(migrate_from_list, generated_del_scds);
+
+    MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
     // update config will cause the collection to restart, so 
     // the IndexTaskService will be destructed.
     updateShardingConfig(new_sharding_nodes);
