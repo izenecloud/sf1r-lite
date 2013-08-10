@@ -24,11 +24,11 @@ namespace sf1r {
         {
         }
 
-        bool Generate(bool spu_only=false)
+        bool Generate(bool spu_only=false, int thread_num=1)
         {
             LOG(INFO)<<"b5mp merger begin"<<std::endl;
             B5moSorter sorter(m_);
-            bool succ = sorter.StageTwo(spu_only, last_m_);
+            bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
             LOG(INFO)<<"b5mp merger finish"<<std::endl;
             return succ;
         }

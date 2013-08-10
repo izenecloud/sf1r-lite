@@ -1,5 +1,6 @@
 #include "b5mo_sorter.h"
 #include "product_db.h"
+#include "b5m_threadpool.h"
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 
@@ -31,7 +32,7 @@ bool B5moSorter::StageOne()
     }
     return true;
 }
-bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
+bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_num)
 {
     spu_only_ = spu_only;
     namespace bfs=boost::filesystem;    
@@ -84,7 +85,9 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
     std::istream is(&stream);
     std::string line;
     std::string spid;
-    std::vector<Value> buffer;
+    typedef std::vector<Value> BufferType;
+    BufferType* buffer = new BufferType;
+    B5mThreadPool<BufferType> pool(thread_num, boost::bind(&B5moSorter::OBag_, this, _1));
     while(std::getline(is, line))
     {
         Value value;
@@ -95,18 +98,18 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m)
         }
         //std::cerr<<"find value "<<value.spid<<","<<value.is_update<<","<<value.ts<<","<<value.doc.getPropertySize()<<std::endl;
 
-        if(buffer.empty()) buffer.push_back(value);
-        if(!buffer.empty())
+        if(!buffer->empty())
         {
-            if(value.spid!=buffer.back().spid)
+            if(value.spid!=buffer->back().spid)
             {
-                OBag_(buffer);
-                buffer.resize(0);
+                pool.schedule(buffer);
+                buffer = new BufferType;
             }
         }
-        buffer.push_back(value);
+        buffer->push_back(value);
     }
-    OBag_(buffer);
+    pool.schedule(buffer);
+    pool.wait();
     mirror_ofs_.close();
     pwriter_->Close();
     pclose(pipe);
@@ -149,6 +152,27 @@ void B5moSorter::WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const s
     boost::algorithm::trim(str_value);
     ofs<<spid<<"\t"<<doc.type<<"\t"<<ts<<"\t"<<str_value<<std::endl;
 }
+void B5moSorter::WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts)
+{
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(spid.empty()) return;
+    Json::Value json_value;
+    JsonDocument::ToJson(doc, json_value);
+    //for(Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
+    //{
+        //const PropertyValue& v = it->second;
+        //const UString& uv = v.get<UString>();
+        //std::string sv;
+        //uv.convertString(sv, UString::UTF_8);
+        //json_value[it->first] = sv;
+    //}
+    Json::FastWriter writer;
+    std::string str_value = writer.write(json_value);
+    boost::algorithm::trim(str_value);
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    ofs<<spid<<"\t"<<doc.type<<"\t"<<ts<<"\t"<<str_value<<std::endl;
+}
 void B5moSorter::Sort_(std::vector<Value>& docs)
 {
     std::sort(docs.begin(), docs.end(), PidCompare_);
@@ -165,6 +189,7 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
 
 void B5moSorter::OBag_(std::vector<Value>& docs)
 {
+
     bool modified=false;
     for(uint32_t i=0;i<docs.size();i++)
     {
@@ -180,7 +205,7 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     {
         for(uint32_t i=0;i<docs.size();i++)
         {
-            WriteValue_(mirror_ofs_, docs[i].doc, docs[i].ts);
+            WriteValueSafe_(mirror_ofs_, docs[i].doc, docs[i].ts);
         }
         return;
     }
@@ -204,12 +229,11 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
             ODocMerge_(prev_odocs, doc);
         }
     }
-    //std::cerr<<"odocs count "<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
         if(odocs[i].type!=DELETE_SCD)
         {
-            WriteValue_(mirror_ofs_, odocs[i], ts_);
+            WriteValueSafe_(mirror_ofs_, odocs[i], ts_);
         }
     }
     ScdDocument pdoc;
@@ -219,7 +243,6 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     }
     else if(pdoc.type==DELETE_SCD)
     {
-        pwriter_->Append(pdoc, pdoc.type);
     }
     else
     {
@@ -244,10 +267,12 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
                 ptype = NOT_SCD;
             }
         }
-        if(ptype!=NOT_SCD)
-        {
-            pwriter_->Append(pdoc, ptype);
-        }
+        pdoc.type = ptype;
+    }
+    if(pdoc.type!=NOT_SCD)
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        pwriter_->Append(pdoc);
     }
 }
 

@@ -58,11 +58,11 @@ namespace sf1r {
         void Append(const ScdDocument& doc, const std::string& ts);
 
         bool StageOne();
-        bool StageTwo(bool spu_only, const std::string& last_m);
-
+        bool StageTwo(bool spu_only, const std::string& last_m, int thread_num=1);
 
     private:
         void WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
+        void WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
         static bool PidCompare_(const Value& doc1, const Value& doc2)
         {
             Document::doc_prop_value_strtype pid1;

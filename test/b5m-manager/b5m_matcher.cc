@@ -1095,7 +1095,7 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
-        if(!processor.Generate(spu_only))
+        if(!processor.Generate(spu_only, thread_num))
         {
             std::cout<<"b5mp processor failed"<<std::endl;
             return EXIT_FAILURE;
@@ -1121,7 +1121,7 @@ int do_main(int ac, char** av)
 
         //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
         B5mcScdGenerator generator(mode, matcher.get());
-        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance))
+        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
         {
             return EXIT_FAILURE;
         }
