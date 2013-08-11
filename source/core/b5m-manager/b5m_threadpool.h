@@ -96,7 +96,7 @@ namespace sf1r {
         void run_()
         {
             E* e;
-            while(!quit_)
+            while(!quit_ || !queue_.empty())
             {
                 if(queue_.pop(e))
                 {
