@@ -95,7 +95,11 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
             std::string property = asString((*array)[i][Keys::property]);
             //LOG(INFO)<<property;
             const izenelib::driver::Value::ArrayType* values = (*array)[i][Keys::value].getPtr<Value::ArrayType>();
+            //LOG(INFO)<<values;
+            if (NULL == values || 0 == values->size())
+                continue;
             //LOG(INFO)<<values->size();
+            if(!values) return;
             for (std::size_t vi = 0; vi < values->size(); vi++)
             {
                 //LOG(INFO)<<(asString((*values)[vi]));

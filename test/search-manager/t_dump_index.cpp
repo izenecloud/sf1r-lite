@@ -346,6 +346,7 @@ BOOST_AUTO_TEST_CASE(test_dump)
     LOG(INFO) << "testing index and merge";
     boost::filesystem::remove_all("./index_merge_test/coll1");
     //boost::filesystem::create_directories("./index_merge_test");
+    if (boost::filesystem::exists("./index_merge_test"))
     {
     TestDumpIndex merge_test("./index_merge_test", 128000000);
 
