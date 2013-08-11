@@ -42,7 +42,9 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     {
         ts_ = bfs::path(m_).parent_path().filename().string();
     }
-    std::string cmd = "sort --key=1,3 -m --buffer-size=1000M "+sorter_path+"/*";
+    std::string buffer_size = buffer_size_;
+    if(buffer_size.empty()) buffer_size = "1000M";
+    std::string cmd = "sort --key=1,3 -m --buffer-size="+buffer_size+" "+sorter_path+"/*";
     if(!last_m.empty())
     {
         std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_m); 

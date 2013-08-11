@@ -296,6 +296,7 @@ int do_main(int ac, char** av)
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
         ("thread-num", po::value<int>(), "specify thread num")
+        ("buffer-size", po::value<std::string>(), "specify in memory buffer size")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
@@ -376,6 +377,7 @@ int do_main(int ac, char** av)
     bool spu_only = false;
     uint16_t max_depth = 0;
     int thread_num = 1;
+    std::string buffer_size;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -388,6 +390,10 @@ int do_main(int ac, char** av)
     if (vm.count("thread-num")) {
         thread_num = vm["thread-num"].as<int>();
         std::cout<<"thread_num:"<<thread_num<<std::endl;
+    } 
+    if (vm.count("buffer-size")) {
+        buffer_size = vm["buffer-size"].as<std::string>();
+        std::cout<<"buffer_size:"<<buffer_size<<std::endl;
     } 
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
@@ -1095,6 +1101,10 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
+        if(!buffer_size.empty())
+        {
+            processor.SetBufferSize(buffer_size);
+        }
         if(!processor.Generate(spu_only, thread_num))
         {
             std::cout<<"b5mp processor failed"<<std::endl;

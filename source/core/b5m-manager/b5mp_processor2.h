@@ -24,10 +24,19 @@ namespace sf1r {
         {
         }
 
+        void SetBufferSize(const std::string& bs)
+        {
+            buffer_size_ = bs;
+        }
+
         bool Generate(bool spu_only=false, int thread_num=1)
         {
             LOG(INFO)<<"b5mp merger begin"<<std::endl;
             B5moSorter sorter(m_);
+            if(!buffer_size_.empty())
+            {
+                sorter.SetBufferSize(buffer_size_);
+            }
             bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
             LOG(INFO)<<"b5mp merger finish"<<std::endl;
             return succ;
@@ -38,6 +47,7 @@ namespace sf1r {
     private:
         std::string m_;
         std::string last_m_;
+        std::string buffer_size_;
     };
 
 }
