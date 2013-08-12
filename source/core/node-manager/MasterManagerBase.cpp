@@ -158,7 +158,7 @@ shardid_t MasterManagerBase::getMyShardId()
 }
 
 bool MasterManagerBase::getShardReceiver(
-        unsigned int shardid,
+        shardid_t shardid,
         std::string& host,
         unsigned int& recvPort)
 {

@@ -101,7 +101,7 @@ public:
      * @return true on success, false on failure.
      */
     bool getShardReceiver(
-            unsigned int shardid,
+            shardid_t shardid,
             std::string& host,
             unsigned int& recvPort);
 

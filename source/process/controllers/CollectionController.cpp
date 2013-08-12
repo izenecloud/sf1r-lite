@@ -485,10 +485,18 @@ void CollectionController::add_sharding_nodes()
         response().addError("Require an array for parameter [new_sharding_ids]!");
         return;
     }
-    std::vector<shardid_t> new_sharding_nodes;
-    for (size_t i = 0; i < v.size(); ++i) 
+
+    const Value::ArrayType* array = v.getPtr<Value::ArrayType>();
+    if(!array || array->size() == 0)
     {
-        int id = asInt(v(i));
+        response().addError("Require an array for parameter [new_sharding_ids].");
+        return;
+    }
+
+    std::vector<shardid_t> new_sharding_nodes;
+    for (size_t i = 0; i < array->size(); ++i) 
+    {
+        uint32_t id = asUint((*array)[i]);
         if (id > 255 || id < 1)
         {
             response().addError("Each sharding node id must between 1 and 255!");

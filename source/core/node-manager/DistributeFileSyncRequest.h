@@ -94,7 +94,7 @@ struct GenerateSCDReqData : public RpcServerRequestData
 {
     std::string req_host;
     std::string coll;
-    std::vector<uint16_t> migrate_vnode_list;
+    std::map<uint8_t, std::vector<uint16_t> > migrate_vnode_list;
     MSGPACK_DEFINE(req_host, migrate_vnode_list);
 };
 
@@ -102,8 +102,8 @@ struct GenerateSCDRspData : public RpcServerRequestData
 {
     bool success;
     std::string  rsp_host;
-    std::map<uint16_t, std::string> generated_insert_scds;
-    std::map<uint16_t, std::string> generated_del_scds;
+    std::map<uint8_t, std::string> generated_insert_scds;
+    std::map<uint8_t, std::string> generated_del_scds;
     MSGPACK_DEFINE(success, rsp_host, generated_insert_scds, generated_del_scds);
 };
 

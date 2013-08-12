@@ -396,9 +396,9 @@ bool CollectionManager::addNewShardingNodes(const std::string& collectionName,
 }
 
 bool CollectionManager::generateMigrateSCD(const std::string& collectionName,
-    const std::vector<uint16_t>& scd_list,
-    std::map<uint16_t, std::string>& generated_insert_scds,
-    std::map<uint16_t, std::string>& generated_del_scds)
+    const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+    std::map<shardid_t, std::string>& generated_insert_scds,
+    std::map<shardid_t, std::string>& generated_del_scds)
 {
     ScopedReadLock lock(*getCollectionMutex(collectionName));
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
@@ -406,7 +406,7 @@ bool CollectionManager::generateMigrateSCD(const std::string& collectionName,
     {
         if (iter->second->indexTaskService_)
         {
-            return iter->second->indexTaskService_->generateMigrateSCD(scd_list, generated_insert_scds, generated_del_scds);
+            return iter->second->indexTaskService_->generateMigrateSCD(vnode_list, generated_insert_scds, generated_del_scds);
         }
     }
     return false;

@@ -1200,9 +1200,9 @@ void DistributeFileSyncMgr::notifyFinishReceive(const std::string& filepath)
 }
 
 bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
-    const std::map<std::string, std::vector<uint16_t> >& from,
-    std::map<uint16_t, std::string>& generated_insert_scds,
-    std::map<uint16_t, std::string>& generated_del_scds)
+    const std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >& from,
+    std::map<shardid_t, std::vector<std::string> >& generated_insert_scds,
+    std::map<shardid_t, std::vector<std::string> >& generated_del_scds)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return false;
@@ -1216,9 +1216,9 @@ bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
         generate_scd_rsp_list_.clear();
     }
 
-    std::vector<uint16_t> local_scds;
+    std::map<shardid_t, std::vector<vnodeid_t> > local_scds;
     int wait_num = 0;
-    for(std::map<std::string, std::vector<uint16_t> >::const_iterator cit = from.begin();
+    for(std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >::const_iterator cit = from.begin();
         cit != from.end(); ++cit)
     {
         GenerateSCDRequest req;
@@ -1249,11 +1249,25 @@ bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
     generated_del_scds.clear();
     if (!local_scds.empty())
     {
+        std::map<shardid_t, std::string> local_insert_scds;
+        std::map<shardid_t, std::string> local_del_scds;
+
         // generate the migrate scds on the current node.
-        if(!scd_generator_(coll, local_scds, generated_insert_scds, generated_del_scds))
+        if(!scd_generator_(coll, local_scds, local_insert_scds, local_del_scds))
         {
             LOG(INFO) << "generate the migrate scd files on local failed.";
             return false;
+        }
+
+        for (std::map<shardid_t, std::string>::const_iterator scdit = local_insert_scds.begin();
+            scdit != local_insert_scds.end(); ++scdit)
+        {
+            generated_insert_scds[scdit->first].push_back(scdit->second);
+        }
+        for (std::map<shardid_t, std::string>::const_iterator scdit = local_del_scds.begin();
+            scdit != local_del_scds.end(); ++scdit)
+        {
+            generated_del_scds[scdit->first].push_back(scdit->second);
         }
     }
     int max_wait = 500;
@@ -1286,15 +1300,15 @@ bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
                 LOG(WARNING) << "rsp return false from this host!!";
                 return false;
             }
-            for (std::map<uint16_t, std::string>::const_iterator scdit = rspdata[i].generated_insert_scds.begin();
+            for (std::map<shardid_t, std::string>::const_iterator scdit = rspdata[i].generated_insert_scds.begin();
                 scdit != rspdata[i].generated_insert_scds.end(); ++scdit)
             {
-                generated_insert_scds[scdit->first] = scdit->second;
+                generated_insert_scds[scdit->first].push_back(scdit->second);
             }
-            for (std::map<uint16_t, std::string>::const_iterator scdit = rspdata[i].generated_del_scds.begin();
+            for (std::map<shardid_t, std::string>::const_iterator scdit = rspdata[i].generated_del_scds.begin();
                 scdit != rspdata[i].generated_del_scds.end(); ++scdit)
             {
-                generated_del_scds[scdit->first] = scdit->second;
+                generated_del_scds[scdit->first].push_back(scdit->second);
             }
         }
         wait_num -= rspdata.size();

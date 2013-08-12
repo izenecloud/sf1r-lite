@@ -64,9 +64,9 @@ public:
     {
         return sharding_strategy_;
     }
-    bool generateMigrateSCD(const std::vector<uint16_t>& scd_list,
-        std::map<uint16_t, std::string>& generated_insert_scds,
-        std::map<uint16_t, std::string>& generated_del_scds);
+    bool generateMigrateSCD(const std::map<shardid_t, std::vector<vnodeid_t> >& scd_list,
+        std::map<shardid_t, std::string>& generated_insert_scds,
+        std::map<shardid_t, std::string>& generated_del_scds);
 
 private:
     bool SendRequestToSharding(uint32_t shardid);
@@ -80,8 +80,7 @@ private:
         boost::shared_ptr<ScdSharder>& scdSharder);
 
     void updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes);
-    void indexShardingNodes(const std::map<shardid_t, std::vector<uint16_t> >& migrate_to,
-        const std::map<uint16_t, std::string>& generated_insert_scds);
+    void indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds);
 
 private:
     std::string service_;

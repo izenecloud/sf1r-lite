@@ -2,6 +2,7 @@
 #define SF1R_NODEMANAGER_DISTRIBUTE_FILESYNCMGR_H
 
 #include "DistributeFileSyncRequest.h"
+#include "sharding/ShardingConfig.h"
 #include <string>
 #include <util/singleton.h>
 #include <3rdparty/msgpack/rpc/server.h>
@@ -86,14 +87,14 @@ public:
         return flush_compute_mutex_;
     }
     bool generateMigrateScds(const std::string& coll, 
-        const std::map<std::string, std::vector<uint16_t> >& from,
-        std::map<uint16_t, std::string>& generated_insert_scds,
-        std::map<uint16_t, std::string>& generated_del_scds);
+        const std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >& from,
+        std::map<shardid_t, std::vector<std::string> >& generated_insert_scds,
+        std::map<shardid_t, std::vector<std::string> >& generated_del_scds);
 
     typedef boost::function<bool(const std::string&,
-        const std::vector<uint16_t>&,
-        std::map<uint16_t, std::string>&,
-        std::map<uint16_t, std::string>&)> GenMigrateSCDFuncT;
+        const std::map<shardid_t, std::vector<vnodeid_t> >&,
+        std::map<shardid_t, std::string>&,
+        std::map<shardid_t, std::string>&)> GenMigrateSCDFuncT;
     void setGenMigrateScdCB(GenMigrateSCDFuncT cb)
     {
         scd_generator_ = cb;
@@ -101,9 +102,9 @@ public:
     void notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata);
     void sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp);
     bool GenMigrateSCD(const std::string& coll,
-        const std::vector<uint16_t>& vnode_list,
-        std::map<uint16_t, std::string>& generated_insert_scds,
-        std::map<uint16_t, std::string>& generated_del_scds)
+        const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+        std::map<shardid_t, std::string>& generated_insert_scds,
+        std::map<shardid_t, std::string>& generated_del_scds)
     {
         return scd_generator_(coll, vnode_list, generated_insert_scds, generated_del_scds);
     }
