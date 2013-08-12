@@ -449,7 +449,7 @@ static void printSharding(const ShardingTopologyT& sharding_topology)
     for(ShardingTopologyT::const_iterator cit = sharding_topology.begin();
         cit != sharding_topology.end(); ++cit)
     {
-        std::cout << "sharding : " << cit->first << " is holding : ";
+        std::cout << "sharding : " << (uint32_t)cit->first << " is holding : ";
         for (size_t i = 0; i < cit->second.size(); ++i)
         {
             std::cout << cit->second[i] << ", ";
@@ -483,7 +483,7 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
                 --vnode_index)
             {
                 migrate_data_list[it->second[vnode_index]] = std::pair<shardid_t, shardid_t>(it->first, new_sharding_nodes[migrate_to]);
-                LOG(INFO) << "vnode : " << it->second[vnode_index] << " will be moved from " << it->first << " to " << new_sharding_nodes[migrate_to];
+                LOG(INFO) << "vnode : " << it->second[vnode_index] << " will be moved from " << (uint32_t)it->first << " to " << (uint32_t)new_sharding_nodes[migrate_to];
                 sharding_map[it->second[vnode_index]] = new_sharding_nodes[migrate_to];
                 new_sharding_topology[new_sharding_nodes[migrate_to]].push_back(it->second[vnode_index]);
                 --migrate_start;

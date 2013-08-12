@@ -1604,7 +1604,7 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
                 continue;
             }
             bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
-            aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, shardidList[i], isLocal);
+            aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, (uint32_t)shardidList[i], isLocal);
         }
         else
         {
@@ -1727,7 +1727,10 @@ bool MasterManagerBase::isShardingNodeOK(const std::vector<shardid_t>& shardids)
         std::vector<std::string> node_list;
         zookeeper_->getZNodeChildren(getPrimaryNodeParentPath(shardids[i]), node_list);
         if (node_list.empty())
+        {
+            LOG(INFO) << "no any nodes under : " << getPrimaryNodeParentPath(shardids[i]);
             return false;
+        }
         uint32_t nodestate;
         if (!getNodeState(node_list[0], nodestate))
             return false;
