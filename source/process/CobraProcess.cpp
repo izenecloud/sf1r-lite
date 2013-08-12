@@ -96,9 +96,7 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
 bool CobraProcess::initKNlpWrapper()
 {
-    const bfs::path resource = SF1Config::get()->getResourceDir();
-    const std::string dictDir = (resource / "dict" / "term_category").string();
-
+    const std::string dictDir = SF1Config::get()->getKNlpDictDir();
     boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir));
     KNlpResourceManager::setResource(knlpWrapper);
     return true;
