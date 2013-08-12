@@ -2254,6 +2254,7 @@ bool IndexWorker::generateMigrateSCD(const std::map<shardid_t, std::vector<vnode
     }
 
     std::string tmp_migrate_path = bundleConfig_->indexSCDPath() + "/tmp_migrate";
+    bfs::remove_all(tmp_migrate_path);
     bfs::create_directories(tmp_migrate_path);
 
     boost::shared_ptr<ScdWriter> del_generator;
@@ -2326,11 +2327,8 @@ bool IndexWorker::generateMigrateSCD(const std::map<shardid_t, std::vector<vnode
     if (del_generator)
         del_generator->Close();
 
-    std::string orig_tmp_path = tmp_migrate_path;
     bool ret = DistributeFileSys::get()->copyToDFS(tmp_migrate_path, "/generated_migrate_scds/" +
         boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId()));
-
-    bfs::remove_all(orig_tmp_path);
 
     for (std::map<shardid_t, std::string>::iterator it = generated_insert_scds.begin();
         it != generated_insert_scds.end(); ++it)

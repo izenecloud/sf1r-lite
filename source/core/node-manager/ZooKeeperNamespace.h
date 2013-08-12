@@ -102,7 +102,7 @@ public:
     static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ << primaryNodes_ << node_ << nodeId;
+        ss << sf1rCluster_ << primaryNodes_ << node_ << boost::lexical_cast<std::string>(nodeId);
         return ss.str();
     }
 
@@ -118,7 +118,7 @@ public:
     static std::string getCurrWriteReqQueueParent(nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ << write_req_queue_ << node_ << nodeId;
+        ss << sf1rCluster_ << write_req_queue_ << node_ << boost::lexical_cast<std::string>(nodeId);
         return ss.str();
     }
     static std::string getWriteReqQueueNode(nodeid_t nodeId)
@@ -134,7 +134,8 @@ public:
     inline static std::string getWriteReqPrepareNode(nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ + write_req_prepare_node_ << node_ << nodeId;
+        ss << sf1rCluster_ + write_req_prepare_node_ << node_ 
+            << boost::lexical_cast<std::string>(nodeId);
         return ss.str();
     }
 
@@ -164,7 +165,8 @@ public:
     static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss <<sf1rCluster_<<topology_<<replica_<<replicaId<<node_<<nodeId;
+        ss << sf1rCluster_ << topology_ << replica_ << boost::lexical_cast<std::string>(replicaId)
+            << node_ << boost::lexical_cast<std::string>(nodeId);
 
         return ss.str();
     }
