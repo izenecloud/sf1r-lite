@@ -1781,7 +1781,7 @@ bool MasterManagerBase::isMineNewSharding()
                     // skip empty elements
                     continue;
                 }
-                if (sf1rTopology_.curNode_.nodeId_ == boost::lexical_cast<shardid_t>(item));
+                if (sf1rTopology_.curNode_.nodeId_ == (shardid_t)boost::lexical_cast<uint32_t>(item));
                 {
                     return true;
                 }
@@ -1861,9 +1861,9 @@ bool MasterManagerBase::waitForNewShardingNodes(const std::vector<shardid_t>& sh
         for (size_t i = 0; i < shardids.size(); ++i)
         {
             if (new_shardids.empty())
-                new_shardids = boost::lexical_cast<std::string>(shardids[i]);
+                new_shardids = boost::lexical_cast<std::string>((uint32_t)shardids[i]);
             else
-                new_shardids += "," + boost::lexical_cast<std::string>(shardids[i]);
+                new_shardids += "," + boost::lexical_cast<std::string>((uint32_t)shardids[i]);
         }
 
         znode.setValue(ZNode::KEY_NEW_SHARDING_NODEIDS, new_shardids);

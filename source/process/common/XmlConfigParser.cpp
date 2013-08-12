@@ -1284,7 +1284,7 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
             uint32_t shardid;
             try
             {
-                shardid = boost::lexical_cast<shardid_t>(*it);
+                shardid = boost::lexical_cast<uint32_t>(*it);
                 if (shardid < 1)
                 {
                     std::stringstream ss;
