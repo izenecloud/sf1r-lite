@@ -1,8 +1,8 @@
 #include "ProductTokenizer.h"
 #include <common/CMAKnowledgeFactory.h>
 #include <b5m-manager/product_matcher.h>
-#include <la-manager/KNlpWrapper.h>
 #include <mining-manager/category-classify/CategoryClassifyTable.h>
+#include <common/ResourceManager.h>
 #include <common/QueryNormalizer.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -363,13 +363,13 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     KNlpWrapper::token_score_list_t minor_patternScore;
 
     KNlpWrapper::string_t kstr(pattern);
-    KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
+    knlpWrapper->fmmTokenize(kstr, tokenScores);
 
     ///deal with "书籍杂志" category
     std::string classifyCategory;
      try
     {
-        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
         KNlpWrapper::string_t classifyKStr;
         if (docid == 0)
         {
@@ -423,7 +423,7 @@ double ProductTokenizer::GetTokenResultsByKNlp_(
     if (!minor_pattern.empty())
     {
         KNlpWrapper::string_t kmstr(minor_pattern);
-        KNlpWrapper::get()->fmmTokenize(kmstr, minor_patternScore);
+        knlpWrapper->fmmTokenize(kmstr, minor_patternScore);
     }
 
     std::vector<KNlpWrapper::string_t> t_product_model;

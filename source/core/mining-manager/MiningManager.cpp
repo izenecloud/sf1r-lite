@@ -69,6 +69,7 @@
 #include <search-manager/RTypeStringPropTableBuilder.h>
 #include <index-manager/InvertedIndexManager.h>
 #include <common/SearchCache.h>
+#include <common/ResourceManager.h>
 
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
@@ -87,7 +88,6 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
-#include <la-manager/KNlpWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -577,7 +577,7 @@ bool MiningManager::open()
         {
             LOG(INFO) << "suffix match enabled.";
 
-            if (!KNlpWrapper::get()->loadDictFiles())
+            if (!KNlpResourceManager::getResource()->loadDictFiles())
                 return false;
 
             suffix_match_path_ = prefix_path + "/suffix_match";
@@ -2282,10 +2282,11 @@ bool MiningManager::GetSuffixMatch(
         }
         
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+        boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
         if (isLongQuery)
-            pattern = KNlpWrapper::get()->cleanStopword(pattern);
+            pattern = knlpWrapper->cleanStopword(pattern);
         else
-            pattern = KNlpWrapper::get()->cleanGarbage(pattern);
+            pattern = knlpWrapper->cleanGarbage(pattern);
 
         LOG(INFO) << "clear stop word for long query: " << pattern;
         

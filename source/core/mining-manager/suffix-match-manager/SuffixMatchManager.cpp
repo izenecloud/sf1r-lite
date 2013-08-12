@@ -5,7 +5,7 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
-#include <la-manager/KNlpWrapper.h>
+#include <common/ResourceManager.h>
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
@@ -187,7 +187,8 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
         std::vector<double> minor_tokens_point; 
         for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
             minor_tokens_point.push_back(i->second);
-        KNlpWrapper::get()->gauss_smooth(minor_tokens_point);
+
+        KNlpResourceManager::getResource()->gauss_smooth(minor_tokens_point);
 
         unsigned int k = 0;
         for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
