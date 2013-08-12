@@ -150,7 +150,7 @@ public:
                ss << ", shards: ";
                for (size_t i = 0; i < col.shardList_.size(); i++)
                {
-                   ss << col.shardList_[i] << ",";
+                   ss << (uint32_t)col.shardList_[i] << ",";
                }
             }
 
@@ -394,7 +394,7 @@ public:
            << "BA port: " << baPort_ << std::endl
            << "data Port: " << dataPort_ << std::endl
            << "replica id: " << replicaId_ << std::endl
-           << "node id: " << nodeId_ << std::endl;
+           << "node id: " << (uint32_t)nodeId_ << std::endl;
 
         ss << master_.toString();
         ss << worker_.toString();

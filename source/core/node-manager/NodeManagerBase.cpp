@@ -46,6 +46,7 @@ void NodeManagerBase::setZNodePaths()
     nodePath_ = ZooKeeperNamespace::getNodePath(sf1rTopology_.curNode_.replicaId_, sf1rTopology_.curNode_.nodeId_);
     primaryBasePath_ = ZooKeeperNamespace::getPrimaryBasePath();
     primaryNodeParentPath_ = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
+    LOG(INFO) << " primary parent path is :" << primaryNodeParentPath_;
     primaryNodePath_ = ZooKeeperNamespace::getPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
 }
 

@@ -695,7 +695,9 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
         ticpp::Element * sf1rNodeElem = getUniqChildElement(topology, "CurrentSf1rNode");
         getAttribute(sf1rNodeElem, "replicaid", sf1rNode.replicaId_);
-        getAttribute_IntType(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
+        uint32_t nodeid;
+        getAttribute(sf1rNodeElem, "nodeid", nodeid);
+        sf1rNode.nodeId_ = (shardid_t)nodeid;
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
         sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
@@ -1279,7 +1281,7 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
         boost::tokenizer<boost::char_separator<char> >::iterator it;
         for (it = tokens.begin(); it != tokens.end(); ++it)
         {
-            shardid_t shardid;
+            uint32_t shardid;
             try
             {
                 shardid = boost::lexical_cast<shardid_t>(*it);
@@ -1296,7 +1298,7 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
                 throw std::runtime_error(
                     std::string("failed to parse shardids: ") + shardids + ", " + e.what());
             }
-            masterCollection.shardList_.push_back(shardid);
+            masterCollection.shardList_.push_back((shardid_t)shardid);
         }
     }
 

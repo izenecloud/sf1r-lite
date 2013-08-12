@@ -687,16 +687,16 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
     for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
     {
         if (sharding_cfg.empty())
-            sharding_cfg = boost::lexical_cast<std::string>(curr_shard_nodes[i]);
+            sharding_cfg = boost::lexical_cast<std::string>((uint32_t)curr_shard_nodes[i]);
         else
-            sharding_cfg += "," + boost::lexical_cast<std::string>(curr_shard_nodes[i]);
+            sharding_cfg += "," + boost::lexical_cast<std::string>((uint32_t)curr_shard_nodes[i]);
     }
     for (size_t i = 0; i < new_sharding_nodes.size(); ++i)
     {
         if (sharding_cfg.empty())
-            sharding_cfg = boost::lexical_cast<std::string>(new_sharding_nodes[i]);
+            sharding_cfg = boost::lexical_cast<std::string>((uint32_t)new_sharding_nodes[i]);
         else
-            sharding_cfg += "," + boost::lexical_cast<std::string>(new_sharding_nodes[i]);
+            sharding_cfg += "," + boost::lexical_cast<std::string>((uint32_t)new_sharding_nodes[i]);
     }
     LOG(INFO) << "new sharding cfg is : " << sharding_cfg;
     //
