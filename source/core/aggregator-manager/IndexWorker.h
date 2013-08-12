@@ -130,9 +130,9 @@ public:
         disable_sharding_ = disable_sharding;
     }
 
-    bool generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
-        std::map<uint16_t, std::string>& generated_insert_scds,
-        std::map<uint16_t, std::string>& generated_del_scds);
+    bool generateMigrateSCD(const std::vector<vnodeid_t>& vnode_list,
+        std::map<vnodeid_t, std::string>& generated_insert_scds,
+        std::map<vnodeid_t, std::string>& generated_del_scds);
 
 private:
     void createPropertyList_();

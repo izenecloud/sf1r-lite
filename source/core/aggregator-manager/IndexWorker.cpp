@@ -2228,9 +2228,9 @@ void IndexWorker::clearMasterCache_()
     }
 }
 
-bool IndexWorker::generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
-    std::map<uint16_t, std::string>& generated_insert_scds,
-    std::map<uint16_t, std::string>& generated_del_scds)
+bool IndexWorker::generateMigrateSCD(const std::vector<vnodeid_t>& vnode_list,
+    std::map<vnodeid_t, std::string>& generated_insert_scds,
+    std::map<vnodeid_t, std::string>& generated_del_scds)
 {
     if (!documentManager_)
     {
@@ -2244,8 +2244,8 @@ bool IndexWorker::generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
     docid_t curDocId = 0;
     docid_t migrated_cnt = 0;
 
-    std::set<uint16_t> all_migrate_scd_vnodes;
-    std::map<uint16_t, std::pair<boost::shared_ptr<ScdWriter>, boost::shared_ptr<ScdWriter> > > all_scd_generators;
+    std::set<vnodeid_t> all_migrate_scd_vnodes;
+    std::map<vnodeid_t, std::pair<boost::shared_ptr<ScdWriter>, boost::shared_ptr<ScdWriter> > > all_scd_generators;
     all_migrate_scd_vnodes.insert(vnode_list.begin(), vnode_list.end());
 
     std::string tmp_migrate_path = bundleConfig_->indexSCDPath() + "/tmp_migrate";
@@ -2277,17 +2277,17 @@ bool IndexWorker::generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
         if (all_migrate_scd_vnodes.find(vnode_index) == all_migrate_scd_vnodes.end())
             continue;
 
-        boost::shared_ptr<ScdWriter>& insert_generator = all_scd_generators[(uint16_t)vnode_index].first;
-        boost::shared_ptr<ScdWriter>& del_generator = all_scd_generators[(uint16_t)vnode_index].second;
+        boost::shared_ptr<ScdWriter>& insert_generator = all_scd_generators[(vnodeid_t)vnode_index].first;
+        boost::shared_ptr<ScdWriter>& del_generator = all_scd_generators[(vnodeid_t)vnode_index].second;
         if (!insert_generator)
         {
             insert_generator.reset(new ScdWriter(tmp_migrate_path, INSERT_SCD));
-            generated_insert_scds[(uint16_t)vnode_index] = insert_generator->getFileName();
+            generated_insert_scds[(vnodeid_t)vnode_index] = insert_generator->getFileName();
         }
         if (!del_generator)
         {
             del_generator.reset(new ScdWriter(tmp_migrate_path, DELETE_SCD));
-            generated_del_scds[(uint16_t)vnode_index] = del_generator->getFileName();
+            generated_del_scds[(vnodeid_t)vnode_index] = del_generator->getFileName();
         }
 
         insert_generator->Append(document);
@@ -2299,7 +2299,7 @@ bool IndexWorker::generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
             LOG(INFO) << "migrated doc number: " << migrated_cnt;
         }
     }
-    for(std::map<uint16_t, std::pair<boost::shared_ptr<ScdWriter>, boost::shared_ptr<ScdWriter> > >::iterator it = all_scd_generators.begin();
+    for(std::map<vnodeid_t, std::pair<boost::shared_ptr<ScdWriter>, boost::shared_ptr<ScdWriter> > >::iterator it = all_scd_generators.begin();
         it != all_scd_generators.end(); ++it)
     {
         if (it->second.first)
@@ -2315,13 +2315,13 @@ bool IndexWorker::generateMigrateSCD(const std::vector<uint16_t>& vnode_list,
     bool ret = DistributeFileSys::get()->copyToDFS(tmp_migrate_path, "/generated_migrate_scds/" +
         boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId()));
 
-    for (std::map<uint16_t, std::string>::iterator it = generated_insert_scds.begin();
+    for (std::map<vnodeid_t, std::string>::iterator it = generated_insert_scds.begin();
         it != generated_insert_scds.end(); ++it)
     {
         it->second = (bfs::path(tmp_migrate_path)/bfs::path(it->second).filename()).string();
         LOG(INFO) << "generated insert scd : " << it->second;
     }
-    for (std::map<uint16_t, std::string>::iterator it = generated_del_scds.begin();
+    for (std::map<vnodeid_t, std::string>::iterator it = generated_del_scds.begin();
         it != generated_del_scds.end(); ++it)
     {
         it->second = (bfs::path(tmp_migrate_path)/bfs::path(it->second).filename()).string();

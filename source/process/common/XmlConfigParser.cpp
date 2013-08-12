@@ -695,7 +695,7 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
         ticpp::Element * sf1rNodeElem = getUniqChildElement(topology, "CurrentSf1rNode");
         getAttribute(sf1rNodeElem, "replicaid", sf1rNode.replicaId_);
-        getAttribute(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
+        getAttribute_IntType(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
         sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
@@ -1269,43 +1269,41 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
     masterCollection.name_ = collectionMeta.getName();
 
     Sf1rTopology& sf1rTopology = SF1Config::get()->topologyConfig_.sf1rTopology_;
-    //getAttribute(service, "distributive", masterCollection.isDistributive_, false);
-    //if (masterCollection.isDistributive_)
-    {
-        std::string shardids;
-        if (getAttribute(service, "shardids", shardids, false))
-        {
-            boost::char_separator<char> sep(", ");
-            boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
 
-            boost::tokenizer<boost::char_separator<char> >::iterator it;
-            for (it = tokens.begin(); it != tokens.end(); ++it)
-            {
-                shardid_t shardid;
-                try
-                {
-                    shardid = boost::lexical_cast<shardid_t>(*it);
-                    if (shardid < 1)
-                    {
-                        std::stringstream ss;
-                        ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
-                            << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
-                        throw std::runtime_error(ss.str());
-                    }
-                }
-                catch (const std::exception& e)
-                {
-                    throw std::runtime_error(
-                        std::string("failed to parse shardids: ") + shardids + ", " + e.what());
-                }
-                masterCollection.shardList_.push_back(shardid);
-            }
-        }
-        else
+    std::string shardids;
+    if (getAttribute(service, "shardids", shardids, false))
+    {
+        boost::char_separator<char> sep(", ");
+        boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
+
+        boost::tokenizer<boost::char_separator<char> >::iterator it;
+        for (it = tokens.begin(); it != tokens.end(); ++it)
         {
-            // set to current as default
-            masterCollection.shardList_.push_back(sf1rTopology.curNode_.nodeId_);
+            shardid_t shardid;
+            try
+            {
+                shardid = boost::lexical_cast<shardid_t>(*it);
+                if (shardid < 1)
+                {
+                    std::stringstream ss;
+                    ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                        << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                    throw std::runtime_error(ss.str());
+                }
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error(
+                    std::string("failed to parse shardids: ") + shardids + ", " + e.what());
+            }
+            masterCollection.shardList_.push_back(shardid);
         }
+    }
+
+    if (masterCollection.shardList_.empty())
+    {
+        // set to current as default
+        masterCollection.shardList_.push_back(sf1rTopology.curNode_.nodeId_);
     }
 
     if (service_type == Sf1rTopology::getServiceName(Sf1rTopology::SearchService))

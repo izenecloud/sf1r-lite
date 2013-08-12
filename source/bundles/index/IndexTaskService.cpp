@@ -443,7 +443,7 @@ const std::vector<shardid_t>& IndexTaskService::getShardidListForSearch()
     return bundleConfig_->col_shard_info_.shardList_;
 }
 
-typedef std::map<shardid_t, std::vector<uint16_t> > ShardingTopologyT;
+typedef std::map<shardid_t, std::vector<vnodeid_t> > ShardingTopologyT;
 static void printSharding(const ShardingTopologyT& sharding_topology)
 {
     for(ShardingTopologyT::const_iterator cit = sharding_topology.begin();
@@ -462,7 +462,7 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
     size_t new_vnode_for_sharding,
     ShardingTopologyT& current_sharding_topology,
     ShardingTopologyT& new_sharding_topology,
-    std::map<uint16_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
+    std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
     std::vector<shardid_t>& sharding_map)
 {
     // move the vnode from src sharding node to dest sharding node.
@@ -565,7 +565,7 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     printSharding(current_sharding_topology);
 
     // move the vnode from src sharding node to dest sharding node.
-    std::map<uint16_t, std::pair<shardid_t, shardid_t> > migrate_data_list;
+    std::map<vnodeid_t, std::pair<shardid_t, shardid_t> > migrate_data_list;
     ShardingTopologyT new_sharding_topology;
 
     migrateSharding(new_sharding_nodes, new_vnode_for_sharding,
@@ -578,10 +578,10 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     printSharding(current_sharding_topology);
     printSharding(new_sharding_topology);
 
-    std::map<shardid_t, std::vector<uint16_t> > migrate_from_list;
-    std::map<std::string, std::vector<uint16_t> > migrate_from_list_2;
-    std::map<shardid_t, std::vector<uint16_t> > migrate_to_list;
-    for(std::map<uint16_t, std::pair<shardid_t, shardid_t> >::const_iterator cit = migrate_data_list.begin();
+    std::map<shardid_t, std::vector<vnodeid_t> > migrate_from_list;
+    std::map<std::string, std::vector<vnodeid_t> > migrate_from_list_2;
+    std::map<shardid_t, std::vector<vnodeid_t> > migrate_to_list;
+    for(std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >::const_iterator cit = migrate_data_list.begin();
         cit != migrate_data_list.end(); ++cit)
     {
         migrate_from_list[cit->second.first].push_back(cit->first);
@@ -603,9 +603,9 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     }
 
     // (vnode, generated scd path list)
-    std::map<uint16_t, std::string> generated_insert_scds;
+    std::map<vnodeid_t, std::string> generated_insert_scds;
     // the scds used for remove on the src node.
-    std::map<uint16_t, std::string> generated_del_scds;
+    std::map<vnodeid_t, std::string> generated_del_scds;
     bool ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
         migrate_from_list_2,
         generated_insert_scds,
@@ -648,8 +648,8 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     return true;
 }
 
-void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<uint16_t> >& migrate_to,
-    const std::map<uint16_t, std::string>& generated_insert_scds)
+void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<vnodeid_t> >& migrate_to,
+    const std::map<vnodeid_t, std::string>& generated_insert_scds)
 {
     std::string tmp_migrate_scd_dir = DistributeFileSys::get()->getFixedCopyPath("/migrate_scds/"
         + bundleConfig_->collectionName_ + "/" + boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
@@ -657,7 +657,7 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
     tmp_migrate_scd_dir = DistributeFileSys::get()->getDFSPathForLocal(tmp_migrate_scd_dir);
     bfs::create_directories(tmp_migrate_scd_dir);
 
-    std::map<shardid_t, std::vector<uint16_t> >::const_iterator cit = migrate_to.begin();
+    std::map<shardid_t, std::vector<vnodeid_t> >::const_iterator cit = migrate_to.begin();
     for (; cit != migrate_to.end(); ++cit)
     {
         LOG(INFO) << "prepare scd files for sharding node : " << cit->first;
@@ -665,7 +665,7 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
         bfs::create_directories(shard_scd_dir);
         for (size_t i = 0; i < cit->second.size(); ++i)
         {
-            std::map<uint16_t, std::string>::const_iterator scdit = generated_insert_scds.find(cit->second[i]);
+            std::map<vnodeid_t, std::string>::const_iterator scdit = generated_insert_scds.find(cit->second[i]);
             if (scdit == generated_insert_scds.end())
             {
                 LOG(WARNING) << "sharding scd not found, " << cit->first << ", vnode : " << cit->second[i];
@@ -715,11 +715,11 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
     MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
 }
 
-bool IndexTaskService::generateMigrateSCD(const std::vector<uint16_t>& scd_list,
-    std::map<uint16_t, std::string>& generated_insert_scds,
-    std::map<uint16_t, std::string>& generated_del_scds)
+bool IndexTaskService::generateMigrateSCD(const std::vector<vnodeid_t>& vnode_list,
+    std::map<vnodeid_t, std::string>& generated_insert_scds,
+    std::map<vnodeid_t, std::string>& generated_del_scds)
 {
-    return indexWorker_->generateMigrateSCD(scd_list, generated_insert_scds, generated_del_scds);
+    return indexWorker_->generateMigrateSCD(vnode_list, generated_insert_scds, generated_del_scds);
 }
 
 }

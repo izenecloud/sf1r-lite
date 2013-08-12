@@ -16,7 +16,7 @@
 
 namespace sf1r {
 
-typedef uint32_t nodeid_t;
+typedef uint8_t nodeid_t;
 typedef uint32_t replicaid_t;
 typedef uint8_t shardid_t;
 typedef uint32_t port_t;
