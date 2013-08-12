@@ -164,7 +164,7 @@ static void doGenMigrateSCD(const GenerateSCDReqData& reqdata)
         rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
         rsp_req.param_.success = false;
         if (DistributeFileSyncMgr::get()->GenMigrateSCD(reqdata.coll,
-                reqdata.migrate_scd_list, rsp_req.param_.generated_insert_scds,
+                reqdata.migrate_vnode_list, rsp_req.param_.generated_insert_scds,
                 rsp_req.param_.generated_del_scds))
         {
             rsp_req.param_.success = true;
@@ -1224,7 +1224,7 @@ bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
         GenerateSCDRequest req;
         req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
         req.param_.coll = coll;
-        req.param_.migrate_scd_list = cit->second;
+        req.param_.migrate_vnode_list = cit->second;
         if (cit->first == SuperNodeManager::get()->getLocalHostIP())
         {
             local_scds = cit->second;

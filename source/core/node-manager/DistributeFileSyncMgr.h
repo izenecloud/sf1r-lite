@@ -101,11 +101,11 @@ public:
     void notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata);
     void sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp);
     bool GenMigrateSCD(const std::string& coll,
-        const std::vector<uint16_t>& scd_list,
+        const std::vector<uint16_t>& vnode_list,
         std::map<uint16_t, std::string>& generated_insert_scds,
         std::map<uint16_t, std::string>& generated_del_scds)
     {
-        return scd_generator_(coll, scd_list, generated_insert_scds, generated_del_scds);
+        return scd_generator_(coll, vnode_list, generated_insert_scds, generated_del_scds);
     }
 
 private:

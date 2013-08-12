@@ -94,8 +94,8 @@ struct GenerateSCDReqData : public RpcServerRequestData
 {
     std::string req_host;
     std::string coll;
-    std::vector<uint16_t> migrate_scd_list;
-    MSGPACK_DEFINE(req_host, migrate_scd_list);
+    std::vector<uint16_t> migrate_vnode_list;
+    MSGPACK_DEFINE(req_host, migrate_vnode_list);
 };
 
 struct GenerateSCDRspData : public RpcServerRequestData

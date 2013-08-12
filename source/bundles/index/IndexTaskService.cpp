@@ -533,6 +533,14 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     std::string map_file = sharding_map_dir_ + bundleConfig_->collectionName_;
     MapShardingStrategy::readShardingMapFile(map_file, current_sharding_map);
 
+    if (bundleConfig_->col_shard_info_.shardList_.size() == 1)
+    {
+        if (current_sharding_map.empty())
+        {
+            current_sharding_map.resize(MapShardingStrategy::MAX_MAP_SIZE, bundleConfig_->col_shard_info_.shardList_[0]);
+        }
+    }
+
     if (current_sharding_map.empty())
     {
         LOG(ERROR) << "sharding map is empty!";
