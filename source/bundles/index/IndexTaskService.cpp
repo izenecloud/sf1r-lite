@@ -40,6 +40,7 @@ IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig)
     {
         const std::string& coll = bundleConfig_->collectionName_;
         sharding_map_dir_ = DistributeFileSys::get()->getFixedCopyPath("/sharding_map/");
+        sharding_map_dir_ = DistributeFileSys::get()->getDFSPathForLocal(sharding_map_dir_);
         if (!bfs::exists(sharding_map_dir_))
         {
             bfs::create_directories(sharding_map_dir_);
@@ -653,6 +654,7 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
     std::string tmp_migrate_scd_dir = DistributeFileSys::get()->getFixedCopyPath("/migrate_scds/"
         + bundleConfig_->collectionName_ + "/" + boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
 
+    tmp_migrate_scd_dir = DistributeFileSys::get()->getDFSPathForLocal(tmp_migrate_scd_dir);
     bfs::create_directories(tmp_migrate_scd_dir);
 
     std::map<shardid_t, std::vector<uint16_t> >::const_iterator cit = migrate_to.begin();
