@@ -658,8 +658,8 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
     for (; cit != generated_migrate_scds.end(); ++cit)
     {
         LOG(INFO) << "prepare scd files for sharding node : " << (uint32_t)cit->first;
-        std::string shard_scd_dir = tmp_migrate_scd_dir + "/shard" + boost::lexical_cast<std::string>((uint32_t)cit->first) + "/";
-        bfs::create_directories(shard_scd_dir);
+        std::string shard_scd_dir = tmp_migrate_scd_dir + "/shard" + getShardidStr(cit->first) + "/";
+        bfs::create_directories(DistributeFileSys::get()->getDFSPathForLocal(shard_scd_dir));
         for (size_t i = 0; i < cit->second.size(); ++i)
         {
             LOG(INFO) << "add migrate scd : " << cit->second[i];
@@ -687,16 +687,16 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
     for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
     {
         if (sharding_cfg.empty())
-            sharding_cfg = boost::lexical_cast<std::string>((uint32_t)curr_shard_nodes[i]);
+            sharding_cfg = getShardidStr(curr_shard_nodes[i]);
         else
-            sharding_cfg += "," + boost::lexical_cast<std::string>((uint32_t)curr_shard_nodes[i]);
+            sharding_cfg += "," + getShardidStr(curr_shard_nodes[i]);
     }
     for (size_t i = 0; i < new_sharding_nodes.size(); ++i)
     {
         if (sharding_cfg.empty())
-            sharding_cfg = boost::lexical_cast<std::string>((uint32_t)new_sharding_nodes[i]);
+            sharding_cfg = getShardidStr(new_sharding_nodes[i]);
         else
-            sharding_cfg += "," + boost::lexical_cast<std::string>((uint32_t)new_sharding_nodes[i]);
+            sharding_cfg += "," + getShardidStr(new_sharding_nodes[i]);
     }
     LOG(INFO) << "new sharding cfg is : " << sharding_cfg;
     //

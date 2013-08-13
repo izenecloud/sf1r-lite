@@ -1861,9 +1861,9 @@ bool MasterManagerBase::waitForNewShardingNodes(const std::vector<shardid_t>& sh
         for (size_t i = 0; i < shardids.size(); ++i)
         {
             if (new_shardids.empty())
-                new_shardids = boost::lexical_cast<std::string>((uint32_t)shardids[i]);
+                new_shardids = getShardidStr(shardids[i]);
             else
-                new_shardids += "," + boost::lexical_cast<std::string>((uint32_t)shardids[i]);
+                new_shardids += "," + getShardidStr(shardids[i]);
         }
 
         LOG(INFO) << "setting new sharding node id list: " << new_shardids;

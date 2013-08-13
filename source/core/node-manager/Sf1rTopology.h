@@ -22,6 +22,13 @@ typedef uint8_t shardid_t;
 typedef uint32_t port_t;
 
 
+inline std::string getShardidStr(shardid_t id)
+{
+    std::stringstream ss;
+    ss << (uint32_t)id;
+    return ss.str();
+}
+
 class MasterCollection
 {
 public:

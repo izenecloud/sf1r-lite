@@ -1048,7 +1048,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
                << "] node[" << curNode.nodeId_
                << "]{"
                << (curNode.worker_.hasAnyService() ?
-                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.nodeId_) + " ") : "")
+                       (std::string("worker") + getShardidStr(curNode.nodeId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
 

@@ -2328,7 +2328,7 @@ bool IndexWorker::generateMigrateSCD(const std::map<shardid_t, std::vector<vnode
         del_generator->Close();
 
     bool ret = DistributeFileSys::get()->copyToDFS(tmp_migrate_path, "/generated_migrate_scds/" +
-        boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId()));
+        getShardidStr(MasterManagerBase::get()->getMyShardId()));
 
     for (std::map<shardid_t, std::string>::iterator it = generated_insert_scds.begin();
         it != generated_insert_scds.end(); ++it)
