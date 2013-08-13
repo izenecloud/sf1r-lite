@@ -65,7 +65,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
 
         cmd+=" "+last_mirror_block;
     }
-    LOG(INFO)<<"sort cmd:"<<cmd<<std::endl;
+    LOG(INFO)<<cmd<<std::endl;
     std::string mirror_path = B5MHelper::GetB5moMirrorPath(m_);
     B5MHelper::PrepareEmptyDir(mirror_path);
     std::string b5mp_path = B5MHelper::GetB5mpPath(m_);
