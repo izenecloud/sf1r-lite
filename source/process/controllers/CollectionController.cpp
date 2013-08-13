@@ -424,8 +424,22 @@ static bool modifyShardingCfg(const std::string& coll,
         {
             return false;
         }
+
         CollectionMeta collectionMeta;
         collectionMeta.setName(coll);
+        boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(coll));
+        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(coll));
+        boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(coll));
+        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(coll));
+        collectionMeta.indexBundleConfig_ = indexBundleConfig;
+        collectionMeta.productBundleConfig_ = productBundleConfig;
+        collectionMeta.miningBundleConfig_ = miningBundleConfig;
+        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
+
+
+        std::string bak_cfg_file = collection_config + ".bak";
+        bfs::copy_file(collection_config, bak_cfg_file);
+
         Element* indexBundle = getUniqChildElement(collection, "IndexBundle");
         if (indexBundle)
         {
@@ -445,6 +459,10 @@ static bool modifyShardingCfg(const std::string& coll,
                         configDocument.SaveFile();
                         // try validate.
                         bool ret = CollectionConfig::get()->parseConfigFile(coll, collection_config, collectionMeta);
+                        if (!ret)
+                        {
+                            bfs::rename(bak_cfg_file, collection_config);
+                        }
                         return ret;
                     }
                 }
@@ -460,6 +478,10 @@ static bool modifyShardingCfg(const std::string& coll,
     catch (const ticpp::Exception& err)
     {
         LOG(ERROR) << "Parser the xml failed. " << err.m_details;
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "Error : " << e.what();
     }
     return false;
 }
@@ -550,7 +572,7 @@ void CollectionController::update_sharding_conf()
         return;
     }
 
-    std::string sharding_cfg = asString(request()["sharding_cfg"]);
+    std::string sharding_cfg = asString(request()["new_sharding_cfg"]);
     if (sharding_cfg.empty())
     {
         response().addError("Sharding configuration is empty!");

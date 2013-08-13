@@ -605,47 +605,57 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     std::map<shardid_t, std::vector<std::string> > generated_insert_scds;
     // the scds used for remove on the src node.
     std::map<shardid_t, std::vector<std::string> > generated_del_scds;
-    bool ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
-        migrate_from_to_list,
-        generated_insert_scds,
-        generated_del_scds);
-
-    if (!ret)
+    bool ret = true;
+    do
     {
-        LOG(ERROR) << "generate the migrate SCD files failed.";
-        return false;
-    }
+        ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
+            migrate_from_to_list,
+            generated_insert_scds,
+            generated_del_scds);
 
-    // wait for all sharding nodes to finish their write queue.
-    if(!MasterManagerBase::get()->waitForMigrateReady(getShardidListForSearch()))
-    {
-        LOG(INFO) << " wait for migrate get ready failed.";
-        return false;
-    }
+        if (!ret)
+        {
+            LOG(ERROR) << "generate the migrate SCD files failed.";
+            break;
+        }
 
-    // wait new sharding nodes to started.
-    if (!MasterManagerBase::get()->waitForNewShardingNodes(new_sharding_nodes))
-    {
-        LOG(INFO) << "wait for new sharding nodes to startup failed.";
-        return false;
-    }
+        // wait for all sharding nodes to finish their write queue.
+        if(!MasterManagerBase::get()->waitForMigrateReady(getShardidListForSearch()))
+        {
+            LOG(INFO) << " wait for migrate get ready failed.";
+            ret = false;
+            break;
+        }
 
-    if (!indexShardingNodes(generated_insert_scds))
-        return false;
-    MasterManagerBase::get()->waitForMigrateIndexing(new_sharding_nodes);
+        // wait new sharding nodes to started.
+        if (!MasterManagerBase::get()->waitForNewShardingNodes(new_sharding_nodes))
+        {
+            LOG(INFO) << "wait for new sharding nodes to startup failed.";
+            ret = false;
+            break;
+        }
 
-    indexShardingNodes(generated_del_scds);
-    MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
+        if (!indexShardingNodes(generated_insert_scds))
+        {
+            ret = false;
+            break;
+        }
+        MasterManagerBase::get()->waitForMigrateIndexing(new_sharding_nodes);
 
-    MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
-    // update config will cause the collection to restart, so 
-    // the IndexTaskService will be destructed.
-    updateShardingConfig(new_sharding_nodes);
+        indexShardingNodes(generated_del_scds);
+        MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
 
+        MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
+        // update config will cause the collection to restart, so 
+        // the IndexTaskService will be destructed.
+        updateShardingConfig(new_sharding_nodes);
+        ret = true;
+
+    }while(false);
     // allow new write running.
     MasterManagerBase::get()->notifyAllShardingEndMigrate();
 
-    return true;
+    return ret;
 }
 
 bool IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds)

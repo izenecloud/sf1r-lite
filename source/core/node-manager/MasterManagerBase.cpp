@@ -1792,10 +1792,6 @@ bool MasterManagerBase::isMineNewSharding()
                 }
             }
         }
-        else
-        {
-            LOG(WARNING) << "get migrate data error";
-        }
     }
     return false;
 }
@@ -1810,6 +1806,23 @@ bool MasterManagerBase::notifyAllShardingBeginMigrate(const std::vector<shardid_
 
     if(!isAllShardNodeOK(shardids))
         return false;
+
+    if (write_prepared_)
+    {
+        LOG(INFO) << "a prepared write is still waiting worker ";
+        return false;
+    }
+
+    if (zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH))
+    {
+        LOG(INFO) << "begin migrate failed because of the write is running.";
+        return false;
+    }
+
+    if (!isWriteQueueEmpty(shardids))
+    {
+        return false;
+    }
 
     ZNode znode;
     if (!zookeeper_->createZNode(migrate_prepare_node_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))

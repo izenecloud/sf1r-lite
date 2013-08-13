@@ -203,7 +203,9 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
         sharding_map.resize(MAX_MAP_SIZE, 0);
         while (ifs.good())
         {
-            ifs >> index >> shardid;
+            uint32_t tmpid;
+            ifs >> index >> tmpid;
+            shardid = (shardid_t)tmpid;
             if (shardid != 0 && index < (size_t)MAX_MAP_SIZE)
                 sharding_map[index] = shardid;
         }
@@ -224,7 +226,7 @@ void MapShardingStrategy::saveShardingMapToFile(const std::string& fullpath,
     {
         if (sharding_map[i] > 0)
         {
-            ofs << i << " " << sharding_map[i] << std::endl;
+            ofs << i << " " << (uint32_t)sharding_map[i] << std::endl;
         }
     }
     ofs.close();
