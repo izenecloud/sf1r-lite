@@ -282,7 +282,7 @@ bool CobraProcess::initNodeManager()
             std::stringstream ss;
             ss << dfs_local_root << std::string("/sf1r/nodedata/")
                 << SF1Config::get()->topologyConfig_.sf1rTopology_.clusterId_
-                << std::string("/node") << SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_;
+                << std::string("/node") << getShardidStr(SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_);
             dfs_local_root =  ss.str();
             LOG(INFO) << "local dfs enabled as : " << dfs_local_root;
             DistributeFileSys::get()->enableDFS(SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_,

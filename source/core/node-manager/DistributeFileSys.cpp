@@ -89,13 +89,13 @@ bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& c
                 if(bfs::is_regular_file(current))
                 {
                     LOG(INFO) << "copying : " << current << " to " << dest;
-                    bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
+                    copy_dfs_file(current, dest / current.filename());
                 }
             }
         }
         else if (bfs::is_regular_file(in_out_path))
         {
-            bfs::copy_file(in_out_path, dest/bfs::path(in_out_path).filename(), bfs::copy_option::overwrite_if_exists);
+            copy_dfs_file(in_out_path, dest/bfs::path(in_out_path).filename());
         }
     }
     catch(const std::exception& e)
@@ -105,6 +105,13 @@ bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& c
     }
     in_out_path = dfs_out_path.string();
     return true;
+}
+
+void DistributeFileSys::copy_dfs_file(const std::string& src, const std::string& dest)
+{
+    if (bfs::exists(dest))
+        bfs::remove(dest);
+    bfs::copy_file(src, dest);
 }
 
 }

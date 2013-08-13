@@ -131,7 +131,7 @@ static std::string getFileCheckSum(const std::string& file, char* tmp_buf = NULL
     size_t tmp_bufsize = 0, unsigned int check_level = 0)
 {
     if (!bfs::exists(file))
-        return "0";
+        return "0_0";
     uint64_t filesize = bfs::file_size(file);
     uint32_t filecrc = getFileCRC(file, tmp_buf, tmp_bufsize, check_level);
     return boost::lexical_cast<std::string>(filesize) + "_" + boost::lexical_cast<std::string>(filecrc);
