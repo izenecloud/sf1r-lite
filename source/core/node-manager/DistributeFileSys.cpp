@@ -89,13 +89,13 @@ bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& c
                 if(bfs::is_regular_file(current))
                 {
                     LOG(INFO) << "copying : " << current << " to " << dest;
-                    copy_dfs_file(current, dest / current.filename());
+                    copy_dfs_file(current.string(), (dest / current.filename()).string());
                 }
             }
         }
         else if (bfs::is_regular_file(in_out_path))
         {
-            copy_dfs_file(in_out_path, dest/bfs::path(in_out_path).filename());
+            copy_dfs_file(in_out_path, (dest/bfs::path(in_out_path).filename()).string());
         }
     }
     catch(const std::exception& e)
