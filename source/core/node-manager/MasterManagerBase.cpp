@@ -1781,7 +1781,7 @@ bool MasterManagerBase::isMineNewSharding()
                     // skip empty elements
                     continue;
                 }
-                if (sf1rTopology_.curNode_.nodeId_ == (shardid_t)boost::lexical_cast<uint32_t>(item));
+                if (sf1rTopology_.curNode_.nodeId_ == (shardid_t)boost::lexical_cast<uint32_t>(item))
                 {
                     return true;
                 }
@@ -1866,6 +1866,7 @@ bool MasterManagerBase::waitForNewShardingNodes(const std::vector<shardid_t>& sh
                 new_shardids += "," + boost::lexical_cast<std::string>((uint32_t)shardids[i]);
         }
 
+        LOG(INFO) << "setting new sharding node id list: " << new_shardids;
         znode.setValue(ZNode::KEY_NEW_SHARDING_NODEIDS, new_shardids);
         zookeeper_->setZNodeData(migrate_prepare_node_, znode.serialize());
 

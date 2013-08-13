@@ -631,10 +631,10 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     }
 
     indexShardingNodes(generated_insert_scds);
-
-    MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
+    MasterManagerBase::get()->waitForMigrateIndexing(new_sharding_nodes);
 
     indexShardingNodes(generated_del_scds);
+    MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
 
     MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
     // update config will cause the collection to restart, so 
@@ -652,20 +652,19 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
     std::string tmp_migrate_scd_dir = DistributeFileSys::get()->getFixedCopyPath("/migrate_scds/"
         + bundleConfig_->collectionName_ + "/" + boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
 
-    tmp_migrate_scd_dir = DistributeFileSys::get()->getDFSPathForLocal(tmp_migrate_scd_dir);
-    bfs::create_directories(tmp_migrate_scd_dir);
+    bfs::create_directories(DistributeFileSys::get()->getDFSPathForLocal(tmp_migrate_scd_dir));
 
     std::map<shardid_t, std::vector<std::string> >::const_iterator cit = generated_migrate_scds.begin();
     for (; cit != generated_migrate_scds.end(); ++cit)
     {
-        LOG(INFO) << "prepare scd files for sharding node : " << cit->first;
-        std::string shard_scd_dir = tmp_migrate_scd_dir + "/shard" + boost::lexical_cast<std::string>(cit->first) + "/";
+        LOG(INFO) << "prepare scd files for sharding node : " << (uint32_t)cit->first;
+        std::string shard_scd_dir = tmp_migrate_scd_dir + "/shard" + boost::lexical_cast<std::string>((uint32_t)cit->first) + "/";
         bfs::create_directories(shard_scd_dir);
         for (size_t i = 0; i < cit->second.size(); ++i)
         {
             LOG(INFO) << "add migrate scd : " << cit->second[i];
-            bfs::rename(cit->second[i],
-                bfs::path(shard_scd_dir)/(bfs::path(cit->second[i]).filename()));
+            bfs::rename(DistributeFileSys::get()->getDFSPathForLocal(cit->second[i]),
+                bfs::path(DistributeFileSys::get()->getDFSPathForLocal(shard_scd_dir))/(bfs::path(cit->second[i]).filename()));
         }
 
         // send index command.
@@ -674,6 +673,7 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
             + "\",\"disable_sharding\":true"
             + ",\"header\":{\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
 
+        LOG(INFO) << "send request : " << json_req;
         std::vector<shardid_t> shardid;
         shardid.push_back(cit->first);
         MasterManagerBase::get()->pushWriteReqToShard(json_req, shardid, true, true);
