@@ -80,7 +80,7 @@ private:
         boost::shared_ptr<ScdSharder>& scdSharder);
 
     void updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes);
-    void indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds);
+    bool indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds);
 
 private:
     std::string service_;

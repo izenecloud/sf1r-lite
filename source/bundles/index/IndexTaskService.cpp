@@ -630,7 +630,8 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
         return false;
     }
 
-    indexShardingNodes(generated_insert_scds);
+    if (!indexShardingNodes(generated_insert_scds))
+        return false;
     MasterManagerBase::get()->waitForMigrateIndexing(new_sharding_nodes);
 
     indexShardingNodes(generated_del_scds);
@@ -647,7 +648,7 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     return true;
 }
 
-void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds)
+bool IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds)
 {
     std::string tmp_migrate_scd_dir = DistributeFileSys::get()->getFixedCopyPath("/migrate_scds/"
         + bundleConfig_->collectionName_ + "/" + boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
@@ -676,8 +677,13 @@ void IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
         LOG(INFO) << "send request : " << json_req;
         std::vector<shardid_t> shardid;
         shardid.push_back(cit->first);
-        MasterManagerBase::get()->pushWriteReqToShard(json_req, shardid, true, true);
+        if (!MasterManagerBase::get()->pushWriteReqToShard(json_req, shardid, true, true))
+        {
+            LOG(WARNING) << "push write failed.";
+            return false;
+        }
     }
+    return true;
 }
 
 void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes)
@@ -703,8 +709,9 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
     // send index command.
     std::string json_req = "{\"collection\":\"" + bundleConfig_->collectionName_
         + "\",\"new_sharding_cfg\":\"" + sharding_cfg
-        + "\",\"header\":{\"action\":\"update_sharding_cfg\",\"controller\":\"collection\"},\"uri\":\"collection/update_sharding_cfg\"}";
+        + "\",\"header\":{\"action\":\"update_sharding_conf\",\"controller\":\"collection\"},\"uri\":\"collection/update_sharding_conf\"}";
 
+    LOG(INFO) << "send request : " << json_req;
     MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
     MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
 }

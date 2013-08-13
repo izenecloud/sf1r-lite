@@ -675,6 +675,7 @@ bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
         {
             LOG(ERROR) << "write request pushed failed for shard queue" <<
                 "," << write_queue;
+            return false;
         }
     }
     return true;
@@ -1736,6 +1737,10 @@ bool MasterManagerBase::isShardingNodeOK(const std::vector<shardid_t>& shardids)
             return false;
         if (nodestate != (uint32_t)NodeManagerBase::NODE_STATE_STARTED)
             return false;
+        if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getCurrWriteReqQueueParent(shardids[i]), ZooKeeper::WATCH))
+        {
+            return false;
+        }
     }
     return true;
 }
