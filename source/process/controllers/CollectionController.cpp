@@ -438,7 +438,7 @@ static bool modifyShardingCfg(const std::string& coll,
 
 
         std::string bak_cfg_file = collection_config + ".bak";
-        bfs::copy_file(collection_config, bak_cfg_file);
+        bfs::copy_file(collection_config, bak_cfg_file, bfs::copy_option::overwrite_if_exists);
 
         Element* indexBundle = getUniqChildElement(collection, "IndexBundle");
         if (indexBundle)

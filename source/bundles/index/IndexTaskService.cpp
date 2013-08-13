@@ -58,6 +58,11 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
+std::string IndexTaskService::getShardingMapDir()
+{
+    return sharding_map_dir_;
+}
+
 bool IndexTaskService::SendRequestToSharding(uint32_t shardid)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();

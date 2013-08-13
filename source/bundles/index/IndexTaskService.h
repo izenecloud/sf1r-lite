@@ -68,6 +68,8 @@ public:
         std::map<shardid_t, std::string>& generated_insert_scds,
         std::map<shardid_t, std::string>& generated_del_scds);
 
+    std::string getShardingMapDir();
+
 private:
     bool SendRequestToSharding(uint32_t shardid);
     bool distributedIndex_(unsigned int numdoc, std::string scd_dir);

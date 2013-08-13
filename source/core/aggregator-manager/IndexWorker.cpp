@@ -2346,5 +2346,4 @@ bool IndexWorker::generateMigrateSCD(const std::map<shardid_t, std::vector<vnode
     return ret;
 }
 
-
 }

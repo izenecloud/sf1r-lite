@@ -361,6 +361,14 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
                 return false;
             }
 
+            std::string map_dir = collectionHandler->indexTaskService_->getShardingMapDir();
+
+            if (bfs::exists(map_dir + collectionName_))
+            {
+                bfs::copy_file(map_dir + collectionName_,
+                    map_dir + rebuildCollectionName_,
+                    bfs::copy_option::overwrite_if_exists);
+            }
             LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
             collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
         }
