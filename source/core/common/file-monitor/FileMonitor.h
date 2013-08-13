@@ -24,8 +24,8 @@ namespace sf1r
 class FileMonitor
 {
 enum {
-    EVENT_SIZE = sizeof (struct inotify_event),
-    BUF_LEN = 1024 * ( EVENT_SIZE + 16 )
+    EVENT_SIZE = sizeof(struct inotify_event),
+    BUF_LEN = 1024 * (EVENT_SIZE + 16)
 };
 
 public:
@@ -33,25 +33,25 @@ public:
     {
         fd_ = inotify_init();
     }
+
     ~FileMonitor()
     {
         for (std::vector<int>::iterator i = wd_list_.begin(); i != wd_list_.end(); ++i)
-            inotify_rm_watch( fd_, *i );
-        close( fd_ ); 
+            inotify_rm_watch(fd_, *i);
+        close(fd_);
     }
 
-    void add_watch(const std::string& path, uint32_t mask)
+    void addWatch(const std::string& path, uint32_t mask)
     {
         wd_list_.push_back(inotify_add_watch(fd_, path.c_str(), mask));
     }
 
     void monitor()
     {
-         thread_ = boost::thread(
-                &FileMonitor::do_monitor_, this);
+         thread_ = boost::thread(&FileMonitor::do_monitor_, this);
     }
 
-    virtual bool update(const std::string& fileName, uint32_t mask) = 0;
+    virtual bool process(const std::string& fileName, uint32_t mask) = 0;
 
 private:
     void do_monitor_()
@@ -68,9 +68,9 @@ private:
             }
             while (i < length)
             {
-                struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
+                struct inotify_event *event = (struct inotify_event*)&buffer[i];
 
-                if(update(event->name, event->mask))
+                if(process(event->name, event->mask))
                 {
                     LOG(INFO) << "one success resource update ...";
                 }
@@ -81,7 +81,7 @@ private:
                 
                 i += EVENT_SIZE + event->len;
             }
-        } 
+        }
     }
 
     int fd_;

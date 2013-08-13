@@ -26,25 +26,25 @@ public:
         hasMonitor_ = false;
     }
 
-    virtual bool update(const std::string& fileName, uint32_t mask)
+    virtual bool process(const std::string& fileName, uint32_t mask)
     {
         if (IN_ATTRIB & mask)
         {
             boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir_));
             if (!knlpWrapper->loadDictFiles()) return false;
             KNlpResourceManager::setResource(knlpWrapper);
-        }  
+        }
         return true;
     }
 
     void start(const std::string& dictDir)
     {
         dictDir_ = dictDir;
-        if (!hasMonitor_) 
+        if (!hasMonitor_)
         {
             std::string fileName = dictDir_ + "/z.update.time";
             uint32_t mask = IN_ATTRIB;
-            add_watch(fileName, mask);
+            addWatch(fileName, mask);
             
             monitor();
             hasMonitor_ = true;
