@@ -76,7 +76,8 @@ public:
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
     bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
-    void checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo);
+    void checkReplicasStatus(const std::vector<std::string>& colname_list,
+        unsigned int check_level, std::string& check_errinfo);
     void checkReplicasLogStatus(std::string& check_errinfo);
     void notifyReportStatusRsp(const ReportStatusRspData& rspdata);
     void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);

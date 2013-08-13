@@ -71,9 +71,10 @@ static void getFileList(const std::string& dir, std::vector<std::string>& file_l
     }
 }
 
-static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t tmp_bufsize = 0)
+static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL,
+    size_t tmp_bufsize = 0, unsigned int check_level = 0)
 {
-    if (!bfs::exists(file))
+    if (!bfs::exists(file) || check_level == 0)
         return 0;
     boost::crc_32_type crc_computer;
     size_t bufsize = tmp_bufsize;
@@ -82,6 +83,15 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
     {
         bufsize = 1024*1024*10;
         buf = new char[bufsize];
+    }
+    uint64_t total_readed = 0;
+    uint64_t total_size = bfs::file_size(file);
+    uint64_t max_check_data = check_level * 1024 * 1024 * 1024;
+    bool need_skip = false;
+    bool skipped = false;
+    if (total_size > max_check_data*2)
+    {
+        need_skip = true;
     }
     try
     {
@@ -94,6 +104,15 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
             crc_computer.process_bytes(buf, readed);
             if ((readed == 0) && ifs.eof())
                 break;
+            if (need_skip && !skipped)
+            {
+                total_readed += readed;
+                if( total_readed >= max_check_data )
+                {
+                    ifs.seekg(max_check_data, ifs.end);
+                    skipped = true;
+                }
+            }
         }
     }
     catch(const std::exception& e)
@@ -108,6 +127,16 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
     return crc_computer.checksum();
 }
 
+static std::string getFileCheckSum(const std::string& file, char* tmp_buf = NULL,
+    size_t tmp_bufsize = 0, unsigned int check_level = 0)
+{
+    if (!bfs::exists(file))
+        return "0";
+    uint64_t filesize = bfs::file_size(file);
+    uint32_t filecrc = getFileCRC(file, tmp_buf, tmp_bufsize, check_level);
+    return boost::lexical_cast<std::string>(filesize) + "_" + boost::lexical_cast<std::string>(filecrc);
+}
+
 static void doReportStatus(const ReportStatusReqData& reqdata)
 {
     ReportStatusRsp rsp_req;
@@ -120,6 +149,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
         rsp_req.param_.success = true;
         rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
         size_t bufsize = 1024*1024*32;
+        LOG(INFO) << "got check request with check_level : " << reqdata.file_check_level;
         char* cal_buf = new char[bufsize];
         for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
         {
@@ -128,7 +158,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
             {
                 continue;
             }
-            rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+            rsp_req.param_.check_file_result[i] = getFileCheckSum(file, cal_buf, bufsize, reqdata.file_check_level);
             DistributeFileSyncMgr::get()->updateCachedCheckSum(file, rsp_req.param_.check_file_result[i]);
             //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
         }
@@ -526,7 +556,8 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
     saveCachedCheckSum();
 }
 
-void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo)
+void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list,
+    unsigned int check_level, std::string& check_errinfo)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return;
@@ -563,6 +594,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
 
     ReportStatusRequest req;
     req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+    req.param_.file_check_level = check_level;
     for (size_t i = 0; i < colname_list.size(); ++i)
     {
         CollectionPath colpath;
@@ -625,7 +657,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
         {
             continue;
         }
-        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+        file_checksum_list[i] = getFileCheckSum(file, cal_buf, bufsize, req.param_.file_check_level);
         updateCachedCheckSum(file, file_checksum_list[i]);
         //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }

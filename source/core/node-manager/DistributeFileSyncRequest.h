@@ -76,7 +76,9 @@ struct ReportStatusReqData : public RpcServerRequestData
     std::vector<std::string> check_file_list;
     std::vector<std::string> check_key_list;
     uint32_t check_log_start_id;
-    MSGPACK_DEFINE(req_host, check_file_list, check_key_list, check_log_start_id);
+    unsigned int file_check_level;
+    MSGPACK_DEFINE(req_host, check_file_list, check_key_list, check_log_start_id,
+        file_check_level);
 };
 
 struct ReportStatusRspData : public RpcServerRequestData
@@ -87,7 +89,8 @@ struct ReportStatusRspData : public RpcServerRequestData
     std::vector<std::string> check_key_result;
     std::vector<uint32_t> check_logid_list;
     std::vector<std::string> check_collection_list;
-    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list, check_collection_list);
+    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list,
+        check_collection_list);
 };
 
 struct GenerateSCDReqData : public RpcServerRequestData

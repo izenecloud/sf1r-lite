@@ -290,7 +290,8 @@ bool CobraProcess::initNodeManager()
         }
 
         NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
-        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir());
+        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir(),
+            SF1Config::get()->distributedCommonConfig_.check_level_);
 
         DistributeRequestHooker::get()->init();
         ReqLogMgr::initWriteRequestSet();

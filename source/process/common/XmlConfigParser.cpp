@@ -658,6 +658,9 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "masterport", distributedCommonConfig_.masterPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     getAttribute(distributedCommon, "filesyncport", distributedCommonConfig_.filesync_rpcport_);
+
+    distributedCommonConfig_.check_level_ = 2;
+    getAttribute(distributedCommon, "check_level_", distributedCommonConfig_.check_level_, false);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 
     if (!net::distribute::Util::getLocalHostIp(distributedCommonConfig_.localHost_))
@@ -669,6 +672,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
         std::cout << "local host ip : " << distributedCommonConfig_.localHost_ << std::endl;
 
     std::cout << "cluster id : " << distributedCommonConfig_.clusterId_ << std::endl;
+    std::cout << "check level : " << distributedCommonConfig_.check_level_ << std::endl;
 }
 
 void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
