@@ -9,7 +9,7 @@
 #include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
-
+#include "common/file-monitor/KNlpDictMonitor.h"
 #include "auto-fill-submanager/AutoFillSubManager.h"
 
 #include "query-correction-submanager/QueryCorrectionSubmanager.h"
@@ -579,6 +579,8 @@ bool MiningManager::open()
 
             if (!KNlpResourceManager::getResource()->loadDictFiles())
                 return false;
+
+            KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
