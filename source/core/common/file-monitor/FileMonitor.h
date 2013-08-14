@@ -20,7 +20,7 @@ class FileMonitor
 {
 public:
     FileMonitor();
-    ~FileMonitor();
+    virtual ~FileMonitor();
 
     bool addWatch(const std::string& path, uint32_t mask);
 
