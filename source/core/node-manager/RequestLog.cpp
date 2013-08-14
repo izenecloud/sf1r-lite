@@ -63,8 +63,8 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("recommend_update_shopping_cart");
     write_req_set_.insert("recommend_track_event");
 
-    replay_write_req_set_.insert("documents_update");
-    replay_write_req_set_.insert("documents_update_inplace");
+    //replay_write_req_set_.insert("documents_update");
+    //replay_write_req_set_.insert("documents_update_inplace");
     replay_write_req_set_.insert("documents_set_top_group_label");
     replay_write_req_set_.insert("documents_log_group_label");
     replay_write_req_set_.insert("documents_visit");

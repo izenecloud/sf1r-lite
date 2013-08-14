@@ -482,7 +482,6 @@ static bool removeSharding(const std::vector<shardid_t>& remove_sharding_nodes,
         return false;
     }
     ShardingTopologyT::iterator migrate_to_it = current_sharding_topology.begin();
-    left_sharding_nodes.push_back(migrate_to_it->first);
     for(ShardingTopologyT::iterator remove_it = remove_sharding_topo.begin();
         remove_it != remove_sharding_topo.end(); ++remove_it)
     {
@@ -499,6 +498,7 @@ static bool removeSharding(const std::vector<shardid_t>& remove_sharding_nodes,
             if (migrate_to_it->second.size() > new_vnode_for_sharding)
             {
                 // the new sharding node got enough data. move to next.
+                left_sharding_nodes.push_back(migrate_to_it->first);
                 ++migrate_to_it;
                 if (migrate_to_it == current_sharding_topology.end())
                 {
@@ -511,7 +511,6 @@ static bool removeSharding(const std::vector<shardid_t>& remove_sharding_nodes,
                     }
                     break;
                 }
-                left_sharding_nodes.push_back(migrate_to_it->first);
             }
         }
         remove_it->second.clear();
@@ -799,9 +798,9 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
         + "\",\"header\":{\"action\":\"update_sharding_conf\",\"controller\":\"collection\"},\"uri\":\"collection/update_sharding_conf\"}";
 
     LOG(INFO) << "send request : " << json_req;
-    MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
     if (!removing)
-        MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
+        MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
+    MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
 }
 
 bool IndexTaskService::generateMigrateSCD(const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
