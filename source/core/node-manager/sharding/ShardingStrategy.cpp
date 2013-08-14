@@ -199,7 +199,6 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
         ifs.open(fullpath.c_str());
         if (!ifs.is_open())
             return;
-        size_t index = 0;
         shardid_t shardid = 0;
         sharding_map.clear();
         sharding_map.reserve(MAX_MAP_SIZE);
@@ -211,7 +210,7 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
             if (shardid != 0)
                 sharding_map.push_back(shardid);
         }
-        if (sharding_map.size() != MAX_MAP_SIZE)
+        if (sharding_map.size() != (size_t)MAX_MAP_SIZE)
         {
             LOG(WARNING) << "reading sharding map size is wrong.";
             sharding_map.clear();
@@ -227,11 +226,13 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
 void MapShardingStrategy::saveShardingMapToFile(const std::string& fullpath,
     const std::vector<shardid_t>& sharding_map)
 {
-    if (sharding_map.size() != MAX_MAP_SIZE)
+    if (sharding_map.size() != (size_t)MAX_MAP_SIZE)
     {
         LOG(WARNING) << "the sharding map size is wrong.";
         return;
     }
+    if (boost::filesystem::exists(fullpath))
+        boost::filesystem::remove(fullpath);
     std::ofstream ofs;
     ofs.open(fullpath.c_str());
     for(size_t i = 0; i < sharding_map.size(); ++i)
