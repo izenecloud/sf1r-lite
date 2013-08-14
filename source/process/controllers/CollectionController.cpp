@@ -533,6 +533,9 @@ void CollectionController::add_sharding_nodes()
         return;
     }
 
+    bool do_remove = false;
+    do_remove = asBool(request()["do_remove"]);
+
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
     if (!collectionHandler)
     {
@@ -552,7 +555,7 @@ void CollectionController::add_sharding_nodes()
         return;
     }
 
-    bool ret = CollectionManager::get()->addNewShardingNodes(collection, new_sharding_nodes);
+    bool ret = CollectionManager::get()->addNewShardingNodes(collection, new_sharding_nodes, do_remove);
     if (!ret)
         response().addError("add sharding nodes failed.");
 }

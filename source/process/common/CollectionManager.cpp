@@ -381,7 +381,7 @@ void CollectionManager::deleteCollection(const std::string& collectionName)
 }
 
 bool CollectionManager::addNewShardingNodes(const std::string& collectionName,
-    const std::vector<shardid_t>& new_sharding_nodes)
+    const std::vector<shardid_t>& new_sharding_nodes, bool do_remove)
 {
     ScopedReadLock lock(*getCollectionMutex(collectionName));
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
@@ -389,6 +389,8 @@ bool CollectionManager::addNewShardingNodes(const std::string& collectionName,
     {
         if (iter->second->indexTaskService_)
         {
+            if (do_remove)
+                return iter->second->indexTaskService_->removeShardingNodes(new_sharding_nodes);
             return iter->second->indexTaskService_->addNewShardingNodes(new_sharding_nodes);
         }
     }

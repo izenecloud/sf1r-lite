@@ -463,6 +463,68 @@ static void printSharding(const ShardingTopologyT& sharding_topology)
     }
 }
 
+static bool removeSharding(const std::vector<shardid_t>& remove_sharding_nodes,
+    std::vector<shardid_t>& left_sharding_nodes,
+    size_t new_vnode_for_sharding,
+    ShardingTopologyT& current_sharding_topology,
+    std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
+    std::vector<shardid_t>& sharding_map)
+{
+    ShardingTopologyT remove_sharding_topo;
+    for (size_t i = 0; i < remove_sharding_nodes.size(); ++i)
+    {
+        remove_sharding_topo[remove_sharding_nodes[i]] = current_sharding_topology[remove_sharding_nodes[i]];
+        current_sharding_topology.erase(remove_sharding_nodes[i]);
+    }
+
+    if (current_sharding_topology.empty() || remove_sharding_topo.size() != remove_sharding_nodes.size())
+    {
+        return false;
+    }
+    ShardingTopologyT::iterator migrate_to_it = current_sharding_topology.begin();
+    left_sharding_nodes.push_back(migrate_to_it->first);
+    for(ShardingTopologyT::iterator remove_it = remove_sharding_topo.begin();
+        remove_it != remove_sharding_topo.end(); ++remove_it)
+    {
+        size_t vnode_index = 0;
+        for (; vnode_index < remove_it->second.size();
+            ++vnode_index)
+        {
+            vnodeid_t vid = remove_it->second[vnode_index];
+            migrate_data_list[vid] = std::pair<shardid_t, shardid_t>(remove_it->first, migrate_to_it->first);
+            LOG(INFO) << "vnode : " << vid << " will be moved from "
+                << (uint32_t)remove_it->first << " to " << (uint32_t)migrate_to_it->first;
+            sharding_map[vid] = migrate_to_it->first;
+            migrate_to_it->second.push_back(vid);
+            if (migrate_to_it->second.size() > new_vnode_for_sharding)
+            {
+                // the new sharding node got enough data. move to next.
+                ++migrate_to_it;
+                if (migrate_to_it == current_sharding_topology.end())
+                {
+                    ShardingTopologyT::iterator tmpit = remove_it;
+                    if (vnode_index != (remove_it->second.size() - 1) ||
+                        ++tmpit != remove_sharding_topo.end() )
+                    {
+                        LOG(INFO) << "the remove sharding vnode can not totally migrate to others.";
+                        return false;
+                    }
+                    break;
+                }
+                left_sharding_nodes.push_back(migrate_to_it->first);
+            }
+        }
+        remove_it->second.clear();
+    }
+
+    while(migrate_to_it != current_sharding_topology.end())
+    {
+        left_sharding_nodes.push_back(migrate_to_it->first);
+        ++migrate_to_it;
+    }
+    return true;
+}
+
 static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
     size_t new_vnode_for_sharding,
     ShardingTopologyT& current_sharding_topology,
@@ -507,6 +569,78 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
     }
 }
 
+bool IndexTaskService::doMigrateWork(bool removing,
+    const std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
+    const std::vector<shardid_t>& migrate_nodes,
+    const std::string& map_file,
+    const std::vector<shardid_t>& current_sharding_map)
+{
+    std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > > migrate_from_to_list;
+    for(std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >::const_iterator cit = migrate_data_list.begin();
+        cit != migrate_data_list.end(); ++cit)
+    {
+        std::string shardip = MasterManagerBase::get()->getShardNodeIP(cit->second.first);
+        if (shardip.empty())
+        {
+            LOG(ERROR) << "get source shard node ip error. " << cit->second.first;
+            return false;
+        }
+        migrate_from_to_list[shardip][cit->second.second].push_back(cit->first);
+    }
+
+    std::map<shardid_t, std::vector<std::string> > generated_insert_scds;
+    // the scds used for remove on the src node.
+    std::map<shardid_t, std::vector<std::string> > generated_del_scds;
+    bool ret = true;
+    ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
+        migrate_from_to_list,
+        generated_insert_scds,
+        generated_del_scds);
+
+    if (!ret)
+    {
+        LOG(ERROR) << "generate the migrate SCD files failed.";
+        return false;
+    }
+
+    // wait for all sharding nodes to finish their write queue.
+    if(!MasterManagerBase::get()->waitForMigrateReady(getShardidListForSearch()))
+    {
+        LOG(INFO) << " wait for migrate get ready failed.";
+        return false;
+    }
+
+    if (!removing)
+    {
+        // wait new sharding nodes to started.
+        if (!MasterManagerBase::get()->waitForNewShardingNodes(migrate_nodes))
+        {
+            LOG(INFO) << "wait for new sharding nodes to startup failed.";
+            return false;
+        }
+    }
+
+    if (!indexShardingNodes(generated_insert_scds))
+    {
+        return false;
+    }
+
+    if (!removing)
+    {
+        // wait for the new sharding nodes to finish indexing.
+        MasterManagerBase::get()->waitForMigrateIndexing(migrate_nodes);
+    }
+
+    indexShardingNodes(generated_del_scds);
+    MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
+
+    MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
+    // update config will cause the collection to restart, so 
+    // the IndexTaskService will be destructed.
+    updateShardingConfig(migrate_nodes, removing);
+    return true;
+}
+
 bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sharding_nodes)
 {
     if (!sharding_strategy_ || sharding_strategy_->shard_cfg_.shardidList_.size() == 0)
@@ -534,7 +668,6 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     // reading current sharding config(include the load on these nodes), 
     // and determine which nodes need 
     // migrate which part of their data.
-    // (nodeid, the scd docid suffix list that need migrate.)
     std::vector<shardid_t> current_sharding_map;
     std::string map_file = sharding_map_dir_ + bundleConfig_->collectionName_;
     MapShardingStrategy::readShardingMapFile(map_file, current_sharding_map);
@@ -583,23 +716,6 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
     printSharding(current_sharding_topology);
     printSharding(new_sharding_topology);
 
-    //std::map<shardid_t, std::vector<vnodeid_t> > migrate_from_list;
-    std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > > migrate_from_to_list;
-    //std::map<shardid_t, std::vector<vnodeid_t> > migrate_to_list;
-    for(std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >::const_iterator cit = migrate_data_list.begin();
-        cit != migrate_data_list.end(); ++cit)
-    {
-        //migrate_from_list[cit->second.first].push_back(cit->first);
-        std::string shardip = MasterManagerBase::get()->getShardNodeIP(cit->second.first);
-        if (shardip.empty())
-        {
-            LOG(ERROR) << "get source shard node ip error. " << cit->second.first;
-            return false;
-        }
-        migrate_from_to_list[shardip][cit->second.second].push_back(cit->first);
-        //migrate_to_list[cit->second.second].push_back(cit->first);
-    }
-
     // this will disallow any new write. This may fail if other migrate 
     // running or not all sharding nodes alive.
     if(!MasterManagerBase::get()->notifyAllShardingBeginMigrate(getShardidListForSearch()))
@@ -607,56 +723,9 @@ bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sha
         return false;
     }
 
-    std::map<shardid_t, std::vector<std::string> > generated_insert_scds;
-    // the scds used for remove on the src node.
-    std::map<shardid_t, std::vector<std::string> > generated_del_scds;
-    bool ret = true;
-    do
-    {
-        ret = DistributeFileSyncMgr::get()->generateMigrateScds(bundleConfig_->collectionName_,
-            migrate_from_to_list,
-            generated_insert_scds,
-            generated_del_scds);
-
-        if (!ret)
-        {
-            LOG(ERROR) << "generate the migrate SCD files failed.";
-            break;
-        }
-
-        // wait for all sharding nodes to finish their write queue.
-        if(!MasterManagerBase::get()->waitForMigrateReady(getShardidListForSearch()))
-        {
-            LOG(INFO) << " wait for migrate get ready failed.";
-            ret = false;
-            break;
-        }
-
-        // wait new sharding nodes to started.
-        if (!MasterManagerBase::get()->waitForNewShardingNodes(new_sharding_nodes))
-        {
-            LOG(INFO) << "wait for new sharding nodes to startup failed.";
-            ret = false;
-            break;
-        }
-
-        if (!indexShardingNodes(generated_insert_scds))
-        {
-            ret = false;
-            break;
-        }
-        MasterManagerBase::get()->waitForMigrateIndexing(new_sharding_nodes);
-
-        indexShardingNodes(generated_del_scds);
-        MasterManagerBase::get()->waitForMigrateIndexing(getShardidListForSearch());
-
-        MapShardingStrategy::saveShardingMapToFile(map_file, current_sharding_map);
-        // update config will cause the collection to restart, so 
-        // the IndexTaskService will be destructed.
-        updateShardingConfig(new_sharding_nodes);
-        ret = true;
-
-    }while(false);
+    bool ret = doMigrateWork(false, migrate_data_list, new_sharding_nodes,
+        map_file, current_sharding_map);
+    
     // allow new write running.
     MasterManagerBase::get()->notifyAllShardingEndMigrate();
 
@@ -701,16 +770,19 @@ bool IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
     return true;
 }
 
-void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes)
+void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes, bool removing)
 {
-    const std::vector<shardid_t>& curr_shard_nodes = getShardidListForSearch();
     std::string sharding_cfg;
-    for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
+    const std::vector<shardid_t>& curr_shard_nodes = getShardidListForSearch();
+    if (!removing)
     {
-        if (sharding_cfg.empty())
-            sharding_cfg = getShardidStr(curr_shard_nodes[i]);
-        else
-            sharding_cfg += "," + getShardidStr(curr_shard_nodes[i]);
+        for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
+        {
+            if (sharding_cfg.empty())
+                sharding_cfg = getShardidStr(curr_shard_nodes[i]);
+            else
+                sharding_cfg += "," + getShardidStr(curr_shard_nodes[i]);
+        }
     }
     for (size_t i = 0; i < new_sharding_nodes.size(); ++i)
     {
@@ -728,7 +800,8 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
 
     LOG(INFO) << "send request : " << json_req;
     MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
-    MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
+    if (!removing)
+        MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
 }
 
 bool IndexTaskService::generateMigrateSCD(const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
@@ -736,6 +809,100 @@ bool IndexTaskService::generateMigrateSCD(const std::map<shardid_t, std::vector<
     std::map<shardid_t, std::string>& generated_del_scds)
 {
     return indexWorker_->generateMigrateSCD(vnode_list, generated_insert_scds, generated_del_scds);
+}
+
+bool IndexTaskService::removeShardingNodes(const std::vector<shardid_t>& remove_sharding_nodes)
+{
+    if (!sharding_strategy_ || sharding_strategy_->shard_cfg_.shardidList_.size() == 0)
+    {
+        LOG(ERROR) << "no sharding config.";
+        return false;
+    }
+    if (remove_sharding_nodes.empty())
+    {
+        LOG(INFO) << "empty sharding nodes.";
+        return false;
+    }
+
+    size_t current_sharding_num = sharding_strategy_->shard_cfg_.shardidList_.size();
+    if (current_sharding_num == 1)
+    {
+        LOG(INFO) << "The last one sharding node can not be removed.";
+        return false;
+    }
+
+    if (remove_sharding_nodes.size() >= current_sharding_num)
+    {
+        LOG(INFO) << "You can not remove all sharding nodes.";
+        return false;
+    }
+
+    for (size_t i = 0; i < remove_sharding_nodes.size(); ++i)
+    {
+        if (std::find(bundleConfig_->col_shard_info_.shardList_.begin(),
+                bundleConfig_->col_shard_info_.shardList_.end(),
+                remove_sharding_nodes[i]) == bundleConfig_->col_shard_info_.shardList_.end())
+        {
+            LOG(ERROR) << "removing sharding node does not exist in the old sharding config.";
+            return false;
+        }
+    }
+
+    std::vector<shardid_t> current_sharding_map;
+    std::string map_file = sharding_map_dir_ + bundleConfig_->collectionName_;
+    MapShardingStrategy::readShardingMapFile(map_file, current_sharding_map);
+
+    if (current_sharding_map.empty())
+    {
+        LOG(ERROR) << "sharding map is empty!";
+        return false;
+    }
+
+    size_t current_vnode_for_sharding = current_sharding_map.size()/current_sharding_num;
+    size_t new_vnode_for_sharding = current_sharding_map.size()/(current_sharding_num - remove_sharding_nodes.size());
+
+    ShardingTopologyT current_sharding_topology;
+    for (size_t i = 0; i < current_sharding_map.size(); ++i)
+    {
+        current_sharding_topology[current_sharding_map[i]].push_back(i);
+    }
+
+    LOG(INFO) << "Before migrate, the average vnodes for each sharding is: " << current_vnode_for_sharding
+       << " and sharding topology is : ";
+    printSharding(current_sharding_topology);
+
+    std::map<vnodeid_t, std::pair<shardid_t, shardid_t> > migrate_data_list;
+    ShardingTopologyT new_sharding_topology;
+
+    std::vector<shardid_t> left_sharding_nodes;
+    bool ret = removeSharding(remove_sharding_nodes, left_sharding_nodes,
+        new_vnode_for_sharding,
+        current_sharding_topology,
+        migrate_data_list,
+        current_sharding_map);
+
+    if (!ret || left_sharding_nodes.empty())
+    {
+        LOG(INFO) << "removing nodes are wrong.";
+        return false;
+    }
+    LOG(INFO) << "After migrate, the average vnodes for each sharding will be: " << new_vnode_for_sharding 
+       << " and sharding topology will be : ";
+    printSharding(current_sharding_topology);
+
+    if(!MasterManagerBase::get()->notifyAllShardingBeginMigrate(getShardidListForSearch()))
+    {
+        return false;
+    }
+
+    ret = doMigrateWork(true, migrate_data_list, left_sharding_nodes,
+        map_file, current_sharding_map);
+
+    // allow new write running.
+    MasterManagerBase::get()->notifyAllShardingEndMigrate();
+
+    return ret;
+
 }
 
 }

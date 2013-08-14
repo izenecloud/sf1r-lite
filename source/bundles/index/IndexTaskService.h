@@ -60,6 +60,7 @@ public:
     bool HookDistributeRequestForIndex();
     const std::vector<shardid_t>& getShardidListForSearch();
     bool addNewShardingNodes(const std::vector<shardid_t>& new_sharding_nodes);
+    bool removeShardingNodes(const std::vector<shardid_t>& remove_sharding_nodes);
     boost::shared_ptr<ShardingStrategy> getShardingStrategy()
     {
         return sharding_strategy_;
@@ -81,8 +82,13 @@ private:
     bool createScdSharder(
         boost::shared_ptr<ScdSharder>& scdSharder);
 
-    void updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes);
+    void updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes, bool removing = false);
     bool indexShardingNodes(const std::map<shardid_t, std::vector<std::string> >& generated_migrate_scds);
+    bool doMigrateWork(bool removing,
+        const std::map<vnodeid_t, std::pair<shardid_t, shardid_t> >& migrate_data_list,
+        const std::vector<shardid_t>& migrate_nodes,
+        const std::string& map_file,
+        const std::vector<shardid_t>& current_sharding_map);
 
 private:
     std::string service_;

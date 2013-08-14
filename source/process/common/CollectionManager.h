@@ -66,7 +66,7 @@ public:
         std::map<shardid_t, std::string>& generated_insert_scds,
         std::map<shardid_t, std::string>& generated_del_scds);
     bool addNewShardingNodes(const std::string& collectionName,
-        const std::vector<shardid_t>& new_sharding_nodes);
+        const std::vector<shardid_t>& new_sharding_nodes, bool do_remove = false);
 
     handler_const_iterator handlerBegin() const;
     handler_const_iterator handlerEnd() const;
