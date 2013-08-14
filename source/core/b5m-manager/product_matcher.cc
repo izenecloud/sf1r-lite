@@ -1,5 +1,6 @@
 #include "product_matcher.h"
 #include "scd_doc_processor.h"
+#include "category_psm_clothes.h"
 #include <util/hashFunction.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -244,6 +245,8 @@ ProductMatcher::ProductMatcher()
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
  book_category_("书籍/杂志/报纸")
 {
+    CategoryPsm* psm = new CategoryPsmClothes;
+    psms_.push_back(psm);
 }
 
 ProductMatcher::~ProductMatcher()
@@ -264,6 +267,10 @@ ProductMatcher::~ProductMatcher()
     if(chars_analyzer_!=NULL)
     {
         delete chars_analyzer_;
+    }
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        delete psms_[i];
     }
     //if(cr_result_!=NULL)
     //{
@@ -1462,43 +1469,47 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     UString title(stitle, UString::UTF_8);
     CategoryIndex::const_iterator cit = category_index_.find(scategory);;
     if(cit==category_index_.end()) return;
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        psms_[i]->TryInsert(doc);
+    }
 #ifdef B5M_DEBUG
     //std::string stitle;
     //title.convertString(stitle, UString::UTF_8);
     //std::cerr<<"index offer title "<<stitle<<std::endl;
 #endif
-    uint32_t cid = cit->second;
-    OfferCategoryApp app;
-    app.cid = cid;
-    app.count = 1;
-    std::vector<Term> term_list;
-    Analyze_(title, term_list);
-    KeywordVector keyword_vector;
-    GetKeywords(term_list, keyword_vector, false);
-    //process feature vector
-    cid_t cid1 = GetLevelCid_(scategory, 1);
-    cid_t cid2 = GetLevelCid_(scategory, 2);
-    //NFeatureVector feature_vector;
-    //GenFeatureVector_(keyword_vector, feature_vector);
-    boost::unique_lock<boost::mutex> lock(offer_mutex_);
-    for(uint32_t i=0;i<keyword_vector.size();i++)
-    {
-        const KeywordTag& tag = keyword_vector[i];
-        oca_[tag.id][cid]+=1;
+    //uint32_t cid = cit->second;
+    //OfferCategoryApp app;
+    //app.cid = cid;
+    //app.count = 1;
+    //std::vector<Term> term_list;
+    //Analyze_(title, term_list);
+    //KeywordVector keyword_vector;
+    //GetKeywords(term_list, keyword_vector, false);
+    ////process feature vector
+    //cid_t cid1 = GetLevelCid_(scategory, 1);
+    //cid_t cid2 = GetLevelCid_(scategory, 2);
+    ////NFeatureVector feature_vector;
+    ////GenFeatureVector_(keyword_vector, feature_vector);
+    //boost::unique_lock<boost::mutex> lock(offer_mutex_);
+    //for(uint32_t i=0;i<keyword_vector.size();i++)
+    //{
+        //const KeywordTag& tag = keyword_vector[i];
+        //oca_[tag.id][cid]+=1;
 
-        //const TermList& tl = keyword_vector[i].term_list;
-        //trie_[tl].offer_category_apps.push_back(app);
-    }
-    if(cid1!=0)
-    {
-        FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
-        fv_count_[cid1]++;
-    }
-    if(cid2!=0)
-    {
-        FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
-        fv_count_[cid2]++;
-    }
+        ////const TermList& tl = keyword_vector[i].term_list;
+        ////trie_[tl].offer_category_apps.push_back(app);
+    //}
+    //if(cid1!=0)
+    //{
+        //FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
+        //fv_count_[cid1]++;
+    //}
+    //if(cid2!=0)
+    //{
+        //FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
+        //fv_count_[cid2]++;
+    //}
     
 
     //if(use_ngram_)
@@ -1522,13 +1533,22 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
 void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
 {
     LOG(INFO)<<"index offer begin"<<std::endl;
-    //NgramFrequent nf;
-    nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
-    fv_count_.resize(category_list_.size(), 0);
-    oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
+    //nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
+    //fv_count_.resize(category_list_.size(), 0);
+    //oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        std::string ppath = path_+"/psm"+boost::lexical_cast<std::string>(i);
+        B5MHelper::PrepareEmptyDir(ppath);
+        psms_[i]->Open(ppath);
+    }
     ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        psms_[i]->Flush();
+    }
     //ScdParser parser(izenelib::util::UString::UTF_8);
     //parser.load(offer_scd);
     //uint32_t n=0;

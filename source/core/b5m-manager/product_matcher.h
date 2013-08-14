@@ -5,6 +5,7 @@
 #include "b5m_helper.h"
 #include "b5m_types.h"
 #include "attribute_id_manager.h"
+#include "category_psm.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -1031,6 +1032,8 @@ namespace sf1r {
         std::vector<std::vector<uint32_t> > oca_;
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
+        std::vector<CategoryPsm*> psms_;
+        boost::unordered_map<uint128_t, uint128_t> psm_result_;
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;
