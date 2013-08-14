@@ -87,7 +87,7 @@ public:
     static void saveShardingMapToFile(const std::string& fullpath,
         const std::vector<shardid_t>& sharding_map);
 
-    static const int MAX_MAP_SIZE = 0xFFFF;
+    static const size_t MAX_MAP_SIZE = 0xFFFF;
 private:
     shardid_t sharding_for_write(const std::string& uid, const ShardingConfig& shardingConfig);
     std::vector<shardid_t>  saved_sharding_map_;

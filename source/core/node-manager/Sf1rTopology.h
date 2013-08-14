@@ -505,7 +505,7 @@ public:
         for (std::set<shardid_t>::const_iterator it = all_shard_nodes_.begin();
             it != all_shard_nodes_.end(); ++it)
         {
-            ss << *it << ", ";
+            ss << getShardidStr(*it) << ", ";
         }
         ss << std::endl;
         ss << curNode_.toString();

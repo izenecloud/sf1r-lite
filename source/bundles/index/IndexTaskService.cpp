@@ -548,10 +548,11 @@ static void migrateSharding(const std::vector<shardid_t>& new_sharding_nodes,
                 vnode_index > new_vnode_for_sharding;
                 --vnode_index)
             {
-                migrate_data_list[it->second[vnode_index]] = std::pair<shardid_t, shardid_t>(it->first, new_sharding_nodes[migrate_to]);
-                LOG(INFO) << "vnode : " << it->second[vnode_index] << " will be moved from " << (uint32_t)it->first << " to " << (uint32_t)new_sharding_nodes[migrate_to];
-                sharding_map[it->second[vnode_index]] = new_sharding_nodes[migrate_to];
-                new_sharding_topology[new_sharding_nodes[migrate_to]].push_back(it->second[vnode_index]);
+                vnodeid_t vid = it->second[vnode_index];
+                migrate_data_list[vid] = std::pair<shardid_t, shardid_t>(it->first, new_sharding_nodes[migrate_to]);
+                LOG(INFO) << "vnode : " << vid << " will be moved from " << (uint32_t)it->first << " to " << (uint32_t)new_sharding_nodes[migrate_to];
+                sharding_map[vid] = new_sharding_nodes[migrate_to];
+                new_sharding_topology[new_sharding_nodes[migrate_to]].push_back(vid);
                 --migrate_start;
                 if (new_sharding_topology[new_sharding_nodes[migrate_to]].size() >= new_vnode_for_sharding)
                 {
