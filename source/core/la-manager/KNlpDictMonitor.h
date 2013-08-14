@@ -18,6 +18,7 @@ public:
     static KNlpDictMonitor* get();
 
     KNlpDictMonitor();
+    ~KNlpDictMonitor();
 
     virtual bool process(const std::string& fileName, uint32_t mask);
 

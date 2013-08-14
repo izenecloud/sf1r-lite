@@ -21,6 +21,11 @@ KNlpDictMonitor::KNlpDictMonitor()
 {
 }
 
+KNlpDictMonitor::~KNlpDictMonitor()
+{
+    close_();
+}
+
 bool KNlpDictMonitor::process(const std::string& fileName, uint32_t mask)
 {
     if (mask & kMonitorEvent)

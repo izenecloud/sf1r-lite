@@ -14,11 +14,8 @@ namespace sf1r
 class FileMonitorTestFixture : public FileMonitor
 {
 public:
-    std::string dirName_;
-    std::string actualFileName_;
-    uint32_t actualMask_;
-
     FileMonitorTestFixture();
+    ~FileMonitorTestFixture();
 
     virtual bool process(const std::string& fileName, uint32_t mask)
     {
@@ -27,6 +24,12 @@ public:
         return true;
     }
 
+public:
+    const std::string dirName_;
+
+    std::string actualFileName_;
+
+    uint32_t actualMask_;
 };
 
 } // namespace sf1r
