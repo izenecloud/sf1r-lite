@@ -1283,6 +1283,7 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
         boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
 
         boost::tokenizer<boost::char_separator<char> >::iterator it;
+        std::set<shardid_t> shardid_set;
         for (it = tokens.begin(); it != tokens.end(); ++it)
         {
             uint32_t shardid;
@@ -1302,8 +1303,10 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
                 throw std::runtime_error(
                     std::string("failed to parse shardids: ") + shardids + ", " + e.what());
             }
-            masterCollection.shardList_.push_back((shardid_t)shardid);
+            shardid_set.insert((shardid_t)shardid);
         }
+        masterCollection.shardList_.insert(masterCollection.shardList_.end(),
+            shardid_set.begin(), shardid_set.end());
     }
 
     if (masterCollection.shardList_.empty())
