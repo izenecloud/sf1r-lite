@@ -136,7 +136,9 @@ bool MapShardingStrategy::init()
         save();
     }
     else
+    {
         readShardingMapFile(map_file_path_, saved_sharding_map_);
+    }
     return true;
 }
 
@@ -200,14 +202,19 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
         size_t index = 0;
         shardid_t shardid = 0;
         sharding_map.clear();
-        sharding_map.resize(MAX_MAP_SIZE, 0);
+        sharding_map.reserve(MAX_MAP_SIZE);
         while (ifs.good())
         {
             uint32_t tmpid;
-            ifs >> index >> tmpid;
+            ifs >> tmpid;
             shardid = (shardid_t)tmpid;
-            if (shardid != 0 && index < (size_t)MAX_MAP_SIZE)
-                sharding_map[index] = shardid;
+            if (shardid != 0)
+                sharding_map.push_back(shardid);
+        }
+        if (sharding_map.size() != MAX_MAP_SIZE)
+        {
+            LOG(WARNING) << "reading sharding map size is wrong.";
+            sharding_map.clear();
         }
     }
     catch(const std::exception& e)
@@ -220,13 +227,18 @@ void MapShardingStrategy::readShardingMapFile(const std::string& fullpath,
 void MapShardingStrategy::saveShardingMapToFile(const std::string& fullpath,
     const std::vector<shardid_t>& sharding_map)
 {
+    if (sharding_map.size() != MAX_MAP_SIZE)
+    {
+        LOG(WARNING) << "the sharding map size is wrong.";
+        return;
+    }
     std::ofstream ofs;
     ofs.open(fullpath.c_str());
     for(size_t i = 0; i < sharding_map.size(); ++i)
     {
         if (sharding_map[i] > 0)
         {
-            ofs << i << " " << (uint32_t)sharding_map[i] << std::endl;
+            ofs << (uint32_t)sharding_map[i] << std::endl;
         }
     }
     ofs.close();
