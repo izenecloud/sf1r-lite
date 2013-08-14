@@ -411,6 +411,7 @@ bool CollectionManager::generateMigrateSCD(const std::string& collectionName,
             return iter->second->indexTaskService_->generateMigrateSCD(vnode_list, generated_insert_scds, generated_del_scds);
         }
     }
+    LOG(INFO) << "collection not found : " << collectionName;
     return false;
 }
 
