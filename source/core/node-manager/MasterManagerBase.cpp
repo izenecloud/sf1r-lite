@@ -626,11 +626,11 @@ bool MasterManagerBase::isAllShardNodeOK(const std::vector<shardid_t>& shardids)
         WorkerMapT::const_iterator it = workerMap_.find(shardids[i]);
         if (it == workerMap_.end())
         {
-            LOG(INFO) << "shardid not found while check for ok. " << shardids[i];
+            LOG(INFO) << "shardid not found while check for ok. " << getShardidStr(shardids[i]);
         }
         if (!it->second->worker_.isGood_)
         {
-            LOG(INFO) << "shardid not ready." << shardids[i];
+            LOG(INFO) << "shardid not ready." << getShardidStr(shardids[i]);
             return false;
         }
     }
@@ -990,7 +990,7 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                     if(!isPrimaryWorker(replicaId, nodeid))
                     {
                         LOG(INFO) << "primary master need detect primary worker, ignore non-primary worker";
-                        LOG (INFO) << "node " << nodeid << ", replica: " << replicaId;
+                        LOG (INFO) << "node " << getShardidStr(nodeid) << ", replica: " << replicaId;
                         continue;
                     }
                 }
@@ -1115,7 +1115,7 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
     {
         workerNode->worker_.isGood_ = false;
         LOG (ERROR) << "failed to convert workerPort \"" << znode.getStrValue(ZNode::KEY_WORKER_PORT)
-                    << "\" got from worker on node " << workerNode->nodeId_
+                    << "\" got from worker on node " << getShardidStr(workerNode->nodeId_)
                     << " @" << workerNode->host_;
     }
 
@@ -1128,11 +1128,11 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
     {
         workerNode->worker_.isGood_ = false;
         LOG (ERROR) << "failed to convert dataPort \"" << znode.getStrValue(ZNode::KEY_DATA_PORT)
-                    << "\" got from worker on node " << workerNode->nodeId_
+                    << "\" got from worker on node " << getShardidStr(workerNode->nodeId_)
                     << " @" << workerNode->host_;
     }
 
-    LOG (INFO) << CLASSNAME << " detected worker on (node" << workerNode->nodeId_ <<") "
+    LOG (INFO) << CLASSNAME << " detected worker on (node" << getShardidStr(workerNode->nodeId_) <<") "
                << workerNode->host_ << ":" << workerNode->worker_.port_ << std::endl;
 }
 
@@ -1245,14 +1245,14 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                     if(!isPrimaryWorker(replicaIdList_[i], sf1rNode->nodeId_))
                     {
                         LOG(INFO) << "primary master need failover to primary worker, ignore non-primary worker";
-                        LOG (INFO) << "node " << sf1rNode->nodeId_ << " ,replica: " << replicaIdList_[i];
+                        LOG (INFO) << "node " << getShardidStr(sf1rNode->nodeId_) << " ,replica: " << replicaIdList_[i];
                         continue;
                     }
                 }
                 znode.loadKvString(sdata);
                 if (znode.hasKey(ZNode::KEY_WORKER_PORT))
                 {
-                    LOG (INFO) << "switching node " << sf1rNode->nodeId_ << " from replica " << sf1rNode->replicaId_
+                    LOG (INFO) << "switching node " << getShardidStr(sf1rNode->nodeId_) << " from replica " << sf1rNode->replicaId_
                                <<" to " << replicaIdList_[i];
 
                     sf1rNode->replicaId_ = replicaIdList_[i]; // new replica
@@ -1265,7 +1265,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                     catch (std::exception& e)
                     {
                         LOG (ERROR) << "failed to convert workerPort \"" << znode.getStrValue(ZNode::KEY_WORKER_PORT)
-                                    << "\" got from node " << sf1rNode->nodeId_ << " at " << znode.getStrValue(ZNode::KEY_HOST)
+                                    << "\" got from node " << getShardidStr(sf1rNode->nodeId_) << " at " << znode.getStrValue(ZNode::KEY_HOST)
                                     << ", in replica " << replicaIdList_[i];
                         continue;
                     }
@@ -1276,7 +1276,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                 }
                 else
                 {
-                    LOG (ERROR) << "[Replica " << replicaIdList_[i] << "] [Node " << sf1rNode->nodeId_
+                    LOG (ERROR) << "[Replica " << replicaIdList_[i] << "] [Node " << getShardidStr(sf1rNode->nodeId_)
                                 << "] did not enable worker server, this happened because of the mismatch configuration.";
                     LOG (ERROR) << "In the same cluster, the sf1r node with the same nodeid must have the same configuration.";
                     //throw std::runtime_error("error configuration : mismatch with the same nodeid.");
@@ -1312,12 +1312,12 @@ void MasterManagerBase::recover(const std::string& zpath)
                 if(!isPrimaryWorker(sf1rTopology_.curNode_.replicaId_, sf1rNode->nodeId_))
                 {
                     LOG(INFO) << "primary master need recover to primary worker, ignore non-primary worker";
-                    LOG (INFO) << "node " << sf1rNode->nodeId_ << " ,replica: " << sf1rTopology_.curNode_.replicaId_;
+                    LOG (INFO) << "node " << getShardidStr(sf1rNode->nodeId_) << " ,replica: " << sf1rTopology_.curNode_.replicaId_;
                     continue;
                 }
             }
 
-            LOG (INFO) << "recover: node " << sf1rNode->nodeId_
+            LOG (INFO) << "recover: node " << getShardidStr(sf1rNode->nodeId_)
                        << " recovered in current replica " << sf1rTopology_.curNode_.replicaId_;
 
             ZNode znode;
@@ -1334,7 +1334,7 @@ void MasterManagerBase::recover(const std::string& zpath)
                 catch (std::exception& e)
                 {
                     LOG (ERROR) << "failed to convert workerPort \"" << znode.getStrValue(ZNode::KEY_WORKER_PORT)
-                                << "\" got from node " << sf1rNode->nodeId_ << " at " << znode.getStrValue(ZNode::KEY_HOST)
+                                << "\" got from node " << getShardidStr(sf1rNode->nodeId_) << " at " << znode.getStrValue(ZNode::KEY_HOST)
                                 << ", in replica " << sf1rTopology_.curNode_.replicaId_;
                     continue;
                 }
@@ -1640,7 +1640,7 @@ bool MasterManagerBase::isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId)
         zookeeper_->getZNodeChildren(getPrimaryNodeParentPath(nodeId), node_list);
         if (node_list.empty())
         {
-            LOG(INFO) << "no any primary node for node id: " << nodeId;
+            LOG(INFO) << "no any primary node for node id: " << getShardidStr(nodeId);
             return false;
         }
         return self_reg_primary == node_list[0];
