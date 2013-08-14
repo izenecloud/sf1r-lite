@@ -9,7 +9,6 @@
 #include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
-#include "common/file-monitor/KNlpDictMonitor.h"
 #include "auto-fill-submanager/AutoFillSubManager.h"
 
 #include "query-correction-submanager/QueryCorrectionSubmanager.h"
@@ -88,6 +87,7 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
+#include <la-manager/KNlpDictMonitor.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>

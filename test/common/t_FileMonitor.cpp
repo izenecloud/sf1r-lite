@@ -10,6 +10,7 @@
 #include <iostream>
 #include <ctime>
 #include <unistd.h> // sleep
+#include <sys/inotify.h>
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
