@@ -1204,7 +1204,7 @@ void MasterManagerBase::failover(const std::string& zpath)
         std::string nodePath = getNodePath(sf1rNode->replicaId_, sf1rNode->nodeId_);
         if (zpath == nodePath)
         {
-            LOG (WARNING) << "[node " << sf1rNode->nodeId_ << "]@" << sf1rNode->host_ << " was broken down, in "
+            LOG (WARNING) << "[node " << getShardidStr(sf1rNode->nodeId_) << "]@" << sf1rNode->host_ << " was broken down, in "
                           << "[replica " << sf1rNode->replicaId_ << "]";
             if (failover(sf1rNode))
             {
@@ -1601,7 +1601,7 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
         {
             if(!it->second->worker_.isGood_)
             {
-                LOG(INFO) << "worker_ : " << it->second->nodeId_ << " is not good, so do not added to aggregator.";
+                LOG(INFO) << "worker_ : " << getShardidStr(it->second->nodeId_) << " is not good, so do not added to aggregator.";
                 continue;
             }
             bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
@@ -1609,7 +1609,7 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
         }
         else
         {
-            LOG (ERROR) << "worker " << shardidList[i] << " was not found for Aggregator of "
+            LOG (ERROR) << "worker " << getShardidStr(shardidList[i]) << " was not found for Aggregator of "
                 << aggregator->collection() << " in service " << aggregator->service();
         }
     }
