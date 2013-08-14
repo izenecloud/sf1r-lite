@@ -7,7 +7,6 @@
 #define SF1R_FILE_MONITOR_TEST_FIXTURE_H
 
 #include <common/file-monitor/FileMonitor.h>
-#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -20,13 +19,9 @@ public:
     uint32_t actualMask_;
 
     FileMonitorTestFixture();
-    ~FileMonitorTestFixture();
 
     virtual bool process(const std::string& fileName, uint32_t mask)
     {
-        LOG(INFO) << "updating fileName " << fileName
-                  << ", mask " << mask;
-
         actualFileName_ = fileName;
         actualMask_ = mask;
         return true;

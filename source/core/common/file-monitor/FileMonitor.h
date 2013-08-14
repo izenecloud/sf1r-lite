@@ -37,7 +37,13 @@ public:
     ~FileMonitor()
     {
         for (std::vector<int>::iterator i = wd_list_.begin(); i != wd_list_.end(); ++i)
+        {
             inotify_rm_watch(fd_, *i);
+        }
+
+        thread_.interrupt();
+        thread_.join();
+
         close(fd_);
     }
 
@@ -59,16 +65,23 @@ private:
         char buffer[BUF_LEN];
         while (true)
         {
-            int length, i = 0;
-            length = read( fd_, buffer, BUF_LEN ); //suspend
+            int length = read( fd_, buffer, BUF_LEN ); //suspend
 
-            if ( length < 0 ) 
+            if (length < 0)
             {
                 LOG(ERROR) << "read fd_: " << fd_;
             }
+
+            int i = 0;
             while (i < length)
             {
                 struct inotify_event *event = (struct inotify_event*)&buffer[i];
+
+                if (IN_IGNORED & event->mask)
+                {
+                    LOG(INFO) << "received inotify event IN_IGNORED, exit work thread";
+                    return;
+                }
 
                 if(process(event->name, event->mask))
                 {
@@ -78,7 +91,7 @@ private:
                 {
                     LOG(ERROR) << "update resource wrong ... ";
                 }
-                
+
                 i += EVENT_SIZE + event->len;
             }
         }

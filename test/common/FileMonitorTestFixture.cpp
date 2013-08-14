@@ -12,8 +12,3 @@ FileMonitorTestFixture::FileMonitorTestFixture()
     bfs::remove_all(dir);
     bfs::create_directory(dir);
 }
-
-FileMonitorTestFixture::~FileMonitorTestFixture()
-{
-    LOG(INFO) << "destroying FileMonitorTestFixture";
-}

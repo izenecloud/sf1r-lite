@@ -16,7 +16,7 @@ namespace bfs = boost::filesystem;
 
 BOOST_AUTO_TEST_SUITE(FileMonitorTest)
 
-BOOST_AUTO_TEST_CASE(testTimeStamp)
+BOOST_AUTO_TEST_CASE(testUpdateTimeStamp)
 {
     {
         FileMonitorTestFixture fixture;
@@ -44,9 +44,6 @@ BOOST_AUTO_TEST_CASE(testTimeStamp)
     }
 
     sleep(5);
-    // std::cout << "please input char: ";
-    // char ch;
-    // std::cin >> ch;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
