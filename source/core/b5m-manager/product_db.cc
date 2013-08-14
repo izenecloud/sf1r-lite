@@ -156,7 +156,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
-    if(spu_only&&independent) pdoc.type = NOT_SCD;
+    if(spu_only&&pdoc.type==UPDATE_SCD&&independent) pdoc.type = NOT_SCD;
 }
 
 bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
@@ -177,7 +177,7 @@ bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
 
 void B5mpDocGenerator::SelectSubDocs_(std::vector<Document>& subdocs) const
 {
-    static const uint32_t max = 3u;
+    static const uint32_t max = 10u;
     if(subdocs.size()<=max) return;
     std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
     subdocs.resize(max);
