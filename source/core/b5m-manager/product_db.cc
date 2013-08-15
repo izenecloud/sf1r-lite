@@ -46,6 +46,17 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     for(uint32_t i=0;i<odocs.size();i++)
     {
         const ScdDocument& doc=odocs[i];
+        Document::doc_prop_value_strtype oid;
+        doc.getProperty("DOCID", oid);
+        if(oid!=pid) independent=false;
+        if(spu_title.empty())
+        {
+            doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
+            if(!spu_title.empty())
+            {
+                independent = false;
+            }
+        }
         if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
         {
             continue;
@@ -66,10 +77,6 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             }
             SelectSubDocs_(subdocs);
         }
-        Document::doc_prop_value_strtype oid;
-        doc.getProperty("DOCID", oid);
-        if(oid!=pid) independent=false;
-        doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
         doc.getProperty(B5MHelper::GetSPPicPropertyName(), spu_pic);
         doc.getProperty(B5MHelper::GetSPUrlPropertyName(), spu_url);
         pdoc.merge(doc);
