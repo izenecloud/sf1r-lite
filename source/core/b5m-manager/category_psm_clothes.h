@@ -5,8 +5,7 @@
 #include "category_psm.h"
 #include <string>
 #include <vector>
-#include "b5m_types.h"
-#include "b5m_helper.h"
+#include "b5m_types.h" #include "b5m_helper.h"
 #include <types.h>
 #include <am/succinct/fujimap/fujimap.hpp>
 #include <glog/logging.h>
@@ -18,6 +17,13 @@ namespace sf1r {
 
     class CategoryPsmClothes : public CategoryPsm
     {
+
+        struct CacheItem
+        {
+            uint128_t oid;
+            std::string title;
+            std::string source;
+        };
 
         struct Attach
         {
@@ -96,6 +102,8 @@ namespace sf1r {
             if(stitle.empty()) return false;
             std::string ssource;
             doc.getString("Source", ssource);
+            std::string sdocid;
+            doc.getString("DOCID", sdocid);
             std::vector<std::string> models;
             boost::algorithm::to_lower(stitle);
             boost::algorithm::trim(stitle);
@@ -212,11 +220,16 @@ namespace sf1r {
             std::cout<<std::endl;
 #endif
 
+            stat_.second++;
+            boost::unique_lock<boost::mutex> lock(mutex_);
             if(cache_list_.empty()) cache_list_.resize(1);
             uint32_t id = cache_list_.size();
             dd_->InsertDoc(id, doc_vector, attach);
-            cache_list_.push_back(stitle+","+ssource);
-            stat_.second++;
+            CacheItem cache;
+            cache.oid = B5MHelper::StringToUint128(sdocid);
+            cache.title = stitle;
+            cache.source = ssource;
+            cache_list_.push_back(cache);
             return true;
         }
 
@@ -229,10 +242,18 @@ namespace sf1r {
             {
                 uint32_t gid = i;
                 const std::vector<uint32_t>& group = group_info[gid];
+                if(group.size()<2) continue;
+                const CacheItem& base = cache_list_[group.front()];
+                for(uint32_t j=0;j<group.size();j++)
+                {
+                    const CacheItem& item = cache_list_[group[j]];
+                    result[item.oid] = base.oid;
+                }
                 std::cout<<"[GID]"<<gid<<std::endl;
                 for(uint32_t j=0;j<group.size();j++)
                 {
-                    std::cout<<"\t"<<cache_list_[group[j]]<<std::endl;
+                    const CacheItem& item = cache_list_[group[j]];
+                    std::cout<<"\t"<<item.title<<","<<item.source<<std::endl;
                 }
             }
             return true;
@@ -244,11 +265,12 @@ namespace sf1r {
         idmlib::util::IDMAnalyzer* analyzer_;
         GroupTableType* table_;
         DDType* dd_;
-        std::vector<std::string> cache_list_;
+        std::vector<CacheItem> cache_list_;
         boost::unordered_set<std::string> stop_set_;
         boost::unordered_set<std::string> model_stop_set_;
 
         std::pair<std::size_t, std::size_t> stat_;
+        boost::mutex mutex_;
     };
 
 }

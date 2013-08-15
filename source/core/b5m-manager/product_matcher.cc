@@ -243,10 +243,9 @@ ProductMatcher::ProductMatcher()
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
- book_category_("书籍/杂志/报纸")
+ book_category_("书籍/杂志/报纸"),
+ use_psm_(false)
 {
-    CategoryPsm* psm = new CategoryPsmClothes;
-    psms_.push_back(psm);
 }
 
 ProductMatcher::~ProductMatcher()
@@ -361,6 +360,16 @@ bool ProductMatcher::Open(const std::string& kpath)
 
             LOG(INFO)<<"synonym map size "<<synonym_pairs.size();
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
+            path = path_+"/psm_result";
+            {
+                std::map<std::string, std::string> pmap;
+                izenelib::am::ssf::Util<>::Load(path, pmap);
+                for(std::map<std::string, std::string>::const_iterator it = pmap.begin();it!=pmap.end();++it)
+                {
+                    psm_result_.insert(std::make_pair(B5MHelper::StringToUint128(it->first), B5MHelper::StringToUint128(it->second)));
+                }
+                LOG(INFO)<<"psm result load size "<<psm_result_.size()<<std::endl;
+            }
         }
         catch(std::exception& ex)
         {
@@ -1186,6 +1195,16 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         if (term_set[i][term_set[i].length() - 1] == '/') term_set[i].erase(term_set[i].length() - 1, 1);
     path = path_+"/synonym_dict";
     izenelib::am::ssf::Util<>::Save(path, term_set);
+    path = path_+"/psm_result";
+    {
+        LOG(INFO)<<"psm result size "<<psm_result_.size()<<std::endl;
+        std::map<std::string, std::string> pmap;
+        for(boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.begin();it!=psm_result_.end();++it)
+        {
+            pmap.insert(std::make_pair(B5MHelper::Uint128ToString(it->first), B5MHelper::Uint128ToString(it->second)));
+        }
+        izenelib::am::ssf::Util<>::Save(path, pmap);
+    }
     {
         std::string aversion_file = path_+"/AVERSION";
         std::ofstream ofs(aversion_file.c_str());
@@ -1478,38 +1497,38 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     //title.convertString(stitle, UString::UTF_8);
     //std::cerr<<"index offer title "<<stitle<<std::endl;
 #endif
-    //uint32_t cid = cit->second;
-    //OfferCategoryApp app;
-    //app.cid = cid;
-    //app.count = 1;
-    //std::vector<Term> term_list;
-    //Analyze_(title, term_list);
-    //KeywordVector keyword_vector;
-    //GetKeywords(term_list, keyword_vector, false);
-    ////process feature vector
-    //cid_t cid1 = GetLevelCid_(scategory, 1);
-    //cid_t cid2 = GetLevelCid_(scategory, 2);
-    ////NFeatureVector feature_vector;
-    ////GenFeatureVector_(keyword_vector, feature_vector);
-    //boost::unique_lock<boost::mutex> lock(offer_mutex_);
-    //for(uint32_t i=0;i<keyword_vector.size();i++)
-    //{
-        //const KeywordTag& tag = keyword_vector[i];
-        //oca_[tag.id][cid]+=1;
+    uint32_t cid = cit->second;
+    OfferCategoryApp app;
+    app.cid = cid;
+    app.count = 1;
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
+    KeywordVector keyword_vector;
+    GetKeywords(term_list, keyword_vector, false);
+    //process feature vector
+    cid_t cid1 = GetLevelCid_(scategory, 1);
+    cid_t cid2 = GetLevelCid_(scategory, 2);
+    //NFeatureVector feature_vector;
+    //GenFeatureVector_(keyword_vector, feature_vector);
+    boost::unique_lock<boost::mutex> lock(offer_mutex_);
+    for(uint32_t i=0;i<keyword_vector.size();i++)
+    {
+        const KeywordTag& tag = keyword_vector[i];
+        oca_[tag.id][cid]+=1;
 
-        ////const TermList& tl = keyword_vector[i].term_list;
-        ////trie_[tl].offer_category_apps.push_back(app);
-    //}
-    //if(cid1!=0)
-    //{
-        //FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
-        //fv_count_[cid1]++;
-    //}
-    //if(cid2!=0)
-    //{
-        //FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
-        //fv_count_[cid2]++;
-    //}
+        //const TermList& tl = keyword_vector[i].term_list;
+        //trie_[tl].offer_category_apps.push_back(app);
+    }
+    if(cid1!=0)
+    {
+        FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
+        fv_count_[cid1]++;
+    }
+    if(cid2!=0)
+    {
+        FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
+        fv_count_[cid2]++;
+    }
     
 
     //if(use_ngram_)
@@ -1533,9 +1552,14 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
 void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
 {
     LOG(INFO)<<"index offer begin"<<std::endl;
-    //nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
-    //fv_count_.resize(category_list_.size(), 0);
-    //oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
+    nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
+    fv_count_.resize(category_list_.size(), 0);
+    oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
+    if(use_psm_)
+    {
+        CategoryPsm* psm = new CategoryPsmClothes;
+        psms_.push_back(psm);
+    }
     for(uint32_t i=0;i<psms_.size();i++)
     {
         std::string ppath = path_+"/psm"+boost::lexical_cast<std::string>(i);
@@ -1547,38 +1571,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
     processor.Process();
     for(uint32_t i=0;i<psms_.size();i++)
     {
-        psms_[i]->Flush();
+        psms_[i]->Flush(psm_result_);
     }
-    //ScdParser parser(izenelib::util::UString::UTF_8);
-    //parser.load(offer_scd);
-    //uint32_t n=0;
-    //for( ScdParser::iterator doc_iter = parser.begin();
-      //doc_iter!= parser.end(); ++doc_iter, ++n)
-    //{
-        ////if(n>=15000) break;
-        //if(n%100000==0)
-        //{
-            //LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
-        //}
-        ////Document doc;
-        //SCDDoc& scddoc = *(*doc_iter);
-        //SCDDoc::iterator p = scddoc.begin();
-        //Document::doc_prop_value_strtype title;
-        //Document::doc_prop_value_strtype category;
-        //for(; p!=scddoc.end(); ++p)
-        //{
-            //const std::string& property_name = p->first;
-            //if(property_name=="Title")
-            //{
-                //title = p->second;
-            //}
-            //else if(property_name=="Category")
-            //{
-                //category = p->second;
-            //}
-        //}
-
-    //}
     feature_vectors_.resize(category_list_.size());
     for(uint32_t i=0;i<nfeature_vectors_.size();i++)
     {
@@ -1606,35 +1600,6 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
             }
         }
     }
-    //for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
-    //{
-        //KeywordTag& tag = it->second;
-        //std::sort(tag.offer_category_apps.begin(), tag.offer_category_apps.end());
-        //std::vector<OfferCategoryApp> new_apps;
-        //new_apps.reserve(tag.offer_category_apps.size());
-        //OfferCategoryApp last;
-        //last.cid = 0;
-        //last.count = 0;
-        //for(uint32_t i=0;i<tag.offer_category_apps.size();i++)
-        //{
-            //const OfferCategoryApp& app = tag.offer_category_apps[i];
-            //if(app.cid!=last.cid)
-            //{
-                //if(last.count>0)
-                //{
-                    //new_apps.push_back(last);
-                //}
-                //last.cid = app.cid;
-                //last.count = 0;
-            //}
-            //last.count+=app.count;
-        //}
-        //if(last.count>0)
-        //{
-            //new_apps.push_back(last);
-        //}
-        //tag.offer_category_apps.swap(new_apps);
-    //}
 
     //if(use_ngram_)
     //{
@@ -2242,6 +2207,23 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
+    if(!psm_result_.empty())
+    {
+        std::string sdocid;
+        doc.getString("DOCID", sdocid);
+        if(!sdocid.empty())
+        {
+            uint128_t oid = B5MHelper::StringToUint128(sdocid);
+            boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.find(oid);
+            if(it!=psm_result_.end())
+            {
+                Product p;
+                p.spid = B5MHelper::Uint128ToString(it->second);
+                result_products.resize(1, p);
+                return true;
+            }
+        }
+    }
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
