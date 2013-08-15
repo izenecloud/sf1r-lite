@@ -2015,18 +2015,18 @@ bool MiningManager::setCustomRank(
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    CustomRankDocId customDocId;
+    //CustomRankDocId customDocId;
 
-    bool convertResult = customDocIdConverter_ &&
-        customDocIdConverter_->convert(customDocStr, customDocId);
+    //bool convertResult = customDocIdConverter_ &&
+    //    customDocIdConverter_->convert(customDocStr, customDocId);
 
-    if (!convertResult)
-    {
-        return false;
-    }
+    //if (!convertResult)
+    //{
+    //    return false;
+    //}
 
-    NoAdditionReqLog reqlog;
-    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -2035,9 +2035,9 @@ bool MiningManager::setCustomRank(
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);
 
-    DISTRIBUTE_WRITE_FINISH(convertResult && setResult);
+    DISTRIBUTE_WRITE_FINISH(/*convertResult &&*/ setResult);
 
-    return convertResult && setResult;
+    return /*convertResult &&*/ setResult;
 }
 
 bool MiningManager::getCustomRank(

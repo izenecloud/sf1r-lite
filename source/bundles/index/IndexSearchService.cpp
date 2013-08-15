@@ -62,13 +62,14 @@ bool IndexSearchService::getSearchResult(
     distResultItem.distSearchInfo_.effective_ = true;
     distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
-#ifdef GATHER_DISTRIBUTED_SEARCH_INFO
-    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
-    searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+    if (actionItem.searchingMode_.mode_ == SearchingMode::WAND)
+    {
+        distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
+        searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
 
-    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
-#endif
+        distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
+    }
 
     typedef std::map<workerid_t, KeywordSearchResult> ResultMapT;
     typedef ResultMapT::iterator ResultMapIterT;
