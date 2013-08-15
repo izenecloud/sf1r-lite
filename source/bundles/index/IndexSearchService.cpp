@@ -169,7 +169,7 @@ bool IndexSearchService::getDocumentsByIds(
         searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
-    return true;
+    return !resultItem.idList_.empty();
 }
 
 bool IndexSearchService::getInternalDocumentId(
