@@ -75,7 +75,7 @@ void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::strin
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     KeywordSearchResult fakeResultItem;
-    fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
+    fakeResultItem.distSearchInfo_.swap(resultItem);
 
     getSearchResult_(actionItem, fakeResultItem);
 
