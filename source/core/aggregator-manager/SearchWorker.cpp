@@ -165,7 +165,9 @@ void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_
 
 void SearchWorker::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    searchManager_->topKReranker_.rerank(actionItem, resultItem);
+    // this is used for distributed search.
+    // we can rerank the result if the merged result has the rerank data with them.
+    //searchManager_->topKReranker_.rerank(actionItem, resultItem);
 }
 
 // local interface

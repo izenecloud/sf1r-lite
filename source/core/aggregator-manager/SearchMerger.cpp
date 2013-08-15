@@ -62,8 +62,8 @@ void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKe
                 mergeResult.maxtfmap_[property][iter_->first] += iter_->second;
             }
         }
-
     }
+    LOG(INFO) << "#[SearchMerger::getDistSearchInfo] end" << endl;
 }
 
 void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
