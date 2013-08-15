@@ -49,6 +49,20 @@ void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKe
                 mergeResult.ctfmap_[property][iter_->first] += iter_->second;
             }
         }
+
+        MaxTermFrequencyInProperties::iterator maxtf_it;
+        for (maxtf_it = wResult.maxtfmap_.begin(); maxtf_it != wResult.maxtfmap_.end(); maxtf_it++)
+        {
+            const std::string& property = maxtf_it->first;
+
+            ID_FREQ_MAP_T& maxtf = wResult.maxtfmap_[property];
+            ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+            for (iter_ = maxtf.begin(); iter_ != maxtf.end(); iter_++)
+            {
+                mergeResult.maxtfmap_[property][iter_->first] += iter_->second;
+            }
+        }
+
     }
 }
 

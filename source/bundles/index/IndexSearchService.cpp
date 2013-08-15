@@ -93,6 +93,8 @@ bool IndexSearchService::getSearchResult(
         resultItem.swap(distResultItem);
         resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
+        searchWorker_->rerank(actionItem, resultItem);
+
         // Get and aggregate Summary, Mining results from multiple nodes.
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);

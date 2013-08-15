@@ -163,6 +163,11 @@ void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_
         internalId = docid;
 }
 
+void SearchWorker::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    searchManager_->topKReranker_.rerank(actionItem, resultItem);
+}
+
 // local interface
 bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
