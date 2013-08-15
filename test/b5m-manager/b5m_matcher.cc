@@ -328,6 +328,7 @@ int do_main(int ac, char** av)
         ("test", "specify test flag")
         ("noprice", "no price flag")
         ("spu-only", "spu only flag")
+        ("use-psm", "use psm flag")
         ("depth", po::value<uint16_t>(), "specify category max depth while categorizing")
         ("force", "specify force flag")
         ("trie", "do trie test")
@@ -375,6 +376,7 @@ int do_main(int ac, char** av)
     bool force_flag = false;
     bool noprice = false;
     bool spu_only = false;
+    bool use_psm = false;
     uint16_t max_depth = 0;
     int thread_num = 1;
     std::string buffer_size;
@@ -556,6 +558,10 @@ int do_main(int ac, char** av)
     {
         spu_only = true;
     }
+    if(vm.count("use-psm"))
+    {
+        use_psm = true;
+    }
     if(vm.count("depth"))
     {
         max_depth = vm["depth"].as<uint16_t>();
@@ -640,6 +646,10 @@ int do_main(int ac, char** av)
         //ProductMatcher::Clear(knowledge_dir, mode);
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
+        if(use_psm)
+        {
+            matcher.SetUsePsm(true);
+        }
         //if(!matcher.Open(knowledge_dir))
         //{
             //LOG(ERROR)<<"matcher open failed"<<std::endl;
