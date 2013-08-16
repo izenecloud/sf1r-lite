@@ -53,6 +53,8 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("faceted_set_custom_rank");
     write_req_set_.insert("faceted_set_merchant_score");
     write_req_set_.insert("faceted_set_ontology");
+    write_req_set_.insert("keywords_inject_query_correction");
+    write_req_set_.insert("keywords_inject_query_recommend");
 
     write_req_set_.insert("recommend_add_user");
     write_req_set_.insert("recommend_update_user");
@@ -88,6 +90,8 @@ void ReqLogMgr::initWriteRequestSet()
     auto_shard_write_set_.insert("faceted_set_custom_rank");
     auto_shard_write_set_.insert("faceted_set_merchant_score");
     auto_shard_write_set_.insert("faceted_set_ontology");
+    auto_shard_write_set_.insert("keywords_inject_query_correction");
+    auto_shard_write_set_.insert("keywords_inject_query_recommend");
 
     auto_shard_write_set_.insert("recommend_add_user");
     auto_shard_write_set_.insert("recommend_update_user");

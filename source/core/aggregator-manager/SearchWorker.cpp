@@ -87,6 +87,8 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
+
+    searchManager_->topKReranker_.rerank(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
