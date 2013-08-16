@@ -289,6 +289,29 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
 {
     if(!miningManager_) return;
     LOG(INFO) <<"call mergeMiningResult"<<std::endl;
+    if (workerResults.size() == 0)
+        return;
+    // note : the QrResult, TgResult, FacetedResult using any single result is enough.
+    // the DupResult, SimilarityResult need to be re-design to get the right result.
+    
+    // OrResult
+    mergeResult.relatedQueryList_ = workerResults.result(0).relatedQueryList_;
+    mergeResult.rqScore_ = workerResults.result(0).rqScore_;
+    mergeResult.error_ += workerResults.result(0).error_;
+    // DupResult and SimilarityResult
+    for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
+    {
+        for (size_t i = 0; i < workerResults.size(); ++i)
+        {
+            const KeywordSearchResult& result = workerResults.result(i);
+            mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
+            mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
+        }
+    }
+    // FacetedResult
+    mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
+
+    // TgResult.
     boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
     if(tg_manager)
     {
