@@ -190,6 +190,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         iter[maxi] ++;
     }
 
+    mergeResult.mergedTopKDocs_ = mergeResult.topKDocs_;
+
     delete[] iter;
     for (size_t i = 0; i < workerNum; i++)
     {
@@ -465,6 +467,7 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
             workerResult.totalCount_ = totalResult.totalCount_;
             workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
+            workerResult.mergedTopKDocs_ = totalResult.topKDocs_;
         }
 
         workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);
