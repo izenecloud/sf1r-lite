@@ -24,6 +24,7 @@ class OntologyRep
 {
 public:
     typedef std::list<OntologyRepItem>::iterator item_iterator;
+    typedef std::list<OntologyRepItem>::const_iterator const_item_iterator;
     /** attribute name , and its doc count */
     typedef std::pair<sf1r::faceted::CategoryNameType, int> AttrNameFreq;
 
@@ -74,9 +75,9 @@ public:
      * @Param other
      */
     /* -----------------------------------*/
-    void merge(int topGroupNum, std::list<OntologyRep*>& others)
+    void merge(int topGroupNum, std::list<const OntologyRep*>& others)
     {
-        std::list<OntologyRep*>::iterator others_it = others.begin();
+        std::list<const OntologyRep*>::iterator others_it = others.begin();
         while(others_it != others.end())
         {
             if((*others_it)->item_list.size() > 0)
@@ -84,7 +85,7 @@ public:
                 if (item_list.empty())
                 {
                     // find the first non-empty to swap with self
-                    swap(*(*others_it));
+                    item_list = (*(*others_it)).item_list;
                     others_it = others.erase(others_it);
                 }
                 else
@@ -122,7 +123,7 @@ public:
         typedef std::map<CategoryNameType, ValueCountList> NameValueCountMap;
         NameValueCountMap nv_cnt_map;
         NameCountMap name_cnt_map;
-        item_iterator it = item_list.begin();
+        const_item_iterator it = item_list.begin();
         CategoryNameType current_name;
         NameValueCountMap::iterator current_nvmap_it; 
         while(it != item_list.end())
@@ -141,7 +142,7 @@ public:
         }
         while(others_it != others.end())
         {
-            OntologyRep& other = *(*others_it);
+            const OntologyRep& other = *(*others_it);
             it = other.item_list.begin();
             bool newname = false;
             ValueCountList::iterator current_value_it;

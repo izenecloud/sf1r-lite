@@ -323,7 +323,14 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
     mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
     // FacetedResult
+
     mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
+    std::list<const faceted::OntologyRep*> other_onto_reps;
+    for (size_t i = 1; i < workerResults.size(); ++i)
+    {
+        other_onto_reps.push_back(&workerResults.result(i).onto_rep_);
+    }
+    mergeResult.onto_rep_.merge(0, other_onto_reps);
 
     // TgResult.
     boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
@@ -450,6 +457,14 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
         if (workerResult.count_ == 0)
         {
             workerResult.propertyQueryTermList_ = totalResult.propertyQueryTermList_;
+            workerResult.rawQueryString_ = totalResult.rawQueryString_;
+            workerResult.pruneQueryString_ = totalResult.pruneQueryString_;
+            workerResult.encodingType_ = totalResult.encodingType_;
+            workerResult.collectionName_ = totalResult.collectionName_;
+            workerResult.analyzedQuery_ = totalResult.analyzedQuery_;
+            workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
+            workerResult.totalCount_ = totalResult.totalCount_;
+            workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
         }
 
         workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);

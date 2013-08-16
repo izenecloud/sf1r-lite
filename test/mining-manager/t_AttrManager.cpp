@@ -298,7 +298,7 @@ private:
         }
         BOOST_TEST_MESSAGE("check attr merge: ");
         faceted::OntologyRep testattrRep;
-        std::list<OntologyRep*> others_rep;
+        std::list<const OntologyRep*> others_rep;
         std::vector<OntologyRep> others_rep_dup;
         std::vector<OntologyRep> others_rep_dup_tmp;
         std::vector<OntologyRep> empty_rep;

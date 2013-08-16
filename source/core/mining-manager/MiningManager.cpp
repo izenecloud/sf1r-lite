@@ -1371,14 +1371,12 @@ bool MiningManager::getSimilarImageDocIdList(
 // }
 
 bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
-                                       const std::vector<docid_t>& topDocIdList,
                                        QueryRecommendRep & recommendRep)
 {
     //struct timeval tv_start;
     //struct timeval tv_end;
     //gettimeofday(&tv_start, NULL);
-    qrManager_->getRecommendQuery(queryStr, topDocIdList,
-                                  miningConfig_.recommend_param.recommend_num, recommendRep);
+    qrManager_->getRecommendQuery(queryStr, miningConfig_.recommend_param.recommend_num, recommendRep);
     //gettimeofday(&tv_end, NULL);
     //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
     //std::cout << "QR all cost " << timespend << " seconds." << std::endl;
@@ -1683,14 +1681,14 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
 
 bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
 {
-    //std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
+    LOG(INFO) << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
     miaInput.relatedQueryList_.clear();
     miaInput.rqScore_.clear();
     bool ret = false;
     QueryRecommendRep recommendRep;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
-                             miaInput.encodingType_), miaInput.topKDocs_, recommendRep);
-    //std::cout << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
+                             miaInput.encodingType_), recommendRep);
+    LOG(INFO) << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
     miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
     miaInput.rqScore_ = recommendRep.scores_;
 
