@@ -87,6 +87,7 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
+    resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
     searchManager_->topKReranker_.rerank(actionItem, resultItem);
 }
@@ -398,6 +399,8 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
+    actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
+
     uint32_t topKStart = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
@@ -558,8 +561,6 @@ bool SearchWorker::getSearchResult_(
         resultItem.adjustStartCount(topKStart);
     }
 
-    //set query term and Id List
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
