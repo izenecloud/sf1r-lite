@@ -299,15 +299,29 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     mergeResult.rqScore_ = workerResults.result(0).rqScore_;
     mergeResult.error_ += workerResults.result(0).error_;
     // DupResult and SimilarityResult
+    mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size());
+    mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size());
+    size_t dup_actual_size = 0;
+    size_t sim_actual_size = 0;
     for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
     {
         for (size_t i = 0; i < workerResults.size(); ++i)
         {
             const KeywordSearchResult& result = workerResults.result(i);
-            mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
-            mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
+            if (result.numberOfDuplicatedDocs_.size() > doc_i)
+            {
+                mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
+                dup_actual_size = doc_i + 1;
+            }
+            if (result.numberOfSimilarDocs_.size() > doc_i)
+            {
+                mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
+                sim_actual_size = doc_i + 1;
+            }
         }
     }
+    mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
+    mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
     // FacetedResult
     mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
 
