@@ -303,7 +303,8 @@ public:
     // Filter Option - propertyName
 
     KeywordSearchActionItem()
-        : removeDuplicatedDocs_(false)
+        : disableGetDocs_(false)
+        , removeDuplicatedDocs_(false)
         , isRandomRank_(false)
         , requireRelatedQueries_(false)
     {
@@ -317,6 +318,7 @@ public:
         , rankingType_(obj.rankingType_)
         , searchingMode_(obj.searchingMode_)
         , pageInfo_(obj.pageInfo_)
+        , disableGetDocs_(obj.disableGetDocs_)
         , languageAnalyzerInfo_(obj.languageAnalyzerInfo_)
         , searchPropertyList_(obj.searchPropertyList_)
         , removeDuplicatedDocs_(obj.removeDuplicatedDocs_)
@@ -343,6 +345,7 @@ public:
         rankingType_ = obj.rankingType_;
         searchingMode_ = obj.searchingMode_;
         pageInfo_ = obj.pageInfo_;
+        disableGetDocs_ = obj.disableGetDocs_;
         languageAnalyzerInfo_ = obj.languageAnalyzerInfo_;
         searchPropertyList_ = obj.searchPropertyList_;
         removeDuplicatedDocs_ = obj.removeDuplicatedDocs_;
@@ -369,6 +372,7 @@ public:
             && rankingType_ == obj.rankingType_
             && searchingMode_ == obj.searchingMode_
             && pageInfo_ == obj.pageInfo_
+            && disableGetDocs_ == obj.disableGetDocs_
             && languageAnalyzerInfo_ == obj.languageAnalyzerInfo_
             && searchPropertyList_ == obj.searchPropertyList_
             && removeDuplicatedDocs_ == obj.removeDuplicatedDocs_
@@ -399,6 +403,7 @@ public:
                                     << searchingMode_.useOriginalQuery_<<endl;
 
         ss << "PageInfo         : " << pageInfo_.start_ << " , " << pageInfo_.count_ << endl;
+        ss << "disableGetDocs_  : " << disableGetDocs_ << endl;
         ss << "LanguageAnalyzer : " << languageAnalyzerInfo_.applyLA_ << " , "
                                     << languageAnalyzerInfo_.useOriginalKeyword_ << " , "
                                     << languageAnalyzerInfo_.synonymExtension_ << endl;
@@ -489,6 +494,7 @@ public:
     /// @see PageInfo
     ///
     PageInfo pageInfo_;
+    bool  disableGetDocs_;
 
     ///
     /// @brief This contains how to analyze input query string.
@@ -555,12 +561,12 @@ public:
     bool requireRelatedQueries_;
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
-             & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
+             & rankingType_ & searchingMode_ & pageInfo_ & disableGetDocs_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
              & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_);
 
     /// msgpack serializtion
-    MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
+    MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, disableGetDocs_, languageAnalyzerInfo_,
             searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
                    rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_);
 
@@ -577,6 +583,7 @@ private:
         ar & rankingType_;
         ar & searchingMode_;
         ar & pageInfo_;
+        ar & disableGetDocs_;
         ar & languageAnalyzerInfo_;
         ar & searchPropertyList_;
         ar & removeDuplicatedDocs_;

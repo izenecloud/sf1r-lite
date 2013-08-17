@@ -579,7 +579,7 @@ bool SearchWorker::getSummaryResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
-    if (resultItem.count_ == 0)
+    if (resultItem.count_ == 0 || actionItem.disableGetDocs_)
         return true;
 
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");

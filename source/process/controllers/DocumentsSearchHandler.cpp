@@ -154,8 +154,10 @@ void DocumentsSearchHandler::search()
             unsigned count = actionItem_.pageInfo_.count_;
 
             // DO NOT get raw text.
-            actionItem_.pageInfo_.start_ = topKStart;
-            actionItem_.pageInfo_.count_ = 0;
+            //actionItem_.pageInfo_.start_ = topKStart;
+            //actionItem_.pageInfo_.count_ = 0;
+
+            actionItem_.disableGetDocs_ = true;
 
             if (doSearch(searchResult))
             {
