@@ -699,6 +699,8 @@ bool DocumentsSearchHandler::validateSearchResult(
         response_.addError(siaResult.error_);
         return false;
     }
+    if (actionItem_.disableGetDocs_)
+        return true;
 
     // TODO: SIA should ensure the result is valid.
 
