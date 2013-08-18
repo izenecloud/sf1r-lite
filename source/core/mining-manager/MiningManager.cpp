@@ -1721,13 +1721,16 @@ bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(dup_mtx_);
     if (!dupManager_) return true;
-    miaInput.numberOfDuplicatedDocs_.resize(miaInput.mergedTopKDocs_.size());
+    std::vector<docid_t>* ptopk_docs = &miaInput.topKDocs_;
+    if (miaInput.distSearchInfo_.isDistributed_)
+        ptopk_docs = & miaInput.mergedTopKDocs_;
+    miaInput.numberOfDuplicatedDocs_.resize(ptopk_docs->size());
     std::vector<count_t>::iterator result =
         miaInput.numberOfDuplicatedDocs_.begin();
 
     std::vector<docid_t> tmpDupDocs;
-    for (std::vector<docid_t>::const_iterator it = miaInput.mergedTopKDocs_.begin();
-            it != miaInput.mergedTopKDocs_.end(); ++it)
+    for (std::vector<docid_t>::const_iterator it = ptopk_docs->begin();
+            it != ptopk_docs->end(); ++it)
     {
         tmpDupDocs.clear(); // use resize to reserve the memory
         dupManager_->getDuplicatedDocIdList(*it, tmpDupDocs);
@@ -1742,11 +1745,14 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if (!similarityIndex_ && !similarityIndexEsa_) return true;
-    miaInput.numberOfSimilarDocs_.resize(miaInput.mergedTopKDocs_.size());
+    std::vector<docid_t>* ptopk_docs = &miaInput.topKDocs_;
+    if (miaInput.distSearchInfo_.isDistributed_)
+        ptopk_docs = & miaInput.mergedTopKDocs_;
+    miaInput.numberOfSimilarDocs_.resize(ptopk_docs->size());
 
-    for (uint32_t i = 0; i < miaInput.mergedTopKDocs_.size(); i++)
+    for (uint32_t i = 0; i < ptopk_docs->size(); i++)
     {
-        uint32_t docid = miaInput.mergedTopKDocs_[i];
+        uint32_t docid = (*ptopk_docs)[i];
         uint32_t count = 0;
         if (!miningConfig_.similarity_param.enable_esa)
         {

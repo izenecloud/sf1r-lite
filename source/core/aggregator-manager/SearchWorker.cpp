@@ -193,6 +193,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (! getSearchResult_(actionItem, resultItem, identity, false))
             return false;
 
+        resultItem.rawQueryString_ = actionItem.env_.queryString_;
         if (resultItem.topKDocs_.empty())
             return true;
 

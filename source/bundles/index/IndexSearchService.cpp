@@ -59,6 +59,7 @@ bool IndexSearchService::getSearchResult(
 
     /// Perform distributed search by aggregator
     KeywordSearchResult distResultItem;
+    distResultItem.distSearchInfo_.isDistributed_ = true;
     distResultItem.distSearchInfo_.effective_ = true;
     distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
@@ -114,6 +115,7 @@ bool IndexSearchService::getSearchResult(
             workerResult.totalCount_ = resultItem.totalCount_;
             workerResult.TOP_K_NUM = resultItem.TOP_K_NUM;
             workerResult.mergedTopKDocs_ = resultItem.topKDocs_;
+            workerResult.distSearchInfo_.isDistributed_ = resultItem.distSearchInfo_.isDistributed_;
             searchAggregator_->distributeRequest(actionItem.collectionName_, "getSummaryMiningResult",
                 workerResult, resultItem);
         }

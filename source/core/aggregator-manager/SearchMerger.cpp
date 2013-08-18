@@ -92,6 +92,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.propertyQueryTermList_ = result0.propertyQueryTermList_;
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
+    mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
     TOP_K_NUM = result0.TOP_K_NUM;
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
@@ -301,8 +302,8 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     mergeResult.rqScore_ = workerResults.result(0).rqScore_;
     mergeResult.error_ += workerResults.result(0).error_;
     // DupResult and SimilarityResult
-    mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size());
-    mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size());
+    mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size(), 0);
+    mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size(), 0);
     size_t dup_actual_size = 0;
     size_t sim_actual_size = 0;
     for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
@@ -325,7 +326,6 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
     mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
     // FacetedResult
-
     mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
     std::list<const faceted::OntologyRep*> other_onto_reps;
     for (size_t i = 1; i < workerResults.size(); ++i)
@@ -468,6 +468,7 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.totalCount_ = totalResult.totalCount_;
             workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
             workerResult.mergedTopKDocs_ = totalResult.topKDocs_;
+            workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
         }
 
         workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);

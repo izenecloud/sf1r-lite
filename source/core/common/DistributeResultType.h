@@ -10,7 +10,7 @@ class DistKeywordSearchInfo
 public:
 
     DistKeywordSearchInfo()
-        : effective_(false)
+        : isDistributed_(false), effective_(false)
         , option_(OPTION_NONE)
         , nodeType_(NODE_MASTER)
     {
@@ -23,6 +23,7 @@ public:
     static const int8_t NODE_MASTER = 0x0;
     static const int8_t NODE_WORKER = 0x1;
 
+    bool isDistributed_;
     /// @brief whether distributed search is effective
     bool effective_;
 
@@ -58,6 +59,7 @@ public:
     void swap(DistKeywordSearchInfo& other)
     {
         using std::swap;
+        isDistributed_ = other.isDistributed_;
         swap(effective_, other.effective_);
         swap(option_, other.option_);
         swap(nodeType_, other.nodeType_);
@@ -70,7 +72,7 @@ public:
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
     }
 
-    MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
+    MSGPACK_DEFINE(isDistributed_, effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
         sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_);
 };
 

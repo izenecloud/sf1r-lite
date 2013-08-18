@@ -120,7 +120,7 @@ public:
         }
         ss << endl;
         ss << "totalCount_        : " << totalCount_ << endl;
-        ss << "mergedTopKDocs_ : " << mergedTopKDocs_.size() << endl;
+        ss << "mergedTopKDocs_    : " << mergedTopKDocs_.size() << endl;
         ss << "topKDocs_          : " << topKDocs_.size() << endl;
         for (size_t i = 0; i < topKDocs_.size(); i ++)
         {
