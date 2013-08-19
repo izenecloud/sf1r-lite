@@ -391,6 +391,12 @@ public:
             UString& analyzedQuery,
             std::string& pruneQuery);
 
+    void MiningManager::GetGroupRepAndAttr(std::vector<std::pair<double, uint32_t> >& res_list
+                        , GroupParam::GroupLabelMap& topLabels
+                        , faceted::GroupRep& groupRep
+                        , sf1r::faceted::OntologyRep& attrRep
+                        , const std::string& groupName);
+
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
     bool GetProductFrontendCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& frontends);
