@@ -21,7 +21,8 @@ public:
         DATA_TYPE_NONE,
         DATA_TYPE_INT32,
         DATA_TYPE_INT64,
-        DATA_TYPE_FLOAT
+        DATA_TYPE_FLOAT,
+        DATA_TYPE_STRING
     };
 
 public:

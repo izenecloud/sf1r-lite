@@ -45,6 +45,7 @@ public:
     std::vector<std::pair<std::string, std::vector<int32_t> > > sortPropertyInt32DataList_;
     std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyInt64DataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
+    std::vector<std::pair<std::string, std::vector<std::string> > > sortPropertyStrDataList_;
 
     bool isOptionGatherInfo() const
     {
@@ -70,10 +71,11 @@ public:
         sortPropertyInt32DataList_.swap(other.sortPropertyInt32DataList_);
         sortPropertyInt64DataList_.swap(other.sortPropertyInt64DataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
+        sortPropertyStrDataList_.swap(other.sortPropertyStrDataList_);
     }
 
     MSGPACK_DEFINE(isDistributed_, effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
-        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_);
+        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyStrDataList_);
 };
 
 class DistSummaryMiningResult : public ErrorInfo
