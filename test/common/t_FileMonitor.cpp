@@ -27,8 +27,8 @@ BOOST_AUTO_TEST_CASE(testUpdateTimeStamp)
     std::ofstream ofs(path.c_str());
     ofs.close();
 
-    BOOST_CHECK(addWatch(path, event));
-    monitor();
+    BOOST_CHECK(monitor_.addWatch(path, event));
+    start();
 
     BOOST_CHECK_EQUAL(actualFileName_, "");
     BOOST_CHECK_EQUAL(actualMask_, 0);
@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE(testModifyFile)
         ofs.close();
     }
 
-    BOOST_CHECK(addWatch(path, event));
-    monitor();
+    BOOST_CHECK(monitor_.addWatch(path, event));
+    start();
 
     BOOST_CHECK_EQUAL(actualFileName_, "");
     BOOST_CHECK_EQUAL(actualMask_, 0);
@@ -83,8 +83,8 @@ BOOST_AUTO_TEST_CASE(testCreateFile)
     const uint32_t event = IN_CREATE;
     const std::string path = dirName_;
 
-    BOOST_CHECK(addWatch(path, event));
-    monitor();
+    BOOST_CHECK(monitor_.addWatch(path, event));
+    start();
 
     BOOST_CHECK_EQUAL(actualFileName_, "");
     BOOST_CHECK_EQUAL(actualMask_, 0);
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(testNotExistFile)
     const uint32_t event = IN_ATTRIB;
     const std::string path = dirName_ + "/" + watchName;
 
-    BOOST_CHECK(addWatch(path, event) == false);
-    monitor();
+    BOOST_CHECK(monitor_.addWatch(path, event) == false);
+    start();
 
     BOOST_CHECK_EQUAL(actualFileName_, "");
     BOOST_CHECK_EQUAL(actualMask_, 0);

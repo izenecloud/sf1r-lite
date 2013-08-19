@@ -21,12 +21,7 @@ KNlpDictMonitor::KNlpDictMonitor()
 {
 }
 
-KNlpDictMonitor::~KNlpDictMonitor()
-{
-    close_();
-}
-
-bool KNlpDictMonitor::process(const std::string& fileName, uint32_t mask)
+bool KNlpDictMonitor::handle(const std::string& fileName, uint32_t mask)
 {
     if (mask & kMonitorEvent)
     {
@@ -48,9 +43,10 @@ void KNlpDictMonitor::start(const std::string& dictDir)
     dictDir_ = dictDir;
     std::string fileName = dictDir_ + "/" + kMonitorFileName;
 
-    if (!addWatch(fileName, kMonitorEvent))
+    if (!monitor_.addWatch(fileName, kMonitorEvent))
         return;
 
-    monitor();
+    monitor_.setFileEventHandler(this);
+    monitor_.monitor();
     isStart_ = true;
 }

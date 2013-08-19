@@ -13,7 +13,15 @@ FileMonitorTestFixture::FileMonitorTestFixture()
     bfs::create_directory(dir);
 }
 
-FileMonitorTestFixture::~FileMonitorTestFixture()
+bool FileMonitorTestFixture::handle(const std::string& fileName, uint32_t mask)
 {
-    close_();
+    actualFileName_ = fileName;
+    actualMask_ = mask;
+    return true;
+}
+
+void FileMonitorTestFixture::start()
+{
+    monitor_.setFileEventHandler(this);
+    monitor_.monitor();
 }

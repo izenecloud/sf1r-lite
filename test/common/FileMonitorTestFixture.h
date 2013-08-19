@@ -7,24 +7,23 @@
 #define SF1R_FILE_MONITOR_TEST_FIXTURE_H
 
 #include <common/file-monitor/FileMonitor.h>
+#include <common/file-monitor/FileEventHandler.h>
 
 namespace sf1r
 {
 
-class FileMonitorTestFixture : public FileMonitor
+class FileMonitorTestFixture : public FileEventHandler
 {
 public:
     FileMonitorTestFixture();
-    ~FileMonitorTestFixture();
 
-    virtual bool process(const std::string& fileName, uint32_t mask)
-    {
-        actualFileName_ = fileName;
-        actualMask_ = mask;
-        return true;
-    }
+    virtual bool handle(const std::string& fileName, uint32_t mask);
+
+    void start();
 
 public:
+    FileMonitor monitor_;
+
     const std::string dirName_;
 
     std::string actualFileName_;

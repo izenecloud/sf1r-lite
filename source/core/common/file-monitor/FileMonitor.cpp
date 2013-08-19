@@ -13,7 +13,7 @@ const int kBufferSize = 1024 * (kEventSize + 16);
 }
 
 FileMonitor::FileMonitor()
-    : isClose_(false)
+    : handler_(NULL)
 {
     fileId_ = inotify_init();
 
@@ -25,14 +25,6 @@ FileMonitor::FileMonitor()
 
 FileMonitor::~FileMonitor()
 {
-    close_();
-}
-
-void FileMonitor::close_()
-{
-    if (isClose_)
-        return;
-
     for (std::vector<int>::const_iterator it = watchIds_.begin();
          it != watchIds_.end(); ++it)
     {
@@ -43,7 +35,11 @@ void FileMonitor::close_()
     workThread_.join();
 
     close(fileId_);
-    isClose_ = true;
+}
+
+void FileMonitor::setFileEventHandler(FileEventHandler* handler)
+{
+    handler_ = handler;
 }
 
 bool FileMonitor::addWatch(const std::string& path, uint32_t mask)
@@ -68,6 +64,12 @@ void FileMonitor::monitor()
         return;
     }
 
+    if (handler_ == NULL)
+    {
+        LOG(WARNING) << "no file event handler";
+        return;
+    }
+
     workThread_ = boost::thread(&FileMonitor::monitorLoop_, this);
 }
 
@@ -78,7 +80,6 @@ void FileMonitor::monitorLoop_()
     while (true)
     {
         int length = read(fileId_, buffer, kBufferSize); // block until data arrive
-        LOG(INFO) << "length: " << length;
 
         if (length < 0)
         {
@@ -100,10 +101,7 @@ void FileMonitor::monitorLoop_()
             LOG(INFO) << "received inotify event mask: " << event->mask
                       << ", file name: " << event->name;
 
-            LOG(INFO) << "i: " << i
-                      << ", event->len: " << event->len;
-
-            if (process(event->name, event->mask))
+            if (handler_->handle(event->name, event->mask))
             {
                 LOG(INFO) << "finished inotify event process";
             }
