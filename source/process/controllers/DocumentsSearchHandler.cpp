@@ -1007,7 +1007,7 @@ void DocumentsSearchKeywordsLogger::log(
 
     queryLog.setQuery(actionItem.env_.queryString_);
     queryLog.setCollection(actionItem.collectionName_);
-    queryLog.setHitDocsNum(searchResult.totalCount_);
+    queryLog.setHitDocsNum(searchResult.topKDocs_.size());
     queryLog.setPageStart(actionItem.pageInfo_.start_);
     queryLog.setPageCount(actionItem.pageInfo_.count_);
     queryLog.setSessionId(session);
