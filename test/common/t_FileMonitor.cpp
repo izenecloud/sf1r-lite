@@ -105,4 +105,29 @@ BOOST_AUTO_TEST_CASE(testCreateFile)
     BOOST_CHECK(actualMask_ & event);
 }
 
+BOOST_AUTO_TEST_CASE(testNotExistFile)
+{
+    const std::string watchName("a.txt");
+    const uint32_t event = IN_ATTRIB;
+    const std::string path = dirName_ + "/" + watchName;
+
+    BOOST_CHECK(addWatch(path, event) == false);
+    monitor();
+
+    BOOST_CHECK_EQUAL(actualFileName_, "");
+    BOOST_CHECK_EQUAL(actualMask_, 0);
+
+    // create file
+    std::ofstream ofs(path.c_str());
+    ofs << "hello" << std::endl;
+    ofs.close();
+
+    // wait for event is triggered and processed
+    sleep(1);
+
+    // as no event is triggered, the result should not be changed
+    BOOST_CHECK_EQUAL(actualFileName_, "");
+    BOOST_CHECK_EQUAL(actualMask_, 0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

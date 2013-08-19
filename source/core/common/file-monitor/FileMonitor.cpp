@@ -62,6 +62,12 @@ bool FileMonitor::addWatch(const std::string& path, uint32_t mask)
 
 void FileMonitor::monitor()
 {
+    if (watchIds_.empty())
+    {
+        LOG(WARNING) << "no file is watched";
+        return;
+    }
+
     workThread_ = boost::thread(&FileMonitor::monitorLoop_, this);
 }
 
