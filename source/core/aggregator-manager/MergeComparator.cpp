@@ -115,7 +115,7 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
         SortPropertyData* pSortProperty1 = comp1->sortProperties_[i];
         SortPropertyData* pSortProperty2 = comp2->sortProperties_[i];
 
-        std::cout << "comparing property: " << pSortProperty1->getProperty() << std::endl;
+        //std::cout << "comparing property: " << pSortProperty1->getProperty() << std::endl;
 
         SortPropertyData::DataType dataType1 = pSortProperty1->getDataType();
         SortPropertyData::DataType dataType2 = pSortProperty2->getDataType();
