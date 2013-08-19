@@ -119,6 +119,12 @@
 #include <algorithm>
 #include <memory> // auto_ptr
 
+namespace
+{
+const std::string kTopLabelPropName = "Category";
+const size_t kTopLabelDocNum = 1000;
+const size_t kTopLabelCateNum = 4;
+}
 
 namespace sf1r
 {
@@ -1858,6 +1864,15 @@ bool MiningManager::getFreqGroupLabel(
         return false;
     }
 
+    return propValuePaths_(propName, pvIdVec, pathVec, true);
+}
+
+bool MiningManager::propValuePaths_(
+    const std::string& propName,
+    const std::vector<faceted::PropValueTable::pvid_t>& pvIds,
+    std::vector<std::vector<std::string> >& paths,
+    bool isLock)
+{
     if (! groupManager_)
     {
         LOG(ERROR) << "the GroupManager is not initialized";
@@ -1871,11 +1886,11 @@ bool MiningManager::getFreqGroupLabel(
         return false;
     }
 
-    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIdVec.begin();
-            idIt != pvIdVec.end(); ++idIt)
+    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIds.begin();
+            idIt != pvIds.end(); ++idIt)
     {
         std::vector<izenelib::util::UString> ustrPath;
-        propValueTable->propValuePath(*idIt, ustrPath);
+        propValueTable->propValuePath(*idIt, ustrPath, isLock);
 
         std::vector<std::string> path;
         for (std::vector<izenelib::util::UString>::const_iterator ustrIt = ustrPath.begin();
@@ -1886,7 +1901,7 @@ bool MiningManager::getFreqGroupLabel(
             path.push_back(str);
         }
 
-        pathVec.push_back(path);
+        paths.push_back(path);
     }
 
     return true;
@@ -2237,7 +2252,7 @@ bool MiningManager::GetSuffixMatch(
         sf1r::faceted::OntologyRep& attrRep,
         UString& analyzedQuery,
         std::string& pruneQueryString_,
-        GroupParam::GroupLabelMap& topLabels)
+        faceted::GroupParam::GroupLabelMap& topLabelMap)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2423,8 +2438,9 @@ bool MiningManager::GetSuffixMatch(
         searchManager_->fuzzySearchRanker_.rankByProductScore(
                 actionOperation.actionItem_, res_list, isCompare);
 
-        std::string groupName = "Categroy";
-        GetGroupRepAndAttr(res_list, topLabels, groupRep, attrRep, groupName);
+        getGroupAttrRep_(res_list, actionOperation.actionItem_.groupParam_,
+                         groupRep, attrRep,
+                         kTopLabelPropName, topLabelMap);
     }
 
     if (!totalCount ||res_list.empty()) return false;
@@ -2452,69 +2468,83 @@ bool MiningManager::GetSuffixMatch(
     return true;
 }
 
-void MiningManager::GetGroupRepAndAttr(std::vector<std::pair<double, uint32_t> >& res_list
-                        , GroupParam::GroupLabelMap& topLabels
-                        , faceted::GroupRep& groupRep
-                        , sf1r::faceted::OntologyRep& attrRep
-                        , const std::string& groupName)
+void MiningManager::getGroupAttrRep_(
+    const std::vector<std::pair<double, uint32_t> >& res_list,
+    faceted::GroupParam& groupParam,
+    faceted::GroupRep& groupRep,
+    sf1r::faceted::OntologyRep& attrRep,
+    const std::string& topPropName,
+    faceted::GroupParam::GroupLabelMap& topLabelMap)
 {
-    if ((groupManager_ || attrManager_) && groupFilterBuilder_)
+    if (!groupFilterBuilder_ || (!groupManager_ && !attrManager_))
+        return;
+
+    PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter(
+        groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+    if (!groupFilter)
+        return;
+
+    const faceted::PropValueTable* categoryValueTable = GetPropValueTable(topPropName);
+    if (!categoryValueTable)
+        return;
+
+    propSharedLockSet.insertSharedLock(categoryValueTable);
+
+    std::vector<category_id_t> topCateIds;
+    for (size_t i = 0; i < res_list.size(); ++i)
     {
-        PropSharedLockSet propSharedLockSet;
-        boost::scoped_ptr<faceted::GroupFilter> groupFilter(
-                    groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
-
-        bool doCategoryFilterTop = false;
-        if (actionOperation.actionItem_.groupLabels_[groupName].empty() && topLabels[groupName].empty())
-            doCategoryFilterTop = true;
-
-        if (groupFilter)
+        if (topCateIds.size() < kTopLabelCateNum && i < kTopLabelDocNum)
         {
-            const int topNum = 1000;
-            std::vector<category_id_t> topCateIds; //top 4 category information
-            const faceted::PropValueTable* categoryValueTable = GetPropValueTable(groupName);
-            propSharedLockSet.insertSharedLock(categoryValueTable);
+            category_id_t catId =
+                categoryValueTable->getFirstValueId(res_list[i].second);
 
-            for (size_t i = 0; i < res_list.size(); ++i)
+            if (catId != 0 &&
+                std::find(topCateIds.begin(), topCateIds.end(), catId) == topCateIds.end())
             {
-                if (doCategoryFilterTop && i < topNum)
-                {
-                    category_id_t catId = categoryValueTable.getFirstValueId(res_list[i].second);
-                        
-                    if (topCateIds.size() < 4 &&
-                        std::find(topCateIds.begin(), topCateIds.end(), catId) == topCateIds.end())
-                    {   
-                        topCateIds.push_back(catId);
-                    }
-                }
-                groupFilter->test(res_list[i].second);
-            }
-            sf1r::faceted::OntologyRep tempAttrRep;
-            if (doCategoryFilterTop)
-            {
-                groupFilter->getGroupRep(groupRep, tempAttrRep);
-            }
-            else
-                groupFilter->getGroupRep(groupRep, attrRep);
-            
-            if (topLabels[groupName].empty())
-            {
-                topLabels[groupName] = topCateIds;
-                actionOperation.actionItem_.groupParam_.groupLabels.push_back(topCateIds[0]);       
+                topCateIds.push_back(catId);
             }
         }
 
-        if (doCategoryFilterTop)
-        {
-            boost::scoped_ptr<faceted::GroupFilter> groupFilter_1(
-                    groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
-            for (size_t i = 0; i < res_list.size(); ++i)
-            {
-                groupFilter_1->test(res_list[i].second);
-            }
-            groupFilter_1->getGroupRep(tempGroupRep, attrRep);
-        }
+        groupFilter->test(res_list[i].second);
     }
+
+    if (topCateIds.empty())
+    {
+        groupFilter->getGroupRep(groupRep, attrRep);
+        return;
+    }
+
+    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[topPropName];
+    if (topLabels.empty())
+    {
+        propValuePaths_(topPropName, topCateIds, topLabels, false);
+    }
+
+    // get all group results
+    sf1r::faceted::OntologyRep tempAttrRep;
+    groupFilter->getGroupRep(groupRep, tempAttrRep);
+
+    // replace select label to top label
+    if (!topLabels.empty())
+    {
+        faceted::GroupParam::GroupPathVec& groupLabels =
+            groupParam.groupLabels_[topPropName];
+        groupLabels.clear();
+        groupLabels.push_back(topLabels[0]);
+    }
+
+    // get attr results under top label
+    boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
+        groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        attrGroupFilter->test(res_list[i].second);
+    }
+
+    faceted::GroupRep tempGroupRep;
+    attrGroupFilter->getGroupRep(tempGroupRep, attrRep);
 }
 
 bool MiningManager::GetProductCategory(
