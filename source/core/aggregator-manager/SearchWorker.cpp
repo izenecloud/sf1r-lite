@@ -459,7 +459,8 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.groupRep_,
                                             resultItem.attrRep_,
                                             resultItem.analyzedQuery_,
-                                            resultItem.pruneQueryString_))
+                                            resultItem.pruneQueryString_,
+                                            resultItem.distSearchInfo_))
         {
             return true;
         }

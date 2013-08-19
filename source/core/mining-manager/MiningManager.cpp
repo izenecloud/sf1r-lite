@@ -2238,7 +2238,8 @@ bool MiningManager::GetSuffixMatch(
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
         UString& analyzedQuery,
-        std::string& pruneQueryString_)
+        std::string& pruneQueryString_,
+        DistKeywordSearchInfo& distSearchInfo)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2520,7 +2521,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     searchManager_->fuzzySearchRanker_.rankByPropValue(
-        actionOperation, start, docIdList, rankScoreList, customRankScoreList);
+        actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
 
     cout<<"return true"<<endl;
     return true;

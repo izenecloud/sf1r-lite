@@ -7,6 +7,7 @@
 #include <configuration-manager/ProductRankingConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
+#include <common/ResultType.h>
 #include <common/PropSharedLockSet.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include "mining-manager/custom-rank-manager/CustomRankManager.h"
@@ -123,7 +124,8 @@ void FuzzySearchRanker::rankByPropValue(
         uint32_t start,
         std::vector<uint32_t>& docid_list,
         std::vector<float>& result_score_list,
-        std::vector<float>& custom_score_list)
+        std::vector<float>& custom_score_list,
+        DistKeywordSearchInfo& distSearchInfo)
 {
     if (docid_list.size() <= start)
         return;
@@ -195,6 +197,17 @@ void FuzzySearchRanker::rankByPropValue(
         if (customRanker)
         {
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
+        }
+    }
+    if (pSorter)
+    {
+        try
+        {
+            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list, distSearchInfo);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << e.what();
         }
     }
 }

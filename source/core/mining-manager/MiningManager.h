@@ -389,7 +389,8 @@ public:
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
             UString& analyzedQuery,
-            std::string& pruneQuery);
+            std::string& pruneQuery,
+            DistKeywordSearchInfo& distSearchInfo);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
