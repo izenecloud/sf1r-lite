@@ -13,8 +13,8 @@
 #include "../title-scorer/TitleScoreList.h"
 #include <common/PropSharedLockSet.h>
 #include <common/QueryNormalizer.h>
+#include <common/ResourceManager.h>
 #include <configuration-manager/ProductRankingConfig.h>
-#include <la-manager/KNlpWrapper.h>
 #include <knlp/doc_naive_bayes.h>
 #include <glog/logging.h>
 #include <memory> // auto_ptr
@@ -212,12 +212,12 @@ ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
     if (!categoryClassifyTable_)
         return NULL;
 
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
     const std::string& query = scoreParam.rawQuery_;
 
     LOG(INFO) << "for query [" << query << "]";
 
     const bool isLongQuery = QueryNormalizer::get()->isLongQuery(query);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
     CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
         knlpWrapper->classifyToMultiCategories(query, isLongQuery);
 

@@ -122,6 +122,7 @@ TARGET_LINK_LIBRARIES(ImgDupDetector
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
+  #${OpenSSL_LIBRARIES}
   )
 
 
@@ -171,6 +172,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
+  #${OpenSSL_LIBRARIES}
   )
 
 TARGET_LINK_LIBRARIES(DistributeDataMigrateTool
@@ -217,6 +219,7 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   ${TokyoCabinet_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
   ${SYS_LIBS}
+  ${OpenSSL_LIBRARIES}
   )
 
 IF(OpenCV_FOUND)

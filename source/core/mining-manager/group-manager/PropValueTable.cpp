@@ -255,9 +255,12 @@ bool PropValueTable::testDoc(docid_t docId, pvid_t labelId) const
     return parentSet.find(labelId) != parentSet.end();
 }
 
-void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
+void PropValueTable::propValuePath(
+    pvid_t pvId,
+    std::vector<izenelib::util::UString>& path,
+    bool isLock) const
 {
-    ScopedReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
 
     // from leaf to root
     for (; pvId; pvId = parentIdVec_[pvId])

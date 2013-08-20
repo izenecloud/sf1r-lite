@@ -2,10 +2,10 @@
 #include <common/RouterInitializer.h>
 #include <common/WorkerRouterInitializer.h>
 #include <common/SFLogger.h>
+#include <common/ResourceManager.h>
 
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
-#include <la-manager/KNlpWrapper.h>
 #include <license-manager/LicenseManager.h>
 #include <license-manager/LicenseCustManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
@@ -96,9 +96,9 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
 bool CobraProcess::initKNlpWrapper()
 {
-    const bfs::path resource = SF1Config::get()->getResourceDir();
-    const std::string dictDir = (resource / "dict" / "term_category").string();
-    KNlpWrapper::get()->setDictDir(dictDir);
+    const std::string dictDir = SF1Config::get()->getKNlpDictDir();
+    boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir));
+    KNlpResourceManager::setResource(knlpWrapper);
     return true;
 }
 
