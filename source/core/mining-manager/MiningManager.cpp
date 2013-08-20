@@ -236,7 +236,8 @@ void MiningManager::close()
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
             it != groupLabelLoggerMap_.end(); ++it)
     {
-        delete it->second;
+        if (it->second)
+            delete it->second;
     }
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
@@ -2976,7 +2977,8 @@ void MiningManager::flush()
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
             it != groupLabelLoggerMap_.end(); ++it)
     {
-        it->second->flush();
+        if (it->second)
+            it->second->flush();
     }
 
     LOG(INFO) << "GroupLabelLoggerMap flushed .... ";
