@@ -92,7 +92,7 @@ public:
 
     KeywordSearchResult()
         : encodingType_(izenelib::util::UString::UTF_8)
-        , totalCount_(0), mergedTopKDocs_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
+        , totalCount_(0), docsInPage_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
         , start_(0), count_(0)
         , timeStamp_(0), TOP_K_NUM(0)
     {
@@ -120,7 +120,7 @@ public:
         }
         ss << endl;
         ss << "totalCount_        : " << totalCount_ << endl;
-        ss << "mergedTopKDocs_    : " << mergedTopKDocs_.size() << endl;
+        ss << "docsInPage         : " << docsInPage_.size() << endl;
         ss << "topKDocs_          : " << topKDocs_.size() << endl;
         for (size_t i = 0; i < topKDocs_.size(); i ++)
         {
@@ -294,7 +294,7 @@ public:
 
     std::map<std::string,uint32_t> counterResults_;
 
-    std::vector<docid_t> mergedTopKDocs_;
+    std::vector<docid_t> docsInPage_;
     /// A list of ranked docId. First docId gets high rank score.
     std::vector<docid_t> topKDocs_;
 
@@ -469,7 +469,7 @@ public:
         queryTermIdList_.swap(other.queryTermIdList_);
         swap(totalCount_, other.totalCount_);
         counterResults_.swap(other.counterResults_);
-        mergedTopKDocs_.swap(other.mergedTopKDocs_);
+        docsInPage_.swap(other.docsInPage_);
         topKDocs_.swap(other.topKDocs_);
         topKWorkerIds_.swap(other.topKWorkerIds_);
         topKtids_.swap(other.topKtids_);
@@ -505,7 +505,7 @@ public:
 //  DATA_IO_LOAD_SAVE(KeywordSearchResult,
 //          &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
 //          &queryTermIdList_&totalCount_
-//          &mergedTopKDocs_&topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
+//          &docsInPage_&topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
 //          &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
 //          &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
 //          &errno_&error_
@@ -513,7 +513,7 @@ public:
 
     MSGPACK_DEFINE(
             rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
-            queryTermIdList_, totalCount_, counterResults_, mergedTopKDocs_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+            queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,

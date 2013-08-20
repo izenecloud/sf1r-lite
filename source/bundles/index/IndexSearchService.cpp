@@ -79,6 +79,8 @@ bool IndexSearchService::getSearchResult(
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
     uint32_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
+    LOG(INFO) << "topKStart for dist search is " << topKStart << ", pageInfo_ :"
+        << actionItem.pageInfo_.start_ << ", " << actionItem.pageInfo_.count_;
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
     if (!searchCache_->get(identity, resultItem))
@@ -114,7 +116,6 @@ bool IndexSearchService::getSearchResult(
             workerResult.queryTermIdList_ = resultItem.queryTermIdList_;
             workerResult.totalCount_ = resultItem.totalCount_;
             workerResult.TOP_K_NUM = resultItem.TOP_K_NUM;
-            workerResult.mergedTopKDocs_ = resultItem.topKDocs_;
             workerResult.distSearchInfo_.isDistributed_ = resultItem.distSearchInfo_.isDistributed_;
             searchAggregator_->distributeRequest(actionItem.collectionName_, "getSummaryMiningResult",
                 workerResult, resultItem);

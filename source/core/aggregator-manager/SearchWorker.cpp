@@ -89,7 +89,13 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     getSearchResult_(actionItem, resultItem);
     resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
-    searchManager_->topKReranker_.rerank(actionItem, resultItem);
+    if (!resultItem.topKDocs_.empty())
+        searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+    if (miningManager_)
+    {
+        miningManager_->getMiningResult(actionItem, resultItem);
+    }
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
@@ -194,10 +200,18 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
             return false;
 
         resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+        if (!resultItem.topKDocs_.empty())
+            searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+        if (miningManager_)
+        {
+            miningManager_->getMiningResult(actionItem, resultItem);
+        }
+
         if (resultItem.topKDocs_.empty())
             return true;
 
-        searchManager_->topKReranker_.rerank(actionItem, resultItem);
 
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
@@ -592,7 +606,7 @@ bool SearchWorker::getSummaryResult_(
     if (isDistributedSearch)
     {
         // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
-        getResultItem(actionItem, resultItem.topKDocs_, resultItem.propertyQueryTermList_, resultItem);
+        getResultItem(actionItem, resultItem.docsInPage_, resultItem.propertyQueryTermList_, resultItem);
     }
     else
     {
@@ -624,12 +638,6 @@ bool SearchWorker::getSummaryMiningResult_(
         bool isDistributedSearch)
 {
     getSummaryResult_(actionItem, resultItem, isDistributedSearch);
-
-    if (miningManager_)
-    {
-        miningManager_->getMiningResult(actionItem, resultItem);
-    }
-
     return true;
 }
 

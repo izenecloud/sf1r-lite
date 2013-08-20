@@ -191,8 +191,6 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         iter[maxi] ++;
     }
 
-    mergeResult.mergedTopKDocs_ = mergeResult.topKDocs_;
-
     delete[] iter;
     for (size_t i = 0; i < workerNum; i++)
     {
@@ -200,6 +198,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     }
     delete docComparators;
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
+
+    getMiningResult(workerResults, mergeResult);
 }
 
 void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -283,8 +283,6 @@ void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<K
     LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
 
     getSummaryResult(workerResults, mergeResult);
-
-    getMiningResult(workerResults, mergeResult);
     LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] end";
 }
 
@@ -304,27 +302,29 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     // DupResult and SimilarityResult
     mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size(), 0);
     mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size(), 0);
-    size_t dup_actual_size = 0;
-    size_t sim_actual_size = 0;
-    for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
-    {
-        for (size_t i = 0; i < workerResults.size(); ++i)
-        {
-            const KeywordSearchResult& result = workerResults.result(i);
-            if (result.numberOfDuplicatedDocs_.size() > doc_i)
-            {
-                mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
-                dup_actual_size = doc_i + 1;
-            }
-            if (result.numberOfSimilarDocs_.size() > doc_i)
-            {
-                mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
-                sim_actual_size = doc_i + 1;
-            }
-        }
-    }
-    mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
-    mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
+    // the merge of duplicate and SimilarityResult should be the same as merge of rawtext.
+    //
+    //size_t dup_actual_size = 0;
+    //size_t sim_actual_size = 0;
+    //for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
+    //{
+    //    for (size_t i = 0; i < workerResults.size(); ++i)
+    //    {
+    //        const KeywordSearchResult& result = workerResults.result(i);
+    //        if (result.numberOfDuplicatedDocs_.size() > doc_i)
+    //        {
+    //            mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
+    //            dup_actual_size = doc_i + 1;
+    //        }
+    //        if (result.numberOfSimilarDocs_.size() > doc_i)
+    //        {
+    //            mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
+    //            sim_actual_size = doc_i + 1;
+    //        }
+    //    }
+    //}
+    //mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
+    //mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
     // FacetedResult
     mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
     std::list<const faceted::OntologyRep*> other_onto_reps;
@@ -449,14 +449,13 @@ void SearchMerger::clickGroupLabel(const net::aggregator::WorkerResults<bool>& w
 void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalResult, std::map<workerid_t, KeywordSearchResult>& resultMap)
 {
     std::size_t i = 0;
-    std::size_t topKOffset = totalResult.start_;
 
-    while (i < totalResult.count_)
+    for (size_t topstart = 0; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
-        workerid_t curWorkerId = totalResult.topKWorkerIds_[topKOffset];
-        KeywordSearchResult& workerResult = resultMap[curWorkerId];
-
-        if (workerResult.count_ == 0)
+        workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
+        std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
+        KeywordSearchResult& workerResult = inserted_ret.first->second;
+        if (inserted_ret.second)
         {
             workerResult.propertyQueryTermList_ = totalResult.propertyQueryTermList_;
             workerResult.rawQueryString_ = totalResult.rawQueryString_;
@@ -467,17 +466,19 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
             workerResult.totalCount_ = totalResult.totalCount_;
             workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
-            workerResult.mergedTopKDocs_ = totalResult.topKDocs_;
             workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
         }
 
-        workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);
+        if ( topstart >= totalResult.start_ &&
+             (topstart < totalResult.start_ + totalResult.count_) )
+        {
+            workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
+            workerResult.pageOffsetList_.push_back(i);
+            ++i;
+            ++workerResult.count_;
+        }
+        workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
         workerResult.topKWorkerIds_.push_back(curWorkerId);
-        workerResult.pageOffsetList_.push_back(i);
-        ++workerResult.count_;
-
-        ++i;
-        ++topKOffset;
     }
 }
 
