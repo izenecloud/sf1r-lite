@@ -106,19 +106,19 @@ bool IndexSearchService::getSearchResult(
             // empty is meaning we do not need send request to any worker to get 
             // any documents. But we do need to get mining result.
             LOG(INFO) << "empty worker map after split. get mining result from all workers";
-            KeywordSearchResult workerResult;
-            workerResult.propertyQueryTermList_ = resultItem.propertyQueryTermList_;
-            workerResult.rawQueryString_ = resultItem.rawQueryString_;
-            workerResult.pruneQueryString_ = resultItem.pruneQueryString_;
-            workerResult.encodingType_ = resultItem.encodingType_;
-            workerResult.collectionName_ = resultItem.collectionName_;
-            workerResult.analyzedQuery_ = resultItem.analyzedQuery_;
-            workerResult.queryTermIdList_ = resultItem.queryTermIdList_;
-            workerResult.totalCount_ = resultItem.totalCount_;
-            workerResult.TOP_K_NUM = resultItem.TOP_K_NUM;
-            workerResult.distSearchInfo_.isDistributed_ = resultItem.distSearchInfo_.isDistributed_;
-            searchAggregator_->distributeRequest(actionItem.collectionName_, "getSummaryMiningResult",
-                workerResult, resultItem);
+            //KeywordSearchResult workerResult;
+            //workerResult.propertyQueryTermList_ = resultItem.propertyQueryTermList_;
+            //workerResult.rawQueryString_ = resultItem.rawQueryString_;
+            //workerResult.pruneQueryString_ = resultItem.pruneQueryString_;
+            //workerResult.encodingType_ = resultItem.encodingType_;
+            //workerResult.collectionName_ = resultItem.collectionName_;
+            //workerResult.analyzedQuery_ = resultItem.analyzedQuery_;
+            //workerResult.queryTermIdList_ = resultItem.queryTermIdList_;
+            //workerResult.totalCount_ = resultItem.totalCount_;
+            //workerResult.TOP_K_NUM = resultItem.TOP_K_NUM;
+            //workerResult.distSearchInfo_.isDistributed_ = resultItem.distSearchInfo_.isDistributed_;
+            //searchAggregator_->distributeRequest(actionItem.collectionName_, "getSummaryMiningResult",
+            //    actionItem, resultItem);
         }
         else
         {
