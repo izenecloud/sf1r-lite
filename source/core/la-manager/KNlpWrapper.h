@@ -8,7 +8,6 @@
 
 #include <knlp/dictionary.h>
 #include <util/string/kstring.hpp>
-#include <util/singleton.h>
 #include <vector>
 #include <map>
 #include <string>
@@ -30,11 +29,9 @@ namespace sf1r
 class KNlpWrapper
 {
 public:
-    static KNlpWrapper* get();
+    KNlpWrapper(const std::string& dictDir);
+    ~KNlpWrapper();
 
-    KNlpWrapper();
-
-    void setDictDir(const std::string& dictDir);
     bool loadDictFiles();
 
     typedef izenelib::util::KString string_t;
@@ -67,8 +64,8 @@ public:
     void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);
 
 private:
-    bool isDictLoaded_;
     std::string dictDir_;
+    bool isDictLoaded_;
 
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;
 

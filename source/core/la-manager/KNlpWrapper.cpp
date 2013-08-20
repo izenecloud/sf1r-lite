@@ -10,19 +10,14 @@
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
-KNlpWrapper* KNlpWrapper::get()
-{
-    return izenelib::util::Singleton<KNlpWrapper>::get();
-}
-
-KNlpWrapper::KNlpWrapper()
-    : isDictLoaded_(false)
+KNlpWrapper::KNlpWrapper(const std::string& dictDir)
+    : dictDir_(dictDir)
+    , isDictLoaded_(false)
 {
 }
 
-void KNlpWrapper::setDictDir(const std::string& dictDir)
+KNlpWrapper::~KNlpWrapper()
 {
-    dictDir_ = dictDir;
 }
 
 bool KNlpWrapper::loadDictFiles()
