@@ -69,7 +69,7 @@ void LogAnalysisConnection::syncRequest(const LogServerRequest::method_t& method
 {
     flushRequests();
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    session.set_timeout(120);
+    session.set_timeout(360);
     try
     {
         respData = session.call(method, reqData).template get<ResponseDataT>();
