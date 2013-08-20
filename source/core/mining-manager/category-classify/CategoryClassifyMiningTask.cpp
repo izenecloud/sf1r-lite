@@ -1,7 +1,7 @@
 #include "CategoryClassifyMiningTask.h"
 #include "CategoryClassifyTable.h"
 #include <document-manager/DocumentManager.h>
-#include <la-manager/KNlpWrapper.h>
+#include <common/ResourceManager.h>
 #include <common/NumericPropertyTableBase.h>
 #include <knlp/doc_naive_bayes.h>
 #include <glog/logging.h>
@@ -70,7 +70,7 @@ bool CategoryClassifyMiningTask::ruleByOriginalCategory_(
 
     if (!originalCategory.empty())
     {
-        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+        boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
         classifyCategory = knlpWrapper->mapFromOriginalCategory(originalCategory);
     }
 
@@ -110,7 +110,6 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
 {
     try
     {
-        KNlpWrapper* knlpWrapper = KNlpWrapper::get();
         std::ostringstream titlePrice;
         titlePrice << title;
 
@@ -120,6 +119,7 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
             titlePrice << "[[" << pricePair.second << "]]";
         }
 
+        boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
         KNlpWrapper::category_score_map_t categoryScoreMap =
             knlpWrapper->classifyToMultiCategories(titlePrice.str(), true);
 

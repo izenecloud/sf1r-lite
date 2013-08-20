@@ -95,8 +95,14 @@ public:
      * Given value id @p pvId, get its path from root node to leaf node.
      * @param pvId the value id
      * @param path store the path
+     * @param isLock whether need to create a read lock, if the caller has
+     * already created one, this parameter should be false to avoid
+     * duplicate lock.
      */
-    void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
+    void propValuePath(
+        pvid_t pvId,
+        std::vector<izenelib::util::UString>& path,
+        bool isLock = true) const;
 
     /**
      * @attention before calling below public functions,

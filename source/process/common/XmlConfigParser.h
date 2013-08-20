@@ -366,6 +366,12 @@ public:
         return working_dir_;
     }
 
+    std::string getKNlpDictDir() const
+    {
+        boost::filesystem::path dir(resource_dir_);
+        return (dir / "dict" / "term_category").string();
+    }
+
     const std::string& getLogConnString() const
     {
         return log_conn_str_;

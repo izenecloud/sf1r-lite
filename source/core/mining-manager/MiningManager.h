@@ -389,7 +389,8 @@ public:
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
             UString& analyzedQuery,
-            std::string& pruneQuery);
+            std::string& pruneQuery,
+            faceted::GroupParam::GroupLabelMap& topLabelMap);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
@@ -587,6 +588,12 @@ private:
 
     void doTgInfoRelease_();
 
+    bool propValuePaths_(
+        const std::string& propName,
+        const std::vector<faceted::PropValueTable::pvid_t>& pvIds,
+        std::vector<std::vector<std::string> >& paths,
+        bool isLock);
+
     faceted::PropValueTable::pvid_t propValueId_(
             const std::string& propName,
             const std::vector<std::string>& groupPath
@@ -596,6 +603,14 @@ private:
         const std::vector<docid_t>& docIdList,
         std::vector<Document>& docList
     );
+
+    void getGroupAttrRep_(
+        const std::vector<std::pair<double, uint32_t> >& res_list,
+        faceted::GroupParam& groupParam,
+        faceted::GroupRep& groupRep,
+        sf1r::faceted::OntologyRep& attrRep,
+        const std::string& topPropName,
+        faceted::GroupParam::GroupLabelMap& topLabelMap);
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
     bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
