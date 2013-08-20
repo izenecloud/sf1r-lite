@@ -5,7 +5,8 @@
 #include "category_psm.h"
 #include <string>
 #include <vector>
-#include "b5m_types.h" #include "b5m_helper.h"
+#include "b5m_types.h"
+#include "b5m_helper.h"
 #include <types.h>
 #include <am/succinct/fujimap/fujimap.hpp>
 #include <glog/logging.h>
@@ -134,6 +135,41 @@ namespace sf1r {
                 if(has_digit&&!all_digit)
                 {
                     if(boost::algorithm::starts_with(stitle, candidate)) continue;
+                    uint32_t start_alpha_size = 0;
+                    uint32_t end_digit_size = 0;
+                    for(uint32_t i=0;i<candidate.length();i++)
+                    {
+                        char c = candidate[i];
+                        if(c>='a'&&c<='z')
+                        {
+                            start_alpha_size++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    uint32_t i=candidate.length()-1;
+                    while(true)
+                    {
+                        char c = candidate[i];
+                        if(c>='0'&&c<='9') end_digit_size++;
+                        else break;
+                        if(i==0) break;
+                        i--;
+                    }
+                    if(start_alpha_size+end_digit_size==candidate.length())
+                    {
+                        if(start_alpha_size>=4&&end_digit_size<=2)
+                        {
+                            continue;
+                        }
+                        if(end_digit_size>0)
+                        {
+                            std::string end_digit = candidate.substr(candidate.length()-end_digit_size);
+                            if(IsYear_(end_digit)) continue;
+                        }
+                    }
                 }
                 models.push_back(candidate);
             }
@@ -257,6 +293,14 @@ namespace sf1r {
                 }
             }
             return true;
+        }
+
+    private:
+        bool IsYear_(const std::string& str) const
+        {
+            if(str.length()!=4) return false;
+            if(boost::algorithm::starts_with(str, "201")) return true;
+            return false;
         }
 
     private:
