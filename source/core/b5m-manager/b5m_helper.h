@@ -198,7 +198,7 @@ namespace sf1r {
         static std::string GetPidByIsbn(const std::string& isbn)
         {
             //static const int MD5_DIGEST_LENGTH = 32;
-            std::string url = "http://www.taobao.com/spuid/isbn-"+isbn;
+            std::string url = "http://www.b5m.com/spuid/isbn/"+isbn;
             return Utilities::generateMD5(url);
 
             //md5_state_t st;
@@ -218,7 +218,7 @@ namespace sf1r {
 
         static std::string GetPidByUrl(const std::string& url)
         {
-            return "";
+            return Utilities::generateMD5(url);
         }
 
     };
