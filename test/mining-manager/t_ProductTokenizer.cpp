@@ -1,5 +1,5 @@
 #include <mining-manager/suffix-match-manager/ProductTokenizer.h>
-#include <la-manager/KNlpWrapper.h>
+#include <common/ResourceManager.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 
@@ -69,9 +69,10 @@ void BuildDict(const std::string& home)
 
 void LoadKnlpDict(const std::string& dir)
 {
-    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
-    knlpWrapper->setDictDir(dir);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dir));
     BOOST_REQUIRE(knlpWrapper->loadDictFiles());
+
+    KNlpResourceManager::setResource(knlpWrapper);
 }
 
 namespace sf1r{

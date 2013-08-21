@@ -75,6 +75,13 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     )
   TARGET_LINK_LIBRARIES(t_QueryNormalizer ${libs})
 
+  ADD_EXECUTABLE(t_FileMonitor
+    Runner.cpp
+    t_FileMonitor.cpp
+    FileMonitorTestFixture.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_FileMonitor ${libs})
+
 ENDIF()
 
 ADD_EXECUTABLE(ScdMerger

@@ -55,14 +55,19 @@ namespace sf1r {
         };
         B5moSorter(const std::string& m, uint32_t mcount=100000);
 
+        void SetBufferSize(const std::string& bs)
+        {
+            buffer_size_ = bs;
+        }
+
         void Append(const ScdDocument& doc, const std::string& ts);
 
         bool StageOne();
-        bool StageTwo(bool spu_only, const std::string& last_m);
-
+        bool StageTwo(bool spu_only, const std::string& last_m, int thread_num=1);
 
     private:
         void WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
+        void WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
         static bool PidCompare_(const Value& doc1, const Value& doc2)
         {
             Document::doc_prop_value_strtype pid1;
@@ -99,12 +104,14 @@ namespace sf1r {
         bool spu_only_;
         uint32_t mcount_;
         uint32_t index_;
+        std::string buffer_size_;
         std::vector<Value> buffer_;
         boost::thread* sort_thread_;
         std::ofstream mirror_ofs_;
         boost::shared_ptr<ScdTypeWriter> pwriter_;
         B5mpDocGenerator pgenerator_;
         Json::Reader json_reader_;
+        boost::mutex mutex_;
     };
 
 }

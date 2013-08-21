@@ -1,4 +1,6 @@
 #include "product_matcher.h"
+#include "scd_doc_processor.h"
+#include "category_psm_clothes.h"
 #include <util/hashFunction.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -241,7 +243,8 @@ ProductMatcher::ProductMatcher()
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
- book_category_("书籍/杂志/报纸")
+ book_category_("书籍/杂志/报纸"),
+ use_psm_(false)
 {
 }
 
@@ -263,6 +266,10 @@ ProductMatcher::~ProductMatcher()
     if(chars_analyzer_!=NULL)
     {
         delete chars_analyzer_;
+    }
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        delete psms_[i];
     }
     //if(cr_result_!=NULL)
     //{
@@ -353,6 +360,16 @@ bool ProductMatcher::Open(const std::string& kpath)
 
             LOG(INFO)<<"synonym map size "<<synonym_pairs.size();
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
+            path = path_+"/psm_result";
+            {
+                std::map<std::string, std::string> pmap;
+                izenelib::am::ssf::Util<>::Load(path, pmap);
+                for(std::map<std::string, std::string>::const_iterator it = pmap.begin();it!=pmap.end();++it)
+                {
+                    psm_result_.insert(std::make_pair(B5MHelper::StringToUint128(it->first), B5MHelper::StringToUint128(it->second)));
+                }
+                LOG(INFO)<<"psm result load size "<<psm_result_.size()<<std::endl;
+            }
         }
         catch(std::exception& ex)
         {
@@ -676,7 +693,7 @@ void ProductMatcher::Init_()
     //nf_.clear();
 
 }
-bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode)
+bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode, int thread_num)
 {
     path_ = kpath;
     if(!boost::filesystem::exists(kpath))
@@ -958,7 +975,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         std::string stitle = propstr_to_str(title);
         std::string spid = propstr_to_str(pid);
-        uint128_t ipid = B5MHelper::StringToUint128(spid);
+        //uint128_t ipid = B5MHelper::StringToUint128(spid);
         std::string sattribute = propstr_to_str(attrib_ustr);
         Product product;
         product.spid = spid;
@@ -1069,7 +1086,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         {
 //#ifdef B5M_DEBUG
 //#endif
-            LOG(INFO)<<"invalid SPU attribute "<<spid<<","<<sattribute<<std::endl;
+            //LOG(INFO)<<"invalid SPU attribute "<<spid<<","<<sattribute<<std::endl;
             continue;
         }
         for(uint32_t i=0;i<product.attributes.size();i++)
@@ -1141,7 +1158,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     std::string offer_scd = scd_path+"/OFFER.SCD";
     if(boost::filesystem::exists(offer_scd))
     {
-        IndexOffer_(offer_scd);
+        IndexOffer_(offer_scd, thread_num);
     }
     std::string path = path_+"/products";
     izenelib::am::ssf::Util<>::Save(path, products_);
@@ -1178,6 +1195,16 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         if (term_set[i][term_set[i].length() - 1] == '/') term_set[i].erase(term_set[i].length() - 1, 1);
     path = path_+"/synonym_dict";
     izenelib::am::ssf::Util<>::Save(path, term_set);
+    path = path_+"/psm_result";
+    {
+        LOG(INFO)<<"psm result size "<<psm_result_.size()<<std::endl;
+        std::map<std::string, std::string> pmap;
+        for(boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.begin();it!=psm_result_.end();++it)
+        {
+            pmap.insert(std::make_pair(B5MHelper::Uint128ToString(it->first), B5MHelper::Uint128ToString(it->second)));
+        }
+        izenelib::am::ssf::Util<>::Save(path, pmap);
+    }
     {
         std::string aversion_file = path_+"/AVERSION";
         std::ofstream ofs(aversion_file.c_str());
@@ -1451,226 +1478,218 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
+void ProductMatcher::OfferProcess_(ScdDocument& doc)
+{
+    std::string scategory;
+    doc.getString("Category", scategory);
+    std::string stitle;
+    doc.getString("Title", stitle);
+    if(scategory.empty()||stitle.empty()) return;
+    UString title(stitle, UString::UTF_8);
+    CategoryIndex::const_iterator cit = category_index_.find(scategory);;
+    if(cit==category_index_.end()) return;
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        psms_[i]->TryInsert(doc);
+    }
+#ifdef B5M_DEBUG
+    //std::string stitle;
+    //title.convertString(stitle, UString::UTF_8);
+    //std::cerr<<"index offer title "<<stitle<<std::endl;
+#endif
+    uint32_t cid = cit->second;
+    OfferCategoryApp app;
+    app.cid = cid;
+    app.count = 1;
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
+    KeywordVector keyword_vector;
+    GetKeywords(term_list, keyword_vector, false);
+    //process feature vector
+    cid_t cid1 = GetLevelCid_(scategory, 1);
+    cid_t cid2 = GetLevelCid_(scategory, 2);
+    //NFeatureVector feature_vector;
+    //GenFeatureVector_(keyword_vector, feature_vector);
+    boost::unique_lock<boost::mutex> lock(offer_mutex_);
+    for(uint32_t i=0;i<keyword_vector.size();i++)
+    {
+        const KeywordTag& tag = keyword_vector[i];
+        oca_[tag.id][cid]+=1;
 
-void ProductMatcher::IndexOffer_(const std::string& offer_scd)
+        //const TermList& tl = keyword_vector[i].term_list;
+        //trie_[tl].offer_category_apps.push_back(app);
+    }
+    if(cid1!=0)
+    {
+        FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
+        fv_count_[cid1]++;
+    }
+    if(cid2!=0)
+    {
+        FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
+        fv_count_[cid2]++;
+    }
+    
+
+    //if(use_ngram_)
+    //{
+        //for(uint32_t i=0;i<keyword_vector.size();i++)
+        //{
+            //const KeywordTag& ki = keyword_vector[i];
+            //for(uint32_t j=i+1;j<keyword_vector.size();j++)
+            //{
+                //const KeywordTag& kj = keyword_vector[j];
+                //std::vector<uint32_t> ids(2);
+                //ids[0] = ki.id;
+                //ids[1] = kj.id;
+                //if(ids[1]<ids[0]) std::swap(ids[0], ids[1]);
+                //nf[ids].push_back(std::make_pair(cid, 1));
+            //}
+        //}
+    //}
+}
+
+void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
 {
     LOG(INFO)<<"index offer begin"<<std::endl;
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(offer_scd);
-    uint32_t n=0;
-    NgramFrequent nf;
-    feature_vectors_.resize(category_list_.size());
-    std::vector<uint32_t> fv_count(category_list_.size(), 0);
-    for( ScdParser::iterator doc_iter = parser.begin();
-      doc_iter!= parser.end(); ++doc_iter, ++n)
+    nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
+    fv_count_.resize(category_list_.size(), 0);
+    oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
+    if(use_psm_)
     {
-        //if(n>=15000) break;
-        if(n%100000==0)
-        {
-            LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
-        }
-        //Document doc;
-        SCDDoc& scddoc = *(*doc_iter);
-        SCDDoc::iterator p = scddoc.begin();
-        Document::doc_prop_value_strtype title;
-        Document::doc_prop_value_strtype category;
-        for(; p!=scddoc.end(); ++p)
-        {
-            const std::string& property_name = p->first;
-            if(property_name=="Title")
-            {
-                title = p->second;
-            }
-            else if(property_name=="Category")
-            {
-                category = p->second;
-            }
-        }
-        if(category.empty()||title.empty()) continue;
-        std::string scategory = propstr_to_str(category);
-        CategoryIndex::const_iterator cit = category_index_.find(scategory);;
-        if(cit==category_index_.end()) continue;
-#ifdef B5M_DEBUG
-        //std::string stitle;
-        //title.convertString(stitle, UString::UTF_8);
-        //std::cerr<<"index offer title "<<stitle<<std::endl;
-#endif
-        uint32_t cid = cit->second;
-        OfferCategoryApp app;
-        app.cid = cid;
-        app.count = 1;
-        std::vector<Term> term_list;
-        Analyze_(propstr_to_ustr(title), term_list);
-        KeywordVector keyword_vector;
-        GetKeywords(term_list, keyword_vector, false);
-        for(uint32_t i=0;i<keyword_vector.size();i++)
-        {
-            const TermList& tl = keyword_vector[i].term_list;
-            trie_[tl].offer_category_apps.push_back(app);
-        }
-        //process feature vector
-        cid_t cid1 = GetLevelCid_(scategory, 1);
-        cid_t cid2 = GetLevelCid_(scategory, 2);
-        FeatureVector feature_vector;
-        GenFeatureVector_(keyword_vector, feature_vector);
-        if(cid1!=0)
-        {
-            FeatureVectorAdd_(feature_vectors_[cid1], feature_vector);
-            fv_count[cid1]++;
-        }
-        if(cid2!=0)
-        {
-            FeatureVectorAdd_(feature_vectors_[cid2], feature_vector);
-            fv_count[cid2]++;
-        }
-        
-
-        if(use_ngram_)
-        {
-            for(uint32_t i=0;i<keyword_vector.size();i++)
-            {
-                const KeywordTag& ki = keyword_vector[i];
-                for(uint32_t j=i+1;j<keyword_vector.size();j++)
-                {
-                    const KeywordTag& kj = keyword_vector[j];
-                    std::vector<uint32_t> ids(2);
-                    ids[0] = ki.id;
-                    ids[1] = kj.id;
-                    if(ids[1]<ids[0]) std::swap(ids[0], ids[1]);
-                    nf[ids].push_back(std::make_pair(cid, 1));
-                }
-            }
-        }
-
+        CategoryPsm* psm = new CategoryPsmClothes;
+        psms_.push_back(psm);
     }
-    for(uint32_t i=0;i<feature_vectors_.size();i++)
+    for(uint32_t i=0;i<psms_.size();i++)
     {
+        std::string ppath = path_+"/psm"+boost::lexical_cast<std::string>(i);
+        B5MHelper::PrepareEmptyDir(ppath);
+        psms_[i]->Open(ppath);
+    }
+    ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
+    processor.AddInput(offer_scd);
+    processor.Process();
+    for(uint32_t i=0;i<psms_.size();i++)
+    {
+        psms_[i]->Flush(psm_result_);
+    }
+    feature_vectors_.resize(category_list_.size());
+    for(uint32_t i=0;i<nfeature_vectors_.size();i++)
+    {
+        FeatureVectorConvert_(nfeature_vectors_[i], feature_vectors_[i]);
         FeatureVector& feature_vector = feature_vectors_[i];
         for(uint32_t j=0;j<feature_vector.size();j++)
         {
-            feature_vector[j].second/=fv_count[i];
+            feature_vector[j].second/=fv_count_[i];
         }
         FeatureVectorNorm_(feature_vector);
     }
-    for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
+    for(uint32_t i=1;i<oca_.size();i++)
     {
-        KeywordTag& tag = it->second;
-        std::sort(tag.offer_category_apps.begin(), tag.offer_category_apps.end());
-        std::vector<OfferCategoryApp> new_apps;
-        new_apps.reserve(tag.offer_category_apps.size());
-        OfferCategoryApp last;
-        last.cid = 0;
-        last.count = 0;
-        for(uint32_t i=0;i<tag.offer_category_apps.size();i++)
+        const std::vector<uint32_t>& c_count = oca_[i];
+        const KeywordTag& atag = all_keywords_[i];
+        KeywordTag& tag = trie_[atag.term_list];
+        for(uint32_t i=0;i<c_count.size();i++)
         {
-            const OfferCategoryApp& app = tag.offer_category_apps[i];
-            if(app.cid!=last.cid)
+            if(c_count[i]>0)
             {
-                if(last.count>0)
-                {
-                    new_apps.push_back(last);
-                }
-                last.cid = app.cid;
-                last.count = 0;
+                OfferCategoryApp app;
+                app.cid = i;
+                app.count = c_count[i];
+                tag.offer_category_apps.push_back(app);
             }
-            last.count+=app.count;
         }
-        if(last.count>0)
-        {
-            new_apps.push_back(last);
-        }
-        tag.offer_category_apps.swap(new_apps);
     }
 
-    if(use_ngram_)
-    {
-        uint32_t new_kid = all_keywords_.size();
-        for(NgramFrequent::iterator it = nf.begin();it!=nf.end();it++)
-        {
-            const std::vector<uint32_t>& ids = it->first;
-            FrequentValue& value = it->second;
-            std::sort(value.begin(), value.end());
-            FrequentValue new_value;
-            new_value.reserve(value.size());
-            for(uint32_t i=0;i<value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = value[i];
-                if(new_value.empty())
-                {
-                    new_value.push_back(v);
-                }
-                else
-                {
-                    if(new_value.back().first==v.first)
-                    {
-                        new_value.back().second+=v.second;
-                    }
-                    else
-                    {
-                        new_value.push_back(v);
-                    }
-                }
-            }
-            uint32_t freq = 0;
-            for(uint32_t i=0;i<new_value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                freq += v.second;
-            }
-            double entropy = 0.0;
-            for(uint32_t i=0;i<new_value.size();i++)
-            {
-                const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                double p = (double)v.second/freq;
-                entropy += p*std::log(p);
-            }
-            entropy*=-1.0;
+    //if(use_ngram_)
+    //{
+        //uint32_t new_kid = all_keywords_.size();
+        //for(NgramFrequent::iterator it = nf.begin();it!=nf.end();it++)
+        //{
+            //const std::vector<uint32_t>& ids = it->first;
+            //FrequentValue& value = it->second;
+            //std::sort(value.begin(), value.end());
+            //FrequentValue new_value;
+            //new_value.reserve(value.size());
+            //for(uint32_t i=0;i<value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = value[i];
+                //if(new_value.empty())
+                //{
+                    //new_value.push_back(v);
+                //}
+                //else
+                //{
+                    //if(new_value.back().first==v.first)
+                    //{
+                        //new_value.back().second+=v.second;
+                    //}
+                    //else
+                    //{
+                        //new_value.push_back(v);
+                    //}
+                //}
+            //}
+            //uint32_t freq = 0;
+            //for(uint32_t i=0;i<new_value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                //freq += v.second;
+            //}
+            //double entropy = 0.0;
+            //for(uint32_t i=0;i<new_value.size();i++)
+            //{
+                //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                //double p = (double)v.second/freq;
+                //entropy += p*std::log(p);
+            //}
+            //entropy*=-1.0;
 
-            if(freq>=20 && entropy<1.0)
-            {
-#ifdef B5M_DEBUG
-                std::cerr<<"NGRAM";
-                for(uint32_t i=0;i<ids.size();i++)
-                {
-                    uint32_t id = ids[i];
-                    const KeywordTag& k = all_keywords_[id];
-                    std::cerr<<","<<GetText_(k.term_list);
-                }
-                std::cerr<<" - "<<freq<<","<<entropy<<std::endl;
-#endif
+            //if(freq>=20 && entropy<1.0)
+            //{
+//#ifdef B5M_DEBUG
+                //std::cerr<<"NGRAM";
+                //for(uint32_t i=0;i<ids.size();i++)
+                //{
+                    //uint32_t id = ids[i];
+                    //const KeywordTag& k = all_keywords_[id];
+                    //std::cerr<<","<<GetText_(k.term_list);
+                //}
+                //std::cerr<<" - "<<freq<<","<<entropy<<std::endl;
+//#endif
 
-                double rev_entropy = 10.0;
-                if(entropy>0.0)
-                {
-                    rev_entropy = 1.0/entropy;
-                }
-                if(rev_entropy>10.0) rev_entropy = 10.0;
-                double weight = std::log((double)freq)*rev_entropy;
-                KeywordTag ngram_tag;
-                ngram_tag.id = new_kid++;
-                ngram_tag.kweight = weight;
-                for(uint32_t i=0;i<ids.size();i++)
-                {
-                    uint32_t id = ids[i];
-                    const KeywordTag& k = all_keywords_[id];
-                    ngram_tag.term_list.push_back(0);
-                    ngram_tag.term_list.insert(ngram_tag.term_list.end(), k.term_list.begin(), k.term_list.end());
+                //double rev_entropy = 10.0;
+                //if(entropy>0.0)
+                //{
+                    //rev_entropy = 1.0/entropy;
+                //}
+                //if(rev_entropy>10.0) rev_entropy = 10.0;
+                //double weight = std::log((double)freq)*rev_entropy;
+                //KeywordTag ngram_tag;
+                //ngram_tag.id = new_kid++;
+                //ngram_tag.kweight = weight;
+                //for(uint32_t i=0;i<ids.size();i++)
+                //{
+                    //uint32_t id = ids[i];
+                    //const KeywordTag& k = all_keywords_[id];
+                    //ngram_tag.term_list.push_back(0);
+                    //ngram_tag.term_list.insert(ngram_tag.term_list.end(), k.term_list.begin(), k.term_list.end());
 
-                }
-                for(uint32_t i=0;i<new_value.size();i++)
-                {
-                    const std::pair<uint32_t, uint32_t>& v = new_value[i];
-                    OfferCategoryApp app;
-                    app.cid = v.first;
-                    app.count = v.second;
-                    ngram_tag.offer_category_apps.push_back(app);
-                }
-                trie_[ngram_tag.term_list] = ngram_tag;
+                //}
+                //for(uint32_t i=0;i<new_value.size();i++)
+                //{
+                    //const std::pair<uint32_t, uint32_t>& v = new_value[i];
+                    //OfferCategoryApp app;
+                    //app.cid = v.first;
+                    //app.count = v.second;
+                    //ngram_tag.offer_category_apps.push_back(app);
+                //}
+                //trie_[ngram_tag.term_list] = ngram_tag;
 
-            }
-        }
-        LOG(INFO)<<"find ngram keyword "<<new_kid-all_keywords_.size()<<std::endl;
-    }
+            //}
+        //}
+        //LOG(INFO)<<"find ngram keyword "<<new_kid-all_keywords_.size()<<std::endl;
+    //}
     LOG(INFO)<<"index offer end"<<std::endl;
 }
 
@@ -2188,6 +2207,23 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
+    if(!psm_result_.empty())
+    {
+        std::string sdocid;
+        doc.getString("DOCID", sdocid);
+        if(!sdocid.empty())
+        {
+            uint128_t oid = B5MHelper::StringToUint128(sdocid);
+            boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.find(oid);
+            if(it!=psm_result_.end())
+            {
+                Product p;
+                p.spid = B5MHelper::Uint128ToString(it->second);
+                result_products.resize(1, p);
+                return true;
+            }
+        }
+    }
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
@@ -5960,6 +5996,106 @@ void ProductMatcher::FeatureVectorNorm_(FeatureVector& v) const
         v[i].second /= sum;
     }
 
+}
+void ProductMatcher::GenFeatureVector_(const std::vector<KeywordTag>& keywords, NFeatureVector& feature_vector) const
+{
+    feature_vector.resize(all_keywords_.size(), 0.0);
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& tag = keywords[i];
+        double weight = tag.kweight;
+        if(weight>0.0)
+        {
+            uint32_t id = tag.id;
+            feature_vector[id] = weight;
+            //feature_vector.push_back(std::make_pair(id, weight));
+        }
+    }
+    //std::sort(feature_vector.begin(), feature_vector.end());
+    FeatureVectorNorm_(feature_vector);
+}
+void ProductMatcher::FeatureVectorAdd_(NFeatureVector& o, const std::vector<KeywordTag>& keywords) const
+{
+    double sum = 0.0;
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& tag = keywords[i];
+        double weight = tag.kweight;
+        if(weight>0.0)
+        {
+            sum+=weight*weight;
+        }
+    }
+    sum = std::sqrt(sum);
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& tag = keywords[i];
+        double weight = tag.kweight;
+        if(weight>0.0)
+        {
+            o[tag.id] += (weight/sum);
+        }
+    }
+}
+
+void ProductMatcher::FeatureVectorAdd_(NFeatureVector& o, const NFeatureVector& v) const
+{
+    for(uint32_t i=0;i<v.size();i++)
+    {
+        o[i] += v[i];
+    }
+    //FeatureVector n;
+    //uint32_t i=0,j=0;
+    //while(i<o.size()&&j<a.size())
+    //{
+        //if(o[i].first<a[j].first)
+        //{
+            //n.push_back(o[i++]);
+        //}
+        //else if (o[i].first==a[j].first)
+        //{
+            //n.push_back(std::make_pair(o[i].first, o[i].second+a[j].second));
+            //i++;
+            //j++;
+        //}
+        //else
+        //{
+            //n.push_back(a[j++]);
+        //}
+    //}
+    //while(i<o.size())
+    //{
+        //n.push_back(o[i++]);
+    //}
+    //while(j<a.size())
+    //{
+        //n.push_back(a[j++]);
+    //}
+    //o.swap(n);
+}
+void ProductMatcher::FeatureVectorNorm_(NFeatureVector& v) const
+{
+    double sum = 0.0;
+    for(uint32_t i=0;i<v.size();i++)
+    {
+        sum += v[i];
+    }
+    sum = std::sqrt(sum);
+    for(uint32_t i=0;i<v.size();i++)
+    {
+        v[i] /= sum;
+    }
+
+}
+void ProductMatcher::FeatureVectorConvert_(const NFeatureVector& n, FeatureVector& v) const
+{
+    for(uint32_t i=0;i<n.size();i++)
+    {
+        if(n[i]>0.0)
+        {
+            v.push_back(std::make_pair(i, n[i]));
+        }
+    }
 }
 
 double ProductMatcher::Cosine_(const FeatureVector& v1, const FeatureVector& v2) const

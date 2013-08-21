@@ -69,7 +69,7 @@ namespace sf1r {
         {
             namespace bfs = boost::filesystem;
             if(!bfs::exists(scd_path)) return;
-            if( bfs::is_regular_file(scd_path) && ScdParser::checkSCDFormat(scd_path))
+            if( bfs::is_regular_file(scd_path) && boost::algorithm::ends_with(scd_path, ".SCD"))
             {
                 scd_list.push_back(scd_path);
             }
@@ -212,40 +212,28 @@ namespace sf1r {
 
         static std::string GetPidByIsbn(const std::string& isbn)
         {
-            static const int MD5_DIGEST_LENGTH = 32;
-            std::string url = "http://www.taobao.com/spuid/isbn-"+isbn;
+            //static const int MD5_DIGEST_LENGTH = 32;
+            std::string url = "http://www.b5m.com/spuid/isbn/"+isbn;
+            return Utilities::generateMD5(url);
 
-            md5_state_t st;
-            md5_init(&st);
-            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
-            union
-            {
-                md5_byte_t digest[MD5_DIGEST_LENGTH];
-                uint128_t md5_int_value;
-            } digest_union;			
-            memset(digest_union.digest, 0, sizeof(digest_union.digest));
-            md5_finish(&st,digest_union.digest);
+            //md5_state_t st;
+            //md5_init(&st);
+            //md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
+            //union
+            //{
+                //md5_byte_t digest[MD5_DIGEST_LENGTH];
+                //uint128_t md5_int_value;
+            //} digest_union;			
+            //memset(digest_union.digest, 0, sizeof(digest_union.digest));
+            //md5_finish(&st,digest_union.digest);
 
-            //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
-            return B5MHelper::Uint128ToString(digest_union.md5_int_value);
+            ////uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
+            //return B5MHelper::Uint128ToString(digest_union.md5_int_value);
         }
 
         static std::string GetPidByUrl(const std::string& url)
         {
-            static const int MD5_DIGEST_LENGTH = 32;
-
-            md5_state_t st;
-            md5_init(&st);
-            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
-            union
-            {
-                md5_byte_t digest[MD5_DIGEST_LENGTH];
-                uint128_t md5_int_value;
-            } digest_union;			
-            memset(digest_union.digest, 0, sizeof(digest_union.digest));
-            md5_finish(&st,digest_union.digest);
-
-            return B5MHelper::Uint128ToString(digest_union.md5_int_value);
+            return Utilities::generateMD5(url);
         }
 
     };

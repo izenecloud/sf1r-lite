@@ -9,7 +9,6 @@
 #include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
-
 #include "auto-fill-submanager/AutoFillSubManager.h"
 
 #include "query-correction-submanager/QueryCorrectionSubmanager.h"
@@ -69,6 +68,7 @@
 #include <search-manager/RTypeStringPropTableBuilder.h>
 #include <index-manager/InvertedIndexManager.h>
 #include <common/SearchCache.h>
+#include <common/ResourceManager.h>
 
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
@@ -87,7 +87,7 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
-#include <la-manager/KNlpWrapper.h>
+#include <la-manager/KNlpDictMonitor.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -119,6 +119,12 @@
 #include <algorithm>
 #include <memory> // auto_ptr
 
+namespace
+{
+const std::string kTopLabelPropName = "Category";
+const size_t kTopLabelDocNum = 1000;
+const size_t kTopLabelCateNum = 4;
+}
 
 namespace sf1r
 {
@@ -578,8 +584,10 @@ bool MiningManager::open()
         {
             LOG(INFO) << "suffix match enabled.";
 
-            if (!KNlpWrapper::get()->loadDictFiles())
+            if (!KNlpResourceManager::getResource()->loadDictFiles())
                 return false;
+
+            KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
@@ -1857,6 +1865,15 @@ bool MiningManager::getFreqGroupLabel(
         return false;
     }
 
+    return propValuePaths_(propName, pvIdVec, pathVec, true);
+}
+
+bool MiningManager::propValuePaths_(
+    const std::string& propName,
+    const std::vector<faceted::PropValueTable::pvid_t>& pvIds,
+    std::vector<std::vector<std::string> >& paths,
+    bool isLock)
+{
     if (! groupManager_)
     {
         LOG(ERROR) << "the GroupManager is not initialized";
@@ -1870,11 +1887,11 @@ bool MiningManager::getFreqGroupLabel(
         return false;
     }
 
-    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIdVec.begin();
-            idIt != pvIdVec.end(); ++idIt)
+    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt = pvIds.begin();
+            idIt != pvIds.end(); ++idIt)
     {
         std::vector<izenelib::util::UString> ustrPath;
-        propValueTable->propValuePath(*idIt, ustrPath);
+        propValueTable->propValuePath(*idIt, ustrPath, isLock);
 
         std::vector<std::string> path;
         for (std::vector<izenelib::util::UString>::const_iterator ustrIt = ustrPath.begin();
@@ -1885,7 +1902,7 @@ bool MiningManager::getFreqGroupLabel(
             path.push_back(str);
         }
 
-        pathVec.push_back(path);
+        paths.push_back(path);
     }
 
     return true;
@@ -2236,7 +2253,8 @@ bool MiningManager::GetSuffixMatch(
         sf1r::faceted::OntologyRep& attrRep,
         UString& analyzedQuery,
         std::string& pruneQueryString_,
-        DistKeywordSearchInfo& distSearchInfo)
+        DistKeywordSearchInfo& distSearchInfo,
+        faceted::GroupParam::GroupLabelMap& topLabelMap)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2284,10 +2302,11 @@ bool MiningManager::GetSuffixMatch(
         }
         
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+        boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
         if (isLongQuery)
-            pattern = KNlpWrapper::get()->cleanStopword(pattern);
+            pattern = knlpWrapper->cleanStopword(pattern);
         else
-            pattern = KNlpWrapper::get()->cleanGarbage(pattern);
+            pattern = knlpWrapper->cleanGarbage(pattern);
 
         LOG(INFO) << "clear stop word for long query: " << pattern;
         
@@ -2316,13 +2335,6 @@ bool MiningManager::GetSuffixMatch(
             cout << key << " " << i->second << endl;
         }
 
-        /*
-        const std::size_t tokenNum = major_tokens.size() + minor_tokens.size();
-        double rank_boundary = 1.55 - tokenNum * 0.1;
-        rank_boundary = std::max(rank_boundary, 0.7);
-        rank_boundary = std::min(rank_boundary, 0.85);
-        */
-
         if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == false)
         {
             rank_boundary = 0;
@@ -2333,7 +2345,6 @@ bool MiningManager::GetSuffixMatch(
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
         bool isOrSearch = false;
-        bool isItemCount = false;
         
         if (isLongQuery)
         {
@@ -2342,9 +2353,16 @@ bool MiningManager::GetSuffixMatch(
             isOrSearch = true;
         }
 
+        //check if is b5mp or b5mo;
+        bool isCompare = false;
+        const std::string& itemcount = getOfferItemCountPropName_();
+        if (!itemcount.empty())
+            isCompare = true;
+
+        LOG(INFO) << "use compare: " << isCompare;
         if (isAndSearch)
         {
-            LOG(INFO) << "for short query, try AND search first";
+            LOG(INFO) << "for short query, try AND search first"; 
             std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
             std::list<std::pair<UString, double> > short_query_minor_tokens;
 
@@ -2354,49 +2372,6 @@ bool MiningManager::GetSuffixMatch(
                 short_query_major_tokens.push_back(*it);
             }
 
-            std::vector<QueryFiltering::FilteringType> filter_param_1(filter_param);
-            const std::string& itemcount = getOfferItemCountPropName_();
-            if (!itemcount.empty())
-            {
-                FilteringType onefilter;
-                onefilter.property_ = itemcount;
-                onefilter.operation_ = GREATER_THAN;
-                onefilter.values_.push_back(PropertyValue(1));
-                filter_param_1.push_back(onefilter);
-
-                std::vector<std::pair<double, uint32_t> > res_list_1;
-                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                    useSynonym,
-                    short_query_major_tokens,
-                    short_query_minor_tokens,
-                    search_in_properties,
-                    max_docs,
-                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                    filter_param_1,
-                    actionOperation.actionItem_.groupParam_,
-                    res_list_1,
-                    rank_boundary);
-
-                isItemCount = true;
-                searchManager_->fuzzySearchRanker_.rankByProductScore(
-                    actionOperation.actionItem_, res_list_1, isItemCount);
-
-                for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_1.begin(); i != res_list_1.end(); ++i)
-                    res_list.push_back(*i);
-            }
-
-            //search again for itemcount == 1;
-            std::vector<QueryFiltering::FilteringType> filter_param_2(filter_param);
-            if (!itemcount.empty())
-            {
-                FilteringType onefilter;
-                onefilter.property_ = itemcount;
-                onefilter.operation_ = EQUAL;
-                onefilter.values_.push_back(PropertyValue(1));
-                filter_param_2.push_back(onefilter);
-            }
-
-            std::vector<std::pair<double, uint32_t> > res_list_2;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                     useSynonym,
                     short_query_major_tokens,
@@ -2404,17 +2379,10 @@ bool MiningManager::GetSuffixMatch(
                     search_in_properties,
                     max_docs,
                     actionOperation.actionItem_.searchingMode_.filtermode_,
-                    filter_param_2,
+                    filter_param,
                     actionOperation.actionItem_.groupParam_,
-                    res_list_2,
+                    res_list,
                     rank_boundary);
-
-            isItemCount = false;
-            searchManager_->fuzzySearchRanker_.rankByProductScore(
-                actionOperation.actionItem_, res_list_2, isItemCount);
-
-            for (std::vector<std::pair<double, uint32_t> >::iterator i = res_list_2.begin(); i != res_list_2.end(); ++i)
-                res_list.push_back(*i);
 
             isOrSearch = res_list.empty();
         }
@@ -2433,10 +2401,6 @@ bool MiningManager::GetSuffixMatch(
                 actionOperation.actionItem_.groupParam_,
                 res_list,
                 rank_boundary);
-
-            isItemCount = false;
-            searchManager_->fuzzySearchRanker_.rankByProductScore(
-                actionOperation.actionItem_, res_list, isItemCount);
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
@@ -2473,30 +2437,12 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
-        /*bool isItemCount = false;
-        for (std::vector<QueryFiltering::FilteringType>::const_iterator i = filter_param.begin(); i != filter_param.end(); ++i)
-        {
-            if (i->property_ == "itemcount" && i->operation_ == GREATER_THAN)
-            {
-                isItemCount = true;
-            }
-        }*/
+        searchManager_->fuzzySearchRanker_.rankByProductScore(
+                actionOperation.actionItem_, res_list, isCompare);
 
-        if ((groupManager_ || attrManager_) && groupFilterBuilder_)
-        {
-            PropSharedLockSet propSharedLockSet;
-            boost::scoped_ptr<faceted::GroupFilter> groupFilter(
-                    groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
-
-            if (groupFilter)
-            {
-                for (size_t i = 0; i < res_list.size(); ++i)
-                {
-                    groupFilter->test(res_list[i].second);
-                }
-                groupFilter->getGroupRep(groupRep, attrRep);
-            }
-        }
+        getGroupAttrRep_(res_list, actionOperation.actionItem_.groupParam_,
+                         groupRep, attrRep,
+                         kTopLabelPropName, topLabelMap);
     }
 
     if (!totalCount ||res_list.empty()) return false;
@@ -2522,6 +2468,85 @@ bool MiningManager::GetSuffixMatch(
 
     cout<<"return true"<<endl;
     return true;
+}
+
+void MiningManager::getGroupAttrRep_(
+    const std::vector<std::pair<double, uint32_t> >& res_list,
+    faceted::GroupParam& groupParam,
+    faceted::GroupRep& groupRep,
+    sf1r::faceted::OntologyRep& attrRep,
+    const std::string& topPropName,
+    faceted::GroupParam::GroupLabelMap& topLabelMap)
+{
+    if (!groupFilterBuilder_ || (!groupManager_ && !attrManager_))
+        return;
+
+    PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter(
+        groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+    if (!groupFilter)
+        return;
+
+    const faceted::PropValueTable* categoryValueTable = GetPropValueTable(topPropName);
+    if (!categoryValueTable)
+        return;
+
+    propSharedLockSet.insertSharedLock(categoryValueTable);
+
+    std::vector<category_id_t> topCateIds;
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        if (topCateIds.size() < kTopLabelCateNum && i < kTopLabelDocNum)
+        {
+            category_id_t catId =
+                categoryValueTable->getFirstValueId(res_list[i].second);
+
+            if (catId != 0 &&
+                std::find(topCateIds.begin(), topCateIds.end(), catId) == topCateIds.end())
+            {
+                topCateIds.push_back(catId);
+            }
+        }
+
+        groupFilter->test(res_list[i].second);
+    }
+
+    if (topCateIds.empty())
+    {
+        groupFilter->getGroupRep(groupRep, attrRep);
+        return;
+    }
+
+    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[topPropName];
+    if (topLabels.empty())
+    {
+        propValuePaths_(topPropName, topCateIds, topLabels, false);
+    }
+
+    // get all group results
+    sf1r::faceted::OntologyRep tempAttrRep;
+    groupFilter->getGroupRep(groupRep, tempAttrRep);
+
+    // replace select label to top label
+    if (!topLabels.empty())
+    {
+        faceted::GroupParam::GroupPathVec& groupLabels =
+            groupParam.groupLabels_[topPropName];
+        groupLabels.clear();
+        groupLabels.push_back(topLabels[0]);
+    }
+
+    // get attr results under top label
+    boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
+        groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        attrGroupFilter->test(res_list[i].second);
+    }
+
+    faceted::GroupRep tempGroupRep;
+    attrGroupFilter->getGroupRep(tempGroupRep, attrRep);
 }
 
 bool MiningManager::GetProductCategory(

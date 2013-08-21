@@ -474,7 +474,8 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.attrRep_,
                                             resultItem.analyzedQuery_,
                                             resultItem.pruneQueryString_,
-                                            resultItem.distSearchInfo_))
+                                            resultItem.distSearchInfo_,
+                                            resultItem.autoSelectGroupLabels_))
         {
             return true;
         }

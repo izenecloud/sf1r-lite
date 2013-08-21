@@ -5,6 +5,7 @@
 #include "b5m_helper.h"
 #include "b5m_types.h"
 #include "attribute_id_manager.h"
+#include "category_psm.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -18,6 +19,7 @@
 #include <idmlib/util/idm_analyzer.h>
 #include <idmlib/util/idm_id_manager.h>
 #include <document-manager/Document.h>
+#include <document-manager/ScdDocument.h>
 #include <idmlib/keyphrase-extraction/kpe_task.h>
 #include <idmlib/similarity/string_similarity.h>
 #include <ext/pb_ds/assoc_container.hpp>
@@ -48,6 +50,7 @@ namespace sf1r {
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
         typedef boost::unordered_map<TermList, UString> KeywordText;
         typedef std::vector<std::pair<uint32_t, double> > FeatureVector;
+        typedef std::vector<double> NFeatureVector;
 
         struct Position
         {
@@ -788,7 +791,7 @@ namespace sf1r {
         static std::string GetVersion(const std::string& path);
         static std::string GetAVersion(const std::string& path);
         static std::string GetRVersion(const std::string& path);
-        bool Index(const std::string& path, const std::string& scd_path, int mode);
+        bool Index(const std::string& path, const std::string& scd_path, int mode, int thread_num);
         void Test(const std::string& scd_path);
         bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
@@ -821,6 +824,11 @@ namespace sf1r {
 
         void SetUsePriceSim(bool sim)
         { use_price_sim_ = sim; }
+
+        void SetUsePsm(bool b)
+        {
+            use_psm_ = b;
+        }
 
         //if given category empty, do SPU matching only
         void SetMatcherOnly(bool m)
@@ -860,7 +868,8 @@ namespace sf1r {
         //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
-        void IndexOffer_(const std::string& offer_scd);
+        void IndexOffer_(const std::string& offer_scd, int thread_num);
+        void OfferProcess_(ScdDocument& doc);
         void IndexFuzzy_();
         void ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range);
 
@@ -900,6 +909,11 @@ namespace sf1r {
         void GenFeatureVector_(const std::vector<KeywordTag>& keywords, FeatureVector& feature_vector) const;
         void FeatureVectorAdd_(FeatureVector& o, const FeatureVector& a) const;
         void FeatureVectorNorm_(FeatureVector& v) const;
+        void GenFeatureVector_(const std::vector<KeywordTag>& keywords, NFeatureVector& feature_vector) const;
+        void FeatureVectorAdd_(NFeatureVector& o, const NFeatureVector& a) const;
+        void FeatureVectorAdd_(NFeatureVector& o, const std::vector<KeywordTag>& keywords) const;
+        void FeatureVectorNorm_(NFeatureVector& v) const;
+        void FeatureVectorConvert_(const NFeatureVector& n, FeatureVector& v) const;
         double Cosine_(const FeatureVector& v1, const FeatureVector& v2) const;
 
         static uint32_t TextLength_(const std::string& text)
@@ -1015,10 +1029,17 @@ namespace sf1r {
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
         izenelib::util::ReadWriteLock lock_;
+        boost::mutex offer_mutex_;
     
         std::vector<FeatureVector> feature_vectors_;
+        std::vector<NFeatureVector> nfeature_vectors_;
+        std::vector<uint32_t> fv_count_;
+        std::vector<std::vector<uint32_t> > oca_;
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
+        bool use_psm_;
+        std::vector<CategoryPsm*> psms_;
+        boost::unordered_map<uint128_t, uint128_t> psm_result_;
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;

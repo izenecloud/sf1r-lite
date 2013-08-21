@@ -295,6 +295,8 @@ int do_main(int ac, char** av)
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
+        ("thread-num", po::value<int>(), "specify thread num")
+        ("buffer-size", po::value<std::string>(), "specify in memory buffer size")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
@@ -326,6 +328,7 @@ int do_main(int ac, char** av)
         ("test", "specify test flag")
         ("noprice", "no price flag")
         ("spu-only", "spu only flag")
+        ("use-psm", "use psm flag")
         ("depth", po::value<uint16_t>(), "specify category max depth while categorizing")
         ("force", "specify force flag")
         ("trie", "do trie test")
@@ -373,7 +376,10 @@ int do_main(int ac, char** av)
     bool force_flag = false;
     bool noprice = false;
     bool spu_only = false;
+    bool use_psm = false;
     uint16_t max_depth = 0;
+    int thread_num = 1;
+    std::string buffer_size;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -382,6 +388,14 @@ int do_main(int ac, char** av)
     } 
     if (vm.count("mode")) {
         mode = vm["mode"].as<int>();
+    } 
+    if (vm.count("thread-num")) {
+        thread_num = vm["thread-num"].as<int>();
+        std::cout<<"thread_num:"<<thread_num<<std::endl;
+    } 
+    if (vm.count("buffer-size")) {
+        buffer_size = vm["buffer-size"].as<std::string>();
+        std::cout<<"buffer_size:"<<buffer_size<<std::endl;
     } 
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
@@ -544,6 +558,10 @@ int do_main(int ac, char** av)
     {
         spu_only = true;
     }
+    if(vm.count("use-psm"))
+    {
+        use_psm = true;
+    }
     if(vm.count("depth"))
     {
         max_depth = vm["depth"].as<uint16_t>();
@@ -628,6 +646,10 @@ int do_main(int ac, char** av)
         //ProductMatcher::Clear(knowledge_dir, mode);
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
+        if(use_psm)
+        {
+            matcher.SetUsePsm(true);
+        }
         //if(!matcher.Open(knowledge_dir))
         //{
             //LOG(ERROR)<<"matcher open failed"<<std::endl;
@@ -637,7 +659,7 @@ int do_main(int ac, char** av)
         //{
             //matcher.LoadCategoryGroup(category_group);
         //}
-        if(!matcher.Index(knowledge_dir, scd_path, mode))
+        if(!matcher.Index(knowledge_dir, scd_path, mode, thread_num))
         {
             return EXIT_FAILURE;
         }
@@ -1064,7 +1086,7 @@ int do_main(int ac, char** av)
         {
             processor.SetHumanMatchFile(human_match);
         }
-        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance))
+        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
         {
             return EXIT_FAILURE;
         }
@@ -1089,7 +1111,11 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
-        if(!processor.Generate(spu_only))
+        if(!buffer_size.empty())
+        {
+            processor.SetBufferSize(buffer_size);
+        }
+        if(!processor.Generate(spu_only, thread_num))
         {
             std::cout<<"b5mp processor failed"<<std::endl;
             return EXIT_FAILURE;
@@ -1115,7 +1141,7 @@ int do_main(int ac, char** av)
 
         //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
         B5mcScdGenerator generator(mode, matcher.get());
-        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance))
+        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
         {
             return EXIT_FAILURE;
         }

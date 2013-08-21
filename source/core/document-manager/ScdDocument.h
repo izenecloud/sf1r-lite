@@ -19,6 +19,9 @@ public:
     ScdDocument(const Document& d, SCD_TYPE t):Document(d), type(t)
     {
     }
+    ScdDocument(const ScdDocument& d):Document(d), type(d.type)
+    {
+    }
 
     void merge(const ScdDocument& doc)
     {

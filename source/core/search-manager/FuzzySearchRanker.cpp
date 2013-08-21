@@ -66,8 +66,7 @@ void FuzzySearchRanker::rankByProductScore(
         if (isCategoryClassify_)
         {
             // ignore the docs with zero category score
-            if (productScore < CategoryClassifyScorer::kMinClassifyScore ||
-                (isCompare && productScore < 0.9))
+            if (isCompare && productScore < 0.9)
             {
                 continue;
             }

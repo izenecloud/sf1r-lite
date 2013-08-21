@@ -38,8 +38,9 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
     ifs.close();
 }
 
-void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
+void B5moProcessor::Process(ScdDocument& doc)
 {
+    SCD_TYPE type = doc.type;
     static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;
     //reset type
@@ -130,6 +131,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     else
     {
         doc.clearExceptDOCID();
+        boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
         if(spid.empty()) type=NOT_SCD;
@@ -200,13 +202,16 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     std::string spid;
     std::string old_spid;
     bool is_human_edit = false;
-    if(odb_->get(sdocid, spid)) 
     {
-        OfferDb::FlagType flag = 0;
-        odb_->get_flag(sdocid, flag);
-        if(flag==1)
+        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        if(odb_->get(sdocid, spid)) 
         {
-            is_human_edit = true;
+            OfferDb::FlagType flag = 0;
+            odb_->get_flag(sdocid, flag);
+            if(flag==1)
+            {
+                is_human_edit = true;
+            }
         }
     }
     old_spid = spid;
@@ -302,7 +307,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             }
 
         }
-        match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
+        //match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
     }
     else
     {
@@ -337,8 +342,9 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(old_spid!=spid)
     {
+        boost::unique_lock<boost::shared_mutex> lock(mutex_);
         odb_->insert(sdocid, spid);
-        cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
+        //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
     if(sorter_!=NULL)
@@ -365,7 +371,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     //}
 }
 
-bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance)
+bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
 {
     if(!odb_->is_open())
     {
@@ -491,8 +497,8 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         //odb_->flush();
     //}
 
-    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1, _2);
-    ScdDocProcessor sd_processor(p);
+    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+    ScdDocProcessor sd_processor(p, thread_num);
     sd_processor.AddInput(scd_path);
     sd_processor.SetOutput(writer);
     sd_processor.Process();

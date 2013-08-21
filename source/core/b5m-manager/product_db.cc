@@ -46,6 +46,17 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     for(uint32_t i=0;i<odocs.size();i++)
     {
         const ScdDocument& doc=odocs[i];
+        Document::doc_prop_value_strtype oid;
+        doc.getProperty("DOCID", oid);
+        if(oid!=pid) independent=false;
+        if(spu_title.empty())
+        {
+            doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
+            if(!spu_title.empty())
+            {
+                independent = false;
+            }
+        }
         if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
         {
             continue;
@@ -66,10 +77,6 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             }
             SelectSubDocs_(subdocs);
         }
-        Document::doc_prop_value_strtype oid;
-        doc.getProperty("DOCID", oid);
-        if(oid!=pid) independent=false;
-        doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
         doc.getProperty(B5MHelper::GetSPPicPropertyName(), spu_pic);
         doc.getProperty(B5MHelper::GetSPUrlPropertyName(), spu_url);
         pdoc.merge(doc);
@@ -156,7 +163,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
-    if(spu_only&&independent) pdoc.type = NOT_SCD;
+    if(spu_only&&pdoc.type==UPDATE_SCD&&independent) pdoc.type = NOT_SCD;
 }
 
 bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
@@ -177,7 +184,7 @@ bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
 
 void B5mpDocGenerator::SelectSubDocs_(std::vector<Document>& subdocs) const
 {
-    static const uint32_t max = 3u;
+    static const uint32_t max = 10u;
     if(subdocs.size()<=max) return;
     std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
     subdocs.resize(max);

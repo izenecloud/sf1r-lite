@@ -22,9 +22,9 @@ namespace sf1r {
         void LoadMobileSource(const std::string& file);
         void SetHumanMatchFile(const std::string& file) {human_match_file_ = file;}
 
-        void Process(Document& doc, SCD_TYPE& type);
+        void Process(ScdDocument& doc);
 
-        bool Generate(const std::string& scd_file, const std::string& mdb_instance, const std::string& last_mdb_instance);
+        bool Generate(const std::string& scd_file, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num=1);
 
     private:
 
@@ -47,6 +47,7 @@ namespace sf1r {
         std::ofstream match_ofs_;
         std::ofstream cmatch_ofs_;
         boost::unordered_set<uint128_t> changed_match_;
+        boost::shared_mutex mutex_;
     };
 
 }
