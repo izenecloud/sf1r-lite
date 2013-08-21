@@ -342,7 +342,7 @@ bool CobraProcess::startDistributedServer()
         cout << "[WorkerServer] listen at "<<localHost<<":"<<workerPort<<endl;
 
         workerServer_.reset(new net::aggregator::WorkerServer(
-            *workerRouter_, localHost, workerPort, threadNum));
+            *workerRouter_, localHost, workerPort, threadNum*2));
         workerServer_->start();
     }
 

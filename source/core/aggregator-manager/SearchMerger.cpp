@@ -458,7 +458,7 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
     std::size_t i = 0;
     size_t start_inpage = totalResult.start_ % totalResult.TOP_K_NUM;
 
-    for (size_t topstart = 0; topstart < totalResult.topKDocs_.size(); ++topstart)
+    for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
         workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
         std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
@@ -467,26 +467,29 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
         {
             workerResult.propertyQueryTermList_ = totalResult.propertyQueryTermList_;
             workerResult.rawQueryString_ = totalResult.rawQueryString_;
-            workerResult.pruneQueryString_ = totalResult.pruneQueryString_;
+            //workerResult.pruneQueryString_ = totalResult.pruneQueryString_;
             workerResult.encodingType_ = totalResult.encodingType_;
             workerResult.collectionName_ = totalResult.collectionName_;
-            workerResult.analyzedQuery_ = totalResult.analyzedQuery_;
-            workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
-            workerResult.totalCount_ = totalResult.totalCount_;
+            //workerResult.analyzedQuery_ = totalResult.analyzedQuery_;
+            //workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
+            //workerResult.totalCount_ = totalResult.totalCount_;
             workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
             workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
             workerResult.docsInPage_.reserve(totalResult.topKDocs_.size()/2);
         }
-        if ( topstart >= start_inpage &&
-             (topstart < start_inpage + totalResult.count_) )
+        if ( topstart < start_inpage + totalResult.count_ )
         {
             workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
             workerResult.pageOffsetList_.push_back(i);
             ++i;
             ++workerResult.count_;
         }
-        workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
-        workerResult.topKWorkerIds_.push_back(curWorkerId);
+        else
+        {
+            break;
+        }
+        //workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
+        //workerResult.topKWorkerIds_.push_back(curWorkerId);
     }
 }
 
