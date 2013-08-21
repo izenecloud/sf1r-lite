@@ -131,6 +131,7 @@ void DocumentsSearchHandler::search()
                 renderRangeResult(searchResult);
                 renderCountResult(searchResult);
                 renderRefinedQuery();
+                LOG(INFO) << "document render finished.";
             }
 
             try

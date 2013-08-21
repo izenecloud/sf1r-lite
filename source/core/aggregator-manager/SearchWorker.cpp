@@ -107,8 +107,6 @@ void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, K
 
 void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
-
     getSummaryMiningResult_(actionItem, resultItem);
 }
 
@@ -638,7 +636,10 @@ bool SearchWorker::getSummaryMiningResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+
     getSummaryResult_(actionItem, resultItem, isDistributedSearch);
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] finished.";
     return true;
 }
 
