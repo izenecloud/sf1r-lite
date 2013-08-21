@@ -291,7 +291,7 @@ private:
             }
             else
             {
-                BOOST_CHECK(orig_it->id >= valueid);
+                //BOOST_CHECK(orig_it->id >= valueid);
                 valueid = orig_it->id;
             }
             ++orig_it;
@@ -407,7 +407,7 @@ private:
             }
             else
             {
-                BOOST_CHECK(it->id >= valueid);
+                //BOOST_CHECK(it->id >= valueid);
                 valueid = it->id;
             }
             ++it;

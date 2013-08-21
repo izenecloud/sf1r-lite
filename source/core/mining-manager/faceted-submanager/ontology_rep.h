@@ -118,7 +118,7 @@ public:
         }
         others_it = others.begin();
 
-        typedef std::list<OntologyRepItem> ValueCountList;
+        typedef std::map<CategoryNameType, OntologyRepItem> ValueCountList;
         typedef std::map<CategoryNameType, int> NameCountMap;
         typedef std::map<CategoryNameType, ValueCountList> NameValueCountMap;
         NameValueCountMap nv_cnt_map;
@@ -136,7 +136,7 @@ public:
             }
             else
             {
-                (current_nvmap_it->second).push_back(*it);
+                (current_nvmap_it->second)[it->text] = (*it);
             }
             ++it;
         }
@@ -156,35 +156,28 @@ public:
                     // whether a new name added
                     newname = n_it.second;
                     current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountList())).first;
-                    current_value_it = current_nvmap_it->second.begin();
                 }
                 else
                 {
                     if(newname)
                     {
-                        (current_nvmap_it->second).push_back(*it);
+                        (current_nvmap_it->second)[it->text] = (*it);
                     }
                     else
                     {
                         bool is_found_equal = false;
-                        for(; current_value_it != current_nvmap_it->second.end();
-                            ++current_value_it)
+                        current_value_it = current_nvmap_it->second.find(it->text);
+                        if(current_value_it != current_nvmap_it->second.end())
                         {
-                            if (current_value_it->id < it->id)
-                                continue;
-
-                            if (current_value_it->id == it->id)
-                                is_found_equal = true;
-
-                            break;
+                            is_found_equal = true;
                         }
                         if(is_found_equal)
                         {
-                            current_value_it->doc_count += it->doc_count;
+                            current_value_it->second.doc_count += it->doc_count;
                         }
                         else
                         {
-                            current_nvmap_it->second.insert(current_value_it, *it);
+                            (current_nvmap_it->second)[it->text] = (*it);
                         }
                     }
                 }
@@ -235,9 +228,9 @@ public:
                 }
                 OntologyRepItem& sub_item = *item_nextit;
                 sub_item.level = 1;
-                sub_item.id = cit->id;
-                sub_item.text = cit->text;
-                sub_item.doc_count = cit->doc_count;
+                sub_item.id = cit->second.id;
+                sub_item.text = cit->first;
+                sub_item.doc_count = cit->second.doc_count;
                 ++cit;
             }
             ++item_nextit;
