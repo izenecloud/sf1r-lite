@@ -1,6 +1,6 @@
 #include "product_matcher.h"
 #include "scd_doc_processor.h"
-#include "category_psm_clothes.h"
+#include "category_psm.h"
 #include <util/hashFunction.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -267,10 +267,11 @@ ProductMatcher::~ProductMatcher()
     {
         delete chars_analyzer_;
     }
-    for(uint32_t i=0;i<psms_.size();i++)
-    {
-        delete psms_[i];
-    }
+    if(psm_!=NULL) delete psm_;
+    //for(uint32_t i=0;i<psms_.size();i++)
+    //{
+        //delete psms_[i];
+    //}
     //if(cr_result_!=NULL)
     //{
         //cr_result_->flush();
@@ -1488,10 +1489,11 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     UString title(stitle, UString::UTF_8);
     CategoryIndex::const_iterator cit = category_index_.find(scategory);;
     if(cit==category_index_.end()) return;
-    for(uint32_t i=0;i<psms_.size();i++)
-    {
-        psms_[i]->TryInsert(doc);
-    }
+    if(psm_!=NULL) psm_->TryInsert(doc);
+    //for(uint32_t i=0;i<psms_.size();i++)
+    //{
+        //psms_[i]->TryInsert(doc);
+    //}
 #ifdef B5M_DEBUG
     //std::string stitle;
     //title.convertString(stitle, UString::UTF_8);
@@ -1557,22 +1559,23 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
     oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
     if(use_psm_)
     {
-        CategoryPsm* psm = new CategoryPsmClothes;
-        psms_.push_back(psm);
+        psm_ = new CategoryPsm;
+        std::string ppath = path_+"/psm";
+        psm_->Open(ppath);
     }
-    for(uint32_t i=0;i<psms_.size();i++)
-    {
-        std::string ppath = path_+"/psm"+boost::lexical_cast<std::string>(i);
-        B5MHelper::PrepareEmptyDir(ppath);
-        psms_[i]->Open(ppath);
-    }
+    //for(uint32_t i=0;i<psms_.size();i++)
+    //{
+        //B5MHelper::PrepareEmptyDir(ppath);
+        //psms_[i]->Open(ppath);
+    //}
     ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
-    for(uint32_t i=0;i<psms_.size();i++)
-    {
-        psms_[i]->Flush(psm_result_);
-    }
+    if(psm_!=NULL) psm_->Flush(psm_result_);
+    //for(uint32_t i=0;i<psms_.size();i++)
+    //{
+        //psms_[i]->Flush(psm_result_);
+    //}
     feature_vectors_.resize(category_list_.size());
     for(uint32_t i=0;i<nfeature_vectors_.size();i++)
     {
