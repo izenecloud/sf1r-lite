@@ -78,7 +78,7 @@ bool IndexSearchService::getSearchResult(
     QueryIdentity identity;
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
-    uint32_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
+    size_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
     LOG(INFO) << "topKStart for dist search is " << topKStart << ", pageInfo_ :"
         << actionItem.pageInfo_.start_ << ", " << actionItem.pageInfo_.count_;
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
@@ -90,6 +90,28 @@ bool IndexSearchService::getSearchResult(
 
         searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+        // remove the first topKStart docids.
+        if (topKStart > 0)
+        {
+            if( !distResultItem.topKDocs_.empty() )
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKDocs_.size());
+                distResultItem.topKDocs_.erase(distResultItem.topKDocs_.begin(),
+                    distResultItem.topKDocs_.begin() + erase_to);
+            }
+            if( !distResultItem.topKRankScoreList_.empty() )
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKRankScoreList_.size());
+                distResultItem.topKRankScoreList_.erase(distResultItem.topKRankScoreList_.begin(),
+                    distResultItem.topKRankScoreList_.begin() + erase_to);
+            }
+            if (!distResultItem.topKCustomRankScoreList_.empty())
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKCustomRankScoreList_.size());
+                distResultItem.topKCustomRankScoreList_.erase(distResultItem.topKCustomRankScoreList_.begin(),
+                    distResultItem.topKCustomRankScoreList_.begin() + erase_to);
+            }
+        }
 
         distResultItem.adjustStartCount(topKStart);
 

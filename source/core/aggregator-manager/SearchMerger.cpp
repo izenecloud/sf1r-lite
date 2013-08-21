@@ -97,6 +97,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
+    mergeResult.attrRep_ = result0.attrRep_;
+    std::list<const faceted::OntologyRep*> otherAttrReps;
     for (size_t i = 0; i < workerNum; i++)
     {
         const KeywordSearchResult& wResult = workerResults.result(i);
@@ -122,9 +124,14 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         {
             mergeResult.counterResults_[cit->first] += cit->second;
         }
+        if (i > 0)
+        {
+            otherAttrReps.push_back(&wResult.attrRep_);
+        }
     }
     mergeResult.propertyRange_.lowValue_ = rangeLow;
     mergeResult.propertyRange_.highValue_ = rangeHigh;
+    mergeResult.attrRep_.merge(0, otherAttrReps);
 
     size_t endOffset = mergeResult.start_ + mergeResult.count_;
     size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
