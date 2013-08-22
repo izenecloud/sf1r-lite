@@ -480,9 +480,9 @@ public:
         swap(count_, other.count_);
         pageOffsetList_.swap(other.pageOffsetList_);
         propertyQueryTermList_.swap(other.propertyQueryTermList_);
-//      fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
-//      snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
-//      rawTextOfSummaryInPage_.swap(other.rawTextOfSummaryInPage_);
+        fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
+        snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
+        rawTextOfSummaryInPage_.swap(other.rawTextOfSummaryInPage_);
         numberOfDuplicatedDocs_.swap(other.numberOfDuplicatedDocs_);
         numberOfSimilarDocs_.swap(other.numberOfSimilarDocs_);
         docCategories_.swap(other.docCategories_);

@@ -99,10 +99,14 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
     mergeResult.attrRep_ = result0.attrRep_;
     std::list<const faceted::OntologyRep*> otherAttrReps;
+    bool is_need_get_docs = false;
     for (size_t i = 0; i < workerNum; i++)
     {
         const KeywordSearchResult& wResult = workerResults.result(i);
         //wResult.print();
+
+        if (!wResult.distSearchInfo_.include_summary_data_)
+            is_need_get_docs = true;
 
         mergeResult.totalCount_ += wResult.totalCount_;
         totalTopKCount += wResult.topKDocs_.size();
@@ -156,6 +160,9 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
+    std::vector<std::pair<size_t, size_t> > pageOffsetInWorker;
+    pageOffsetInWorker.resize(topKCount);
+
     for (size_t cnt = 0; cnt < topKCount; cnt++)
     {
         // find doc which should be merged firstly from heads of multiple doc lists (sorted).
@@ -188,6 +195,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         const workerid_t& workerid = workerResults.workerId(maxi);
         const KeywordSearchResult& wResult = workerResults.result(maxi);
 
+        pageOffsetInWorker[cnt] = std::make_pair(maxi, iter[maxi]);
         mergeResult.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         mergeResult.topKWorkerIds_[cnt] = workerid;
         mergeResult.topKRankScoreList_[cnt] = wResult.topKRankScoreList_[iter[maxi]];
@@ -207,6 +215,67 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
 
     getMiningResult(workerResults, mergeResult);
+
+    mergeResult.distSearchInfo_.include_summary_data_ = !is_need_get_docs;
+    if (!is_need_get_docs)
+    {
+        size_t pageCount = mergeResult.count_;
+        if( mergeResult.start_ < mergeResult.topKDocs_.size() )
+        {
+            pageCount = std::min(pageCount, mergeResult.topKDocs_.size() - mergeResult.start_);
+        }
+        else
+        {
+            pageCount = 0;
+        }
+        size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
+        size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
+        LOG(INFO) << "begin merge the documents since the data is included. "
+            << "displayPropertyNum: " << displayPropertyNum << ", summary: " << isSummaryOn;
+
+        // initialize summary info for result
+        mergeResult.snippetTextOfDocumentInPage_.clear();
+        mergeResult.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+        mergeResult.fullTextOfDocumentInPage_.clear();
+        mergeResult.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+        mergeResult.rawTextOfSummaryInPage_.clear();
+        if (isSummaryOn)
+        {
+            mergeResult.rawTextOfSummaryInPage_.resize(isSummaryOn);
+        }
+        for (size_t dis = 0; dis < displayPropertyNum; dis++)
+        {
+            mergeResult.snippetTextOfDocumentInPage_[dis].resize(pageCount);
+            mergeResult.fullTextOfDocumentInPage_[dis].resize(pageCount);
+        }
+        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        {
+            mergeResult.rawTextOfSummaryInPage_[dis].resize(pageCount);
+        }
+
+        size_t pageEnd = std::min(mergeResult.topKDocs_.size(), mergeResult.start_ + pageCount);
+        for (size_t topkIndex = mergeResult.start_; topkIndex < pageEnd; ++topkIndex)
+        {
+            std::size_t curWorker = pageOffsetInWorker[topkIndex].first;
+            std::size_t workerOffset = pageOffsetInWorker[topkIndex].second;
+            const KeywordSearchResult& workerResult = workerResults.result(curWorker);
+
+            size_t i = topkIndex - mergeResult.start_;
+
+            for (size_t dis = 0; dis < displayPropertyNum; ++dis)
+            {
+                if (workerResult.snippetTextOfDocumentInPage_.size() > dis && workerResult.snippetTextOfDocumentInPage_[dis].size() > workerOffset)
+                    mergeResult.snippetTextOfDocumentInPage_[dis][i] = workerResult.snippetTextOfDocumentInPage_[dis][workerOffset];
+                if (workerResult.fullTextOfDocumentInPage_.size() > dis && workerResult.fullTextOfDocumentInPage_[dis].size() > workerOffset)
+                    mergeResult.fullTextOfDocumentInPage_[dis][i] = workerResult.fullTextOfDocumentInPage_[dis][workerOffset];
+            }
+            for (size_t dis = 0; dis < isSummaryOn; ++dis)
+            {
+                if (workerResult.rawTextOfSummaryInPage_.size() > dis && workerResult.rawTextOfSummaryInPage_[dis].size() > workerOffset)
+                    mergeResult.rawTextOfSummaryInPage_[dis][i] = workerResult.rawTextOfSummaryInPage_[dis][workerOffset];
+            }
+        }
+    }
 }
 
 void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -231,10 +300,15 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
 
     // initialize summary info for result
+    mergeResult.snippetTextOfDocumentInPage_.clear();
     mergeResult.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+    mergeResult.fullTextOfDocumentInPage_.clear();
     mergeResult.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+    mergeResult.rawTextOfSummaryInPage_.clear();
     if (isSummaryOn)
+    {
         mergeResult.rawTextOfSummaryInPage_.resize(isSummaryOn);
+    }
 
     for (size_t dis = 0; dis < displayPropertyNum; dis++)
     {

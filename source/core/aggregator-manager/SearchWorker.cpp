@@ -96,6 +96,31 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     {
         miningManager_->getMiningResult(actionItem, resultItem);
     }
+
+    if (!actionItem.disableGetDocs_)
+    {
+        if( (resultItem.topKDocs_.size() > 20) &&
+            (actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_) > 20 )
+        {
+            return;
+        }
+        std::vector<sf1r::docid_t> possible_docsInPage;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin();
+        for (size_t i = 0 ; it != resultItem.topKDocs_.end(); ++i, ++it)
+        {
+            if (i < actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_)
+            {
+                possible_docsInPage.push_back(*it);
+            }
+            else
+                break;
+        }
+        LOG(INFO) << "pre get documents since the page result is small. size: " << possible_docsInPage.size();
+
+        resultItem.distSearchInfo_.include_summary_data_ = true;
+        // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
+        getResultItem(actionItem, possible_docsInPage, resultItem.propertyQueryTermList_, resultItem);
+    }
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)

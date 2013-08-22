@@ -120,40 +120,34 @@ bool IndexSearchService::getSearchResult(
 
         searchWorker_->rerank(actionItem, resultItem);
 
-        // Get and aggregate Summary, Mining results from multiple nodes.
-        ResultMapT resultMap;
-        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-        if (resultMap.empty())
+        if (actionItem.disableGetDocs_ || resultItem.distSearchInfo_.include_summary_data_)
         {
-            // empty is meaning we do not need send request to any worker to get 
-            // any documents. But we do need to get mining result.
-            LOG(INFO) << "empty worker map after split. get mining result from all workers";
-            //KeywordSearchResult workerResult;
-            //workerResult.propertyQueryTermList_ = resultItem.propertyQueryTermList_;
-            //workerResult.rawQueryString_ = resultItem.rawQueryString_;
-            //workerResult.pruneQueryString_ = resultItem.pruneQueryString_;
-            //workerResult.encodingType_ = resultItem.encodingType_;
-            //workerResult.collectionName_ = resultItem.collectionName_;
-            //workerResult.analyzedQuery_ = resultItem.analyzedQuery_;
-            //workerResult.queryTermIdList_ = resultItem.queryTermIdList_;
-            //workerResult.totalCount_ = resultItem.totalCount_;
-            //workerResult.TOP_K_NUM = resultItem.TOP_K_NUM;
-            //workerResult.distSearchInfo_.isDistributed_ = resultItem.distSearchInfo_.isDistributed_;
-            //searchAggregator_->distributeRequest(actionItem.collectionName_, "getSummaryMiningResult",
-            //    actionItem, resultItem);
+            LOG(INFO) << "getdocs disabled or summary data included, no need get the data from other workers.";
         }
         else
         {
-            RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-            for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+            // Get and aggregate Summary, Mining results from multiple nodes.
+            ResultMapT resultMap;
+            searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
+            if (resultMap.empty())
             {
-                workerid_t workerid = it->first;
-                KeywordSearchResult& subResultItem = it->second;
-                requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+                // empty is meaning we do not need send request to any worker to get 
+                // any documents. But we do need to get mining result.
+                LOG(INFO) << "empty worker map after split. get mining result from all workers";
             }
+            else
+            {
+                RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+                for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+                {
+                    workerid_t workerid = it->first;
+                    KeywordSearchResult& subResultItem = it->second;
+                    requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+                }
 
-            searchAggregator_->distributeRequest(
-                actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
+                searchAggregator_->distributeRequest(
+                    actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
+            }
         }
         searchCache_->set(identity, resultItem);
     }
