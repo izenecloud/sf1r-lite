@@ -454,6 +454,14 @@ public:
     /// Distributed utility
     /// @{
 
+    bool isMasterEnabled()
+    {
+        return topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.master_.enabled_;
+    }
+    bool isWorkerEnabled()
+    {
+        return topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.worker_.enabled_;
+    }
     /// Dsitributed search config
     //bool isDistributedSearchService() { return isDistributedNode(); }
     bool isSearchMaster() { return isServiceMaster("search"); }

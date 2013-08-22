@@ -1255,7 +1255,7 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
         indexBundleConfig.indexShardKeys_.push_back(key);
     }
 
-    if (SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.master_.enabled_)
+    if (SF1Config::get()->isMasterEnabled() || SF1Config::get()->isWorkerEnabled())
     {
         Iterator<Element> service_it("DistributedService");
         for (service_it = service_it.begin(shardSchema); service_it != service_it.end(); service_it++)
@@ -1263,7 +1263,9 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
             parseServiceMaster(service_it.Get(), collectionMeta);
         }
         if (!SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.master_.hasAnyService())
-            throw XmlConfigParserException("at least 1 service should be configured while master is enabled.");
+        {
+            throw XmlConfigParserException("no distributed service configured while master/worker is enabled.");
+        }
     }
 }
 
@@ -1273,6 +1275,11 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
     getAttribute(service, "type", service_type, true);
     MasterCollection masterCollection;
     masterCollection.name_ = collectionMeta.getName();
+
+    if (SF1Config::get()->isWorkerEnabled())
+    {
+        SF1Config::get()->addServiceWorker(service_type, masterCollection.name_);
+    }
 
     Sf1rTopology& sf1rTopology = SF1Config::get()->topologyConfig_.sf1rTopology_;
 
@@ -1330,8 +1337,10 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
         throw XmlConfigParserException("Unsupported distributed service type: " + service_type);
     }
 
+    if (!SF1Config::get()->isMasterEnabled())
+        return;
+
     SF1Config::get()->addServiceMaster(service_type, masterCollection);
-    SF1Config::get()->addServiceWorker(service_type, masterCollection.name_);
 }
 
 

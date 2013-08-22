@@ -245,6 +245,8 @@ void FileSyncServer::stop()
 {
     instance.end();
     instance.join();
+    threadpool_.clear();
+    threadpool_.wait();
 }
 
 void FileSyncServer::dispatch(msgpack::rpc::request req)

@@ -1355,34 +1355,6 @@ void MasterManagerBase::recover(const std::string& zpath)
 
 void MasterManagerBase::setServicesData(ZNode& znode)
 {
-    // write service name to server node.
-    std::string services;
-    ServiceMapT::const_iterator cit = all_distributed_services_.begin();
-    while(cit != all_distributed_services_.end())
-    {
-        if (services.empty())
-            services = cit->first;
-        else
-            services += "," + cit->first;
-
-        std::string collections;
-        const std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.getMasterCollList(cit->first);
-        for (std::vector<MasterCollection>::const_iterator it = collectionList.begin();
-                it != collectionList.end(); it++)
-        {
-            if (collections.empty())
-                collections = (*it).name_;
-            else
-                collections += "," + (*it).name_;
-        }
- 
-        znode.setValue(cit->first + ZNode::KEY_COLLECTION, collections);
-
-        ++cit;
-    }
-    znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
-    znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
-
     std::string new_state = "ReadyForRead";
     if (isMineNewSharding())
     {
@@ -1390,9 +1362,38 @@ void MasterManagerBase::setServicesData(ZNode& znode)
         LOG(INFO) << "I am the new sharding node waiting migrate.";
     }
 
+    znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_SERVICE_STATE, new_state);
+
     if (sf1rTopology_.curNode_.master_.hasAnyService())
     {
+        // write service name to server node.
+        std::string services;
+        ServiceMapT::const_iterator cit = all_distributed_services_.begin();
+        while(cit != all_distributed_services_.end())
+        {
+            if (services.empty())
+                services = cit->first;
+            else
+                services += "," + cit->first;
+
+            std::string collections;
+            const std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.getMasterCollList(cit->first);
+            for (std::vector<MasterCollection>::const_iterator it = collectionList.begin();
+                it != collectionList.end(); it++)
+            {
+                if (collections.empty())
+                    collections = (*it).name_;
+                else
+                    collections += "," + (*it).name_;
+            }
+
+            znode.setValue(cit->first + ZNode::KEY_COLLECTION, collections);
+
+            ++cit;
+        }
+
+        znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
         znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
     }

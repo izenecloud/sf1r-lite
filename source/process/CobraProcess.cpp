@@ -232,7 +232,7 @@ bool CobraProcess::initDriverServer()
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
-    DriverThreadPool::init(1, 1);
+    //DriverThreadPool::init(1, 1);
     // init Router
     driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
@@ -328,7 +328,7 @@ bool CobraProcess::startDistributedServer()
     DistributeFileSyncMgr::get()->init();
 
     // Start worker server
-    if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
+    if (SF1Config::get()->isWorkerEnabled())
     {
         workerRouter_.reset(new net::aggregator::WorkerRouter);
         WorkerRouterInitializer routerInitializer;
@@ -347,7 +347,7 @@ bool CobraProcess::startDistributedServer()
     }
 
     // Start server for master
-    if (SF1Config::get()->isSearchMaster() || SF1Config::get()->isRecommendMaster())
+    if (SF1Config::get()->isMasterEnabled())
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;
