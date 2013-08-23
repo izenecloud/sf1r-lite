@@ -244,7 +244,7 @@ ProductMatcher::ProductMatcher()
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
  book_category_("书籍/杂志/报纸"),
- use_psm_(false)
+ use_psm_(false), psm_(NULL)
 {
 }
 
@@ -1489,7 +1489,7 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     UString title(stitle, UString::UTF_8);
     CategoryIndex::const_iterator cit = category_index_.find(scategory);;
     if(cit==category_index_.end()) return;
-    if(psm_!=NULL) psm_->TryInsert(doc);
+    if(psm_!=NULL) psm_->Insert(doc);
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->TryInsert(doc);
@@ -1571,7 +1571,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
     ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
-    if(psm_!=NULL) psm_->Flush(psm_result_);
+    if(psm_!=NULL) psm_->Flush();
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->Flush(psm_result_);

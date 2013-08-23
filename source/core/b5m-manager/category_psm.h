@@ -47,21 +47,36 @@ namespace sf1r {
             //}
             //std::vector<std::string> models;
         //};
-        typedef boost::unordered_map<uint128_t, uint128_t> ResultMap;
+        typedef std::vector<std::pair<std::string, double> > DocVector;
+        typedef idmlib::dd::SimHash SimHash;
+        typedef idmlib::dd::CharikarAlgo CharikarAlgo;
         struct BufferItem
         {
             std::string title;
+            DocVector doc_vector;
+            SimHash fp;
             double price;
         };
         typedef std::vector<BufferItem> BufferValue;
         typedef std::pair<std::string, std::string> BufferKey;
         typedef boost::unordered_map<BufferKey, BufferValue> Buffer;
+
+        struct Group
+        {
+            std::vector<BufferItem> items;
+            uint32_t cindex;
+            SimHash fp;
+            double price;
+        };
+        typedef boost::unordered_map<BufferKey, std::vector<Group> > ResultMap;
+        typedef boost::unordered_map<std::string, double> WeightMap;
     public:
         //typedef idmlib::dd::DupDetector<uint32_t, uint32_t, Attach> DDType;
         //typedef DDType::GroupTableType GroupTableType;
         //typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, Attach> PsmType;
         CategoryPsm():
         model_regex_("[a-zA-Z\\d\\-]{4,}")
+          , algo_()
           //, table_(NULL), dd_(NULL)
           , stat_(0,0)
         {
@@ -122,20 +137,138 @@ namespace sf1r {
             return false;
         }
 
-        bool TryInsert(const Document& doc)
+        bool Insert(const Document& doc)
         {
             std::string scategory;
             doc.getString("Category", scategory);
             std::string ncategory;
             if(!CategoryMatch(scategory, ncategory)) return false;
             stat_.first++;
-            std::string stitle;
-            doc.getString("Title", stitle);
-            if(stitle.empty()) return false;
             std::string ssource;
             doc.getString("Source", ssource);
             std::string sdocid;
             doc.getString("DOCID", sdocid);
+            BufferKey key;
+            key.first = ncategory;
+            BufferItem item;
+            if(!Analyze_(doc, key, item)) return false;
+            boost::unique_lock<boost::mutex> lock(mutex_);
+            buffer_[key].push_back(item);
+            stat_.second++;
+
+
+            //boost::unique_lock<boost::mutex> lock(mutex_);
+            //if(cache_list_.empty()) cache_list_.resize(1);
+            //uint32_t id = cache_list_.size();
+            //dd_->InsertDoc(id, doc_vector, attach);
+            //CacheItem cache;
+            //cache.oid = B5MHelper::StringToUint128(sdocid);
+            //cache.title = stitle;
+            //cache.source = ssource;
+            //cache_list_.push_back(cache);
+            return true;
+        }
+
+        bool Search(const Document& doc, std::string& pid, std::string& ptitle)
+        {
+            std::string scategory;
+            doc.getString("Category", scategory);
+            std::string ncategory;
+            if(!CategoryMatch(scategory, ncategory)) return false;
+            BufferKey key;
+            key.first = ncategory;
+            BufferItem item;
+            if(!Analyze_(doc, key, item)) return false;
+            ResultMap::const_iterator it = result_.find(key);
+            if(it==result_.end()) return false;
+            const std::vector<Group>& groups = it->second;
+            std::pair<double, uint32_t> dist_index(-1.0, 0);
+            for(uint32_t j=0;j<groups.size();j++)
+            {
+                double dist = Distance_(item, groups[j]);
+                if(dist_index.first<0.0 || dist<dist_index.first)
+                {
+                    dist_index.first = dist;
+                    dist_index.second = j;
+                }
+            }
+            if(dist_index.first>=0.0&&ValidDistance_(dist_index.first))
+            {
+                const Group& g = groups[dist_index.second];
+                std::string url = "http://www.b5m.com/"+key.first+"/"+key.second+"/"+boost::lexical_cast<std::string>(dist_index.second);
+                pid = B5MHelper::GetPidByUrl(url);
+                const BufferItem& center = g.items[g.cindex];
+                ptitle = center.title;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
+        bool Flush()
+        {
+            LOG(INFO)<<"[STAT]"<<stat_.first<<","<<stat_.second<<std::endl;
+            LOG(INFO)<<"buffer size "<<buffer_.size()<<std::endl;
+            
+            std::size_t p=0;
+            for(Buffer::const_iterator it = buffer_.begin();it!=buffer_.end();++it)
+            {
+                Clustering_(it->first, it->second);
+                ++p;
+                if(p%100000==0)
+                {
+                    LOG(INFO)<<"Processing clustering "<<p<<std::endl;
+                }
+            }
+            for(ResultMap::const_iterator it = result_.begin();it!=result_.end();++it)
+            {
+                const BufferKey& key = it->first;
+                std::cout<<"[Category]"<<key.first<<" [Model]"<<key.second<<" : "<<std::endl;
+                const std::vector<Group>& groups = it->second;
+                for(uint32_t i=0;i<groups.size();i++)
+                {
+                    const Group& group = groups[i];
+                    const BufferItem& center = group.items[group.cindex];
+                    std::cout<<"\t[Group]"<<center.title<<","<<center.price<<" : "<<group.items.size()<<std::endl;
+                    for(uint32_t j=0;j<group.items.size();j++)
+                    {
+                        const BufferItem& item = group.items[j];
+                        std::cout<<"\t\t[InGroup]"<<item.title<<","<<item.price<<std::endl;
+                    }
+                }
+            }
+            //dd_->RunDdAnalysis();
+            //const std::vector<std::vector<uint32_t> >& group_info = table_->GetGroupInfo();
+            //for(uint32_t i=0;i<group_info.size();i++)
+            //{
+                //uint32_t gid = i;
+                //const std::vector<uint32_t>& group = group_info[gid];
+                //if(group.size()<2) continue;
+                //const CacheItem& base = cache_list_[group.front()];
+                //for(uint32_t j=0;j<group.size();j++)
+                //{
+                    //const CacheItem& item = cache_list_[group[j]];
+                    //result[item.oid] = base.oid;
+                //}
+                //std::cout<<"[GID]"<<gid<<std::endl;
+                //for(uint32_t j=0;j<group.size();j++)
+                //{
+                    //const CacheItem& item = cache_list_[group[j]];
+                    //std::cout<<"\t"<<item.title<<","<<item.source<<std::endl;
+                //}
+            //}
+            return true;
+        }
+
+    private:
+        bool Analyze_(const Document& doc, BufferKey& key, BufferItem& item)
+        {
+            std::string stitle;
+            doc.getString("Title", stitle);
+            if(stitle.empty()) return false;
             std::vector<std::string> models;
             boost::algorithm::to_lower(stitle);
             boost::algorithm::trim(stitle);
@@ -221,123 +354,141 @@ namespace sf1r {
             doc.getString("Price", sprice);
             ProductPrice pprice;
             pprice.Parse(sprice);
-            BufferItem item;
             item.title = stitle;
             if(!pprice.GetMid(item.price)) return false;
-            BufferKey key(ncategory, model);
-            buffer_[key].push_back(item);
-            stat_.second++;
-            //std::vector<std::pair<std::string, double> > doc_vector;
-            //Attach attach;
-            //attach.models = models;
-            //std::vector<idmlib::util::IDMTerm> term_list;
-            //UString title(stitle, UString::UTF_8);
-            //analyzer_->GetTermList(title, term_list);
+            key.second = model;
+            //BufferKey key(ncategory, model);
+            DocVector& doc_vector = item.doc_vector;
+            std::vector<idmlib::util::IDMTerm> term_list;
+            UString title(stitle, UString::UTF_8);
+            analyzer_->GetTermList(title, term_list);
+            if(term_list.empty()) return false;
 
-            //doc_vector.reserve(term_list.size());
+            doc_vector.reserve(term_list.size());
 
-//#ifdef PM_CLUST_TEXT_DEBUG
-            //std::string stitle;
-            //title.convertString(stitle, izenelib::util::UString::UTF_8);
-            //std::cout<<"[Title] "<<stitle<<std::endl<<"[OTokens] ";
-            //for (uint32_t i=0;i<term_list.size();i++)
-            //{
-                //std::cout<<"["<<term_list[i].TextString()<<","<<term_list[i].tag<<"],";
-            //}
-            //std::cout<<std::endl;
-//#endif
-            //if(term_list.empty()) return false;
+            WeightMap wm;
 
-            //typedef boost::unordered_map<std::string, double> WeightMap;
-            //WeightMap wm;
-
-            //for (uint32_t i=0;i<term_list.size();i++)
-            //{
-                //const std::string& str = term_list[i].TextString();
-                //if( stop_set_.find(str)!=stop_set_.end()) continue;
-                //WeightMap::iterator wit = wm.find(str);
-                //double weight = 1.0;
-                //if(wit==wm.end())
-                //{
-                    //wm.insert(std::make_pair(str, weight));
-                //}
-                //else
-                //{
-                    //wit->second+=weight;
-                //}
-                ////if( app.find(str)!=app.end()) continue;
-                ////app.insert(str);
-                ////char tag = term_list[i].tag;
-                ////double weight = GetWeight_(term_list.size(), term_list[i].text, tag);
-                ////if( weight<=0.0 ) continue;
-                ////double weight = 1.0;
-                ////doc_vector.push_back(std::make_pair(str, weight));
-            //}
-            //for(uint32_t i=0;i<models.size();i++)
-            //{
-                //const std::string& str = models[i];
-                //WeightMap::iterator wit = wm.find(str);
-                //double weight = 4.0;
-                //if(wit==wm.end())
-                //{
-                    //wm.insert(std::make_pair(str, weight));
-                //}
-                //else
-                //{
-                    //wit->second+=weight;
-                //}
-            //}
-            //for(WeightMap::const_iterator wit = wm.begin();wit!=wm.end();wit++)
-            //{
-                //doc_vector.push_back(std::make_pair(wit->first, wit->second));
-            //}
-
-//#ifdef PM_CLUST_TEXT_DEBUG
-            //std::cout<<"[ATokens] ";
-            //for (uint32_t i=0;i<doc_vector.size();i++)
-            //{
-                //std::cout<<"["<<doc_vector[i].first<<","<<doc_vector[i].second<<"],";
-            //}
-            //std::cout<<std::endl;
-//#endif
-
-            //boost::unique_lock<boost::mutex> lock(mutex_);
-            //if(cache_list_.empty()) cache_list_.resize(1);
-            //uint32_t id = cache_list_.size();
-            //dd_->InsertDoc(id, doc_vector, attach);
-            //CacheItem cache;
-            //cache.oid = B5MHelper::StringToUint128(sdocid);
-            //cache.title = stitle;
-            //cache.source = ssource;
-            //cache_list_.push_back(cache);
+            for (uint32_t i=0;i<term_list.size();i++)
+            {
+                const std::string& str = term_list[i].TextString();
+                if( stop_set_.find(str)!=stop_set_.end()) continue;
+                WeightMap::iterator wit = wm.find(str);
+                double weight = 1.0;
+                if(wit==wm.end())
+                {
+                    wm.insert(std::make_pair(str, weight));
+                }
+                else
+                {
+                    wit->second+=weight;
+                }
+            }
+            for(uint32_t i=0;i<models.size();i++)
+            {
+                const std::string& str = models[i];
+                WeightMap::iterator wit = wm.find(str);
+                double weight = 4.0;
+                if(wit==wm.end())
+                {
+                    wm.insert(std::make_pair(str, weight));
+                }
+                else
+                {
+                    wit->second+=weight;
+                }
+            }
+            std::vector<std::string> v;
+            v.reserve(wm.size());
+            std::vector<double> weights;
+            weights.reserve(wm.size());
+            for(WeightMap::const_iterator wit = wm.begin();wit!=wm.end();wit++)
+            {
+                doc_vector.push_back(std::make_pair(wit->first, wit->second));
+                v.push_back(wit->first);
+                weights.push_back(wit->second);
+            }
+            algo_.generate_document_signature(v, weights, item.fp);
             return true;
         }
 
-        bool Flush(ResultMap& result)
+        void Clustering_(const BufferKey& key, const BufferValue& value)
         {
-            //std::cerr<<"[STAT]"<<stat_.first<<","<<stat_.second<<std::endl;
-            //dd_->RunDdAnalysis();
-            //const std::vector<std::vector<uint32_t> >& group_info = table_->GetGroupInfo();
-            //for(uint32_t i=0;i<group_info.size();i++)
-            //{
-                //uint32_t gid = i;
-                //const std::vector<uint32_t>& group = group_info[gid];
-                //if(group.size()<2) continue;
-                //const CacheItem& base = cache_list_[group.front()];
-                //for(uint32_t j=0;j<group.size();j++)
-                //{
-                    //const CacheItem& item = cache_list_[group[j]];
-                    //result[item.oid] = base.oid;
-                //}
-                //std::cout<<"[GID]"<<gid<<std::endl;
-                //for(uint32_t j=0;j<group.size();j++)
-                //{
-                    //const CacheItem& item = cache_list_[group[j]];
-                    //std::cout<<"\t"<<item.title<<","<<item.source<<std::endl;
-                //}
-            //}
-            return true;
+            std::vector<Group> groups;
+            for(uint32_t i=0;i<value.size();i++)
+            {
+                const BufferItem& item = value[i];
+                std::pair<double, uint32_t> dist_index(-1.0, 0);
+                for(uint32_t j=0;j<groups.size();j++)
+                {
+                    double dist = Distance_(item, groups[j]);
+                    if(dist_index.first<0.0 || dist<dist_index.first)
+                    {
+                        dist_index.first = dist;
+                        dist_index.second = j;
+                    }
+                }
+                if(dist_index.first>=0.0&&ValidDistance_(dist_index.first))
+                {
+                    Group& g = groups[dist_index.second];
+                    g.items.push_back(item);
+                    GroupRefresh_(g);
+                }
+                else
+                {
+                    Group g;
+                    g.items.push_back(item);
+                    GroupRefresh_(g);
+                    groups.push_back(g);
+                }
+            }
+            result_[key] = groups;
         }
+
+        void GroupRefresh_(Group& g)
+        {
+            if(g.items.empty()) return;
+            WeightMap wm;
+            double price = 0.0;
+            for(uint32_t i=0;i<g.items.size();i++)
+            {
+                const DocVector& doc_vector = g.items[i].doc_vector;
+                for(uint32_t j=0;j<doc_vector.size();j++)
+                {
+                    WeightMap::iterator it = wm.find(doc_vector[j].first);
+                    if(it==wm.end())
+                    {
+                        wm.insert(std::make_pair(doc_vector[j].first, doc_vector[j].second));
+                    }
+                    else
+                    {
+                        it->second+=doc_vector[j].second;
+                    }
+                }
+                price += g.items[i].price;
+            }
+            price /= g.items.size();
+            g.price = price;
+            std::vector<std::string> v;
+            v.reserve(wm.size());
+            std::vector<double> weights;
+            weights.reserve(wm.size());
+            for(WeightMap::const_iterator it = wm.begin();it!=wm.end();++it)
+            {
+                v.push_back(it->first);
+                weights.push_back(it->second);
+            }
+            algo_.generate_document_signature(v, weights, g.fp);
+            std::vector<std::pair<double, uint32_t> > dist_index;
+            for(uint32_t i=0;i<g.items.size();i++)
+            {
+                double dist = Distance_(g.items[i], g);
+                dist_index.push_back(std::make_pair(dist, i));
+            }
+            std::sort(dist_index.begin(), dist_index.end());
+            g.cindex = dist_index[0].second;
+
+        }
+
 
     private:
         bool IsYear_(const std::string& str) const
@@ -345,6 +496,29 @@ namespace sf1r {
             if(str.length()!=4) return false;
             if(boost::algorithm::starts_with(str, "201")) return true;
             return false;
+        }
+
+        double Distance_(const BufferItem& item, const Group& group) const
+        {
+            uint32_t hamming_dist = 0;
+
+            for (uint32_t i = 0; i < SimHash::FP_SIZE; i++)
+            {
+                hamming_dist += __builtin_popcountl(item.fp.desc[i] ^ group.fp.desc[i]);
+            }
+            double maxp = item.price;
+            double minp = group.price;
+            if(minp>maxp) std::swap(maxp, minp);
+            double pratio = maxp/minp;
+            if(pratio>2.0) return 999.0;
+            double hratio = std::log((double)hamming_dist+2.0);
+            double dist = pratio*hratio;
+            return dist;
+        }
+
+        bool ValidDistance_(double distance) const
+        {
+            return distance<4.5;
         }
 
     private:
@@ -356,6 +530,8 @@ namespace sf1r {
         //DDType* dd_;
         //std::vector<CacheItem> cache_list_;
         Buffer buffer_;
+        ResultMap result_;
+        CharikarAlgo algo_;
         boost::unordered_set<std::string> stop_set_;
         boost::unordered_set<std::string> model_stop_set_;
 
