@@ -44,7 +44,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     }
     std::string buffer_size = buffer_size_;
     if(buffer_size.empty()) buffer_size = "1000M";
-    std::string cmd = "sort --key=1,3 -m --buffer-size="+buffer_size+" "+sorter_path+"/*";
+    std::string cmd = "sort -m --buffer-size="+buffer_size+" "+sorter_path+"/*";
     if(!last_m.empty())
     {
         std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_m); 
@@ -90,6 +90,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     std::string spid;
     typedef std::vector<Value> BufferType;
     BufferType* buffer = new BufferType;
+    thread_num = 1;
     B5mThreadPool<BufferType> pool(thread_num, boost::bind(&B5moSorter::OBag_, this, _1));
     while(std::getline(is, line))
     {
@@ -178,9 +179,14 @@ void B5moSorter::WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, con
 }
 void B5moSorter::Sort_(std::vector<Value>& docs)
 {
-    std::sort(docs.begin(), docs.end(), PidCompare_);
+    std::stable_sort(docs.begin(), docs.end(), PidCompare_);
     uint32_t index = ++index_;
-    std::string file = m_+"/"+boost::lexical_cast<std::string>(index);
+    std::string filename = boost::lexical_cast<std::string>(index);
+    while(filename.length()<10)
+    {
+        filename = "0"+filename;
+    }
+    std::string file = m_+"/"+filename;
     std::ofstream ofs(file.c_str());
     for(uint32_t i=0;i<docs.size();i++)
     {
@@ -236,6 +242,12 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     {
         if(odocs[i].type!=DELETE_SCD)
         {
+            //std::string pid;
+            //odocs[i].getString("uuid", pid);
+            //if(pid=="00001c622f172281f128f65d8d526ccc")
+            //{
+            //    LOG(INFO)<<"XXXXX "<<pid<<" in mirror"<<std::endl;
+            //}
             WriteValueSafe_(mirror_ofs_, odocs[i], ts_);
         }
     }

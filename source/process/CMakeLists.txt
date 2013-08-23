@@ -253,6 +253,7 @@ IF(OpenCV_FOUND)
       ${Glog_LIBRARIES}
       ${TokyoCabinet_LIBRARIES}
       ${CMAKE_THREAD_LIBS_INIT}
+      ${OpenSSL_LIBRARIES}
       $ENV{TBLIB_ROOT}/lib/libtbnet.so
       $ENV{TBLIB_ROOT}/lib/libtbsys.so
       $ENV{HOME}/tfs_bin/lib/libtfsclient.so
