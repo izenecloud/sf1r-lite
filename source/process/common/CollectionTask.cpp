@@ -372,6 +372,12 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
             collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
         }
 
+        if (!collectionHandler->indexTaskService_->isNeedDoLocal())
+        {
+            LOG(INFO) << "local worker is disabled while rebuilding.";
+            return false;
+        }
+
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
 
         bfs::path tmppath = bfs::path(collPath.getCollectionDataPath());

@@ -71,6 +71,8 @@ public:
 
     std::string getShardingMapDir();
 
+    bool isNeedDoLocal();
+
 private:
     bool SendRequestToSharding(uint32_t shardid);
     bool distributedIndex_(unsigned int numdoc, std::string scd_dir);

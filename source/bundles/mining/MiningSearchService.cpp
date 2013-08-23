@@ -288,7 +288,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     bool ret = true;
 
     bool is_worker_self = searchAggregator_->isLocalWorker(workerId);
-    if (is_worker_self || !bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
+    if (is_worker_self || !MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->visitDoc(docId, ret);
     }

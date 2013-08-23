@@ -158,6 +158,9 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, bool dis
                 //    myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
                 //    scd_path = (bfs::path(scd_path)/bfs::path(DISPATCH_TEMP_DIR + myshard)).string();
                 //}
+                
+                if (!isNeedDoLocal())
+                    return false;
                 indexWorker_->index(scd_path, numdoc, result);
             }
         }
@@ -204,6 +207,9 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, bool dis
                 }
             }
         }
+
+        if (!isNeedDoLocal())
+            return false;
         indexWorker_->index(scd_path, numdoc, result);
     }
 
@@ -220,19 +226,35 @@ bool IndexTaskService::isNeedSharding()
     return false;
 }
 
+bool IndexTaskService::isNeedDoLocal()
+{
+    if (NodeManagerBase::get()->isDistributed() && !bundleConfig_->isWorkerNode())
+    {
+        LOG(INFO) << "local worker is disabled, no need do local work.";
+        return false;
+    }
+    return true;
+}
+
 bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list, int64_t timestamp)
 {
+    if (!isNeedDoLocal())
+        return false;
     indexWorker_->disableSharding(false);
     return indexWorker_->buildCollection(0, scd_list, timestamp);
 }
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp)
 {
+    if (!isNeedDoLocal())
+        return false;
     return indexWorker_->reindex(documentManager, timestamp);
 }
 
 bool IndexTaskService::optimizeIndex()
 {
+    if (!isNeedDoLocal())
+        return false;
     return indexWorker_->optimizeIndex();
 }
 
@@ -410,9 +432,11 @@ bool IndexTaskService::distributedIndexImpl_(
         scd_dir = bundleConfig_->indexSCDPath();
 
     bool ret = true;
-    // starting local index.
-    indexWorker_->index(scd_dir, numdoc, ret);
-
+    if (isNeedDoLocal())
+    {
+        // starting local index.
+        indexWorker_->index(scd_dir, numdoc, ret);
+    }
     if (ret && !DistributeFileSys::get()->isEnabled())
     {
         bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
@@ -429,6 +453,8 @@ bool IndexTaskService::distributedIndexImpl_(
         }
     }
 
+    if (!isNeedDoLocal())
+        return false;
     return ret;
 }
 
@@ -643,6 +669,11 @@ bool IndexTaskService::doMigrateWork(bool removing,
 
 bool IndexTaskService::addNewShardingNodes(const std::vector<shardid_t>& new_sharding_nodes)
 {
+    if (!bundleConfig_->isMasterAggregator())
+    {
+        LOG(INFO) << "change sharding node must be send to the master node.";
+        return false;
+    }
     if (!sharding_strategy_ || sharding_strategy_->shard_cfg_.shardidList_.size() == 0)
     {
         LOG(ERROR) << "no sharding config.";
@@ -773,7 +804,7 @@ bool IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
 void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sharding_nodes, bool removing)
 {
     std::string sharding_cfg;
-    const std::vector<shardid_t>& curr_shard_nodes = getShardidListForSearch();
+    std::vector<shardid_t> curr_shard_nodes = getShardidListForSearch();
     if (!removing)
     {
         for (size_t i = 0; i < curr_shard_nodes.size(); ++i)
@@ -801,6 +832,10 @@ void IndexTaskService::updateShardingConfig(const std::vector<shardid_t>& new_sh
     LOG(INFO) << "send request : " << json_req;
     if (!removing)
         MasterManagerBase::get()->pushWriteReqToShard(json_req, new_sharding_nodes, true, true);
+    if (bundleConfig_->isMasterAggregator() && !bundleConfig_->isWorkerNode())
+    {
+        curr_shard_nodes.push_back(MasterManagerBase::get()->getMyShardId());
+    }
     MasterManagerBase::get()->pushWriteReqToShard(json_req, curr_shard_nodes, true, true);
 }
 
@@ -813,6 +848,12 @@ bool IndexTaskService::generateMigrateSCD(const std::map<shardid_t, std::vector<
 
 bool IndexTaskService::removeShardingNodes(const std::vector<shardid_t>& remove_sharding_nodes)
 {
+    if (!bundleConfig_->isMasterAggregator())
+    {
+        LOG(INFO) << "change sharding node must be send to the master node.";
+        return false;
+    }
+
     if (!sharding_strategy_ || sharding_strategy_->shard_cfg_.shardidList_.size() == 0)
     {
         LOG(ERROR) << "no sharding config.";

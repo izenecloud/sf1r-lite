@@ -1262,7 +1262,8 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
         {
             parseServiceMaster(service_it.Get(), collectionMeta);
         }
-        if (!SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.master_.hasAnyService())
+        if (!SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.master_.hasAnyService() &&
+            !SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.worker_.hasAnyService())
         {
             throw XmlConfigParserException("no distributed service configured while master/worker is enabled.");
         }
@@ -1310,6 +1311,11 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
                 throw std::runtime_error(
                     std::string("failed to parse shardids: ") + shardids + ", " + e.what());
             }
+            if (shardid == sf1rTopology.curNode_.nodeId_ &&
+                !SF1Config::get()->isWorkerEnabled())
+            {
+                throw XmlConfigParserException("The shard id include myself, but myself worker is disabled.");
+            }
             shardid_set.insert((shardid_t)shardid);
         }
         masterCollection.shardList_.insert(masterCollection.shardList_.end(),
@@ -1318,6 +1324,10 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
 
     if (masterCollection.shardList_.empty())
     {
+        if (!SF1Config::get()->isWorkerEnabled())
+        {
+            throw XmlConfigParserException("no sharding id configured and current node is not a worker");
+        }
         // set to current as default
         masterCollection.shardList_.push_back(sf1rTopology.curNode_.nodeId_);
     }
