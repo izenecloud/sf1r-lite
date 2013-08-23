@@ -43,5 +43,8 @@ score_t NumericPropertyScorer::score(docid_t docId)
         return 0;
 
     score_t score = (value - minValue_) / minMaxDiff_;
+    score = std::max<score_t>(score, 0);
+    score = std::min<score_t>(score, 1);
+
     return score;
 }
