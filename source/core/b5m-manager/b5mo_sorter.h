@@ -87,7 +87,14 @@ namespace sf1r {
             else if(c>0) return false;
             else
             {
-                return doc1.ts<doc2.ts;
+                c = doc1.ts.compare(doc2.ts);
+                if(c<0) return true;
+                else if(c>0) return false;
+                else 
+                {
+                    //always keep -D to be in the last, as omapper changing will output -U.
+                    return doc1.doc.type<doc2.doc.type;
+                }
             }
         }
         void WaitUntilSortFinish_();

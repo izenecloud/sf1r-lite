@@ -9,6 +9,7 @@ NumericPropertyScorer::NumericPropertyScorer(
     const ProductScoreConfig& config,
     boost::shared_ptr<NumericPropertyTableBase> numericTable)
     : ProductScorer(config)
+    , config_(config)
     , numericTable_(numericTable)
     , minValue_(0)
     , maxValue_(0)
@@ -18,6 +19,9 @@ NumericPropertyScorer::NumericPropertyScorer(
     if (numericTable_->getFloatMinValue(minValue_) &&
         numericTable_->getFloatMaxValue(maxValue_))
     {
+        config_.limitScore(minValue_);
+        config_.limitScore(maxValue_);
+
         minMaxDiff_ = maxValue_ - minValue_;
         LOG(INFO) << "minValue_: " << minValue_
                   << ", maxValue_: " << maxValue_
@@ -33,12 +37,11 @@ score_t NumericPropertyScorer::score(docid_t docId)
 {
     score_t value = 0;
 
-    if (minMaxDiff_ == 0 || !numericTable_->getFloatValue(docId, value))
+    if (minMaxDiff_ == 0 ||
+        !numericTable_->getFloatValue(docId, value) ||
+        !config_.isValidScore(value))
         return 0;
 
     score_t score = (value - minValue_) / minMaxDiff_;
-    score = std::max<score_t>(score, 0);
-    score = std::min<score_t>(score, 1);
-
     return score;
 }

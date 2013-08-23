@@ -29,6 +29,7 @@ public:
     virtual score_t score(docid_t docId);
 
 private:
+    const ProductScoreConfig& config_;
     boost::shared_ptr<NumericPropertyTableBase> numericTable_;
     score_t minValue_;
     score_t maxValue_;
