@@ -850,7 +850,7 @@ void NodeManagerBase::enterCluster(bool start_master)
     nodeState_ = NODE_STATE_RECOVER_RUNNING;
     updateCurrentPrimary();
     LOG(INFO) << "begin recovering callback : " << self_primary_path_;
-    if (cb_on_recovering_)
+    if (cb_on_recovering_ && sf1rTopology_.curNode_.worker_.enabled_)
     {
         // unlock
         mutex_.unlock();
@@ -938,10 +938,12 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     stopping_ = false;
     nodeState_ = NODE_STATE_RECOVER_FINISHING;
 
-    mutex_.unlock();
-    if (cb_on_recover_wait_primary_)
+    if (cb_on_recover_wait_primary_ && sf1rTopology_.curNode_.worker_.enabled_)
+    {
+        mutex_.unlock();
         cb_on_recover_wait_primary_();
-    mutex_.lock();
+        mutex_.lock();
+    }
 
     nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
@@ -978,7 +980,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
     }
 
-    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
+    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_) &&
+        sf1rTopology_.curNode_.worker_.enabled_)
     {
         LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
         unregisterPrimary();
@@ -1491,7 +1494,7 @@ bool NodeManagerBase::isNeedReEnterCluster()
     //    LOG(WARNING) << "need re-enter cluster for primary is electing ";
     //    return true;
     //}
-    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
+    if (sf1rTopology_.curNode_.worker_.enabled_ && !cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
     {
         LOG(WARNING) << "need re-enter cluster for request log fall behind.";
         return true;
