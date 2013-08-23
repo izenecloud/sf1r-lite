@@ -44,13 +44,15 @@ RecommendManager::RecommendManager(
     , serInfo_(collectionPath.getQueryDataPath()+"/ser_info")
     , document_manager_(documentManager)
     , recommend_db_(NULL), concept_id_manager_(NULL)
-    , autofill_(new AutoFillSubManager())
     , query_correction_(query_correction)
     , analyzer_(analyzer)
     , logdays_(logdays)
     , dir_switcher_(collectionPath.getQueryDataPath())
     , max_docid_(0), max_docid_file_(collectionPath.getQueryDataPath()+"/max_id")
 {
+    if (mining_schema_.recommend_autofill)
+        autofill_.reset(new AutoFillSubManager());
+
     open();
 }
 
@@ -106,7 +108,11 @@ bool RecommendManager::open()
             //TODO
         }
     }
-    if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron)) return false;
+    std::cout << "xxxxxxxxxmining_schema_.recommend_autofill:" << mining_schema_.recommend_autofill << std::endl;
+    if (mining_schema_.recommend_autofill)
+        if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron, mining_schema_.recommend_autofill_days)) 
+            return false;
+
     isOpen_ = true;
     return true;
 }
@@ -391,14 +397,18 @@ void RecommendManager::RebuildForAutofill(
         const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
-    autofill_->buildIndex(queryList, labelList);
+    if (mining_schema_.recommend_autofill && autofill_)
+        autofill_->buildIndex(queryList, labelList);
 }
 
 bool RecommendManager::getAutoFillList(
         const izenelib::util::UString& query,
         std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
-    return autofill_->getAutoFillList(query, list);
+    if (mining_schema_.recommend_autofill && autofill_)
+        return autofill_->getAutoFillList(query, list);
+
+    return true;
 }
 
 uint32_t RecommendManager::getRelatedConcepts(

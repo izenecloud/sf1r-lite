@@ -2022,6 +2022,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             mining_schema.recommend_querylog = true;
         }
+        intern_node = getUniqChildElement(task_node, "AutoFill", false);
+        if (intern_node)
+        {
+            mining_schema.recommend_autofill = true;
+            getAttribute(intern_node, "days", mining_schema.recommend_autofill_days, false);
+        }
     }
 
     task_node = getUniqChildElement(mining_schema_node, "SuffixMatch", false);

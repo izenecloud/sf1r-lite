@@ -193,7 +193,8 @@ public:
     bool Init(const CollectionPath& collectionPath
             , const std::string& collectionName
             , const string& cronExpression
-            , const string& instanceName);
+            , const string& instanceName
+            , uint32_t days = 30);
 
     bool InitWhileHaveLeveldb();
     
