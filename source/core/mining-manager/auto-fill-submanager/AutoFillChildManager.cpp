@@ -434,6 +434,8 @@ bool AutoFillChildManager::InitFromLog()
         count++;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->countCharNum(query) > 10)
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
@@ -1230,6 +1232,8 @@ void AutoFillChildManager::updateFromLog()
         QueryType TempQuery;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->countCharNum(query) > 10)
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
