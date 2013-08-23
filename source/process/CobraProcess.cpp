@@ -232,7 +232,7 @@ bool CobraProcess::initDriverServer()
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
-    DriverThreadPool::init(1, 1);
+    //DriverThreadPool::init(1, 1);
     // init Router
     driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
