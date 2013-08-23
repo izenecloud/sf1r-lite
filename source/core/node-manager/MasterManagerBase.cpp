@@ -8,6 +8,17 @@
 
 using namespace sf1r;
 
+namespace {
+
+void removeReadOnlyNode(shardid_t sid, replicaid_t rid, MasterManagerBase::ROWorkerMapT& wmap)
+{
+    std::map<replicaid_t, boost::shared_ptr<Sf1rNode> > it = wmap.find(sid);
+    if (it == wmap.end())
+        return;
+    it->second.erase(rid);
+}
+
+}
 // note lock:
 // you should never sync call the interface which may hold a lock in the NodeManagerBase .
 //
@@ -79,6 +90,11 @@ void MasterManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
     }
 
     resetAggregatorConfig();
+}
+
+bool MasterManagerBase::isOnlyMaster()
+{
+    return (!sf1rTopology_.curNode_.worker_.enabled && sf1rTopology_.curNode_.master_.enabled_);
 }
 
 bool MasterManagerBase::init()
@@ -389,17 +405,23 @@ void MasterManagerBase::onDataChanged(const std::string& path)
     if (stopping_)
         return;
 
+    bool is_cared_node = (path.find(topologyPath_) != std::string::npos);
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
-        if (path.find(topologyPath_) != std::string::npos)
+        if (is_cared_node)
         {
             // try detect workers
             masterState_ = MASTER_STATE_STARTING;
             detectWorkers();
         }
     }
+    else
+    {
+        if (is_cared_node)
+            detectReadOnlyWorkers(path, false);
+    }
     // reset watch.
-    if (path.find(topologyPath_) != std::string::npos)
+    if (is_cared_node)
     {
         zookeeper_->isZNodeExists(path, ZooKeeper::WATCH);
         updateServiceReadStateWithoutLock("ReadyForRead", true);
@@ -972,7 +994,6 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
 
     for(std::set<shardid_t>::const_iterator cit = sf1rTopology_.all_shard_nodes_.begin();
         cit != sf1rTopology_.all_shard_nodes_.end(); ++cit)
-    //for (uint32_t nodeid = 1; nodeid <= sf1rTopology_.nodeNum_; nodeid++)
     {
         shardid_t nodeid = *cit;
         std::string data;
@@ -985,6 +1006,15 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
             // if this sf1r node provides worker server
             if (znode.hasKey(ZNode::KEY_WORKER_PORT))
             {
+                if (isOnlyMaster())
+                {
+                    boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
+                    sf1rNode->worker_.isGood_ = true;
+                    sf1rNode->nodeId_ = nodeid;
+                    updateWorkerNode(sf1rNode, znode);
+                    sf1rNode->replicaId_ = replicaId;
+                    readonly_workerMap_[nodeid][replicaId] = sf1rNode;
+                }
                 if (mine_primary)
                 {
                     if(!isPrimaryWorker(replicaId, nodeid))
@@ -1044,6 +1074,55 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
     return good;
 }
 
+void MasterManagerBase::detectReadOnlyWorkersInReplica(replicaid_t replicaId)
+{
+    for(std::set<shardid_t>::const_iterator cit = sf1rTopology_.all_shard_nodes_.begin();
+        cit != sf1rTopology_.all_shard_nodes_.end(); ++cit)
+    {
+        shardid_t nodeid = *cit;
+        std::string data;
+        std::string nodePath = getNodePath(replicaId, nodeid);
+        if (zookeeper_->getZNodeData(nodePath, data, ZooKeeper::WATCH))
+        {
+            ZNode znode;
+            znode.loadKvString(data);
+
+            // if this sf1r node provides worker server
+            if (znode.hasKey(ZNode::KEY_WORKER_PORT))
+            {
+                boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
+                sf1rNode->worker_.isGood_ = true;
+                sf1rNode->nodeId_ = nodeid;
+                updateWorkerNode(sf1rNode, znode);
+                sf1rNode->replicaId_ = replicaId;
+                readonly_workerMap_[nodeid][replicaId] = sf1rNode;
+            }
+        }
+        else
+        {
+            // reset watcher
+            zookeeper_->isZNodeExists(nodePath, ZooKeeper::WATCH);
+        }
+    }
+}
+
+
+void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool is_created_node)
+{
+    if (!isOnlyMaster())
+        return;
+    if (!nodepath.empty())
+    {
+        // check if we should re-detect all workers.
+    }
+    readonly_workerMap_.clear();
+    for (size_t i = 0; i < replicaIdList_.size(); i++)
+    {
+        LOG(INFO) << "begin detect read only workers in replica : " << replicaIdList_[i];
+        detectReadOnlyWorkersInReplica(replicaIdList_[i]);
+    }
+}
+
 int MasterManagerBase::detectWorkers()
 {
     size_t detected = 0;
@@ -1057,7 +1136,7 @@ int MasterManagerBase::detectWorkers()
 
     for (size_t i = 0; i < replicaIdList_.size(); i++)
     {
-        if (masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+        if (masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS && !isOnlyMaster())
         {
             LOG(INFO) << "detected worker enough, stop detect other replica.";
             break;
@@ -1097,6 +1176,8 @@ int MasterManagerBase::detectWorkers()
         // update workers' info to aggregators
         resetAggregatorConfig();
     }
+
+    detectReadOnlyWorkers();
     return good;
 }
 
@@ -1169,6 +1250,10 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
     {
         detectWorkers();
     }
+    else
+    {
+        detectReadOnlyWorkers();
+    }
 
     bool need_reset_agg = false;
     WorkerMapT::iterator it;
@@ -1196,6 +1281,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
 
 void MasterManagerBase::failover(const std::string& zpath)
 {
+    detectReadOnlyWorkers(zpath, false);
     // check path
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
@@ -1351,6 +1437,8 @@ void MasterManagerBase::recover(const std::string& zpath)
 
     if (need_reset_agg)
         resetAggregatorConfig();
+
+    detectReadOnlyWorkers(zpath, true);
 }
 
 void MasterManagerBase::setServicesData(ZNode& znode)
@@ -1581,7 +1669,7 @@ void MasterManagerBase::registerServiceServer()
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
 }
 
-void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator)
+void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator, bool readonly)
 {
     LOG(INFO) << "resetting aggregator...";
     // get shardids for collection of aggregator
@@ -1595,23 +1683,54 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
 
     // set workers for aggregator
     AggregatorConfig aggregatorConfig;
-    for (size_t i = 0; i < shardidList.size(); i++)
+
+    if (readonly)
     {
-        WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
-        if (it != workerMap_.end())
+        aggregatorConfig.setReadyOnly();
+        for (size_t i = 0; i < shardidList.size(); i++)
         {
-            if(!it->second->worker_.isGood_)
+            ROWorkerMapT::const_iterator it = readonly_workerMap_.find(shardidList[i]);
+            if (it != readonly_workerMap_.end() && !it->second.empty())
             {
-                LOG(INFO) << "worker_ : " << getShardidStr(it->second->nodeId_) << " is not good, so do not added to aggregator.";
-                continue;
+                std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::const_iterator nit = it->second.begin();
+                for(; nit != it->second.end(); ++nit)
+                {
+                    if(!nit->second->worker_.isGood_)
+                    {
+                        LOG(INFO) << "worker_ : " << getShardidStr(nit->second->nodeId_)
+                            << ", rid : " << nit->first << " is not good, so do not added to aggregator.";
+                        continue;
+                    }
+                    aggregatorConfig.addReadOnlyWorker(nit->second->host_, nit->second->worker_.port_, (uint32_t)shardidList[i]);
+                }
             }
-            bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
-            aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, (uint32_t)shardidList[i], isLocal);
+            else
+            {
+                LOG (ERROR) << "worker " << getShardidStr(shardidList[i]) << " was not found for Aggregator of "
+                    << aggregator->collection() << " in service " << aggregator->service();
+            }
         }
-        else
+    }
+    else
+    {
+        for (size_t i = 0; i < shardidList.size(); i++)
         {
-            LOG (ERROR) << "worker " << getShardidStr(shardidList[i]) << " was not found for Aggregator of "
-                << aggregator->collection() << " in service " << aggregator->service();
+            WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
+            if (it != workerMap_.end())
+            {
+                if(!it->second->worker_.isGood_)
+                {
+                    LOG(INFO) << "worker_ : " << getShardidStr(it->second->nodeId_) << " is not good, so do not added to aggregator.";
+                    continue;
+                }
+                bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
+                aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, (uint32_t)shardidList[i], isLocal);
+            }
+            else
+            {
+                LOG (ERROR) << "worker " << getShardidStr(shardidList[i]) << " was not found for Aggregator of "
+                    << aggregator->collection() << " in service " << aggregator->service();
+            }
         }
     }
 
@@ -1619,12 +1738,21 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
     aggregator->setAggregatorConfig(aggregatorConfig, true);
 }
 
+void MasterManagerBase::resetReadOnlyAggregatorConfig()
+{
+    std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
+    for (agg_it = readonly_aggregatorList_.begin(); agg_it != readonly_aggregatorList_.end(); ++agg_it)
+    {
+        resetAggregatorConfig(*agg_it, true);
+    }
+}
+
 void MasterManagerBase::resetAggregatorConfig()
 {
     std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
     for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); ++agg_it)
     {
-        resetAggregatorConfig(*agg_it);
+        resetAggregatorConfig(*agg_it, false);
     }
 }
 

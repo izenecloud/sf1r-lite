@@ -44,6 +44,7 @@ public:
     };
 
     typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
+    typedef std::map<shardid_t, std::map<replicaid_t, boost::shared_ptr<Sf1rNode> > > ROWorkerMapT;
     typedef boost::function<bool()>  EventCBType;
 
 public:
@@ -68,26 +69,50 @@ public:
      * Register aggregators
      * @param aggregator
      */
-    void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
+    void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly)
     {
         if (!aggregator)
             return;
         boost::lock_guard<boost::mutex> lock(state_mutex_);
-        aggregatorList_.push_back(aggregator);
-        resetAggregatorConfig(aggregator);
+        if (readonly)
+            readonly_aggregatorList_.push_back(aggregator);
+        else
+        {
+            aggregatorList_.push_back(aggregator);
+        }
+        resetAggregatorConfig(aggregator, readonly);
     }
 
-    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator)
+    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly)
     {
         if (!aggregator)
             return;
         boost::lock_guard<boost::mutex> lock(state_mutex_);
-        std::vector<boost::shared_ptr<AggregatorBase> >::iterator it = aggregatorList_.begin();
-        for (; it != aggregatorList_.end(); ++it)
+
+        std::vector<boost::shared_ptr<AggregatorBase> >::iterator it;
+        std::vector<boost::shared_ptr<AggregatorBase> >::iterator it_end;
+        if (readonly)
+        {
+            it = readonly_aggregatorList_.begin();
+            it_end = readonly_aggregatorList_.end();
+        }
+        else
+        {
+            it = aggregatorList_.begin();
+            it_end = aggregatorList_.end();
+        }
+        for (; it != it_end; ++it)
         {
             if ((*it).get() == aggregator.get())
             {
-                aggregatorList_.erase(it);
+                if (readonly)
+                {
+                    readonly_aggregatorList_.erase(it);
+                }
+                else
+                {
+                    aggregatorList_.erase(it);
+                }
                 break;
             }
         }
@@ -199,6 +224,8 @@ protected:
 
 protected:
     int detectWorkers();
+    void detectReadOnlyWorkers(const std::string& nodepath, bool is_created_node);
+    void detectReadOnlyWorkersInReplica(replicaid_t replicaId);
 
     int detectWorkersInReplica(replicaid_t replicaId, size_t& detected, size_t& good);
 
@@ -228,7 +255,8 @@ protected:
 
     /***/
     void resetAggregatorConfig();
-    void resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator);
+    void resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator, bool readonly);
+    void resetReadOnlyAggregatorConfig();
 
     bool getWriteReqNodeData(ZNode& znode);
     //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
@@ -264,9 +292,12 @@ protected:
     //boost::mutex replica_mutex_;
 
     WorkerMapT workerMap_;
+    // handle only read request.
+    ROWorkerMapT readonly_workerMap_;
     //boost::mutex workers_mutex_;
 
     std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
+    std::vector<boost::shared_ptr<AggregatorBase> > readonly_aggregatorList_;
     EventCBType on_new_req_available_;
     std::string write_req_queue_root_parent_;
     std::string write_req_queue_parent_;
