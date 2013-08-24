@@ -47,7 +47,7 @@ bool IndexSearchService::getSearchResult(
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
     LOG(INFO) << "Search Begin." << endl;
-    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
@@ -185,7 +185,7 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getDocumentsByIds(actionItem, resultItem);
         return !resultItem.idList_.empty();
@@ -222,7 +222,7 @@ bool IndexSearchService::getInternalDocumentId(
 )
 {
     internalId = 0;
-    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
         internalId = net::aggregator::Util::GetWDocId(searchAggregator_->getLocalWorker(), (uint32_t)internalId);
@@ -238,7 +238,7 @@ bool IndexSearchService::getInternalDocumentId(
 
 uint32_t IndexSearchService::getDocNum(const std::string& collection)
 {
-    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
         return searchWorker_->getDocNum();
     else
     {
@@ -250,7 +250,7 @@ uint32_t IndexSearchService::getDocNum(const std::string& collection)
 
 uint32_t IndexSearchService::getKeyCount(const std::string& collection, const std::string& property_name)
 {
-    if (!MasterManagerBase::get()->isDistributed() || !searchAggregator_->isNeedDistribute())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
         return searchWorker_->getKeyCount(property_name);
     else
     {

@@ -454,6 +454,8 @@ public:
 
     bool addServiceWorker(const std::string& service, const std::string& coll)
     {
+        if (curNode_.worker_.enabled_)
+            all_shard_nodes_.insert(curNode_.nodeId_);
         return curNode_.worker_.addServiceWorker(service, coll);
     }
 

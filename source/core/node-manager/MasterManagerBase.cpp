@@ -392,6 +392,7 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
             std::string sdata;
             zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
             detectReplicaSet(path);
+            recover(path);
             updateServiceReadStateWithoutLock("ReadyForRead", true);
         }
     }
@@ -418,7 +419,10 @@ void MasterManagerBase::onDataChanged(const std::string& path)
     else
     {
         if (is_cared_node)
+        {
+            recover(path);
             detectReadOnlyWorkers(path, false);
+        }
     }
     // reset watch.
     if (is_cared_node)
