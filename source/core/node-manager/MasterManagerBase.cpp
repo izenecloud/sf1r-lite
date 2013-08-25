@@ -392,7 +392,17 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
             std::string sdata;
             zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
             detectReplicaSet(path);
-            recover(path);
+
+            for(std::set<shardid_t>::const_iterator cit = sf1rTopology_.all_shard_nodes_.begin();
+              cit != sf1rTopology_.all_shard_nodes_.end(); ++cit)
+            {
+                shardid_t nodeid = *cit;
+                std::string nodePath = getNodePath(sf1rTopology_.curNode_.replicaId_, nodeid);
+                if (nodePath.find(path) == 0)
+                {
+                    recover(nodePath);
+                }
+            }
             updateServiceReadStateWithoutLock("ReadyForRead", true);
         }
     }
@@ -1248,7 +1258,6 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         zookeeper_->getZNodeChildren(childrenList[i], chchList, ZooKeeper::WATCH);
         zookeeper_->isZNodeExists(childrenList[i], ZooKeeper::WATCH);
     }
-
     // try to detect workers again while waiting for some of the workers
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
@@ -1377,7 +1386,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
 
 
     // Watch current replica, waiting for node recover
-    zookeeper_->isZNodeExists(getNodePath(sf1rNode->replicaId_, sf1rNode->nodeId_), ZooKeeper::WATCH);
+    zookeeper_->isZNodeExists(getNodePath(sf1rTopology_.curNode_.replicaId_, sf1rNode->nodeId_), ZooKeeper::WATCH);
 
     return sf1rNode->worker_.isGood_;
 }
@@ -1407,6 +1416,9 @@ void MasterManagerBase::recover(const std::string& zpath)
                 }
             }
 
+            if (sf1rNode->replicaId_ == sf1rTopology_.curNode_.replicaId_ && sf1rNode->worker_.isGood_)
+                break;
+
             LOG (INFO) << "recover: node " << getShardidStr(sf1rNode->nodeId_)
                        << " recovered in current replica " << sf1rTopology_.curNode_.replicaId_;
 
@@ -1416,6 +1428,8 @@ void MasterManagerBase::recover(const std::string& zpath)
             {
                 // try to recover
                 znode.loadKvString(sdata);
+                if (!znode.hasKey(ZNode::KEY_WORKER_PORT))
+                    continue;
                 try
                 {
                     sf1rNode->worker_.port_ =
