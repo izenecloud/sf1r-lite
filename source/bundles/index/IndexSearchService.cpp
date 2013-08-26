@@ -66,8 +66,14 @@ bool IndexSearchService::getSearchResult(
     if (actionItem.searchingMode_.mode_ == SearchingMode::WAND)
     {
         distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
-        searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+        bool ret = searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
+
+        if (!ret)
+        {
+            LOG(ERROR) << "get dist search info error.";
+            return false;
+        }
 
         distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
     }
@@ -83,13 +89,19 @@ bool IndexSearchService::getSearchResult(
         << actionItem.pageInfo_.start_ << ", " << actionItem.pageInfo_.count_;
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
+    bool ret = true;
     if (!searchCache_->get(identity, resultItem))
     {
         // Get and aggregate keyword search results from mutliple nodes
         distResultItem.setStartCount(actionItem.pageInfo_);
 
-        searchAggregator_->distributeRequest(
+        ret = searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+        if (!ret)
+        {
+            LOG(ERROR) << "got dist search result failed.";
+            return false;
+        }
         // remove the first topKStart docids.
         if (topKStart > 0)
         {
@@ -145,7 +157,7 @@ bool IndexSearchService::getSearchResult(
                     requestGroup.addRequest(workerid, &actionItem, &subResultItem);
                 }
 
-                searchAggregator_->distributeRequest(
+                ret = searchAggregator_->distributeRequest(
                     actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
             }
         }
@@ -166,7 +178,7 @@ bool IndexSearchService::getSearchResult(
             requestGroup.addRequest(workerid, &actionItem, &subResultItem);
         }
 
-        searchAggregator_->distributeRequest(
+        ret = searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getSummaryResult", requestGroup, resultItem);
     }
 

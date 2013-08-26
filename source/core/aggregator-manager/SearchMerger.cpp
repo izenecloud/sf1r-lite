@@ -530,6 +530,9 @@ void SearchMerger::clickGroupLabel(const net::aggregator::WorkerResults<bool>& w
 void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalResult, std::map<workerid_t, KeywordSearchResult>& resultMap)
 {
     std::size_t i = 0;
+    if (totalResult.TOP_K_NUM == 0 || totalResult.topKDocs_.size() == 0)
+        return;
+
     size_t start_inpage = totalResult.start_ % totalResult.TOP_K_NUM;
 
     for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
