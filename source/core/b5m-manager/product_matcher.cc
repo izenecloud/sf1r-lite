@@ -363,13 +363,18 @@ bool ProductMatcher::Open(const std::string& kpath)
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
             path = path_+"/psm_result";
             {
-                std::map<std::string, std::string> pmap;
-                izenelib::am::ssf::Util<>::Load(path, pmap);
-                for(std::map<std::string, std::string>::const_iterator it = pmap.begin();it!=pmap.end();++it)
+                if(boost::filesystem::exists(path))
                 {
-                    psm_result_.insert(std::make_pair(B5MHelper::StringToUint128(it->first), B5MHelper::StringToUint128(it->second)));
+                    psm_ = new CategoryPsm;
+                    psm_->Open(path);
                 }
-                LOG(INFO)<<"psm result load size "<<psm_result_.size()<<std::endl;
+                //std::map<std::string, std::string> pmap;
+                //izenelib::am::ssf::Util<>::Load(path, pmap);
+                //for(std::map<std::string, std::string>::const_iterator it = pmap.begin();it!=pmap.end();++it)
+                //{
+                //    psm_result_.insert(std::make_pair(B5MHelper::StringToUint128(it->first), B5MHelper::StringToUint128(it->second)));
+                //}
+                //LOG(INFO)<<"psm result load size "<<psm_result_.size()<<std::endl;
             }
         }
         catch(std::exception& ex)
@@ -1196,16 +1201,6 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         if (term_set[i][term_set[i].length() - 1] == '/') term_set[i].erase(term_set[i].length() - 1, 1);
     path = path_+"/synonym_dict";
     izenelib::am::ssf::Util<>::Save(path, term_set);
-    path = path_+"/psm_result";
-    {
-        LOG(INFO)<<"psm result size "<<psm_result_.size()<<std::endl;
-        std::map<std::string, std::string> pmap;
-        for(boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.begin();it!=psm_result_.end();++it)
-        {
-            pmap.insert(std::make_pair(B5MHelper::Uint128ToString(it->first), B5MHelper::Uint128ToString(it->second)));
-        }
-        izenelib::am::ssf::Util<>::Save(path, pmap);
-    }
     {
         std::string aversion_file = path_+"/AVERSION";
         std::ofstream ofs(aversion_file.c_str());
@@ -1571,7 +1566,11 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
     ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
-    if(psm_!=NULL) psm_->Flush();
+    if(psm_!=NULL) 
+    {
+        std::string path = path_+"/psm_result";
+        psm_->Flush(path);
+    }
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->Flush(psm_result_);
@@ -2210,21 +2209,16 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
-    if(!psm_result_.empty())
+    if(psm_!=NULL)
     {
-        std::string sdocid;
-        doc.getString("DOCID", sdocid);
-        if(!sdocid.empty())
+        std::string spid;
+        std::string stitle;
+        if(psm_->Search(doc, spid, stitle))
         {
-            uint128_t oid = B5MHelper::StringToUint128(sdocid);
-            boost::unordered_map<uint128_t, uint128_t>::const_iterator it = psm_result_.find(oid);
-            if(it!=psm_result_.end())
-            {
-                Product p;
-                p.spid = B5MHelper::Uint128ToString(it->second);
-                result_products.resize(1, p);
-                return true;
-            }
+            Product p;
+            p.spid = spid;
+            result_products.resize(1, p);
+            return true;
         }
     }
     Product pbook;
