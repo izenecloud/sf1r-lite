@@ -12,7 +12,7 @@ namespace {
 
 void removeReadOnlyNode(shardid_t sid, replicaid_t rid, MasterManagerBase::ROWorkerMapT& wmap)
 {
-    std::map<replicaid_t, boost::shared_ptr<Sf1rNode> > it = wmap.find(sid);
+    MasterManagerBase::ROWorkerMapT::iterator it = wmap.find(sid);
     if (it == wmap.end())
         return;
     it->second.erase(rid);
@@ -94,7 +94,7 @@ void MasterManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
 
 bool MasterManagerBase::isOnlyMaster()
 {
-    return (!sf1rTopology_.curNode_.worker_.enabled && sf1rTopology_.curNode_.master_.enabled_);
+    return (!sf1rTopology_.curNode_.worker_.enabled_ && sf1rTopology_.curNode_.master_.enabled_);
 }
 
 bool MasterManagerBase::init()
@@ -431,7 +431,6 @@ void MasterManagerBase::onDataChanged(const std::string& path)
         if (is_cared_node)
         {
             recover(path);
-            detectReadOnlyWorkers(path, false);
         }
     }
     // reset watch.
@@ -1191,7 +1190,7 @@ int MasterManagerBase::detectWorkers()
         resetAggregatorConfig();
     }
 
-    detectReadOnlyWorkers();
+    detectReadOnlyWorkers("", true);
     return good;
 }
 
@@ -1265,7 +1264,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
     }
     else
     {
-        detectReadOnlyWorkers();
+        detectReadOnlyWorkers("", true);
     }
 
     bool need_reset_agg = false;

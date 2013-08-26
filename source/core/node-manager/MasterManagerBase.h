@@ -69,7 +69,7 @@ public:
      * Register aggregators
      * @param aggregator
      */
-    void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly)
+    void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly = false)
     {
         if (!aggregator)
             return;
@@ -83,7 +83,7 @@ public:
         resetAggregatorConfig(aggregator, readonly);
     }
 
-    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly)
+    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator, bool readonly = false)
     {
         if (!aggregator)
             return;
@@ -183,6 +183,7 @@ public:
     void notifyAllShardingEndMigrate();
     bool isMineNewSharding();
     std::string getShardNodeIP(shardid_t shardid);
+    bool isOnlyMaster();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
