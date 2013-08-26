@@ -21,7 +21,7 @@ AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ = 90;
+    alllogdays_ = 30;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -220,9 +220,11 @@ bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath
     return true;
 }
 
-bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
+bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, 
+        const string& cronExpression, const string& instanceName, uint32_t days)
 {
     bool isBuildFromLeveldb = false;
+    alllogdays_ = days;
     if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
         return false;
 
@@ -434,6 +436,8 @@ bool AutoFillChildManager::InitFromLog()
         count++;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->isLongQuery(query))
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
@@ -1230,6 +1234,8 @@ void AutoFillChildManager::updateFromLog()
         QueryType TempQuery;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->isLongQuery(query))
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)

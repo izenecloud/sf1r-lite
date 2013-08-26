@@ -33,10 +33,10 @@ public:
         if (Child2_) Child2_->flush();
     }
 
-    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression)
+    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, uint32_t days = 10)
     {    
-         bool ret1 = Child1_->Init(collectionPath, collectionName, cronExpression, "child1");
-         bool ret2 = Child2_->Init(collectionPath, collectionName, cronExpression, "child2" );
+         bool ret1 = Child1_->Init(collectionPath, collectionName, cronExpression, "child1", days);
+         bool ret2 = Child2_->Init(collectionPath, collectionName, cronExpression, "child2", days);
          return ret1&&ret2;
     }
 
