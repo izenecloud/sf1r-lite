@@ -108,7 +108,6 @@ bool RecommendManager::open()
             //TODO
         }
     }
-    std::cout << "xxxxxxxxxmining_schema_.recommend_autofill:" << mining_schema_.recommend_autofill << std::endl;
     if (mining_schema_.recommend_autofill)
         if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron, mining_schema_.recommend_autofill_days)) 
             return false;
