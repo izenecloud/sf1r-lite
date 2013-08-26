@@ -2146,6 +2146,8 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
         // new primary, and other node need re-register and sync to the new primary.
         return;
     }
+    if (!sf1rTopology_.curNode_.worker_.enabled_)
+        return;
     uint32_t cur_req_id = getLastWriteReqId();
     if( req_id < cur_req_id)
     {
