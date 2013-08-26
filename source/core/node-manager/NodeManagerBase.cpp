@@ -1020,7 +1020,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     LOG (INFO) << CLASSNAME
                << " started, cluster[" << sf1rTopology_.clusterId_
                << "] replica[" << curNode.replicaId_
-               << "] node[" << curNode.nodeId_
+               << "] node[" << getShardidStr(curNode.nodeId_)
                << "]{"
                << (curNode.worker_.enabled_ ?
                        (std::string("worker") + getShardidStr(curNode.nodeId_) + " ") : "")

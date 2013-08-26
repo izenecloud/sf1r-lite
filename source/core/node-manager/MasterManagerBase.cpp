@@ -1019,15 +1019,6 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
             // if this sf1r node provides worker server
             if (znode.hasKey(ZNode::KEY_WORKER_PORT))
             {
-                if (isOnlyMaster())
-                {
-                    boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
-                    sf1rNode->worker_.isGood_ = true;
-                    sf1rNode->nodeId_ = nodeid;
-                    updateWorkerNode(sf1rNode, znode);
-                    sf1rNode->replicaId_ = replicaId;
-                    readonly_workerMap_[nodeid][replicaId] = sf1rNode;
-                }
                 if (mine_primary)
                 {
                     if(!isPrimaryWorker(replicaId, nodeid))
@@ -1149,7 +1140,7 @@ int MasterManagerBase::detectWorkers()
 
     for (size_t i = 0; i < replicaIdList_.size(); i++)
     {
-        if (masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS && !isOnlyMaster())
+        if (masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
         {
             LOG(INFO) << "detected worker enough, stop detect other replica.";
             break;
