@@ -71,9 +71,10 @@ static void getFileList(const std::string& dir, std::vector<std::string>& file_l
     }
 }
 
-static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t tmp_bufsize = 0)
+static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL,
+    size_t tmp_bufsize = 0, unsigned int check_level = 0)
 {
-    if (!bfs::exists(file))
+    if (!bfs::exists(file) || check_level == 0)
         return 0;
     boost::crc_32_type crc_computer;
     size_t bufsize = tmp_bufsize;
@@ -82,6 +83,15 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
     {
         bufsize = 1024*1024*10;
         buf = new char[bufsize];
+    }
+    uint64_t total_readed = 0;
+    uint64_t total_size = bfs::file_size(file);
+    uint64_t max_check_data = check_level * 1024 * 1024 * 1024;
+    bool need_skip = false;
+    bool skipped = false;
+    if (total_size > max_check_data*2)
+    {
+        need_skip = true;
     }
     try
     {
@@ -94,6 +104,15 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
             crc_computer.process_bytes(buf, readed);
             if ((readed == 0) && ifs.eof())
                 break;
+            if (need_skip && !skipped)
+            {
+                total_readed += readed;
+                if( total_readed >= max_check_data )
+                {
+                    ifs.seekg(max_check_data, ifs.end);
+                    skipped = true;
+                }
+            }
         }
     }
     catch(const std::exception& e)
@@ -108,6 +127,16 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
     return crc_computer.checksum();
 }
 
+static std::string getFileCheckSum(const std::string& file, char* tmp_buf = NULL,
+    size_t tmp_bufsize = 0, unsigned int check_level = 0)
+{
+    if (!bfs::exists(file))
+        return "0_0";
+    uint64_t filesize = bfs::file_size(file);
+    uint32_t filecrc = getFileCRC(file, tmp_buf, tmp_bufsize, check_level);
+    return boost::lexical_cast<std::string>(filesize) + "_" + boost::lexical_cast<std::string>(filecrc);
+}
+
 static void doReportStatus(const ReportStatusReqData& reqdata)
 {
     ReportStatusRsp rsp_req;
@@ -120,6 +149,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
         rsp_req.param_.success = true;
         rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
         size_t bufsize = 1024*1024*32;
+        LOG(INFO) << "got check request with check_level : " << reqdata.file_check_level;
         char* cal_buf = new char[bufsize];
         for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
         {
@@ -128,7 +158,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
             {
                 continue;
             }
-            rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+            rsp_req.param_.check_file_result[i] = getFileCheckSum(file, cal_buf, bufsize, reqdata.file_check_level);
             DistributeFileSyncMgr::get()->updateCachedCheckSum(file, rsp_req.param_.check_file_result[i]);
             //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
         }
@@ -155,6 +185,28 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
     }
 
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
+}
+
+static void doGenMigrateSCD(const GenerateSCDReqData& reqdata)
+{
+    GenerateSCDRsp rsp_req;
+    {
+        rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
+        rsp_req.param_.success = false;
+        if (DistributeFileSyncMgr::get()->GenMigrateSCD(reqdata.coll,
+                reqdata.migrate_vnode_list, rsp_req.param_.generated_insert_scds,
+                rsp_req.param_.generated_del_scds))
+        {
+            rsp_req.param_.success = true;
+        }
+        else
+        {
+            LOG(ERROR) << "generate migrate scd file failed on " << rsp_req.param_.rsp_host;
+        }
+    }
+
+    DistributeFileSyncMgr::get()->sendGenerateSCDRsp(reqdata.req_host,
+        SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }
 
 FileSyncServer::FileSyncServer(const std::string& host, uint16_t port, uint32_t threadNum)
@@ -193,6 +245,8 @@ void FileSyncServer::stop()
 {
     instance.end();
     instance.join();
+    threadpool_.clear();
+    threadpool_.wait();
 }
 
 void FileSyncServer::dispatch(msgpack::rpc::request req)
@@ -343,6 +397,22 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             DistributeFileSyncMgr::get()->notifyReportStatusRsp(rspdata);
             req.result(true);
         }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GENERATE_MIGRATE_SCD_REQ])
+        {
+            msgpack::type::tuple<GenerateSCDReqData> params;
+            req.params().convert(&params);
+            GenerateSCDReqData& reqdata = params.get<0>();
+            threadpool_.schedule(boost::bind(&doGenMigrateSCD, reqdata));
+            req.result(true);
+        }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GENERATE_MIGRATE_SCD_RSP])
+        {
+            msgpack::type::tuple<GenerateSCDRspData> params;
+            req.params().convert(&params);
+            GenerateSCDRspData& rspdata = params.get<0>();
+            DistributeFileSyncMgr::get()->notifyGenerateSCDRsp(rspdata);
+            req.result(true);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -488,7 +558,8 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
     saveCachedCheckSum();
 }
 
-void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo)
+void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list,
+    unsigned int check_level, std::string& check_errinfo)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return;
@@ -525,6 +596,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
 
     ReportStatusRequest req;
     req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+    req.param_.file_check_level = check_level;
     for (size_t i = 0; i < colname_list.size(); ++i)
     {
         CollectionPath colpath;
@@ -587,7 +659,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
         {
             continue;
         }
-        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+        file_checksum_list[i] = getFileCheckSum(file, cal_buf, bufsize, req.param_.file_check_level);
         updateCachedCheckSum(file, file_checksum_list[i]);
         //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }
@@ -1159,6 +1231,146 @@ void DistributeFileSyncMgr::notifyFinishReceive(const std::string& filepath)
     wait_finish_notify_[filepath] = true;
     cond_.notify_all();
     LOG(INFO) << "a file finish notify for : " << filepath;
+}
+
+bool DistributeFileSyncMgr::generateMigrateScds(const std::string& coll,
+    const std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >& from,
+    std::map<shardid_t, std::vector<std::string> >& generated_insert_scds,
+    std::map<shardid_t, std::vector<std::string> >& generated_del_scds)
+{
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
+        return false;
+    if (!DistributeFileSys::get()->isEnabled())
+        return false;
+
+    uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+
+    {
+        boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+        generate_scd_rsp_list_.clear();
+    }
+
+    std::map<shardid_t, std::vector<vnodeid_t> > local_scds;
+    int wait_num = 0;
+    for(std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >::const_iterator cit = from.begin();
+        cit != from.end(); ++cit)
+    {
+        GenerateSCDRequest req;
+        req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+        req.param_.coll = coll;
+        req.param_.migrate_vnode_list = cit->second;
+        if (cit->first == SuperNodeManager::get()->getLocalHostIP())
+        {
+            local_scds = cit->second;
+            continue;
+        }
+        bool rsp_ret = false;
+        try
+        {
+            conn_mgr_->syncRequest(cit->first, port, req, rsp_ret);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error while checking status: " << e.what()
+                << ", ip: " << cit->first;
+            return false;
+        }
+        if (rsp_ret)
+            ++wait_num;
+    }
+
+    generated_insert_scds.clear();
+    generated_del_scds.clear();
+    if (!local_scds.empty())
+    {
+        std::map<shardid_t, std::string> local_insert_scds;
+        std::map<shardid_t, std::string> local_del_scds;
+
+        // generate the migrate scds on the current node.
+        if(!scd_generator_(coll, local_scds, local_insert_scds, local_del_scds))
+        {
+            LOG(INFO) << "generate the migrate scd files on local failed.";
+            return false;
+        }
+
+        for (std::map<shardid_t, std::string>::const_iterator scdit = local_insert_scds.begin();
+            scdit != local_insert_scds.end(); ++scdit)
+        {
+            generated_insert_scds[scdit->first].push_back(scdit->second);
+        }
+        for (std::map<shardid_t, std::string>::const_iterator scdit = local_del_scds.begin();
+            scdit != local_del_scds.end(); ++scdit)
+        {
+            generated_del_scds[scdit->first].push_back(scdit->second);
+        }
+    }
+    int max_wait = 500;
+    // wait for response.
+    while(wait_num > 0)
+    {
+        std::vector<GenerateSCDRspData> rspdata;
+        {
+            boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+            while (generate_scd_rsp_list_.empty())
+            {
+                if (--max_wait < 0)
+                {
+                    LOG(INFO) << "wait max time!! no longer wait, no rsp num: " << wait_num;
+                    return false;
+                }
+                LOG(INFO) << "waiting generated scd files ...";
+                generate_scd_cond_.timed_wait(lk, boost::posix_time::seconds(30));
+            }
+            // reset wait time if got any rsp.
+            max_wait = 30;
+            rspdata.swap(generate_scd_rsp_list_);
+        }
+        LOG(INFO) << "status report got rsp: " << rspdata.size();
+        for(size_t i = 0; i < rspdata.size(); ++i)
+        {
+            LOG(INFO) << "checking rsp for host :" << rspdata[i].rsp_host;
+            if (!rspdata[i].success)
+            {
+                LOG(WARNING) << "rsp return false from this host!!";
+                return false;
+            }
+            for (std::map<shardid_t, std::string>::const_iterator scdit = rspdata[i].generated_insert_scds.begin();
+                scdit != rspdata[i].generated_insert_scds.end(); ++scdit)
+            {
+                generated_insert_scds[scdit->first].push_back(scdit->second);
+            }
+            for (std::map<shardid_t, std::string>::const_iterator scdit = rspdata[i].generated_del_scds.begin();
+                scdit != rspdata[i].generated_del_scds.end(); ++scdit)
+            {
+                generated_del_scds[scdit->first].push_back(scdit->second);
+            }
+        }
+        wait_num -= rspdata.size();
+    }
+    LOG(INFO) << "generate migrate scd request finished";
+    return true;
+}
+
+void DistributeFileSyncMgr::notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata)
+{
+    boost::unique_lock<boost::mutex> lk(generate_scd_mutex_);
+    generate_scd_rsp_list_.push_back(rspdata);
+    generate_scd_cond_.notify_all();
+}
+
+void DistributeFileSyncMgr::sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp)
+{
+    if (conn_mgr_ == NULL)
+        return;
+    bool rsp_ret = false;
+    try
+    {
+        conn_mgr_->syncRequest(ip, port, rsp, rsp_ret);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "send response failed to host : " << ip;
+    }
 }
 
 }

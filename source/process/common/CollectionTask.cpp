@@ -361,8 +361,21 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
                 return false;
             }
 
+            std::string map_dir = collectionHandler->indexTaskService_->getShardingMapDir();
+
+            if (bfs::exists(map_dir + collectionName_))
+            {
+                DistributeFileSys::copy_dfs_file(map_dir + collectionName_,
+                    map_dir + rebuildCollectionName_);
+            }
             LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
             collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
+        }
+
+        if (!collectionHandler->indexTaskService_->isNeedDoLocal())
+        {
+            LOG(INFO) << "local worker is disabled while rebuilding.";
+            return false;
         }
 
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();

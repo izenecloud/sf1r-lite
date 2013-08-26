@@ -221,7 +221,7 @@ bool BatchScdDispatcher::finish()
         return true;
     }
     // Send splitted scd files in sub dirs to each shard server
-    const std::vector<shardid_t>& shardids = scdSharder_->getShardingConfig().shardidList_;
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingIdList();
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         shardid_t shardid = shardids[i];
@@ -257,7 +257,7 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
     bfs::remove_all(tempDir);
     bfs::create_directory(tempDir);
 
-    const std::vector<shardid_t>& shardids = scdSharder_->getShardingConfig().shardidList_;
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingIdList();
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         std::ostringstream oss;

@@ -390,6 +390,7 @@ public:
             sf1r::faceted::OntologyRep& attrRep,
             UString& analyzedQuery,
             std::string& pruneQuery,
+            DistKeywordSearchInfo& distSearchInfo,
             faceted::GroupParam::GroupLabelMap& topLabelMap);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
@@ -564,7 +565,7 @@ private:
      *@param queryList The recommended queries as the result.
      */
     bool getRecommendQuery_(const izenelib::util::UString& queryStr,
-                            const std::vector<sf1r::docid_t>& topDocIdList, QueryRecommendRep & recommendRep);
+                            QueryRecommendRep & recommendRep);
 
     bool isMiningProperty_(const std::string& name);
 

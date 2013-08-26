@@ -49,6 +49,7 @@ public:
 private:
     IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    boost::shared_ptr<SearchAggregator> ro_searchAggregator_;
     SearchMerger* searchMerger_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 

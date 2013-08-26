@@ -16,11 +16,18 @@
 
 namespace sf1r {
 
-typedef uint32_t nodeid_t;
+typedef uint8_t nodeid_t;
 typedef uint32_t replicaid_t;
-typedef uint32_t shardid_t;
+typedef uint8_t shardid_t;
 typedef uint32_t port_t;
 
+
+inline std::string getShardidStr(shardid_t id)
+{
+    std::stringstream ss;
+    ss << (uint32_t)id;
+    return ss.str();
+}
 
 class MasterCollection
 {
@@ -150,7 +157,7 @@ public:
                ss << ", shards: ";
                for (size_t i = 0; i < col.shardList_.size(); i++)
                {
-                   ss << col.shardList_[i] << ",";
+                   ss << (uint32_t)col.shardList_[i] << ",";
                }
             }
 
@@ -394,7 +401,7 @@ public:
            << "BA port: " << baPort_ << std::endl
            << "data Port: " << dataPort_ << std::endl
            << "replica id: " << replicaId_ << std::endl
-           << "node id: " << nodeId_ << std::endl;
+           << "node id: " << (uint32_t)nodeId_ << std::endl;
 
         ss << master_.toString();
         ss << worker_.toString();
@@ -447,6 +454,8 @@ public:
 
     bool addServiceWorker(const std::string& service, const std::string& coll)
     {
+        if (curNode_.worker_.enabled_)
+            all_shard_nodes_.insert(curNode_.nodeId_);
         return curNode_.worker_.addServiceWorker(service, coll);
     }
 
@@ -470,7 +479,8 @@ public:
     void rescanRelatedShardNodes()
     {
         all_shard_nodes_.clear();
-        all_shard_nodes_.insert(curNode_.nodeId_);
+        if (curNode_.worker_.enabled_)
+            all_shard_nodes_.insert(curNode_.nodeId_);
         const std::vector<MasterCollection>& coll_list = curNode_.master_.getMasterCollList(Sf1rTopology::getServiceName(SearchService));
         for(size_t i = 0; i < coll_list.size(); ++i)
         {
@@ -498,7 +508,7 @@ public:
         for (std::set<shardid_t>::const_iterator it = all_shard_nodes_.begin();
             it != all_shard_nodes_.end(); ++it)
         {
-            ss << *it << ", ";
+            ss << getShardidStr(*it) << ", ";
         }
         ss << std::endl;
         ss << curNode_.toString();
