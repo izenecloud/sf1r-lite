@@ -1117,7 +1117,84 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
         return;
     if (!nodepath.empty())
     {
+        shardid_t nodeid = 0;
+        replicaid_t replicaId = 0;
         // check if we should re-detect all workers.
+        for(std::set<shardid_t>::const_iterator cit = sf1rTopology_.all_shard_nodes_.begin();
+            cit != sf1rTopology_.all_shard_nodes_.end(); ++cit)
+        {
+            for (size_t i = 0; i < replicaIdList_.size(); i++)
+            {
+                std::string path = getNodePath(replicaIdList_[i], *cit);
+                if (path == nodepath)
+                {
+                    nodeid = *cit;
+                    replicaId = replicaIdList_[i];
+                    break;
+                }
+            }
+        }
+        if (nodeid == 0)
+        {
+            LOG(INFO) << "not cared read only node : " << nodepath;
+            return;
+        }
+
+        LOG(INFO) << "update for read only node : " << nodepath;
+        bool exist = false;
+        ROWorkerMapT::iterator it = readonly_workerMap_.find(nodeid);
+        std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::iterator node_it;
+        if (it != readonly_workerMap_.end())
+        {
+            node_it = it->second.find(replicaId);
+            if (node_it != it->second.end())
+            {
+                exist = true;
+            }
+        }
+        if (!is_created_node)
+        {
+            // a node failed.
+            if (!exist)
+            {
+                LOG(INFO) << "fail node is not in my read only list.";
+                return;
+            }
+            else
+            {
+                LOG(INFO) << "a node in my read only list is not good.";
+                node_it->second->worker_.isGood_ = false;
+            }
+        }
+        else
+        {
+            if (exist && node_it->second->worker_.isGood_)
+            {
+                LOG(INFO) << "this read only node is already exist and in good.";
+                return;
+            }
+            std::string data;
+            if (!zookeeper_->getZNodeData(nodepath, data, ZooKeeper::WATCH))
+            {
+                LOG(ERROR) << "got read only node data failed.";
+                return;
+            }
+            ZNode znode;
+            znode.loadKvString(data);
+            if (!znode.hasKey(ZNode::KEY_WORKER_PORT))
+            {
+                LOG(ERROR) << "the node has no worker port.";
+                return;
+            }
+            boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
+            sf1rNode->worker_.isGood_ = true;
+            sf1rNode->nodeId_ = nodeid;
+            updateWorkerNode(sf1rNode, znode);
+            sf1rNode->replicaId_ = replicaId;
+            readonly_workerMap_[nodeid][replicaId] = sf1rNode;
+        }
+        resetReadOnlyAggregatorConfig();
+        return;
     }
     readonly_workerMap_.clear();
     for (size_t i = 0; i < replicaIdList_.size(); i++)
@@ -1125,6 +1202,7 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
         LOG(INFO) << "begin detect read only workers in replica : " << replicaIdList_[i];
         detectReadOnlyWorkersInReplica(replicaIdList_[i]);
     }
+    resetReadOnlyAggregatorConfig();
 }
 
 int MasterManagerBase::detectWorkers()

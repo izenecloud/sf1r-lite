@@ -66,7 +66,7 @@ bool IndexSearchService::getSearchResult(
     if (actionItem.searchingMode_.mode_ == SearchingMode::WAND)
     {
         distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
-        bool ret = searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+        bool ret = ro_searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
             actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
 
         if (!ret)
@@ -95,7 +95,7 @@ bool IndexSearchService::getSearchResult(
         // Get and aggregate keyword search results from mutliple nodes
         distResultItem.setStartCount(actionItem.pageInfo_);
 
-        ret = searchAggregator_->distributeRequest(
+        ret = ro_searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
         if (!ret)
         {
@@ -157,7 +157,7 @@ bool IndexSearchService::getSearchResult(
                     requestGroup.addRequest(workerid, &actionItem, &subResultItem);
                 }
 
-                ret = searchAggregator_->distributeRequest(
+                ret = ro_searchAggregator_->distributeRequest(
                     actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
             }
         }
@@ -178,7 +178,7 @@ bool IndexSearchService::getSearchResult(
             requestGroup.addRequest(workerid, &actionItem, &subResultItem);
         }
 
-        ret = searchAggregator_->distributeRequest(
+        ret = ro_searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getSummaryResult", requestGroup, resultItem);
     }
 
@@ -209,7 +209,7 @@ bool IndexSearchService::getDocumentsByIds(
     ActionItemMapT actionItemMap;
     if (!searchMerger_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
+        ro_searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
     }
     else
     {
@@ -221,7 +221,7 @@ bool IndexSearchService::getDocumentsByIds(
             requestGroup.addRequest(workerid, &subActionItem);
         }
 
-        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
+        ro_searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
     return !resultItem.idList_.empty();
@@ -241,7 +241,7 @@ bool IndexSearchService::getInternalDocumentId(
     }
     else
     {
-        searchAggregator_->distributeRequest<uint128_t, uint64_t>(
+        ro_searchAggregator_->distributeRequest<uint128_t, uint64_t>(
                 collectionName, "getInternalDocumentId", scdDocumentId, internalId);
     }
 
@@ -255,7 +255,7 @@ uint32_t IndexSearchService::getDocNum(const std::string& collection)
     else
     {
         uint32_t total_docs = 0;
-        searchAggregator_->distributeRequest(collection, "getDistDocNum", total_docs);
+        ro_searchAggregator_->distributeRequest(collection, "getDistDocNum", total_docs);
         return total_docs;
     }
 }
@@ -267,7 +267,7 @@ uint32_t IndexSearchService::getKeyCount(const std::string& collection, const st
     else
     {
         uint32_t total_docs = 0;
-        searchAggregator_->distributeRequest(collection, "getDistKeyCount", property_name, total_docs);
+        ro_searchAggregator_->distributeRequest(collection, "getDistKeyCount", property_name, total_docs);
         return total_docs;
     }
 }

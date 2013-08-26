@@ -78,7 +78,7 @@ bool MiningSearchService::getSimilarDocIdList(
         return true;
     }
 
-    return searchAggregator_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
+    return ro_searchAggregator_->singleRequest(collectionName, "getSimilarDocIdList", documentId, maxNum, result, workerId);
 }
 
 bool MiningSearchService::getDuplicateDocIdList(
@@ -139,7 +139,7 @@ bool MiningSearchService::getLabelListByDocId(
         return true;
     }
 
-    return searchAggregator_->singleRequest(collectionName, "getLabelListByDocId", docId, label_list, workerId);
+    return ro_searchAggregator_->singleRequest(collectionName, "getLabelListByDocId", docId, label_list, workerId);
 }
 
 bool MiningSearchService::getLabelListWithSimByDocId(
@@ -162,7 +162,7 @@ bool MiningSearchService::getLabelListWithSimByDocId(
     sf1r::docid_t docId = wd.second;
     if (!bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
         return searchWorker_->getLabelListWithSimByDocId(docId, label_list);
-    return searchAggregator_->singleRequest(collectionName, "getLabelListWithSimByDocId", docId, label_list, workerId);
+    return ro_searchAggregator_->singleRequest(collectionName, "getLabelListWithSimByDocId", docId, label_list, workerId);
 }
 
 bool MiningSearchService::getUniqueDocIdList(
@@ -431,7 +431,7 @@ bool MiningSearchService::GetSummarizationByRawKey(
         searchWorker_->GetSummarizationByRawKey(rawKey, result);
         return true;
     }
-    return searchAggregator_->distributeRequest(collection, "GetSummarizationByRawKey", rawKey, result);
+    return ro_searchAggregator_->distributeRequest(collection, "GetSummarizationByRawKey", rawKey, result);
     ///TODO distributed request is not available
     //return miningManager_->GetSummarizationByRawKey(rawKey,result);
 }

@@ -142,6 +142,7 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
     }
 
     MasterManagerBase::get()->unregisterAggregator(searchAggregator_);
+    MasterManagerBase::get()->unregisterAggregator(ro_searchAggregator_);
     MasterManagerBase::get()->unregisterAggregator(indexAggregator_);
 }
 
@@ -280,8 +281,10 @@ bool IndexBundleActivator::init_()
     SF1R_ENSURE_INIT(searchManager_);
     searchWorker_ = createSearchWorker_();
     SF1R_ENSURE_INIT(searchWorker_);
-    searchAggregator_ = createSearchAggregator_();
+    searchAggregator_ = createSearchAggregator_(false);
     SF1R_ENSURE_INIT(searchAggregator_);
+    ro_searchAggregator_ = createSearchAggregator_(true);
+    SF1R_ENSURE_INIT(ro_searchAggregator_);
     indexWorker_ = createIndexWorker_();
     SF1R_ENSURE_INIT(indexWorker_);
     // add all kinds of index that will support increment build.
@@ -294,6 +297,14 @@ bool IndexBundleActivator::init_()
     searchService_ = new IndexSearchService(config_);
 
     searchService_->searchAggregator_ = searchAggregator_;
+    if (MasterManagerBase::get()->isOnlyMaster())
+    {
+        searchService_->ro_searchAggregator_ = ro_searchAggregator_;
+    }
+    else
+    {
+        searchService_->ro_searchAggregator_ = searchAggregator_;
+    }
     searchService_->searchMerger_ = searchMerger_.get();
     searchService_->searchWorker_ = searchWorker_;
     searchService_->searchWorker_->laManager_ = laManager_;
@@ -539,7 +550,7 @@ IndexBundleActivator::createSearchWorker_()
 }
 
 boost::shared_ptr<SearchAggregator>
-IndexBundleActivator::createSearchAggregator_()
+IndexBundleActivator::createSearchAggregator_(bool readonly)
 {
     searchMerger_.reset(new SearchMerger(config_->topKNum_));
 
@@ -557,7 +568,7 @@ IndexBundleActivator::createSearchAggregator_()
     localWorkerProxy.release();
 
     // workers will be detected and set by master node manager
-    MasterManagerBase::get()->registerAggregator(ret);
+    MasterManagerBase::get()->registerAggregator(ret, readonly);
     return ret;
 }
 
