@@ -36,11 +36,24 @@ struct ProductScoreConfig
 
     score_t weight;
 
+    score_t minLimit;
+    score_t maxLimit;
+
     bool isDebug; /// whether print debug message
 
     std::vector<ProductScoreConfig> factors;
 
     ProductScoreConfig();
+
+    /**
+     * Limit the @p score within the range [minLimit, maxLimit].
+     */
+    void limitScore(score_t& score) const;
+
+    /**
+     * @return true if @p score is within the range [minLimit, maxLimit].
+     */
+    bool isValidScore(score_t score) const;
 
     /**
      * @return a string which could be printed in debug.
@@ -56,6 +69,8 @@ private:
         ar & type;
         ar & propName;
         ar & weight;
+        ar & minLimit;
+        ar & maxLimit;
         ar & isDebug;
         ar & factors;
     }

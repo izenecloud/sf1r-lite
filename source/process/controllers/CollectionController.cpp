@@ -14,6 +14,7 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSys.h>
 #include <util/driver/writers/JsonWriter.h>
 
 #include <process/common/CollectionManager.h>
@@ -358,6 +359,268 @@ void CollectionController::update_collection_conf()
 #endif
     configFile += slash + collection + ".xml";
 
+    UpdateConfigReqLog reqlog;
+    do {
+        if (!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
+        {
+            ret = false;
+            break;
+        }
+        ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
+            DistributeRequestHooker::get()->isRunningPrimary(), configFile, reqlog.config_file_list);
+    }while(false);
+
+    if (!ret)
+    {
+        response().addError("Update Config failed.");
+        return;
+    }
+
+    ret = CollectionManager::get()->startCollection(collection, configFile);
+    if (!ret)
+    {
+        LOG(ERROR) << "start collection failed after config updated." << collection;
+        response().addError("start collection failed after config updated.");
+        return;
+    }
+
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
+}
+
+static ticpp::Element * getUniqChildElement(
+        const ticpp::Element * ele, const std::string & name)
+{
+    ticpp::Element * temp = NULL;
+    temp = ele->FirstChildElement(name, false);
+    if (!temp)
+    {
+        return NULL;
+    }
+
+    if (temp->NextSibling(name, false))
+    {
+        return NULL;
+    }
+    return temp;
+}
+
+static bool modifyShardingCfg(const std::string& coll,
+    const std::string& collection_config,
+    const std::string& sharding_cfg)
+{
+    using namespace ticpp;
+    try
+    {
+        ticpp::Document configDocument(collection_config.c_str());
+        configDocument.LoadFile();
+
+        Element * collection = NULL;
+        if ((collection = configDocument.FirstChildElement("Collection", false)) == NULL)
+        {
+            return false;
+        }
+
+        CollectionMeta collectionMeta;
+        collectionMeta.setName(coll);
+        boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(coll));
+        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(coll));
+        boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(coll));
+        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(coll));
+        collectionMeta.indexBundleConfig_ = indexBundleConfig;
+        collectionMeta.productBundleConfig_ = productBundleConfig;
+        collectionMeta.miningBundleConfig_ = miningBundleConfig;
+        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
+
+
+        std::string bak_cfg_file = collection_config + ".bak";
+        bfs::copy_file(collection_config, bak_cfg_file, bfs::copy_option::overwrite_if_exists);
+
+        Element* indexBundle = getUniqChildElement(collection, "IndexBundle");
+        if (indexBundle)
+        {
+            Element* shardSchema = getUniqChildElement(indexBundle, "ShardSchema");
+            if (shardSchema)
+            {
+                Iterator<Element> service_it("DistributedService");
+                for (service_it = service_it.begin(shardSchema); service_it != service_it.end(); service_it++)
+                {
+                    Element* service = service_it.Get();
+                    std::string service_type;
+
+                    service_type = service->GetAttribute("type");
+                    if (service_type == "search")
+                    {
+                        service->SetAttribute("shardids", sharding_cfg);
+                        configDocument.SaveFile();
+                        // try validate.
+                        bool ret = CollectionConfig::get()->parseConfigFile(coll, collection_config, collectionMeta);
+                        if (!ret)
+                        {
+                            bfs::rename(bak_cfg_file, collection_config);
+                        }
+                        return ret;
+                    }
+                }
+            }
+            else
+                LOG(ERROR) << "No shard schema.";
+        }
+        else
+        {
+            LOG(ERROR) << "no index bundle.";
+        }
+    }
+    catch (const ticpp::Exception& err)
+    {
+        LOG(ERROR) << "Parser the xml failed. " << err.m_details;
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "Error : " << e.what();
+    }
+    return false;
+}
+
+void CollectionController::add_sharding_nodes()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+
+    Value v = request()["new_sharding_ids"];
+    if (v.type() != Value::kArrayType)
+    {
+        response().addError("Require an array for parameter [new_sharding_ids]!");
+        return;
+    }
+
+    const Value::ArrayType* array = v.getPtr<Value::ArrayType>();
+    if(!array || array->size() == 0)
+    {
+        response().addError("Require an array for parameter [new_sharding_ids].");
+        return;
+    }
+
+    std::vector<shardid_t> new_sharding_nodes;
+    for (size_t i = 0; i < array->size(); ++i) 
+    {
+        uint32_t id = asUint((*array)[i]);
+        if (id > 255 || id < 1)
+        {
+            response().addError("Each sharding node id must between 1 and 255!");
+            return;
+        }
+        new_sharding_nodes.push_back((shardid_t)id);
+    }
+
+    if (new_sharding_nodes.empty())
+    {
+        response().addError("new sharding id list is empty!");
+        return;
+    }
+
+    bool do_remove = false;
+    do_remove = asBool(request()["do_remove"]);
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler)
+    {
+        response().addError("Collection not found!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+    
+    if (!DistributeFileSys::get()->isEnabled())
+    {
+        response().addError("This api only available while DFS is enabled.");
+        return;
+    }
+
+    bool ret = CollectionManager::get()->addNewShardingNodes(collection, new_sharding_nodes, do_remove);
+    if (!ret)
+        response().addError("add sharding nodes failed.");
+}
+
+void CollectionController::update_sharding_conf()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+
+    std::string sharding_cfg = asString(request()["new_sharding_cfg"]);
+    if (sharding_cfg.empty())
+    {
+        response().addError("Sharding configuration is empty!");
+        return;
+    }
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler )
+    {
+        response().addError("Collection not found!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+
+    bool ret = true;
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    if(!CollectionManager::get()->stopCollection(collection, false))
+    {
+        LOG(ERROR) << "failed to stop collection while update config." << collection;
+        response().addError("failed to stop collection while update config.");
+        return;
+    }
+
+    std::string configFile = SF1Config::get()->getHomeDirectory();
+    std::string slash("");
+#ifdef WIN32
+        slash = "\\";
+#else
+        slash = "/";
+#endif
+    configFile += slash + collection + ".xml";
+
+    // change the config file for sharding config.
+    if(!modifyShardingCfg(collection, configFile, sharding_cfg))
+    {
+        response().addError("modify sharding config failed.");
+        return;
+    }
     UpdateConfigReqLog reqlog;
     do {
         if (!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))

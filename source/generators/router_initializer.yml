@@ -147,6 +147,8 @@ controllers:
       - stop_collection
       - check_collection
       - update_collection_conf
+      - update_sharding_conf
+      - add_sharding_nodes
       - rebuild_collection
       - rebuild_from_scd
       - backup_all

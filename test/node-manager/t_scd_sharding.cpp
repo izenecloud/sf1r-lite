@@ -64,11 +64,9 @@ int main(int argc, char** argv)
     cout<<"shard keys: ";
     //
     // create scd sharding
-    boost::shared_ptr<ScdSharder> scdSharder(new ScdSharder);
-    if (!scdSharder->init(cfg))
-    {
-        return 0;
-    }
+    boost::shared_ptr<ShardingStrategy> sharding_strategy(new MapShardingStrategy("./test_sharding_map"));
+    sharding_strategy->shard_cfg_ = cfg;
+    boost::shared_ptr<ScdSharder> scdSharder(new ScdSharder(sharding_strategy));
 
     // create scd dispatcher
     boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, "chinese-wiki", false));

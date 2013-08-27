@@ -2,6 +2,7 @@
 #define SF1R_NODEMANAGER_DISTRIBUTE_FILESYNCMGR_H
 
 #include "DistributeFileSyncRequest.h"
+#include "sharding/ShardingConfig.h"
 #include <string>
 #include <util/singleton.h>
 #include <3rdparty/msgpack/rpc/server.h>
@@ -75,7 +76,8 @@ public:
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
     bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
-    void checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo);
+    void checkReplicasStatus(const std::vector<std::string>& colname_list,
+        unsigned int check_level, std::string& check_errinfo);
     void checkReplicasLogStatus(std::string& check_errinfo);
     void notifyReportStatusRsp(const ReportStatusRspData& rspdata);
     void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);
@@ -84,6 +86,28 @@ public:
     boost::mutex& getFlushComputeLock()
     {
         return flush_compute_mutex_;
+    }
+    bool generateMigrateScds(const std::string& coll, 
+        const std::map<std::string, std::map<shardid_t, std::vector<vnodeid_t> > >& from,
+        std::map<shardid_t, std::vector<std::string> >& generated_insert_scds,
+        std::map<shardid_t, std::vector<std::string> >& generated_del_scds);
+
+    typedef boost::function<bool(const std::string&,
+        const std::map<shardid_t, std::vector<vnodeid_t> >&,
+        std::map<shardid_t, std::string>&,
+        std::map<shardid_t, std::string>&)> GenMigrateSCDFuncT;
+    void setGenMigrateScdCB(GenMigrateSCDFuncT cb)
+    {
+        scd_generator_ = cb;
+    }
+    void notifyGenerateSCDRsp(const GenerateSCDRspData& rspdata);
+    void sendGenerateSCDRsp(const std::string& ip, uint16_t port, const GenerateSCDRsp& rsp);
+    bool GenMigrateSCD(const std::string& coll,
+        const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+        std::map<shardid_t, std::string>& generated_insert_scds,
+        std::map<shardid_t, std::string>& generated_del_scds)
+    {
+        return scd_generator_(coll, vnode_list, generated_insert_scds, generated_del_scds);
     }
 
 private:
@@ -103,6 +127,10 @@ private:
     std::vector<ReportStatusRspData>  status_rsp_list_;
     std::set<std::string>  ignore_list_;
     std::map<std::string, FileCheckData> cached_checksum_;
+    GenMigrateSCDFuncT scd_generator_;
+    boost::mutex generate_scd_mutex_;
+    boost::condition_variable generate_scd_cond_;
+    std::vector<GenerateSCDRspData>  generate_scd_rsp_list_;
 };
 
 }

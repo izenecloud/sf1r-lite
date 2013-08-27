@@ -31,6 +31,9 @@ public:
     // to avoid the same file location in different cluster,
     // the cluster name will be interted to the given path.
     std::string getFixedCopyPath(const std::string& custom_prefix);
+    // since the HDFS do not support append, copy file with overwrite 
+    // will not work properly. Please using this to do the same thing.
+    static void copy_dfs_file(const std::string& src, const std::string& dest);
 
 private:
     bool dfs_enabled_;

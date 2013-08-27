@@ -7,7 +7,10 @@
 #include <configuration-manager/ProductRankingConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
+#include <common/ResultType.h>
 #include <common/PropSharedLockSet.h>
+#include <common/QueryNormalizer.h>
+#include <common/ResourceManager.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include "mining-manager/custom-rank-manager/CustomRankManager.h"
 #include "mining-manager/product-scorer/CategoryClassifyScorer.h"
@@ -51,6 +54,26 @@ void FuzzySearchRanker::rankByProductScore(
 
     const std::size_t count = resultList.size();
     std::size_t current = 0;
+    std::string pattern = actionItem.env_.queryString_;
+    bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
+    bool hasConfidentCate = false;
+
+    if (isLongQuery)
+    {
+        CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
+            KNlpResourceManager::getResource()->classifyToMultiCategories(pattern, isLongQuery);
+
+        for (CategoryClassifyScorer::CategoryScoreMap::const_iterator it = categoryScoreMap.begin();
+             it != categoryScoreMap.end(); ++it)
+        {
+            if (it->second > 0.9)
+            {
+                hasConfidentCate = true;
+                break;
+            }
+        }
+    }
+
     for (std::size_t i = 0; i < count; ++i)
     {
         docid_t docId = resultList[i].second;
@@ -66,6 +89,11 @@ void FuzzySearchRanker::rankByProductScore(
         {
             // ignore the docs with zero category score
             if (isCompare && productScore < 0.9)
+            {
+                continue;
+            }
+
+            if (isLongQuery && hasConfidentCate && productScore < 0.1)
             {
                 continue;
             }
@@ -122,7 +150,8 @@ void FuzzySearchRanker::rankByPropValue(
         uint32_t start,
         std::vector<uint32_t>& docid_list,
         std::vector<float>& result_score_list,
-        std::vector<float>& custom_score_list)
+        std::vector<float>& custom_score_list,
+        DistKeywordSearchInfo& distSearchInfo)
 {
     if (docid_list.size() <= start)
         return;
@@ -194,6 +223,17 @@ void FuzzySearchRanker::rankByPropValue(
         if (customRanker)
         {
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
+        }
+    }
+    if (pSorter)
+    {
+        try
+        {
+            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list, distSearchInfo);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << e.what();
         }
     }
 }

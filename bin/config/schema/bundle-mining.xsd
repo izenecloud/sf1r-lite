@@ -223,6 +223,7 @@
                 <xs:element ref="TG" minOccurs="0"/>
                 <xs:element name="Property" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element ref="QueryLog" minOccurs="0"/>
+                <xs:element ref="AutoFill" minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -231,6 +232,11 @@
     </xs:element>
     <xs:element name="QueryLog">
         <xs:complexType/>
+    </xs:element>
+    <xs:element name="AutoFill">
+        <xs:complexType>
+            <xs:attribute name="days" type="xs:positiveInteger" use="optional" />
+        </xs:complexType>
     </xs:element>
 
     <xs:element name="Similarity">
@@ -390,6 +396,8 @@
         <xs:attribute name="type" type="xs:string" use="optional"/>
         <xs:attribute name="property" type="xs:string" use="optional"/>
         <xs:attribute name="weight" type="xs:float" use="optional"/>
+        <xs:attribute name="min" type="xs:float" use="optional"/>
+        <xs:attribute name="max" type="xs:float" use="optional"/>
         <xs:attribute name="debug" type="YesNoType" use="optional"/>
     </xs:complexType>
 

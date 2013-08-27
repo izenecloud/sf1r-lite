@@ -242,7 +242,8 @@ void MiningManager::close()
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
             it != groupLabelLoggerMap_.end(); ++it)
     {
-        delete it->second;
+        if (it->second)
+            delete it->second;
     }
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
@@ -1379,14 +1380,12 @@ bool MiningManager::getSimilarImageDocIdList(
 // }
 
 bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
-                                       const std::vector<docid_t>& topDocIdList,
                                        QueryRecommendRep & recommendRep)
 {
     //struct timeval tv_start;
     //struct timeval tv_end;
     //gettimeofday(&tv_start, NULL);
-    qrManager_->getRecommendQuery(queryStr, topDocIdList,
-                                  miningConfig_.recommend_param.recommend_num, recommendRep);
+    qrManager_->getRecommendQuery(queryStr, miningConfig_.recommend_param.recommend_num, recommendRep);
     //gettimeofday(&tv_end, NULL);
     //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
     //std::cout << "QR all cost " << timespend << " seconds." << std::endl;
@@ -1691,14 +1690,14 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
 
 bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
 {
-    //std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
+    LOG(INFO) << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
     miaInput.relatedQueryList_.clear();
     miaInput.rqScore_.clear();
     bool ret = false;
     QueryRecommendRep recommendRep;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
-                             miaInput.encodingType_), miaInput.topKDocs_, recommendRep);
-    //std::cout << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
+                             miaInput.encodingType_), recommendRep);
+    LOG(INFO) << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
     miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
     miaInput.rqScore_ = recommendRep.scores_;
 
@@ -1731,13 +1730,14 @@ bool MiningManager::addDupResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(dup_mtx_);
     if (!dupManager_) return true;
-    miaInput.numberOfDuplicatedDocs_.resize(miaInput.topKDocs_.size());
+    std::vector<docid_t>* ptopk_docs = &miaInput.topKDocs_;
+    miaInput.numberOfDuplicatedDocs_.resize(ptopk_docs->size());
     std::vector<count_t>::iterator result =
         miaInput.numberOfDuplicatedDocs_.begin();
 
     std::vector<docid_t> tmpDupDocs;
-    for (std::vector<docid_t>::const_iterator it = miaInput.topKDocs_.begin();
-            it != miaInput.topKDocs_.end(); ++it)
+    for (std::vector<docid_t>::const_iterator it = ptopk_docs->begin();
+            it != ptopk_docs->end(); ++it)
     {
         tmpDupDocs.clear(); // use resize to reserve the memory
         dupManager_->getDuplicatedDocIdList(*it, tmpDupDocs);
@@ -1752,11 +1752,12 @@ bool MiningManager::addSimilarityResult_(KeywordSearchResult& miaInput)
 {
 //    boost::mutex::scoped_lock lock(sim_mtx_);
     if (!similarityIndex_ && !similarityIndexEsa_) return true;
-    miaInput.numberOfSimilarDocs_.resize(miaInput.topKDocs_.size());
+    std::vector<docid_t>* ptopk_docs = &miaInput.topKDocs_;
+    miaInput.numberOfSimilarDocs_.resize(ptopk_docs->size());
 
-    for (uint32_t i = 0; i < miaInput.topKDocs_.size(); i++)
+    for (uint32_t i = 0; i < ptopk_docs->size(); i++)
     {
-        uint32_t docid = miaInput.topKDocs_[i];
+        uint32_t docid = (*ptopk_docs)[i];
         uint32_t count = 0;
         if (!miningConfig_.similarity_param.enable_esa)
         {
@@ -2032,18 +2033,18 @@ bool MiningManager::setCustomRank(
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    CustomRankDocId customDocId;
+    //CustomRankDocId customDocId;
 
-    bool convertResult = customDocIdConverter_ &&
-        customDocIdConverter_->convert(customDocStr, customDocId);
+    //bool convertResult = customDocIdConverter_ &&
+    //    customDocIdConverter_->convert(customDocStr, customDocId);
 
-    if (!convertResult)
-    {
-        return false;
-    }
+    //if (!convertResult)
+    //{
+    //    return false;
+    //}
 
-    NoAdditionReqLog reqlog;
-    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -2052,9 +2053,9 @@ bool MiningManager::setCustomRank(
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);
 
-    DISTRIBUTE_WRITE_FINISH(convertResult && setResult);
+    DISTRIBUTE_WRITE_FINISH(/*convertResult &&*/ setResult);
 
-    return convertResult && setResult;
+    return /*convertResult &&*/ setResult;
 }
 
 bool MiningManager::getCustomRank(
@@ -2252,6 +2253,7 @@ bool MiningManager::GetSuffixMatch(
         sf1r::faceted::OntologyRep& attrRep,
         UString& analyzedQuery,
         std::string& pruneQueryString_,
+        DistKeywordSearchInfo& distSearchInfo,
         faceted::GroupParam::GroupLabelMap& topLabelMap)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
@@ -2462,7 +2464,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     searchManager_->fuzzySearchRanker_.rankByPropValue(
-        actionOperation, start, docIdList, rankScoreList, customRankScoreList);
+        actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
 
     cout<<"return true"<<endl;
     return true;
@@ -3000,7 +3002,8 @@ void MiningManager::flush()
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
             it != groupLabelLoggerMap_.end(); ++it)
     {
-        it->second->flush();
+        if (it->second)
+            it->second->flush();
     }
 
     LOG(INFO) << "GroupLabelLoggerMap flushed .... ";

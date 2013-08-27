@@ -2,6 +2,7 @@
 #include "Sorter.h"
 #include "NumericPropertyTableBuilder.h"
 #include "RTypeStringPropTableBuilder.h"
+#include <common/RTypeStringPropTable.h>
 #include "DocumentIterator.h"
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
@@ -205,6 +206,23 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
         if (sortPropertyName == "CUSTOM_RANK" || sortPropertyName == "RANK")
             continue;
 
+        if (pSortProperty->getPropertyDataType() == STRING_PROPERTY_TYPE)
+        {
+            if (!rtypeStringPropTableBuilder_)
+                continue;
+            boost::shared_ptr<RTypeStringPropTable>& strPropertyTable =
+                rtypeStringPropTableBuilder_->createPropertyTable(sortPropertyName);
+            if (!strPropertyTable)
+                continue;
+            distSearchInfo.sortPropertyStrDataList_.push_back(std::make_pair(sortPropertyName, std::vector<std::string>()));
+            std::vector<std::string>& dataList = distSearchInfo.sortPropertyStrDataList_.back().second;
+            dataList.resize(docNum);
+            for (size_t i = 0; i < docNum; ++i)
+            {
+                strPropertyTable->getRTypeString(docIdList[i], dataList[i]);
+            }
+            continue;
+        }
         if (!numericTableBuilder_)
             continue;
 

@@ -15,6 +15,8 @@ const FileSyncServerRequest::method_t FileSyncServerRequest::method_names[] =
     "report_status_req",
     "report_status_rsp",
     "get_running_reqlog"
+    "generate_migrate_scd_req",
+    "generate_migrate_scd_rsp",
 };
 
 }
