@@ -10,12 +10,19 @@ using namespace sf1r;
 
 namespace {
 
-void removeReadOnlyNode(shardid_t sid, replicaid_t rid, MasterManagerBase::ROWorkerMapT& wmap)
+bool isSameWorkerNode(const Sf1rNode& left, const Sf1rNode& right)
 {
-    MasterManagerBase::ROWorkerMapT::iterator it = wmap.find(sid);
-    if (it == wmap.end())
-        return;
-    it->second.erase(rid);
+    if (left.nodeId_ != right.nodeId_)
+        return false;
+    if (left.replicaId_ != right.replicaId_)
+        return false;
+    if (left.host_ != right.host_)
+        return false;
+    if (left.worker_.port_ != right.worker_.port_)
+        return false;
+    if (left.worker_.isGood_ != right.worker_.isGood_)
+        return false;
+    return true;
 }
 
 }
@@ -1196,22 +1203,66 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
         resetReadOnlyAggregatorConfig();
         return;
     }
-    readonly_workerMap_.clear();
+    ROWorkerMapT old_workers;
+    old_workers.swap(readonly_workerMap_);
     for (size_t i = 0; i < replicaIdList_.size(); i++)
     {
         LOG(INFO) << "begin detect read only workers in replica : " << replicaIdList_[i];
         detectReadOnlyWorkersInReplica(replicaIdList_[i]);
     }
-    resetReadOnlyAggregatorConfig();
+    // check if any changed.
+    ROWorkerMapT::const_iterator old_it = old_workers.begin();
+    ROWorkerMapT::const_iterator new_it = readonly_workerMap_.begin();
+    size_t compared_size = 0;
+    while(old_it != old_workers.end() && new_it != readonly_workerMap_.end())
+    {
+        if (old_it->first != new_it->first)
+            break;
+        if (old_it->second.size() != new_it->second.size())
+            break;
+
+        bool same = true;
+        std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::const_iterator old_it_2 = old_it->second.begin();
+        std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::const_iterator new_it_2 = new_it->second.begin();
+        while(old_it_2 != old_it->second.end() && new_it_2 != new_it->second.end())
+        {
+            if (old_it_2->first != new_it_2->first)
+            {
+                same = false;
+                break;
+            }
+            if (!isSameWorkerNode(*(old_it_2->second), *(new_it_2->second)))
+            {
+                same = false;
+                break;
+            }
+            ++old_it_2;
+            ++new_it_2;
+        }
+        if (!same)
+            break;
+        ++old_it;
+        ++new_it;
+        ++compared_size;
+    }
+
+    if ((compared_size != old_workers.size()) ||
+        (compared_size != readonly_workerMap_.size()))
+    {
+        resetReadOnlyAggregatorConfig();
+    }
+    else
+    {
+        LOG(INFO) << "the read only workers has no change.";
+    }
 }
 
 int MasterManagerBase::detectWorkers()
 {
     size_t detected = 0;
     size_t good = 0;
-    WorkerMapT old_workers = workerMap_;
-
-    workerMap_.clear();
+    WorkerMapT old_workers;
+    old_workers.swap( workerMap_ );
     // detect workers from "current" replica first
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     detectWorkersInReplica(replicaId, detected, good);
@@ -1229,22 +1280,14 @@ int MasterManagerBase::detectWorkers()
         LOG(INFO) << "begin detect workers in other replica : " << replicaIdList_[i];
         detectWorkersInReplica(replicaIdList_[i], detected, good);
     }
-    WorkerMapT::iterator old_it = old_workers.begin();
-    WorkerMapT::iterator new_it = workerMap_.begin();
+    WorkerMapT::const_iterator old_it = old_workers.begin();
+    WorkerMapT::const_iterator new_it = workerMap_.begin();
     size_t compared_size = 0;
     while(old_it != old_workers.end() && new_it != workerMap_.end())
     {
         if (old_it->first != new_it->first)
             break;
-        if (old_it->second->nodeId_ != new_it->second->nodeId_)
-            break;
-        if (old_it->second->replicaId_ != new_it->second->replicaId_)
-            break;
-        if (old_it->second->host_ != new_it->second->host_)
-            break;
-        if (old_it->second->worker_.port_ != new_it->second->worker_.port_)
-            break;
-        if (old_it->second->worker_.isGood_ != new_it->second->worker_.isGood_)
+        if (!isSameWorkerNode(*(old_it->second), *(new_it->second)))
             break;
         ++old_it;
         ++new_it;
@@ -1801,7 +1844,7 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
     {
         for (size_t i = 0; i < shardidList.size(); i++)
         {
-            WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
+            WorkerMapT::const_iterator it = workerMap_.find(shardidList[i]);
             if (it != workerMap_.end())
             {
                 if(!it->second->worker_.isGood_)
