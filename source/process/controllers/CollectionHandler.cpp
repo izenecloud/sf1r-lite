@@ -15,6 +15,7 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <mining-manager/query-abbreviation/RemoveKeywords.h>
 
 #include "CollectionHandler.h"
 #include "DocumentsGetHandler.h"
@@ -57,6 +58,28 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
 {
     DocumentsSearchHandler handler(request,response,*this);
     handler.search();
+    if (response.success() && (0 == asInt(response[Keys::total_count])))
+    {
+        std::string keywords = asString(request[Keys::search][Keys::keywords]);
+        RK::TokenArray queries;
+        RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
+        int success = 0;
+        for (std::size_t i = 0; i < queries.size(); i++)
+        {
+            request[Keys::search][Keys::keywords] = queries[i].token();
+            ::izenelib::driver::Response newResponse;
+            DocumentsSearchHandler sHandler(request, newResponse, *this);
+            sHandler.search();
+            if (response.success() && (0 != asInt(newResponse[Keys::total_count])))
+            {
+                ::izenelib::driver::Value& value = response["removed_keywords"]();
+                newResponse["new_query"] = queries[i].token();
+                value.assign(newResponse.get());
+                if (++success > 3)
+                    break;
+            }
+        }
+    }
 }
 
 void CollectionHandler::get(::izenelib::driver::Request& request, ::izenelib::driver::Response& response)
