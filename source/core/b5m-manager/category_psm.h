@@ -74,12 +74,16 @@ namespace sf1r {
             model_stop_set_.insert("13kim");
             category_list_.push_back(std::make_pair(boost::regex("^服装服饰.*$"), "服装服饰"));
             category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外服饰.*$"), "服装服饰"));
+            category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动服饰.*$"), "服装服饰"));
             category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动鞋.*$"), "鞋子"));
             category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外鞋.*$"), "鞋子"));
             category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男鞋.*$"), "鞋子"));
             category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女鞋.*$"), "鞋子"));
             category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男包.*$"), "包包"));
             category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女包.*$"), "包包"));
+            category_list_.push_back(std::make_pair(boost::regex("^母婴童装>孕产妇>孕妇装$"), "孕妇装"));
+            category_list_.push_back(std::make_pair(boost::regex("^母婴童装>儿童服饰.*$"), "童装"));
+            category_list_.push_back(std::make_pair(boost::regex("^母婴童装>婴儿服饰.*$"), "童装"));
         }
         ~CategoryPsm()
         {
