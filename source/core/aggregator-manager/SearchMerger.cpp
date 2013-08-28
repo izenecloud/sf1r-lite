@@ -137,11 +137,13 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.propertyRange_.highValue_ = rangeHigh;
     mergeResult.attrRep_.merge(0, otherAttrReps);
 
-    size_t endOffset = mergeResult.start_ + mergeResult.count_;
-    size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
-    size_t topKCount = std::min(endTopK, totalTopKCount);
+    //size_t endOffset = mergeResult.start_ + mergeResult.count_;
+    size_t topKStart = Utilities::roundDown(mergeResult.start_, TOP_K_NUM);
+    size_t topKCount = 0;
+    if (topKStart < totalTopKCount)
+        topKCount = totalTopKCount - topKStart;
 
-    LOG(INFO) << "SearchMerger topKStart : << " << endTopK << ", topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    LOG(INFO) << "SearchMerger topKStart : << " << topKStart << ", topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
