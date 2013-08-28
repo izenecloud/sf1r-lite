@@ -105,15 +105,18 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
             return;
         }
         std::vector<sf1r::docid_t> possible_docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin();
-        for (size_t i = 0 ; it != resultItem.topKDocs_.end(); ++i, ++it)
+        if (actionItem.pageInfo_.count_ > 0)
         {
-            if (i < actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_)
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin();
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end(); ++i, ++it)
             {
-                possible_docsInPage.push_back(*it);
+                if (i < actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_)
+                {
+                    possible_docsInPage.push_back(*it);
+                }
+                else
+                    break;
             }
-            else
-                break;
         }
         LOG(INFO) << "pre get documents since the page result is small. size: " << possible_docsInPage.size();
 
