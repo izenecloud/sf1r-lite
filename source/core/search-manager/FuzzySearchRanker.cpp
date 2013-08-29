@@ -229,7 +229,8 @@ void FuzzySearchRanker::rankByPropValue(
     {
         try
         {
-            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list, distSearchInfo);
+            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list,
+                distSearchInfo, propSharedLockSet);
         }
         catch(const std::exception& e)
         {
