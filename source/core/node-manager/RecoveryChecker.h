@@ -50,7 +50,7 @@ public:
         flush_col_ = flush_cb;
     }
 
-    void init(const std::string& conf_dir, const std::string& workdir);
+    void init(const std::string& conf_dir, const std::string& workdir, unsigned int check_level);
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
     bool getCollPath(const std::string& colname, CollectionPath& colpath);
@@ -100,6 +100,7 @@ private:
     std::string last_conf_file_;
     std::string configDir_;
     bool need_backup_;
+    unsigned int check_level_;
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     CollInfoMapT all_col_info_;
     boost::mutex mutex_;

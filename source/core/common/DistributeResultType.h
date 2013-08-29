@@ -4,13 +4,17 @@
  * @date Aug 12, 2011
  * @brief Distributed search result
  */
+#include <vector>
+#include <stdint.h>
 
 class DistKeywordSearchInfo
 {
 public:
 
     DistKeywordSearchInfo()
-        : effective_(false)
+        : isDistributed_(false)
+        , effective_(false)
+        , include_summary_data_(false)
         , option_(OPTION_NONE)
         , nodeType_(NODE_MASTER)
     {
@@ -23,8 +27,10 @@ public:
     static const int8_t NODE_MASTER = 0x0;
     static const int8_t NODE_WORKER = 0x1;
 
+    bool isDistributed_;
     /// @brief whether distributed search is effective
     bool effective_;
+    bool include_summary_data_;
 
     /// @brief indicate .
     int8_t option_;
@@ -44,6 +50,7 @@ public:
     std::vector<std::pair<std::string, std::vector<int32_t> > > sortPropertyInt32DataList_;
     std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyInt64DataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
+    std::vector<std::pair<std::string, std::vector<std::string> > > sortPropertyStrDataList_;
 
     bool isOptionGatherInfo() const
     {
@@ -58,7 +65,9 @@ public:
     void swap(DistKeywordSearchInfo& other)
     {
         using std::swap;
+        isDistributed_ = other.isDistributed_;
         swap(effective_, other.effective_);
+        swap(include_summary_data_, other.include_summary_data_);
         swap(option_, other.option_);
         swap(nodeType_, other.nodeType_);
         dfmap_.swap(other.dfmap_);
@@ -68,10 +77,11 @@ public:
         sortPropertyInt32DataList_.swap(other.sortPropertyInt32DataList_);
         sortPropertyInt64DataList_.swap(other.sortPropertyInt64DataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
+        sortPropertyStrDataList_.swap(other.sortPropertyStrDataList_);
     }
 
-    MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
-        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_);
+    MSGPACK_DEFINE(isDistributed_, effective_, include_summary_data_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
+        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyStrDataList_);
 };
 
 class DistSummaryMiningResult : public ErrorInfo

@@ -646,6 +646,7 @@ int do_main(int ac, char** av)
         //ProductMatcher::Clear(knowledge_dir, mode);
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
+        use_psm = true;
         if(use_psm)
         {
             matcher.SetUsePsm(true);

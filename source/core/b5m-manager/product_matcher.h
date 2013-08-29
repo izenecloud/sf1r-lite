@@ -1038,7 +1038,8 @@ namespace sf1r {
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
         bool use_psm_;
-        std::vector<CategoryPsm*> psms_;
+        //std::vector<CategoryPsm*> psms_;
+        CategoryPsm* psm_;
         boost::unordered_map<uint128_t, uint128_t> psm_result_;
 
         const static double optional_weight_ = 0.2;

@@ -31,13 +31,11 @@ BOOST_AUTO_TEST_CASE(SCDTypeWirter_Append)
     vector<vector<Document> >  AllDoc;
     AllDoc.resize(4);
 
-    Document doc;
     SCD_TYPE type=INSERT_SCD;
     for(unsigned i=0; i<10000; i++)
     {
-        doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        Document doc;
         doc.property("DOCID") = str_to_propstr(boost::lexical_cast<string>(rand()),  UString::UTF_8);
-        doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
         int itype=rand()%4;
         if(itype==0)
         {
@@ -54,6 +52,17 @@ BOOST_AUTO_TEST_CASE(SCDTypeWirter_Append)
         else
         {
             type=NOT_SCD;
+        }
+        if (type != DELETE_SCD)
+        {
+            doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+            doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        }
+        if (itype == 1)
+        {
+            BOOST_CHECK(doc.getPropertySize() == 1);
+            BOOST_CHECK(!doc.hasProperty("Title"));
+            BOOST_CHECK(!doc.hasProperty("Content"));
         }
         AllDoc[itype].push_back(doc);
         scd.Append(doc,type);

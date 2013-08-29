@@ -813,7 +813,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
     return true;
 }
 
-void RecoveryChecker::init(const std::string& conf_dir, const std::string& workdir)
+void RecoveryChecker::init(const std::string& conf_dir, const std::string& workdir, unsigned int check_level)
 {
     backup_basepath_ = workdir + "/req-backup";
     request_log_basepath_ = workdir + "/req-log";
@@ -822,6 +822,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
+    check_level_ = check_level;
     if (DistributeFileSys::get()->isEnabled())
     {
         backup_basepath_ = DistributeFileSys::get()->getDFSPathForLocalNode("/req-backup");
@@ -1024,7 +1025,10 @@ bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll, bool de
     {
         config_file_list.erase(current.filename().string());
         if (bfs::is_regular_file(current))
+        {
+            copy_file_keep_modification(current, current.string() + ".removed");
             bfs::remove(current);
+        }
         LOG(INFO) << "config file removed : " << current;
         return true;
     }
@@ -1164,7 +1168,7 @@ void RecoveryChecker::checkDataConsistent(const std::string& coll, std::string& 
         flush_col_(coll);
     std::vector<std::string> coll_list;
     coll_list.push_back(coll);
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, 100, errinfo);
 }
 
 bool RecoveryChecker::checkDataConsistent()
@@ -1186,7 +1190,7 @@ bool RecoveryChecker::checkDataConsistent()
         coll_list.push_back(cit->first);
         ++cit;
     }
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, 100, errinfo);
     if (!errinfo.empty())
     {
         LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
@@ -1231,7 +1235,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
         ++cit;
     }
 
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, check_level_, errinfo);
     if (!errinfo.empty())
     {
         setRollbackFlag(0);

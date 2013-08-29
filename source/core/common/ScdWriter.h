@@ -65,6 +65,10 @@ public:
         filename_ = fn;
     }
 
+    std::string getFileName()
+    {
+        return filename_;
+    }
     static std::string GenSCDFileName(SCD_TYPE scd_type);
 
     bool Append(const Document& doc);

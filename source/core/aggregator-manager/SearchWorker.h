@@ -133,6 +133,7 @@ public:
     {
         total_docs = getKeyCount(property_name);
     }
+    void rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
 private:
     bool getSearchResult_(

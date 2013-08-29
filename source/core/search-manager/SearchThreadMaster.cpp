@@ -106,7 +106,7 @@ bool SearchThreadMaster::mergeThreadParams(
     std::map<std::string, unsigned int>& masterCounterResults = masterParam.counterResults;
     faceted::GroupRep& masterGroupRep = masterParam.groupRep;
     faceted::OntologyRep& masterAttrRep = masterParam.attrRep;
-    std::list<faceted::OntologyRep*> otherAttrReps;
+    std::list<const faceted::OntologyRep*> otherAttrReps;
     boost::shared_ptr<HitQueue> masterQueue(masterParam.scoreItemQueue);
 
     for (std::size_t i = 1; i < threadNum; ++i)

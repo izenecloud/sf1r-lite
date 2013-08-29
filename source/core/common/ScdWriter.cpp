@@ -55,6 +55,16 @@ bool ScdWriter::Append(const Document& doc)
     }
     std::string sdocid = propstr_to_str(docid_it->second.getPropertyStrValue());
     ofs_<<"<"<<DOCID<<">"<<sdocid<<std::endl;
+    if(scd_type_ == DELETE_SCD)
+    {
+        Document::property_const_iterator uuid_it = doc.findProperty("uuid");
+        if(uuid_it != doc.propertyEnd())
+        {
+            std::string suuid = propstr_to_str(uuid_it->second.getPropertyStrValue());
+            ofs_<<"<uuid>"<< suuid << std::endl;
+        }
+        return true;
+    }
     Document::property_const_iterator it = doc.propertyBegin();
     while(it!=doc.propertyEnd())
     {

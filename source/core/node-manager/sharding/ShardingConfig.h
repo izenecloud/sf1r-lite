@@ -11,12 +11,12 @@
 #include <set>
 #include <vector>
 #include <map>
-
 #include <boost/algorithm/string.hpp>
 
 namespace sf1r
 {
-typedef uint32_t shardid_t; // xxx, shard id start with 1 (1, ..., n)
+typedef uint8_t shardid_t; // xxx, shard id start with 1 (1, ..., n)
+typedef uint16_t vnodeid_t; // xxx, virtual shard node id
 
 class ShardingConfig
 {

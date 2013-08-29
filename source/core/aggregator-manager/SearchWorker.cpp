@@ -75,7 +75,7 @@ void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::strin
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     KeywordSearchResult fakeResultItem;
-    fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
+    fakeResultItem.distSearchInfo_.swap(resultItem);
 
     getSearchResult_(actionItem, fakeResultItem);
 
@@ -87,6 +87,43 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
+    resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+    if (!resultItem.topKDocs_.empty())
+        searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+    if (miningManager_)
+    {
+        miningManager_->getMiningResult(actionItem, resultItem);
+    }
+
+    if (!actionItem.disableGetDocs_)
+    {
+        if( (resultItem.topKDocs_.size() > 20) &&
+            (actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_) > 20 )
+        {
+            return;
+        }
+        std::vector<sf1r::docid_t> possible_docsInPage;
+        if (actionItem.pageInfo_.count_ > 0)
+        {
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin();
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end(); ++i, ++it)
+            {
+                if (i < actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_)
+                {
+                    possible_docsInPage.push_back(*it);
+                }
+                else
+                    break;
+            }
+        }
+        LOG(INFO) << "pre get documents since the page result is small. size: " << possible_docsInPage.size();
+
+        resultItem.distSearchInfo_.include_summary_data_ = true;
+        // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
+        getResultItem(actionItem, possible_docsInPage, resultItem.propertyQueryTermList_, resultItem);
+    }
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
@@ -98,8 +135,6 @@ void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, K
 
 void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
-
     getSummaryMiningResult_(actionItem, resultItem);
 }
 
@@ -163,6 +198,13 @@ void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_
         internalId = docid;
 }
 
+void SearchWorker::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    // this is used for distributed search.
+    // we can rerank the result if the merged result has the rerank data with them.
+    //searchManager_->topKReranker_.rerank(actionItem, resultItem);
+}
+
 // local interface
 bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
@@ -183,10 +225,19 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (! getSearchResult_(actionItem, resultItem, identity, false))
             return false;
 
+        resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+        if (!resultItem.topKDocs_.empty())
+            searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+        if (miningManager_)
+        {
+            miningManager_->getMiningResult(actionItem, resultItem);
+        }
+
         if (resultItem.topKDocs_.empty())
             return true;
 
-        searchManager_->topKReranker_.rerank(actionItem, resultItem);
 
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
@@ -389,6 +440,8 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
+    actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
+
     uint32_t topKStart = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
@@ -447,6 +500,7 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.attrRep_,
                                             resultItem.analyzedQuery_,
                                             resultItem.pruneQueryString_,
+                                            resultItem.distSearchInfo_,
                                             resultItem.autoSelectGroupLabels_))
         {
             return true;
@@ -550,8 +604,6 @@ bool SearchWorker::getSearchResult_(
         resultItem.adjustStartCount(topKStart);
     }
 
-    //set query term and Id List
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
@@ -570,7 +622,7 @@ bool SearchWorker::getSummaryResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
-    if (resultItem.count_ == 0)
+    if (resultItem.count_ == 0 || actionItem.disableGetDocs_)
         return true;
 
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
@@ -581,7 +633,7 @@ bool SearchWorker::getSummaryResult_(
     if (isDistributedSearch)
     {
         // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
-        getResultItem(actionItem, resultItem.topKDocs_, resultItem.propertyQueryTermList_, resultItem);
+        getResultItem(actionItem, resultItem.docsInPage_, resultItem.propertyQueryTermList_, resultItem);
     }
     else
     {
@@ -612,13 +664,10 @@ bool SearchWorker::getSummaryMiningResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+
     getSummaryResult_(actionItem, resultItem, isDistributedSearch);
-
-    if (miningManager_)
-    {
-        miningManager_->getMiningResult(actionItem, resultItem);
-    }
-
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] finished.";
     return true;
 }
 
