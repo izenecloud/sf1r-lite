@@ -20,6 +20,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
+#include <aggregator-manager/MasterNotifier.h>
 
 namespace sf1r
 {
@@ -944,6 +945,14 @@ void SearchWorker::reset_all_property_cache()
 void SearchWorker::clearSearchCache()
 {
     searchCache_->clear();
+    LOG(INFO) << "notify master to clear cache.";
+    if (bundleConfig_->isWorkerNode())
+    {
+        NotifyMSG msg;
+        msg.collection = bundleConfig_->collectionName_;
+        msg.method = "CLEAR_SEARCH_CACHE";
+        MasterNotifier::get()->notify(msg);
+    }
 }
 
 void SearchWorker::clearFilterCache()

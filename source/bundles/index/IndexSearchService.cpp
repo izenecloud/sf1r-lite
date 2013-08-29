@@ -36,6 +36,7 @@ const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
 
 void IndexSearchService::OnUpdateSearchCache()
 {
+    LOG(INFO) << "clearing master search cache.";
     searchCache_->clear();
 }
 
@@ -85,7 +86,7 @@ bool IndexSearchService::getSearchResult(
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
     size_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
-    LOG(INFO) << "topKStart for dist search is " << topKStart << ", pageInfo_ :"
+    LOG(INFO) << "query: " << actionItem.env_.queryString_ << ", topKStart for dist search is " << topKStart << ", pageInfo_ :"
         << actionItem.pageInfo_.start_ << ", " << actionItem.pageInfo_.count_;
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
@@ -161,7 +162,8 @@ bool IndexSearchService::getSearchResult(
                     actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
             }
         }
-        searchCache_->set(identity, resultItem);
+        if (searchCache_ && !resultItem.topKDocs_.empty())
+            searchCache_->set(identity, resultItem);
     }
     else
     {
