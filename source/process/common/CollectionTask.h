@@ -83,6 +83,7 @@ public:
         const std::string& rebuild_scd_src, std::vector<std::string>& scd_list);
 
 private:
+    void clearMasterCache();
     std::string rebuildCollectionName_;
 };
 
