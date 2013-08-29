@@ -29,7 +29,7 @@ AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
 AutoFillChildManager::~AutoFillChildManager()
 {
     if(!cronJobName_.empty())
-        izenelib::util::Scheduler::removeJob(cronJobName_);
+        izenelib::util::Scheduler::removeJob(cronJobName_, true);
     closeDB();
     if (QN_ != NULL)
     {
@@ -426,6 +426,7 @@ bool AutoFillChildManager::InitFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
     LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,AutoFillChildManager::enableUpdateHitnum_);
+    LOG (INFO) << "[" << collectionName_  << "]" <<"Do InitFrom Log, query number:" << query_records.size();
 
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
@@ -1225,7 +1226,11 @@ void AutoFillChildManager::updateFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,AutoFillChildManager::enableUpdateHitnum_);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records, AutoFillChildManager::enableUpdateHitnum_);
+    LOG (INFO) << "[" << collectionName_ << "]" << ":Do update from log, query number:" << query_records.size();
+
+    if (query_records.size() == 0)
+        return;
 
     list<QueryType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
@@ -1256,12 +1261,12 @@ void AutoFillChildManager::updateFromLog()
     }
     LoadItem();
     buildItemVector();
-    LOG(INFO) << " buildDbIndex for query size : " << querylist.size() << ", time_string: " << time_string;
+    LOG(INFO) << "[" << collectionName_ << "]" << " buildDbIndex for query size : " << querylist.size() << ", time_string: " << time_string;
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
     wa_.Clear();
-    LOG(INFO) << " buildDbIndex for query finished";
     buildWat_array(false);
+    LOG(INFO) << "[" << collectionName_ << "]" << " update finished";
 }
 
 void AutoFillChildManager::flush()
