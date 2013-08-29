@@ -143,7 +143,12 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     if (topKStart < totalTopKCount)
         topKCount = totalTopKCount - topKStart;
 
-    LOG(INFO) << "SearchMerger topKStart : << " << topKStart << ", topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    topKCount = std::min(TOP_K_NUM, topKCount);
+
+    LOG(INFO) << "SearchMerger topKStart : << " << topKStart
+        << ", topKCount: " << topKCount
+        << ", totalTopKCount: " << totalTopKCount
+        << ", TOP_K_NUM: " << TOP_K_NUM << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
