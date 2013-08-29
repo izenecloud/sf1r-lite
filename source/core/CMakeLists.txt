@@ -81,6 +81,7 @@ FILE(GLOB mining_SRC
   "mining-manager/query-intent/*.cpp"
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
+  "mining-manager/zambezi-manager/*.cpp"
 )
 
 ADD_DEFINITIONS("-fno-strict-aliasing")
