@@ -22,18 +22,18 @@ QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionN
     , collectionName_(collectionName)
 {
     wordsFreq_ = new FreqType;
-    lastTimeStr_ = "20130100T000000";
+    lastTimeStr_ = "20120100T000000";
     totalWords_ = 0;
 
     init();
     LOG(INFO)<<lastTimeStr_<<" "<<totalWords_;
-    //bool ret = izenelib::util::Scheduler::addJob(cronJobName, 
-    //                                             60*1000,
-    //                                             0,
-    //                                             boost::bind(&QueryStatistics::statistics, this, 0));
-    //if (!ret)
+    bool ret = izenelib::util::Scheduler::addJob(cronJobName, 
+                                                 60*10000,
+                                                 0,
+                                                 boost::bind(&QueryStatistics::statistics, this, 0));
+    if (!ret)
     {
-    //    LOG(INFO)<<"Failed to addJob:"<<cronJobName;
+        LOG(INFO)<<"Failed to addJob:"<<cronJobName;
     }
 }
 
@@ -61,8 +61,6 @@ void QueryStatistics::init()
         deserialize(ifs);
         ifs.close();
     }
-
-    statistics(0);
 }
 
 void QueryStatistics::serialize(std::ostream& out)
@@ -103,10 +101,11 @@ void QueryStatistics::statistics(int callType)
         return;
     std::vector<UserQuery> queries;
     LOG(INFO)<<"Begin time:"<<lastTimeStr_<<" Collection:"<<collectionName_;
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
+    //LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
     time_t now = time(NULL);
     
     char* last = new char[64];
+    memset(last, 0, 64);
     strftime(last, 64,"%Y%2m%2dT%2H%2M%2s", localtime(&now));
     lastTimeStr_ = last;
     delete last;
@@ -161,7 +160,7 @@ double QueryStatistics::frequency(std::string word)
     boost::shared_lock<boost::shared_mutex> sl(mtx_);
     FreqType::iterator it = wordsFreq_->find(word);
     if (it == wordsFreq_->end())
-        return 0.0;
+        return 1000 * 0.9 / (double)totalWords_;
     return 1000 * it->second / (double)totalWords_;
 }
 

@@ -20,6 +20,7 @@ public:
         weight_ = w;
         location_ = l;
         isCenterToken_ = false;
+        tag_ = false;
     }
 
     const std::string& token() const
@@ -45,6 +46,11 @@ public:
     void scale(double factor)
     {
         weight_ *= factor;
+    }
+
+    void combine(double weight)
+    {
+        weight_ += weight;
     }
 
     bool isCenterToken() const
@@ -83,23 +89,34 @@ public:
         location_ = token.location_ > location_ ? location_ : token.location_;
         return *this;
     }
+
+    void setTag(bool tag)
+    {
+        tag_ = tag;
+    }
+
+    bool isTag() const
+    {
+        return tag_;
+    }
 private:
     std::string token_;
     double weight_;
     std::size_t location_;
     bool isCenterToken_;
+    bool tag_;
 };
 typedef std::vector<Token> TokenArray;
 
 void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& miningManager);
-void adjustWeight(TokenArray& tokens, MiningManager& miningManager);
+void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& miningManager);
 void removeTokens(TokenArray& tokens, TokenArray& queries);
 
 void queryAbbreviation(TokenArray& queries, std::string& keywords, MiningManager& miningManager)
 {
     TokenArray tokens;
     generateTokens(tokens, keywords, miningManager);
-    adjustWeight(tokens, miningManager);
+    adjustWeight(tokens, keywords, miningManager);
     removeTokens(tokens, queries);
 }
 
