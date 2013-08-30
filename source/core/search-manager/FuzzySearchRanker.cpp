@@ -225,7 +225,7 @@ void FuzzySearchRanker::rankByPropValue(
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
         }
     }
-    if (pSorter)
+    if (pSorter && distSearchInfo.isDistributed_)
     {
         try
         {
