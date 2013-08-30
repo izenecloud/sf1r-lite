@@ -15,6 +15,12 @@ import ast
 import subprocess
 import shlex
 
+# one of each different master and one of different shard 
+master_node_list = []
+# b5mo master list.
+master_node_list += [{'loginuser':'lscm', 'master':['10.10.99.119', '10.10.99.120']}]
+# stage cluster
+master_node_list += [{'loginuser':'lscm', 'master':['10.10.96.9']}]
 
 replica_set_list = []
 replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.121'], 'replica': ['10.10.99.122', '10.10.99.123']}]
@@ -56,18 +62,22 @@ if len(tmp_base) > 0:
     local_base = tmp_base
 print 'local code base is : ' + local_base
 
-base_dir = '/home/' + loginuser + '/codebase'
-sf1r_dir = base_dir + '/sf1r-engine'
+#base_dir = '/home/' + loginuser + '/codebase'
+base_dir = '/opt/sf1r-engine/apps'
+sf1r_dir = base_dir + '/sf1r'
 izenelib_dir = base_dir + '/izenelib'
 sf1r_bin_dir = sf1r_dir + '/bin'
-start_prog = './sf1-revolution.sh start'
-stop_prog = './sf1-revolution.sh stop'
+#start_prog = './sf1-revolution.sh start'
+#stop_prog = './sf1-revolution.sh stop'
+start_prog = './sf1r-engine start'
+stop_prog = './sf1r-engine stop'
 update_src_prog = 'git pull '
 driver_ruby_dir = local_base + 'driver-ruby/'
 driver_ruby_tool = driver_ruby_dir + 'bin/distribute_tools.rb'
 driver_ruby_index = driver_ruby_dir + 'bin/distribute_test/index_col.json'
 driver_ruby_check = driver_ruby_dir + 'bin/distribute_test/check_col.json'
 driver_ruby_getstate = driver_ruby_dir + 'bin/distribute_test/get_status.json'
+driver_ruby_updateconf = driver_ruby_dir + 'bin/distribute_test/update_conf.json'
 driver_ruby_backup_data = driver_ruby_dir + 'bin/distribute_test/backup_data.json'
 ruby_bin = 'ruby1.9.1'
 auto_testfile_dir = './auto_test_file/'
@@ -274,6 +284,70 @@ def auto_restart(args):
         else:
             send_cmd_andstay(args[2:],  'cd ' + sf1r_bin_dir + ';' + start_prog)
 
+def get_current_primary(any_replica_ip, col):
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, any_replica_ip, '18181', driver_ruby_getstate, col])
+    if out.find('\"CurrentPrimary\":') != -1:
+        print error
+        out = "-".join(out.splitlines())
+        return re.match(r'^.*"CurrentPrimary":.*? : (\d.*?\d)",.*?$', out).group(1)
+    print 'current primary not found for ip: ' + any_replica_ip
+    return ""
+
+def get_primary_sharding_nodes(master_ip, col):
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, master_ip, '18181', driver_ruby_getstate, col])
+    if out.find('\"PrimaryShardingNodeList\":') != -1:
+        print error
+        out = "-".join(out.splitlines())
+        ip_list = re.match(r'^.*"PrimaryShardingNodeList":.*?(\d.*?\d, )".*?$', out).group(1)
+        return ip_list.rstrip(', ').split(', ')
+
+    print 'primary sharding nodes not found for master: ' + master_ip
+    return []
+
+def master_update_conf(args):
+    i = 0
+    for master_info in master_node_list:
+        print str(i) + " : "
+        print master_info
+        i = i + 1
+    chose_i = 0
+    chose_i = int(raw_input( 'please chose master list to do the update config: '))
+    if chose_i >= len(master_node_list):
+        print 'chose index out of range!'
+        sys.exit(0);
+    chose_master_info = master_node_list[chose_i]
+    primary_master_ip = ""
+    col = args[2]
+    for master_ip in chose_master_info['master']:
+        primary_master_ip = get_current_primary(master_ip, col)
+        if len(primary_master_ip) > 0:
+            print 'do update config on primary master: ' + primary_master_ip
+            break
+    if len(primary_master_ip) == 0:
+        print 'no primary master, update failed.'
+        sys.exit(0)
+
+    primary_sharding_nodes = []
+    primary_sharding_nodes = get_primary_sharding_nodes(primary_master_ip, col)
+    print primary_sharding_nodes
+    if len(primary_sharding_nodes) == 0:
+        sys.exit(0)
+
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, primary_master_ip, '18181', driver_ruby_updateconf, col])
+    print error
+    if len(error) > 0:
+        print 'update conf on master failed. exited.'
+        sys.exit(0)
+
+    cmdstr = 'cd ~/script; ./distribute_tools.sh sync_conf ' + col
+    for shardip in primary_sharding_nodes:
+        # copy config from master to primary shard nodes.
+        send_cmd_andstay([primary_master_ip], cmdstr + ' ' + shardip + ' >> sync_conf.log 2>&1 &')
+        time.sleep(3)
+        # send api to shard node.
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, shardip, '18181', driver_ruby_updateconf, col])
+        print error
+
 def simple_update(args):
     if len(args) < 4:
         print 'host and tar file should be given!'
@@ -286,6 +360,9 @@ def simple_update(args):
         (out, error) = run_prog_and_getoutput(["rsync", "-av", tarfile, loginuser+'@'+host+':/opt'])
         print error
         print out
+        if len(error) > 0:
+        	print "error transfer, not update."
+        	sys.exit(0)
 
     cmdstr = 'cd ~/script; ./distribute_tools.sh simple_update /opt/' + tarfile + ' >> simple_update.log 2>&1 &'
     send_cmd_afterssh(hosts, cmdstr)
@@ -311,8 +388,8 @@ def backup_data(args):
     hosts = args[2:]
     for host in hosts:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_backup_data])
-        printtofile(host + ' info : ' + error)
-        printtofile(out)
+        print host + ' info : ' + error
+        print out
 
 def mv_scd_to_index(args):
     cmdstr = ' cd ' + sf1r_bin_dir + '/collection/b5mp/scd/index/; mv backup/*.SCD .' 
@@ -536,6 +613,7 @@ handler_dict = { 'syncfile':syncfiles,
         'set_fail_test_conf':set_fail_test_conf,
         'auto_restart':auto_restart,
         'simple_update':simple_update,
+        'master_update_conf':master_update_conf,
         'get_all_status':get_all_status,
         'backup_data':backup_data,
         'run_auto_fail_test':run_auto_fail_test
