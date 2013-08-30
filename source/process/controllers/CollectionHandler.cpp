@@ -61,23 +61,30 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
     if (response.success() && (0 == asInt(response[Keys::total_count])))
     {
         std::string keywords = asString(request[Keys::search][Keys::keywords]);
-        RK::TokenArray queries;
+        RK::TokenRecommended queries;
         RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
         int success = 0;
-        for (std::size_t i = 0; i < queries.size(); i++)
+        bool isLastSuccess = false;
+        while (true)
         {
-            request[Keys::search][Keys::keywords] = queries[i].token();
+            const std::string& query = queries.nextToken(isLastSuccess);
+            if (RK::INVALID == query)
+                break;
+            request[Keys::search][Keys::keywords] = query;
             ::izenelib::driver::Response newResponse;
             DocumentsSearchHandler sHandler(request, newResponse, *this);
             sHandler.search();
             if (response.success() && (0 != asInt(newResponse[Keys::total_count])))
             {
+                isLastSuccess = true;
                 ::izenelib::driver::Value& value = response["removed_keywords"]();
-                newResponse["new_query"] = queries[i].token();
+                newResponse["new_query"] = query;
                 value.assign(newResponse.get());
-                if (++success > 3)
+                if (++success > 2)
                     break;
             }
+            else
+                isLastSuccess = false;
         }
     }
 }

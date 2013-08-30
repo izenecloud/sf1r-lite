@@ -27,13 +27,17 @@ QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionN
 
     init();
     LOG(INFO)<<lastTimeStr_<<" "<<totalWords_;
-    bool ret = izenelib::util::Scheduler::addJob(cronJobName, 
-                                                 60*10000,
-                                                 0,
-                                                 boost::bind(&QueryStatistics::statistics, this, 0));
-    if (!ret)
+    
+    if (cronExpression_.setExpression("00 3 * * *"))
     {
-        LOG(INFO)<<"Failed to addJob:"<<cronJobName;
+        bool ret = izenelib::util::Scheduler::addJob(cronJobName, 
+                                                     60*1000,
+                                                     0,
+                                                     boost::bind(&QueryStatistics::statistics, this, _1));
+        if (!ret)
+        {
+            LOG(INFO)<<"Failed to addJob:"<<cronJobName;
+        }
     }
 }
 
@@ -41,7 +45,6 @@ QueryStatistics::~QueryStatistics()
 {
     std::ofstream ofs;
     std::string wordsFreqFile = miningManager_->system_resource_path_ + "/query-abbreviation/wordsFreq" + collectionName_;
-    LOG(INFO)<<wordsFreqFile;
     ofs.open(wordsFreqFile.c_str(), std::ofstream::out | std::ofstream::trunc);
     serialize(ofs);
     ofs.close();
@@ -54,7 +57,6 @@ void QueryStatistics::init()
 {
     std::ifstream ifs;
     std::string wordsFreqFile = miningManager_->system_resource_path_ + "/query-abbreviation/wordsFreq" + collectionName_;
-    LOG(INFO)<<wordsFreqFile;
     ifs.open(wordsFreqFile.c_str(), std::ifstream::in);
     if (ifs)
     {
@@ -97,11 +99,15 @@ void QueryStatistics::deserialize(std::istream& in)
 
 void QueryStatistics::statistics(int callType)
 {
+    if ((!cronExpression_.matches_now()) )
+    {
+        return;
+    }
     if (NULL == miningManager_)
         return;
     std::vector<UserQuery> queries;
     LOG(INFO)<<"Begin time:"<<lastTimeStr_<<" Collection:"<<collectionName_;
-    //LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
     time_t now = time(NULL);
     
     char* last = new char[64];
@@ -115,6 +121,7 @@ void QueryStatistics::statistics(int callType)
     for (std::size_t i = 0; i < queries.size(); i++)
     {
         const std::string& query = queries[i].getQuery();
+        const uint32_t count = queries[i].getCount();
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         izenelib::util::UString analyzedQuery;
@@ -129,13 +136,13 @@ void QueryStatistics::statistics(int callType)
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)
             {
-                wordsFreq_->insert(make_pair(keyword, 1));
+                wordsFreq_->insert(make_pair(keyword, count));
             }
             else
             {
-                (it->second)++;
+                (it->second) += count;
             }
-            totalWords_++;
+            totalWords_ += count;
         }
         for (it = minor_tokens.begin(); it != minor_tokens.end(); it++)
         {
@@ -144,13 +151,13 @@ void QueryStatistics::statistics(int callType)
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)
             {
-                wordsFreq_->insert(make_pair(keyword, 1));
+                wordsFreq_->insert(make_pair(keyword, count));
             }
             else
             {
-                (it->second)++;
+                (it->second) += count;
             }
-            totalWords_++;
+            totalWords_ += count;
         }
     }
 }
@@ -160,8 +167,8 @@ double QueryStatistics::frequency(std::string word)
     boost::shared_lock<boost::shared_mutex> sl(mtx_);
     FreqType::iterator it = wordsFreq_->find(word);
     if (it == wordsFreq_->end())
-        return 1000 * 0.9 / (double)totalWords_;
-    return 1000 * it->second / (double)totalWords_;
+        return 1000 * 0.9 / (double)(totalWords_ + 1);
+    return 1000 * it->second / (double)(totalWords_ + 1);
 }
 
 }

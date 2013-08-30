@@ -10,6 +10,7 @@
 #include <boost/thread/shared_mutex.hpp>
 
 #include <util/singleton.h>
+#include <util/cronexpression.h>
 
 namespace sf1r
 {
@@ -40,6 +41,8 @@ private:
     unsigned long totalWords_;
     FreqType* wordsFreq_;
     boost::shared_mutex mtx_;
+
+    izenelib::util::CronExpression cronExpression_;
 };
 }
 #endif

@@ -10,6 +10,7 @@ namespace sf1r
 namespace RK
 {
 
+std::string INVALID = "";
 #define DEBUG_INFO
 
 typedef bool (*Comparator)(const Token& lv, const Token& rv);
@@ -187,7 +188,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     }
 #endif
 
-    double factor = 1.0;
+    double factor = 1.5;
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         //tokens[i].scale(mTokens[i].weight() * factor);
@@ -213,6 +214,19 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         tokenFreqs[i].setWeight(f);
     }
     normalize(tokenFreqs);
+    bool reNormalize = false;
+    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
+    {
+        if (tokenFreqs[i].weight() > 0.8)
+        {
+            tokens[i].setCenterToken(true);
+            tokenFreqs[i].setWeight(std::numeric_limits<double>::max());
+            reNormalize = true;
+            break;
+        }
+    }
+    if (reNormalize)
+        normalize(tokenFreqs);
 #ifdef DEBUG_INFO    
     std::cout<<"freq::\n";
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
@@ -220,8 +234,8 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         std::cout<<tokenFreqs[i].token()<<"  "<<tokenFreqs[i].weight()<<"\n";
     }
 #endif
-    
-    factor = 1.0;
+    factor = 1.5;
+    //cin>>factor;
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         double f = tokenFreqs[i].weight();
@@ -231,6 +245,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     tokenFreqs.clear();
 #ifdef DEBUG_INFO    
     std::cout<<"tuned after statistical::\n";
+    normalize(tokens);
     std::sort(tokens.begin(), tokens.end(), weightComparator);
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
@@ -260,7 +275,7 @@ static void tagCenterTokens(TokenArray& tokens)
    
     std::sort(tokens.begin(), tokens.end(), weightComparator);
     double weight = 0.0;
-    double threshold = 0.8;
+    double threshold = 0.95;
     std::size_t maxCTs = tokens.size() * 0.75; 
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
@@ -295,38 +310,67 @@ static void expandCenterTokens(TokenArray& tokens)
     }
     
     tokens.clear();
+    tokens.swap(exCT);
+    return;
+    
+    /*
     for (std::size_t i = 0; i < exCT.size(); i++)
     {
         if (exCT[i].isCenterToken())
             tokens.push_back(exCT[i]);
-    }
+    }*/
 }
 
-static void recommandTokens(TokenArray& tokens, TokenArray& queries)
+static void recommandTokens(TokenArray& tokens, TokenRecommended& tokensRecommended)
 {
     std::sort(tokens.begin(), tokens.end(), weightComparator);
-    Token query("", 0.0, 0);
-    double threshold = 0.25;
-    threshold *= tokens.size();
-    threshold -= 1;
-    // Maybe drop two word at one time if too long and too low weight
-    for (std::size_t i = 0; i < tokens.size(); i++)
+    std::size_t centerTokenNum = 0;
+    std::size_t size = tokens.size();
+    for (std::size_t i = 0; i < size; i++)
     {
-        query = query + tokens[i];
-        if (i >= threshold)
-            queries.push_back(query);
+        if (tokens[i].isCenterToken())
+            continue;
+        centerTokenNum = i;
+        break;
     }
-    std::sort(queries.begin(), queries.end(), tokenComparator);
+
+    double threshold = 0.2;
+    threshold *= size;
+    threshold -= 1;
+    Token reserve("", 0.0, 0);
+    TokenArray leveledTokens;
+    for (std::size_t i = 0; i < centerTokenNum - 1; i++)
+    {
+        leveledTokens.clear();
+        if (i >= threshold)
+        {
+            for (std::size_t j = i; j < size; j++)
+            {
+                leveledTokens.push_back(reserve + tokens[j]);
+            }
+            tokensRecommended.push_back(leveledTokens);
+        }
+        reserve += tokens[i];
+    }
+    tokensRecommended.sort();
+    // Maybe drop two word at one time if too long and too low weight
+    //for (std::size_t i = 0; i < tokens.size(); i++)
+    //{
+    //    query += tokens[i];
+    //    if (i >= threshold)
+    //        queries.push_back(query);
+    //}
+    //std::sort(queries.begin(), queries.end(), weightComparator);
     tokens.clear();
 }
 
-static void removeMultiTokens(TokenArray& tokens, TokenArray& queries)
+static void removeMultiTokens(TokenArray& tokens, TokenRecommended& queries)
 {
 #ifdef DEBUG_INFO    
     std::cout<<"Tokens::\n";
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
-        std::cout<<i<<": "<<tokens[i].token()<<" "<<tokens[i].weight()<<" "<<tokens[i].location()<<"\n";
+        std::cout<<i<<": "<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
     }
 #endif
     //First step: center word
@@ -336,7 +380,7 @@ static void removeMultiTokens(TokenArray& tokens, TokenArray& queries)
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         if (tokens[i].isCenterToken())
-            std::cout<<i<<": "<<tokens[i].token()<<" "<<tokens[i].weight()<<" "<<tokens[i].location()<<"\n";
+            std::cout<<i<<": "<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
     }
 #endif
     //Second step: expand center word
@@ -345,42 +389,59 @@ static void removeMultiTokens(TokenArray& tokens, TokenArray& queries)
     std::cout<<"Expaned::\n";
     for(std::size_t i = 0; i < tokens.size(); i++)
     {
-        std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<" "<<tokens[i].location()<<"\n";
+        std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
     }
 #endif
 
     //Third step: 
     recommandTokens(tokens, queries);
-    std::cout<<"recommand::\n";
-    for(std::size_t i = 0; i < queries.size(); i++)
-    {
-        std::cout<<queries[i].token()<<"\n";
-    }
 }
 
-void removeTokens(TokenArray& tokens, TokenArray& queries)
+void removeTokens(TokenArray& tokens, TokenRecommended& queries)
 {
-    
     if (2 == tokens.size())
     {
-        std::sort(tokens.begin(), tokens.end(), tokenComparator);
-        queries.push_back(tokens[0]);
-        queries.push_back(tokens[1]);
+        std::sort(tokens.begin(), tokens.end(), weightComparator);
+        TokenArray tk;
+        tk.push_back(tokens[0]);
+        queries.push_back(tk);
+        tk.clear();
+        tk.push_back(tokens[1]);
+        queries.push_back(tk);
         return;
     }
     if ( 3 == tokens.size())
     {
-        std::sort(tokens.begin(), tokens.end(), tokenComparator);
-        std::string query = tokens[0].token() + tokens[1].token();
-        Token token(query, tokens[0].weight() + tokens[1].weight(), -1);
-        queries.push_back(token); 
-        queries.push_back(tokens[0]);
+        for (std::size_t i = 0; i < tokens.size(); i++)
+        {
+            if (tokens[i].isCenterToken())
+                tokens[i].combine(1.0);
+        }
+        std::sort(tokens.begin(), tokens.end(), weightComparator);
+        TokenArray tk;
+        tk.push_back(tokens[0] + tokens[1]);
+        queries.push_back(tk);
+        tk.clear();
+        tk.push_back(tokens[0]);
+        queries.push_back(tk);
         return;
     }
     if ( 4 <= tokens.size())
     {
         removeMultiTokens(tokens, queries);
     }
+}
+
+void queryAbbreviation(TokenRecommended& queries, std::string& keywords, MiningManager& miningManager)
+{
+    TokenArray tokens;
+    generateTokens(tokens, keywords, miningManager);
+    adjustWeight(tokens, keywords, miningManager);
+    removeTokens(tokens, queries);
+#ifdef DEBUG_INFO
+    std::cout<<"recommand::\n";
+    std::cout<<queries;
+#endif
 }
 
 }
