@@ -124,6 +124,7 @@ void StatusController::get_distribute_status()
     memStatus["AliveNodeList"] = nodeliststr;
     memStatus["IsAnyWriteRunning"] = NodeManagerBase::get()->isAnyWriteRunningInReplicas()?"yes":"no";
     std::string shardliststr;
+    memStatus["IsAnyShardingNodeBusy"] = "no";
     if (indexTaskService_)
     {
         const std::vector<shardid_t>& shard_list = indexTaskService_->getShardidListForSearch();
@@ -131,6 +132,7 @@ void StatusController::get_distribute_status()
         {
             shardliststr += MasterManagerBase::get()->getShardNodeIP(shard_list[i]) + ", ";
         }
+        memStatus["IsAnyShardingNodeBusy"] = MasterManagerBase::get()->isShardingNodeOK(shard_list)?"no":"yes";
     }
     memStatus["PrimaryShardingNodeList"] = shardliststr;
     //if (indexSearchService_)
