@@ -745,8 +745,7 @@ bool MiningManager::open()
         }
 
         /** zambezi */
-        const ZambeziConfig& zambeziConfig = mining_schema_.zambezi_config;
-        if (!initZambeziManager_(zambeziConfig))
+        if (!initZambeziManager_(mining_schema_.zambezi_config))
             return false;
 
         /** product rank */
@@ -2997,20 +2996,20 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     return true;
 }
 
-bool MiningManager::initZambeziManager_(const ZambeziConfig& zambeziConfig)
+bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 {
     if (!zambeziConfig.isEnable)
         return true;
 
     const bfs::path parentDir(collectionDataPath_);
     const bfs::path zambeziDir(parentDir / "zambezi");
-    const bfs::path filePath(zambeziDir / "index.bin");
     bfs::create_directories(zambeziDir);
 
     if (zambeziManager_) delete zambeziManager_;
 
-    zambeziManager_ = new ZambeziManager(zambeziConfig.indexPropName,
-                                         filePath.string());
+    const bfs::path filePath(zambeziDir / "index.bin");
+    zambeziConfig.indexFilePath = filePath.string();
+    zambeziManager_ = new ZambeziManager(zambeziConfig);
 
     if (!zambeziManager_->open())
     {
@@ -3018,7 +3017,9 @@ bool MiningManager::initZambeziManager_(const ZambeziConfig& zambeziConfig)
         return false;
     }
 
-    miningTaskBuilder_->addTask(zambeziManager_->createMiningTask(*document_manager_));
+    miningTaskBuilder_->addTask(
+        zambeziManager_->createMiningTask(*document_manager_));
+
     return true;
 }
 

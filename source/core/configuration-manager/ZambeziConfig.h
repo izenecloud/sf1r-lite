@@ -17,6 +17,8 @@ public:
 
     std::string indexPropName;
 
+    std::string indexFilePath;
+
     ZambeziConfig() : isEnable(false) {}
 
 private:
@@ -27,6 +29,7 @@ private:
     {
         ar & isEnable;
         ar & indexPropName;
+        ar & indexFilePath;
     }
 };
 

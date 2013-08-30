@@ -1,5 +1,6 @@
 #include "ZambeziManager.h"
 #include "ZambeziMiningTask.h"
+#include <configuration-manager/ZambeziConfig.h>
 #include <glog/logging.h>
 #include <fstream>
 
@@ -11,17 +12,14 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::BWAND_AND;
 }
 
-ZambeziManager::ZambeziManager(
-    const std::string& indexPropName,
-    const std::string& indexFilePath)
-    : indexPropName_(indexPropName)
-    , indexFilePath_(indexFilePath)
+ZambeziManager::ZambeziManager(const ZambeziConfig& config)
+    : config_(config)
 {
 }
 
 bool ZambeziManager::open()
 {
-    std::ifstream ifs(indexFilePath_.c_str(), std::ios_base::binary);
+    std::ifstream ifs(config_.indexFilePath.c_str(), std::ios_base::binary);
     if (! ifs)
         return true;
 
@@ -32,7 +30,7 @@ bool ZambeziManager::open()
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception in read file: " << e.what()
-                   << ", path: " << indexFilePath_;
+                   << ", path: " << config_.indexFilePath;
         return false;
     }
 
@@ -41,10 +39,7 @@ bool ZambeziManager::open()
 
 MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 {
-    return new ZambeziMiningTask(documentManager,
-                                 indexer_,
-                                 indexPropName_,
-                                 indexFilePath_);
+    return new ZambeziMiningTask(config_, documentManager, indexer_);
 }
 
 void ZambeziManager::search(

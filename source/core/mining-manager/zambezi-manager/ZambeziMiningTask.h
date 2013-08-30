@@ -13,15 +13,15 @@
 namespace sf1r
 {
 class DocumentManager;
+class ZambeziConfig;
 
 class ZambeziMiningTask : public MiningTask
 {
 public:
     ZambeziMiningTask(
+        const ZambeziConfig& config,
         DocumentManager& documentManager,
-        izenelib::ir::Zambezi::InvertedIndex& indexer,
-        const std::string& indexPropName,
-        const std::string& indexFilePath);
+        izenelib::ir::Zambezi::InvertedIndex& indexer);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -32,13 +32,11 @@ public:
     virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
+    const ZambeziConfig& config_;
+
     DocumentManager& documentManager_;
 
     izenelib::ir::Zambezi::InvertedIndex& indexer_;
-
-    const std::string indexPropName_;
-
-    const std::string indexFilePath_;
 
     docid_t startDocId_;
 };

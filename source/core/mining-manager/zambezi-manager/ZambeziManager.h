@@ -15,13 +15,12 @@ namespace sf1r
 {
 class DocumentManager;
 class MiningTask;
+class ZambeziConfig;
 
 class ZambeziManager
 {
 public:
-    ZambeziManager(
-        const std::string& indexPropName,
-        const std::string& indexFilePath);
+    ZambeziManager(const ZambeziConfig& config);
 
     bool open();
 
@@ -34,11 +33,9 @@ public:
         std::vector<float>& scores);
 
 private:
+    const ZambeziConfig& config_;
+
     izenelib::ir::Zambezi::InvertedIndex indexer_;
-
-    const std::string indexPropName_;
-
-    const std::string indexFilePath_;
 };
 
 } // namespace sf1r

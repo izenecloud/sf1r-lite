@@ -1,4 +1,5 @@
 #include "ZambeziMiningTask.h"
+#include <configuration-manager/ZambeziConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <common/ResourceManager.h>
 #include <glog/logging.h>
@@ -7,14 +8,12 @@
 using namespace sf1r;
 
 ZambeziMiningTask::ZambeziMiningTask(
+    const ZambeziConfig& config,
     DocumentManager& documentManager,
-    izenelib::ir::Zambezi::InvertedIndex& indexer,
-    const std::string& indexPropName,
-    const std::string& indexFilePath)
-    : documentManager_(documentManager)
+    izenelib::ir::Zambezi::InvertedIndex& indexer)
+    : config_(config)
+    , documentManager_(documentManager)
     , indexer_(indexer)
-    , indexPropName_(indexPropName)
-    , indexFilePath_(indexFilePath)
     , startDocId_(0)
 {
 }
@@ -22,7 +21,7 @@ ZambeziMiningTask::ZambeziMiningTask(
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
     std::string propValue;
-    doc.getProperty(indexPropName_, propValue);
+    doc.getProperty(config_.indexPropName, propValue);
 
     KNlpWrapper::token_score_list_t tokenScores;
     KNlpWrapper::string_t kstr(propValue);
@@ -57,10 +56,10 @@ bool ZambeziMiningTask::postProcess()
 {
     indexer_.flush();
 
-    std::ofstream ofs(indexFilePath_.c_str(), std::ios_base::binary);
+    std::ofstream ofs(config_.indexFilePath.c_str(), std::ios_base::binary);
     if (! ofs)
     {
-        LOG(ERROR) << "failed opening file " << indexFilePath_;
+        LOG(ERROR) << "failed opening file " << config_.indexFilePath;
         return false;
     }
 
@@ -71,7 +70,7 @@ bool ZambeziMiningTask::postProcess()
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception in writing file: " << e.what()
-                   << ", path: " << indexFilePath_;
+                   << ", path: " << config_.indexFilePath;
         return false;
     }
 

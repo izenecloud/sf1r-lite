@@ -621,7 +621,7 @@ private:
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
 
-    bool initZambeziManager_(const ZambeziConfig& zambeziConfig);
+    bool initZambeziManager_(ZambeziConfig& zambeziConfig);
 
     const std::string& getOfferItemCountPropName_() const;
 
