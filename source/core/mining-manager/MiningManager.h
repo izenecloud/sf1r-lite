@@ -118,6 +118,7 @@ class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
 class QueryIntentManager;
+class ZambeziManager;
 
 namespace sim
 {
@@ -620,6 +621,8 @@ private:
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
 
+    bool initZambeziManager_(const ZambeziConfig& zambeziConfig);
+
     const std::string& getOfferItemCountPropName_() const;
 
     void StartSynonym_(ProductMatcher* matcher, const std::string& path);
@@ -766,6 +769,9 @@ private:
     /** KV */
     std::string kv_path_;
     KVSubManager* kvManager_;
+
+    /** Zambezi */
+    ZambeziManager* zambeziManager_;
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;

@@ -2299,6 +2299,47 @@ NEXT:
             mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op, operands);
         }
     }
+
+    task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
+    parseZambeziNode(task_node, collectionMeta);
+}
+
+void CollectionConfig::parseZambeziNode(
+    const ticpp::Element* zambeziNode,
+    CollectionMeta& collectionMeta) const
+{
+    if (!zambeziNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+
+    int propNum = 0;
+    Iterator<Element> propIt("Property");
+    for (propIt = propIt.begin(zambeziNode); propIt != propIt.end(); ++propIt)
+    {
+        if (++propNum > 1)
+        {
+            throw XmlConfigParserException("in <Zambezi> Config, at most one <Property> is allowed.");
+        }
+
+        std::string propName;
+        getAttribute(propIt.Get(), "name", propName);
+
+        PropertyDataType propType;
+        bool gotType = collectionMeta.getPropertyType(propName, propType);
+
+        if (!gotType || propType != STRING_PROPERTY_TYPE)
+        {
+            throw XmlConfigParserException("<Property> [" + propName +
+                                           "] in <Zambezi> is not string type.");
+        }
+
+        zambeziConfig.indexPropName = propName;
+        zambeziConfig.isEnable = true;
+    }
 }
 
 void CollectionConfig::parseProductRankingNode(

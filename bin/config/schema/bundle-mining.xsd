@@ -173,6 +173,7 @@
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
                             <xs:element ref="ProductMatcher" minOccurs="0"/>
                             <xs:element ref="QueryIntent" minOccurs="0"/>
+                            <xs:element ref="Zambezi" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -286,6 +287,13 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="Zambezi">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="TokenizeDictionary">
         <xs:complexType>

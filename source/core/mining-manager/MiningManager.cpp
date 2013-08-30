@@ -59,6 +59,8 @@
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
+#include "zambezi-manager/ZambeziManager.h"
+
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
@@ -196,6 +198,7 @@ MiningManager::MiningManager(
     , incrementalManager_(NULL)
     , product_categorizer_(NULL)
     , kvManager_(NULL)
+    , zambeziManager_(NULL)
     , miningTaskBuilder_(NULL)
     , multiThreadMiningTaskBuilder_(NULL)
     , hasDeletedDocDuringMining_(false)
@@ -231,6 +234,7 @@ MiningManager::~MiningManager()
     if (incrementalManager_) delete incrementalManager_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
+    if (zambeziManager_) delete zambeziManager_;
 
     close();
 }
@@ -739,6 +743,11 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
+
+        /** zambezi */
+        const ZambeziConfig& zambeziConfig = mining_schema_.zambezi_config;
+        if (!initZambeziManager_(zambeziConfig))
+            return false;
 
         /** product rank */
         const ProductRankingConfig& rankConfig =
@@ -2985,6 +2994,31 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
                                                      offerItemCountTable,
                                                      diversityValueTable,
                                                      merchantScoreManager_);
+    return true;
+}
+
+bool MiningManager::initZambeziManager_(const ZambeziConfig& zambeziConfig)
+{
+    if (!zambeziConfig.isEnable)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path zambeziDir(parentDir / "zambezi");
+    const bfs::path filePath(zambeziDir / "index.bin");
+    bfs::create_directories(zambeziDir);
+
+    if (zambeziManager_) delete zambeziManager_;
+
+    zambeziManager_ = new ZambeziManager(zambeziConfig.indexPropName,
+                                         filePath.string());
+
+    if (!zambeziManager_->open())
+    {
+        LOG(ERROR) << "open " << filePath << " failed";
+        return false;
+    }
+
+    miningTaskBuilder_->addTask(zambeziManager_->createMiningTask(*document_manager_));
     return true;
 }
 

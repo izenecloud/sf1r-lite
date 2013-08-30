@@ -13,8 +13,8 @@
 
 namespace sf1r
 {
-class ZambeziMiningTask;
 class DocumentManager;
+class MiningTask;
 
 class ZambeziManager
 {
@@ -25,7 +25,7 @@ public:
 
     bool open();
 
-    ZambeziMiningTask* createMiningTask(DocumentManager& documentManager);
+    MiningTask* createMiningTask(DocumentManager& documentManager);
 
     void search(
         const std::vector<std::string>& tokens,

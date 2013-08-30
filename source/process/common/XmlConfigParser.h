@@ -806,6 +806,13 @@ private:
         const ticpp::Element* scoreNode,
         ProductScoreConfig& scoreConfig) const;
 
+    /// @brief Parse <MiningBundle> <Schema> <Zambezi>
+    /// @param rankNode Pointer to the Element <Zambezi>
+    /// @param collectionMeta the config instance to update
+    void parseZambeziNode(
+        const ticpp::Element* zambeziNode,
+        CollectionMeta& collectionMeta) const;
+
     /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode     Pointer to the Element
     void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);

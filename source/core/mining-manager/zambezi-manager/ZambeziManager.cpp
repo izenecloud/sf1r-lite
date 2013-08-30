@@ -39,7 +39,7 @@ bool ZambeziManager::open()
     return true;
 }
 
-ZambeziMiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
+MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 {
     return new ZambeziMiningTask(documentManager,
                                  indexer_,
