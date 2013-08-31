@@ -1,5 +1,6 @@
 #ifndef SF1R_B5MMANAGER_B5MHELPER_H_
 #define SF1R_B5MMANAGER_B5MHELPER_H_
+#include "b5m_types.h"
 #include <string>
 #include <vector>
 #include <boost/assign/list_of.hpp>
@@ -7,6 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <common/ScdParser.h>
 #include <common/Utilities.h>
+#include <mining-manager/util/split_ustr.h>
 #include <types.h>
 #include <3rdparty/udt/md5.h>
 
@@ -234,6 +236,52 @@ namespace sf1r {
         static std::string GetPidByUrl(const std::string& url)
         {
             return Utilities::generateMD5(url);
+        }
+
+        static void ParseAttributes(const izenelib::util::UString& ustr, std::vector<b5m::Attribute>& attributes)
+        {
+            typedef izenelib::util::UString UString;
+            std::vector<AttrPair> attrib_list;
+            std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
+            split_attr_pair(ustr, attrib_list);
+            for(std::size_t i=0;i<attrib_list.size();i++)
+            {
+                b5m::Attribute attribute;
+                attribute.is_optional = false;
+                const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+                if(attrib_value_list.empty()) continue;
+                izenelib::util::UString attrib_value = attrib_value_list[0];
+                for(uint32_t a=1;a<attrib_value_list.size();a++)
+                {
+                    attrib_value.append(UString(" ",UString::UTF_8));
+                    attrib_value.append(attrib_value_list[a]);
+                }
+                if(attrib_value.empty()) continue;
+                //if(attrib_value_list.size()!=1) continue; //ignore empty value attrib and multi value attribs
+                izenelib::util::UString attrib_name = attrib_list[i].first;
+                //if(attrib_value.length()==0 || attrib_value.length()>30) continue;
+                attrib_name.convertString(attribute.name, UString::UTF_8);
+                boost::algorithm::trim(attribute.name);
+                if(boost::algorithm::ends_with(attribute.name, "_optional"))
+                {
+                    attribute.is_optional = true;
+                    attribute.name = attribute.name.substr(0, attribute.name.find("_optional"));
+                }
+                std::vector<std::string> value_list;
+                std::string svalue;
+                attrib_value.convertString(svalue, izenelib::util::UString::UTF_8);
+                boost::algorithm::split(attribute.values, svalue, boost::algorithm::is_any_of("/"));
+                for(uint32_t v=0;v<attribute.values.size();v++)
+                {
+                    boost::algorithm::trim(attribute.values[v]);
+                }
+                //if(attribute.name=="容量" && attribute.values.size()==1 && boost::algorithm::ends_with(attribute.values[0], "G"))
+                //{
+                    //std::string gb_value = attribute.values[0]+"B";
+                    //attribute.values.push_back(gb_value);
+                //}
+                attributes.push_back(attribute);
+            }
         }
 
     };

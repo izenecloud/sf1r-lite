@@ -630,32 +630,34 @@ namespace sf1r {
             }
         };
 
-        struct Attribute
-        {
-            std::string name;
-            std::vector<std::string> values;
-            bool is_optional;
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & name & values & is_optional;
-            }
-            std::string GetValue() const
-            {
-                std::string result;
-                for(uint32_t i=0;i<values.size();i++)
-                {
-                    if(!result.empty()) result+="/";
-                    result+=values[i];
-                }
-                return result;
-            }
-            std::string GetText() const
-            {
-                return name+":"+GetValue();
-            }
-        };
+        typedef sf1r::b5m::Attribute Attribute;
+
+        //struct Attribute
+        //{
+        //    std::string name;
+        //    std::vector<std::string> values;
+        //    bool is_optional;
+        //    friend class boost::serialization::access;
+        //    template<class Archive>
+        //    void serialize(Archive & ar, const unsigned int version)
+        //    {
+        //        ar & name & values & is_optional;
+        //    }
+        //    std::string GetValue() const
+        //    {
+        //        std::string result;
+        //        for(uint32_t i=0;i<values.size();i++)
+        //        {
+        //            if(!result.empty()) result+="/";
+        //            result+=values[i];
+        //        }
+        //        return result;
+        //    }
+        //    std::string GetText() const
+        //    {
+        //        return name+":"+GetValue();
+        //    }
+        //};
 
 
         struct Product

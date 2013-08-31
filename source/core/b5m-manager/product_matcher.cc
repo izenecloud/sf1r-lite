@@ -5276,6 +5276,8 @@ void ProductMatcher::AnalyzeNoSymbol_(const izenelib::util::UString& btext, std:
 
 void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes)
 {
+    B5MHelper::ParseAttributes(ustr, attributes);
+    return;
     std::vector<AttrPair> attrib_list;
     std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
     split_attr_pair(ustr, attrib_list);
