@@ -115,7 +115,6 @@ void NodeManagerBase::detectMasters()
     boost::lock_guard<boost::mutex> lock(MasterNotifier::get()->getMutex());
     MasterNotifier::get()->clear();
 
-    replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     std::vector<std::string> children;
     std::string serverParentPath = ZooKeeperNamespace::getServerParentPath();
     zookeeper_->getZNodeChildren(serverParentPath, children, ZooKeeper::WATCH);
@@ -127,8 +126,7 @@ void NodeManagerBase::detectMasters()
             ZNode znode;
             znode.loadKvString(data);
             // if this sf1r node provides master server
-            if (znode.hasKey(ZNode::KEY_MASTER_PORT) &&
-                znode.getUInt32Value(ZNode::KEY_REPLICA_ID) == replicaId)
+            if (znode.hasKey(ZNode::KEY_MASTER_PORT))
             {
                 std::string masterHost = znode.getStrValue(ZNode::KEY_HOST);
                 uint32_t masterPort;
@@ -142,8 +140,11 @@ void NodeManagerBase::detectMasters()
                         << "\" got from master on node" << children[i] << "@" << masterHost;
                     continue;
                 }
-                LOG (INFO) << "detected Master " << masterHost << ":" << masterPort;
-                MasterNotifier::get()->addMasterAddress(masterHost, masterPort);
+                if (masterPort > 0)
+                {
+                    LOG (INFO) << "detected Master " << masterHost << ":" << masterPort;
+                    MasterNotifier::get()->addMasterAddress(masterHost, masterPort);
+                }
             }
         }
     }

@@ -184,6 +184,7 @@ public:
     bool isMineNewSharding();
     std::string getShardNodeIP(shardid_t shardid);
     bool isOnlyMaster();
+    bool isShardingNodeOK(const std::vector<shardid_t>& shardids);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -270,7 +271,6 @@ protected:
     bool isAllWorkerInState(bool include_self, int state);
     std::string findReCreatedServerPath();
     void updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self);
-    bool isShardingNodeOK(const std::vector<shardid_t>& shardids);
     bool isWriteQueueEmpty(const std::vector<shardid_t>& shardids);
     bool getNodeState(const std::string& nodepath, uint32_t& state);
 

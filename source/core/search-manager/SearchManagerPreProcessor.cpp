@@ -3,6 +3,7 @@
 #include "NumericPropertyTableBuilder.h"
 #include "RTypeStringPropTableBuilder.h"
 #include <common/RTypeStringPropTable.h>
+#include <common/PropSharedLockSet.h>
 #include "DocumentIterator.h"
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
@@ -186,7 +187,8 @@ SearchManagerPreProcessor::buildCustomRanker_(KeywordSearchActionItem& actionIte
 void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
     Sorter* pSorter,
     std::vector<unsigned int>& docIdList,
-    DistKeywordSearchInfo& distSearchInfo)
+    DistKeywordSearchInfo& distSearchInfo,
+    PropSharedLockSet& propSharedLockSet)
 {
     if (!pSorter) return;
 
@@ -214,6 +216,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
                 rtypeStringPropTableBuilder_->createPropertyTable(sortPropertyName);
             if (!strPropertyTable)
                 continue;
+            propSharedLockSet.insertSharedLock(strPropertyTable.get());
             distSearchInfo.sortPropertyStrDataList_.push_back(std::make_pair(sortPropertyName, std::vector<std::string>()));
             std::vector<std::string>& dataList = distSearchInfo.sortPropertyStrDataList_.back().second;
             dataList.resize(docNum);
@@ -231,6 +234,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
         if (!numericPropertyTable)
             continue;
 
+        propSharedLockSet.insertSharedLock(numericPropertyTable.get());
         switch (numericPropertyTable->getType())
         {
         case INT32_PROPERTY_TYPE:
@@ -242,7 +246,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
             dataList.resize(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                numericPropertyTable->getInt32Value(docIdList[i], dataList[i]);
+                numericPropertyTable->getInt32Value(docIdList[i], dataList[i], false);
             }
         }
         break;
@@ -254,7 +258,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
             dataList.resize(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                numericPropertyTable->getInt64Value(docIdList[i], dataList[i]);
+                numericPropertyTable->getInt64Value(docIdList[i], dataList[i], false);
             }
         }
         break;
@@ -265,7 +269,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
             dataList.resize(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                numericPropertyTable->getFloatValue(docIdList[i], dataList[i]);
+                numericPropertyTable->getFloatValue(docIdList[i], dataList[i], false);
             }
         }
         break;
@@ -276,7 +280,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
             dataList.resize(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                numericPropertyTable->getFloatValue(docIdList[i], dataList[i]);
+                numericPropertyTable->getFloatValue(docIdList[i], dataList[i], false);
             }
         }
         break;

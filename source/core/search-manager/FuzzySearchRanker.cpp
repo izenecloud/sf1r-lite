@@ -225,11 +225,12 @@ void FuzzySearchRanker::rankByPropValue(
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
         }
     }
-    if (pSorter)
+    if (pSorter && distSearchInfo.isDistributed_)
     {
         try
         {
-            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list, distSearchInfo);
+            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(), docid_list,
+                distSearchInfo, propSharedLockSet);
         }
         catch(const std::exception& e)
         {
