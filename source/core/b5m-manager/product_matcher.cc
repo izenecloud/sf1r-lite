@@ -696,6 +696,11 @@ void ProductMatcher::Init_()
     term_index_map_.clear();
     back2front_.clear();
     feature_vectors_.clear();
+    if(psm_!=NULL)
+    {
+        delete psm_;
+        psm_ = NULL;
+    }
     //nf_.clear();
 
 }
