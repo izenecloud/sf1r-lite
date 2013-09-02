@@ -121,6 +121,13 @@ public:
     //    return true;
     //}
 
+    bool getString(const std::string& pname, izenelib::util::UString& value) const
+    {
+        str_type s;
+        if(!getProperty(pname, s)) return false;
+        value = propstr_to_ustr(s);
+        return true;
+    }
     bool getString(const std::string& pname, doc_prop_value_strtype& value) const
     {
         //izenelib::util::UString ustr;

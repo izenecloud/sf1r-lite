@@ -696,6 +696,11 @@ void ProductMatcher::Init_()
     term_index_map_.clear();
     back2front_.clear();
     feature_vectors_.clear();
+    if(psm_!=NULL)
+    {
+        delete psm_;
+        psm_ = NULL;
+    }
     //nf_.clear();
 
 }
@@ -5276,6 +5281,8 @@ void ProductMatcher::AnalyzeNoSymbol_(const izenelib::util::UString& btext, std:
 
 void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes)
 {
+    B5MHelper::ParseAttributes(ustr, attributes);
+    return;
     std::vector<AttrPair> attrib_list;
     std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
     split_attr_pair(ustr, attrib_list);
