@@ -114,6 +114,7 @@ struct IsParentKeyFilterProperty
 
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
+        const std::string& sys_res_path,
         const std::string& collectionName,
         const std::string& scdPath,
         SummarizeConfig schema,
@@ -132,6 +133,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , comment_cache_storage_(new CommentCacheStorage(homePath))
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
+    , system_resource_path_(sys_res_path)
 {
 }
 
@@ -411,7 +413,7 @@ bool MultiDocSummarizationSubManager::postProcess()
     try
     {
         ifstream infile;
-        infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
+        infile.open((system_resource_path_ + "/opinion/opinion_filter_data.txt").c_str(), ios::in);
         while(infile.good())
         {
             std::string line;
@@ -432,7 +434,7 @@ bool MultiDocSummarizationSubManager::postProcess()
     try
     {
         ifstream infile;
-        infile.open((OpPath + "/opinion_synonym_data.txt").c_str(), ios::in);
+        infile.open((system_resource_path_ + "/opinion/opinion_synonym_data.txt").c_str(), ios::in);
         while(infile.good())
         {
             std::string line;
