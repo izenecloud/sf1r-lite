@@ -61,6 +61,11 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
     if (response.success() && (0 == asInt(response[Keys::total_count])))
     {
         std::string keywords = asString(request[Keys::search][Keys::keywords]);
+        int toSuccess = 0;
+        if (request[Keys::search].hasKey("query_abbreviation"))
+            toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
+        else
+            toSuccess = 2;
         RK::TokenRecommended queries;
         RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
         int success = 0;
@@ -80,7 +85,7 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
                 ::izenelib::driver::Value& value = response["removed_keywords"]();
                 newResponse["new_query"] = query;
                 value.assign(newResponse.get());
-                if (++success > 2)
+                if (++success > toSuccess)
                     break;
             }
             else

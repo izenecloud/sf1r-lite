@@ -11,7 +11,7 @@ namespace RK
 {
 
 std::string INVALID = "";
-#define DEBUG_INFO
+//#define DEBUG_INFO
 
 typedef bool (*Comparator)(const Token& lv, const Token& rv);
 
