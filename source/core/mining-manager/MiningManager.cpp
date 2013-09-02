@@ -2478,6 +2478,50 @@ bool MiningManager::GetSuffixMatch(
     return true;
 }
 
+bool MiningManager::searchZambezi(
+    const SearchKeywordOperation& actionOperation,
+    KeywordSearchResult& searchResult,
+    std::size_t limit,
+    std::size_t offset)
+{
+    if (!zambeziManager_)
+        return false;
+
+    const std::string& query = actionOperation.actionItem_.env_.queryString_;
+    LOG(INFO) << "zambezi search for query: " << query << endl;
+
+    if (query.empty())
+        return false;
+
+    KNlpWrapper::token_score_list_t tokenScores;
+    KNlpWrapper::string_t kstr(query);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
+    knlpWrapper->fmmTokenize(kstr, tokenScores);
+
+    std::vector<std::string> tokenList;
+    std::cout << "tokens:" << std::endl;
+
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+    {
+        std::string token = it->first.get_bytes("utf-8");
+        tokenList.push_back(token);
+        std::cout << token << std::endl;
+    }
+    std::cout << "-----" << std::endl;
+
+    const std::size_t heapSize = limit + offset;
+    std::vector<docid_t>& docIdList = searchResult.topKDocs_;
+    std::vector<float>& scoreList = searchResult.topKRankScoreList_;
+
+    zambeziManager_->search(tokenList, heapSize, docIdList, scoreList);
+
+    docIdList.erase(docIdList.begin(), docIdList.begin()+offset);
+    scoreList.erase(scoreList.begin(), scoreList.begin()+offset);
+
+    return !docIdList.empty();
+}
+
 void MiningManager::getGroupAttrRep_(
     const std::vector<std::pair<double, uint32_t> >& res_list,
     faceted::GroupParam& groupParam,
@@ -3000,6 +3044,9 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 {
     if (!zambeziConfig.isEnable)
         return true;
+
+    if (!KNlpResourceManager::getResource()->loadDictFiles())
+        return false;
 
     const bfs::path parentDir(collectionDataPath_);
     const bfs::path zambeziDir(parentDir / "zambezi");

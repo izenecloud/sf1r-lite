@@ -1,6 +1,7 @@
 #include "ZambeziManager.h"
 #include "ZambeziMiningTask.h"
 #include <configuration-manager/ZambeziConfig.h>
+#include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <fstream>
 
@@ -48,5 +49,11 @@ void ZambeziManager::search(
     std::vector<docid_t>& docids,
     std::vector<float>& scores)
 {
+    izenelib::util::ClockTimer timer;
+
     indexer_.retrieval(kAlgorithm, tokens, limit, docids, scores);
+
+    LOG(INFO) << "zambezi returns docid num: " << docids.size()
+              << ", costs :" << timer.elapsed() << " seconds"
+              << std::endl;
 }

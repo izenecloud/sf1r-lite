@@ -516,7 +516,13 @@ public:
     {
         return queryIntentManager_;
     }
-    
+
+    bool searchZambezi(
+        const SearchKeywordOperation& actionOperation,
+        KeywordSearchResult& searchResult,
+        std::size_t limit,
+        std::size_t offset);
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {

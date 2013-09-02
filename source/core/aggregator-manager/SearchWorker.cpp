@@ -505,6 +505,16 @@ bool SearchWorker::getSearchResult_(
 
         break;
 
+    case SearchingMode::ZAMBEZI:
+        if (!miningManager_->searchZambezi(actionOperation,
+                                           resultItem,
+                                           search_limit,
+                                           topKStart))
+        {
+            return true;
+        }
+        break;
+
     default:
         unsigned int QueryPruneTimes = 2;
         bool isUsePrune = false;
