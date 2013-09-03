@@ -181,7 +181,7 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     return saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) &&
            save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) &&

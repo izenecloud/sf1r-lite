@@ -27,7 +27,7 @@ bool ProductScoreTable::open()
 
 bool ProductScoreTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     return save_container_febird(dirPath_,
                                  scoreTypeName_ + FILE_NAME_SUFFIX,
