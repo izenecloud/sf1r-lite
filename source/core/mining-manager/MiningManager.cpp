@@ -566,7 +566,7 @@ bool MiningManager::open()
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
             summarizationManagerTask_ =
-                new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
+                new MultiDocSummarizationSubManager(summarization_path_, system_resource_path_, collectionName_,
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
