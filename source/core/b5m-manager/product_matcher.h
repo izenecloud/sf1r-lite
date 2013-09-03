@@ -663,9 +663,10 @@ namespace sf1r {
         struct Product
         {
             Product()
-            : cid(0), aweight(0.0), tweight(0.0), score(0.0)
+            : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
+            uint32_t id;
             std::string spid;
             std::string stitle;
             std::string scategory;
@@ -676,6 +677,7 @@ namespace sf1r {
             cid_t cid;
             //double price;
             ProductPrice price;
+            std::vector<ProductPrice> offer_prices;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             UString display_attributes;
@@ -861,6 +863,8 @@ namespace sf1r {
         double PriceSim_(double offerp, double spup) const;
         bool IsValuePriceSim_(double op, double p) const;
         bool IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p, const std::vector<ProductPrice>& offer_prices) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p) const;
         double PriceDiff_(double op, double p) const;
         double PriceDiff_(const ProductPrice& op, const ProductPrice& p) const;
         void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
@@ -981,6 +985,16 @@ namespace sf1r {
         }
 
         bool IsBlankSplit_(const UString& t1, const UString& t2) const;
+
+        void SetProductsId_()
+        {
+            for(uint32_t i=0;i<products_.size();i++)
+            {
+                products_[i].id = i;
+            }
+        }
+
+        void SetProductsPrice_(bool use_offer);
 
 
     private:

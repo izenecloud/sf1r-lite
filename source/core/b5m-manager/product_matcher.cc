@@ -29,7 +29,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20130726000000");
+const std::string ProductMatcher::AVERSION("20130901000000");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -294,6 +294,7 @@ bool ProductMatcher::Open(const std::string& kpath)
             Init_();
             std::string path = path_+"/products";
             izenelib::am::ssf::Util<>::Load(path, products_);
+            SetProductsId_();
             LOG(INFO)<<"products size "<<products_.size()<<std::endl;
             path = path_+"/category_list";
             izenelib::am::ssf::Util<>::Load(path, category_list_);
@@ -1166,6 +1167,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         LOG(INFO)<<"find "<<keyword_set_.size()<<" keywords"<<std::endl;
         ConstructKeywordTrie_(suffix_trie);
     }
+    SetProductsId_();
+    SetProductsPrice_(false);
+    is_open_ = true;
     std::string offer_scd = scd_path+"/OFFER.SCD";
     if(boost::filesystem::exists(offer_scd))
     {
@@ -1510,6 +1514,14 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     //process feature vector
     cid_t cid1 = GetLevelCid_(scategory, 1);
     cid_t cid2 = GetLevelCid_(scategory, 2);
+    //do spu matching
+    ProductPrice oprice;
+    std::string sprice;
+    doc.getString("Price", sprice);
+    oprice.Parse(sprice);
+    Product p;
+    Process(doc, p, true); 
+    //std::cerr<<"offer p result "<<p.id<<","<<p.stitle<<std::endl;
     //NFeatureVector feature_vector;
     //GenFeatureVector_(keyword_vector, feature_vector);
     boost::unique_lock<boost::mutex> lock(offer_mutex_);
@@ -1530,6 +1542,11 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     {
         FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
         fv_count_[cid2]++;
+    }
+    if(p.id>0&&oprice.Positive()) //is spu
+    {
+        //std::cerr<<"oprice add "<<p.id<<","<<oprice.Min()<<std::endl;
+        products_[p.id].offer_prices.push_back(oprice);
     }
     
 
@@ -1607,6 +1624,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
             }
         }
     }
+    //process average prices
+    SetProductsPrice_(true);
 
     //if(use_ngram_)
     //{
@@ -5154,13 +5173,86 @@ bool ProductMatcher::IsValuePriceSim_(double op, double p) const
     if(v>=thlow&&v<=thhigh) return true;
     else return false;
 }
+ProductPrice ProductMatcher::GetProductPriceRange_(const ProductPrice& p) const
+{
+    ProductPrice result = p;
+    static const double thlow = 0.25;
+    double dp = 0.0;
+    p.GetMid(dp);
+    double thhigh = 4.0;
+    if(dp<=100.0) thhigh = 4.0;
+    else if(dp<=5000.0) thhigh = 3.0;
+    else thhigh = 2.0;
+    if(!p.Positive())
+    {
+        result.value.first = 0.0;
+        result.value.second = std::numeric_limits<double>::max();
+    }
+    else
+    {
+        result.value.first *= thlow;
+        result.value.second *= thhigh;
+    }
+    return result;
+}
+
+ProductPrice ProductMatcher::GetProductPriceRange_(const ProductPrice& p, const std::vector<ProductPrice>& offer_prices) const
+{
+    ProductPrice result = p;
+    if(offer_prices.size()>=20)
+    {
+        double avg = 0.0;
+        for(uint32_t j=0;j<offer_prices.size();j++)
+        {
+            avg += offer_prices[j].Min();
+        }
+        if(avg>0.0)
+        {
+            avg /= offer_prices.size();
+        }
+        if(avg>=1000.0)
+        {
+            avg *= 0.7;
+            uint32_t invalid_count = 0;
+            for(uint32_t j=0;j<offer_prices.size();j++)
+            {
+                if(offer_prices[j].Min()<avg) ++invalid_count;
+            }
+            double invalid_ratio = (double)invalid_count/offer_prices.size();
+            if(invalid_ratio<=0.2)
+            {
+                double t = avg*1.1;
+                std::cerr<<"change lower bound from "<<result.value.first<<" to "<<t<<std::endl;
+                result.value.first = t;
+            }
+        }
+    }
+    return result;
+}
+void ProductMatcher::SetProductsPrice_(bool use_offer)
+{
+    for(uint32_t i=1;i<products_.size();i++)
+    {
+        Product& p = products_[i];
+        if(!use_offer)
+        {
+            p.price = GetProductPriceRange_(p.price);
+        }
+        else
+        {
+            std::cerr<<"setting spu price for "<<p.stitle<<std::endl;
+            p.price = GetProductPriceRange_(p.price, p.offer_prices);
+        }
+    }
+}
 
 bool ProductMatcher::IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const
 {
     if(!p.Positive()) return true;
     if(!op.Positive()) return false;
-    if(IsValuePriceSim_(op.Min(), p.Min())) return true;
-    if(IsValuePriceSim_(op.Max(), p.Max())) return true;
+    //if(IsValuePriceSim_(op.Min(), p.Min())) return true;
+    //if(IsValuePriceSim_(op.Max(), p.Max())) return true;
+    if(op.Min()>=p.Min()&&op.Max()<=p.Max()) return true;
     return false;
 }
 
