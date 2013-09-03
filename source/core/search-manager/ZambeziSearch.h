@@ -17,6 +17,11 @@ namespace sf1r
 class SearchManagerPreProcessor;
 class ZambeziManager;
 
+namespace faceted
+{
+class GroupFilterBuilder;
+}
+
 class ZambeziSearch : public SearchBase
 {
 public:
@@ -41,6 +46,8 @@ private:
     SearchManagerPreProcessor& preprocessor_;
 
     boost::shared_ptr<MiningManager> miningManager_;
+
+    const faceted::GroupFilterBuilder* groupFilterBuilder_;
 
     ZambeziManager* zambeziManager_;
 };
