@@ -506,13 +506,14 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::ZAMBEZI:
-        if (!miningManager_->searchZambezi(actionOperation,
-                                           resultItem,
-                                           search_limit,
-                                           topKStart))
+        if (!searchManager_->zambeziSearch_->search(actionOperation,
+                                                    resultItem,
+                                                    search_limit,
+                                                    topKStart))
         {
             return true;
         }
+
         break;
 
     default:

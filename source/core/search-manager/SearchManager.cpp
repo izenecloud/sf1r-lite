@@ -1,5 +1,6 @@
 #include "SearchManager.h"
 #include "SearchFactory.h"
+#include "ZambeziSearch.h"
 #include <mining-manager/MiningManager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 
@@ -17,6 +18,7 @@ SearchManager::SearchManager(
                         preprocessor_.getSchemaMap()))
     , searchBase_(searchFactory.createSearchBase(
                       preprocessor_, *queryBuilder_))
+    , zambeziSearch_(new ZambeziSearch(preprocessor_))
 {
 }
 
@@ -52,4 +54,6 @@ void SearchManager::setMiningManager(
         miningManager->GetCustomRankManager());
 
     searchBase_->setMiningManager(miningManager);
+
+    zambeziSearch_->setMiningManager(miningManager);
 }
