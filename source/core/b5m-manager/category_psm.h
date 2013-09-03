@@ -67,7 +67,7 @@ namespace sf1r {
         //typedef DDType::GroupTableType GroupTableType;
         //typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, Attach> PsmType;
         CategoryPsm():
-        model_regex_("[a-zA-Z\\d\\-]{4,}")
+        model_regex_("[a-zA-Z\\d\\-]{3,}")
           , algo_()
           //, table_(NULL), dd_(NULL)
           , stat_(0,0)
@@ -93,8 +93,9 @@ namespace sf1r {
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>孕产妇>孕妇装$"), "孕妇装"));
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>儿童服饰.*$"), "童装"));
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>婴儿服饰.*$"), "童装"));
-            error_model_regex_.push_back(boost::regex("\\d{2}cm"));
+            error_model_regex_.push_back(boost::regex("^.*\\dcm"));
             error_model_regex_.push_back(boost::regex("\\d{2}\\-\\d{2}"));
+            error_model_regex_.push_back(boost::regex("\\d{3}\\-\\d{3}"));
             error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
             error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
             error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
@@ -237,7 +238,6 @@ namespace sf1r {
             for(ResultMap::const_iterator it = result_.begin();it!=result_.end();++it)
             {
                 const BufferKey& key = it->first;
-                if(key.second.length()>4) continue;
                 std::cout<<"[Category]"<<key.first<<" [Model]"<<key.second<<" : "<<std::endl;
                 const std::vector<Group>& groups = it->second;
                 if(groups.size()>1)
@@ -362,11 +362,12 @@ namespace sf1r {
                         alpha_count++;
                     }
                 }
+                if(symbol_count>1) continue;
                 bool has_digit = (digit_count!=0);
                 bool all_digit = (symbol_count==0&&alpha_count==0&&digit_count>0);
                 if(!has_digit) continue; 
                 if(!all_digit&&candidate.length()<4) continue;
-                if(all_digit&&candidate.length()<=4) continue;
+                //if(all_digit&&candidate.length()<=4) continue;
                 if(has_digit&&!all_digit)
                 {
                     if(boost::algorithm::starts_with(stitle, candidate)) continue;
@@ -560,7 +561,7 @@ namespace sf1r {
             {
                 hamming_dist += __builtin_popcountl(x.fp.desc[i] ^ y.fp.desc[i]);
             }
-            if(hamming_dist>30) return invalid;
+            if(hamming_dist>35) return invalid;
             double maxp = x.price;
             double minp = y.price;
             if(minp>maxp) std::swap(maxp, minp);
@@ -596,7 +597,7 @@ namespace sf1r {
                 }
                 else
                 {
-                    //std::cerr<<"[DIST-INVALUD]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
+                    std::cerr<<"[DIST-INVALUD]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
                 }
             }
             return invalid;
