@@ -32,6 +32,8 @@ static bool tokenComparator(const Token& lv, const Token& rv)
 
 static std::size_t bSearch(const TokenArray& tokens, const Token& token, Comparator comp)
 {
+    if (tokens.empty())
+        return -1;
     std::size_t size = tokens.size();
     std::size_t li = 0;
     std::size_t ri = size - 1;
@@ -78,6 +80,14 @@ static void normalize(TokenArray& tokens)
         }
         sum += tokens[i].weight();
     }
+    if (size == undefine)
+    {
+        for (std::size_t i = 0; i < size; i++)
+        {
+            tokens[i].setWeight(1.0 / size);
+        }
+        return;
+    }
     double average = sum / (size - undefine);
     for (std::size_t i = 0; i < size; i++)
     {
@@ -98,21 +108,22 @@ static void normalize(TokenArray& tokens)
 void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& miningManager)
 {
     filter(keywords);
-    
+   
+    std::cout<<keywords<<"\n";
     std::list<std::pair<UString, double> > major_tokens;
     std::list<std::pair<UString, double> > minor_tokens;
     izenelib::util::UString analyzedQuery;
     double rank_boundary = 0;
     miningManager.getSuffixManager()->GetTokenResults(keywords, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
-    tokens.reserve(major_tokens.size() + minor_tokens.size());
+    //tokens.reserve(major_tokens.size() + minor_tokens.size());
     
     std::list<std::pair<UString, double> >::iterator it = major_tokens.begin();
     for (; it != major_tokens.end(); it++)
     {
         std::string keyword;
         it->first.convertString(keyword, izenelib::util::UString::UTF_8);
-        if (0.01 > it->second)
-            continue;
+        //if (0.01 > it->second)
+        //    continue;
         std::size_t pos = keywords.find(keyword);
         if (std::string::npos == pos)
             continue;
@@ -124,8 +135,8 @@ void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& mi
     {
         std::string keyword;
         it->first.convertString(keyword, izenelib::util::UString::UTF_8);
-        if (0.01 > it->second)
-            continue;
+        //if (0.01 > it->second)
+        //    continue;
         std::size_t pos = keywords.find(keyword);
         if (std::string::npos == pos)
             continue;
@@ -148,6 +159,8 @@ void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& mi
 
 void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& miningManager)
 {
+    if (tokens.empty() || tokens.size() <= 1)
+        return;
     static ProductMatcher* matcher = ProductMatcherInstance::get();
     izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
     ProductMatcher::KeywordVector kv;
@@ -309,6 +322,11 @@ static void expandCenterTokens(TokenArray& tokens)
         }
     }
     
+    for (std::size_t i = 0; i < exCT.size(); i++)
+    {
+        if (exCT[i].isCenterToken())
+            exCT[i].combine(1.0);
+    }
     tokens.clear();
     tokens.swap(exCT);
     return;
@@ -389,7 +407,8 @@ static void removeMultiTokens(TokenArray& tokens, TokenRecommended& queries)
     std::cout<<"Expaned::\n";
     for(std::size_t i = 0; i < tokens.size(); i++)
     {
-        std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
+        if (tokens[i].isCenterToken())
+            std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
     }
 #endif
 
@@ -410,7 +429,7 @@ void removeTokens(TokenArray& tokens, TokenRecommended& queries)
         queries.push_back(tk);
         return;
     }
-    if ( 3 == tokens.size())
+    else if ( 3 == tokens.size())
     {
         for (std::size_t i = 0; i < tokens.size(); i++)
         {
@@ -426,7 +445,7 @@ void removeTokens(TokenArray& tokens, TokenRecommended& queries)
         queries.push_back(tk);
         return;
     }
-    if ( 4 <= tokens.size())
+    else if ( 4 <= tokens.size())
     {
         removeMultiTokens(tokens, queries);
     }
