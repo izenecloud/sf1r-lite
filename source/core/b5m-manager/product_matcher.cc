@@ -2690,6 +2690,16 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
     }
 
 }
+
+void ProductMatcher::ExtractKeywords(const UString& text, KeywordVector& keywords)
+{
+    if(!IsOpen()) return;
+    ATermList term_list;
+    Analyze_(text, term_list);
+    GetKeywords(term_list, keywords, false);
+    return;
+}
+
 void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_model)
 {
     if(!IsOpen()) return;
