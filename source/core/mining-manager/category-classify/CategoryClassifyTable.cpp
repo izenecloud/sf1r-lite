@@ -31,7 +31,7 @@ bool CategoryClassifyTable::open()
 
 bool CategoryClassifyTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     return save_container_febird(dirPath_, kBinaryFileName, categories_) &&
         saveTextFile_();

@@ -83,7 +83,7 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE) ||
         !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
