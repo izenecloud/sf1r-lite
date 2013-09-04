@@ -10,7 +10,7 @@ using namespace sf1r;
 ZambeziMiningTask::ZambeziMiningTask(
     const ZambeziConfig& config,
     DocumentManager& documentManager,
-    izenelib::ir::Zambezi::InvertedIndex& indexer)
+    izenelib::ir::Zambezi::NewInvertedIndex& indexer)
     : config_(config)
     , documentManager_(documentManager)
     , indexer_(indexer)
@@ -29,13 +29,20 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     knlpWrapper->fmmTokenize(kstr, tokenScores);
 
     std::vector<std::string> tokenList;
+    std::vector<uint32_t> scoreList;
+    // TODO
+    // currently each term is assigned with a default score,
+    // it should be replaced when the calculation interface is available
+    const uint32_t defaultScore = 1;
+
     for (KNlpWrapper::token_score_list_t::const_iterator it =
              tokenScores.begin(); it != tokenScores.end(); ++it)
     {
         tokenList.push_back(it->first.get_bytes("utf-8"));
+        scoreList.push_back(defaultScore);
     }
 
-    indexer_.insertDoc(docID, tokenList);
+    indexer_.insertDoc(docID, tokenList, scoreList);
     return true;
 }
 

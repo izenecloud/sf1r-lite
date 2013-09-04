@@ -7,7 +7,7 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
-#include <ir/Zambezi/InvertedIndex.hpp>
+#include <ir/Zambezi/NewInvertedIndex.hpp>
 #include <string>
 #include <vector>
 
@@ -35,7 +35,7 @@ public:
 private:
     const ZambeziConfig& config_;
 
-    izenelib::ir::Zambezi::InvertedIndex indexer_;
+    izenelib::ir::Zambezi::NewInvertedIndex indexer_;
 };
 
 } // namespace sf1r

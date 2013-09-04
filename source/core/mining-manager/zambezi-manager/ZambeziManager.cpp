@@ -7,12 +7,6 @@
 
 using namespace sf1r;
 
-namespace
-{
-const izenelib::ir::Zambezi::Algorithm kAlgorithm =
-    izenelib::ir::Zambezi::BWAND_AND;
-}
-
 ZambeziManager::ZambeziManager(const ZambeziConfig& config)
     : config_(config)
 {
@@ -51,7 +45,10 @@ void ZambeziManager::search(
 {
     izenelib::util::ClockTimer timer;
 
-    indexer_.retrieval(kAlgorithm, tokens, limit, docids, scores);
+    std::vector<uint32_t> intScores;
+    indexer_.retrieval(tokens, limit, docids, intScores);
+
+    scores.assign(intScores.begin(), intScores.end());
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
               << ", costs :" << timer.elapsed() << " seconds"
