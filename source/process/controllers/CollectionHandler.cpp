@@ -58,14 +58,11 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
 {
     DocumentsSearchHandler handler(request,response,*this);
     handler.search();
-    if (response.success() && (0 == asInt(response[Keys::total_count])))
+    if (response.success() && (0 == asInt(response[Keys::total_count])) && (request[Keys::search].hasKey("query_abbreviation")))
     {
         std::string keywords = asString(request[Keys::search][Keys::keywords]);
         int toSuccess = 0;
-        if (request[Keys::search].hasKey("query_abbreviation"))
-            toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
-        else
-            toSuccess = 2;
+        toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
         RK::TokenRecommended queries;
         RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
         int success = 0;
