@@ -455,10 +455,8 @@ void queryAbbreviation(TokenRecommended& queries, std::string& keywords, MiningM
     generateTokens(tokens, keywords, miningManager);
     adjustWeight(tokens, keywords, miningManager);
     removeTokens(tokens, queries);
-#ifdef DEBUG_INFO
     std::cout<<"recommand::\n";
     std::cout<<queries;
-#endif
 }
 
 }

@@ -45,6 +45,10 @@ QueryStatistics::~QueryStatistics()
 {
     std::ofstream ofs;
     std::string wordsFreqFile = miningManager_->system_resource_path_ + "/query-abbreviation/wordsFreq" + collectionName_;
+    if (!boost::filesystem::exists(wordsFreqFile))
+    {
+        boost::filesystem::create_directory(miningManager_->system_resource_path_ + "/query-abbreviation/");
+    }
     ofs.open(wordsFreqFile.c_str(), std::ofstream::out | std::ofstream::trunc);
     serialize(ofs);
     ofs.close();
