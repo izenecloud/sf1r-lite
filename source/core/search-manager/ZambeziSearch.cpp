@@ -208,6 +208,13 @@ void ZambeziSearch::rankTopKDocs_(
         rankScoreList[i] = scoreItem.score;
     }
 
+    if (sorter)
+    {
+        preprocessor_.fillSearchInfoWithSortPropertyData(sorter.get(),
+                                                         docIdList,
+                                                         searchResult.distSearchInfo_);
+    }
+
     LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
               << ", total count: " << totalCount
               << ", costs :" << timer.elapsed() << " seconds"
