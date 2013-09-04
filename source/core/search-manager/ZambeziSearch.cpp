@@ -1,8 +1,10 @@
 #include "ZambeziSearch.h"
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
+#include "QueryBuilder.h"
 #include "HitQueue.h"
 #include <query-manager/SearchKeywordOperation.h>
+#include <query-manager/QueryTypeDef.h> // FilteringType
 #include <common/ResultType.h>
 #include <common/ResourceManager.h>
 #include <common/PropSharedLockSet.h>
@@ -10,6 +12,7 @@
 #include <mining-manager/zambezi-manager/ZambeziManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <ir/index_manager/utility/BitVector.h>
 #include <glog/logging.h>
 #include <iostream>
 #include <boost/scoped_ptr.hpp>
@@ -21,8 +24,11 @@ const std::size_t kZambeziTopKNum = 1e6;
 
 using namespace sf1r;
 
-ZambeziSearch::ZambeziSearch(SearchManagerPreProcessor& preprocessor)
+ZambeziSearch::ZambeziSearch(
+    SearchManagerPreProcessor& preprocessor,
+    QueryBuilder& queryBuilder)
     : preprocessor_(preprocessor)
+    , queryBuilder_(queryBuilder)
     , groupFilterBuilder_(NULL)
     , zambeziManager_(NULL)
 {
@@ -82,12 +88,27 @@ bool ZambeziSearch::search(
                                               propSharedLockSet));
     }
 
+    const std::vector<QueryFiltering::FilteringType>& filterList =
+        actionOperation.actionItem_.filteringList_;
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
+    boost::scoped_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
+
+    if (!filterList.empty())
+    {
+        queryBuilder_.prepare_filter(filterList, filterBitmap);
+        filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
+        filterBitVector->importFromEWAH(*filterBitmap);
+    }
+
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
     for (size_t i = 0; i < candNum; ++i)
     {
         docid_t docId = candidates[i];
         float score = scores[i];
+
+        if (filterBitVector && !filterBitVector->test(docId))
+            continue;
 
         if (groupFilter && !groupFilter->test(docId))
             continue;

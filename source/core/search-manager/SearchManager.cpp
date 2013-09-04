@@ -18,7 +18,7 @@ SearchManager::SearchManager(
                         preprocessor_.getSchemaMap()))
     , searchBase_(searchFactory.createSearchBase(
                       preprocessor_, *queryBuilder_))
-    , zambeziSearch_(new ZambeziSearch(preprocessor_))
+    , zambeziSearch_(new ZambeziSearch(preprocessor_, *queryBuilder_))
 {
 }
 
