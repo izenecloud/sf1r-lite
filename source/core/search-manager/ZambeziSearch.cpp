@@ -178,6 +178,10 @@ void ZambeziSearch::rankTopKDocs_(
             continue;
 
         ScoreDoc scoreItem(docId, score);
+        if (customRanker)
+        {
+            scoreItem.custom_score = customRanker->evaluate(docId);
+        }
         scoreItemQueue->insert(scoreItem);
 
         ++totalCount;
@@ -190,22 +194,33 @@ void ZambeziSearch::rankTopKDocs_(
         groupFilter->getGroupRep(searchResult.groupRep_, searchResult.attrRep_);
     }
 
-    std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
-    std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
     std::size_t topKCount = 0;
-
     if (offset < scoreItemQueue->size())
     {
         topKCount = scoreItemQueue->size() - offset;
     }
+
+    std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
+    std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
+    std::vector<float>& customScoreList = searchResult.topKCustomRankScoreList_;
+
     docIdList.resize(topKCount);
     rankScoreList.resize(topKCount);
+
+    if (customRanker)
+    {
+        customScoreList.resize(topKCount);
+    }
 
     for (int i = topKCount-1; i >= 0; --i)
     {
         const ScoreDoc& scoreItem = scoreItemQueue->pop();
         docIdList[i] = scoreItem.docId;
         rankScoreList[i] = scoreItem.score;
+        if (customRanker)
+        {
+            customScoreList[i] = scoreItem.custom_score;
+        }
     }
 
     if (sorter)
