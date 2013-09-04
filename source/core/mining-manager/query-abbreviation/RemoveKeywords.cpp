@@ -108,8 +108,6 @@ static void normalize(TokenArray& tokens)
 void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& miningManager)
 {
     filter(keywords);
-   
-    std::cout<<keywords<<"\n";
     std::list<std::pair<UString, double> > major_tokens;
     std::list<std::pair<UString, double> > minor_tokens;
     izenelib::util::UString analyzedQuery;
