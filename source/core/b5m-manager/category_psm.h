@@ -170,9 +170,26 @@ namespace sf1r {
             key.first = ncategory;
             BufferItem item;
             if(!Analyze_(doc, keywords, key, item)) return false;
+            UString ua;
+            doc.getString("Attribute", ua);
+            std::vector<b5m::Attribute> attributes;
+            B5MHelper::ParseAttributes(ua, attributes);
             boost::unique_lock<boost::mutex> lock(mutex_);
             buffer_[key].push_back(item);
             stat_.second++;
+            for(uint32_t i=0;i<attributes.size();i++)
+            {
+                const b5m::Attribute& a = attributes[i];
+                if(a.name=="品牌")
+                {
+                    for(uint32_t j=0;j<a.values.size();j++)
+                    {
+                        std::string b = boost::algorithm::to_lower_copy(a.values[j]);
+                        brand_set_.insert(b);
+                    }
+                    //std::cerr<<"find brand "<<a.GetValue()<<std::endl;
+                }
+            }
             //std::string stitle;
             //doc.getString("Title", stitle);
             //std::cerr<<"[TITLE]"<<stitle<<std::endl;
@@ -340,23 +357,6 @@ namespace sf1r {
             std::string stitle;
             doc.getString("Title", stitle);
             if(stitle.empty()) return false;
-            UString ua;
-            doc.getString("Attribute", ua);
-            std::vector<b5m::Attribute> attributes;
-            B5MHelper::ParseAttributes(ua, attributes);
-            for(uint32_t i=0;i<attributes.size();i++)
-            {
-                const b5m::Attribute& a = attributes[i];
-                if(a.name=="品牌")
-                {
-                    for(uint32_t j=0;j<a.values.size();j++)
-                    {
-                        std::string b = boost::algorithm::to_lower_copy(a.values[j]);
-                        brand_set_.insert(b);
-                    }
-                    //std::cerr<<"find brand "<<a.GetValue()<<std::endl;
-                }
-            }
             std::vector<std::string> models;
             boost::algorithm::to_lower(stitle);
             boost::algorithm::trim(stitle);
