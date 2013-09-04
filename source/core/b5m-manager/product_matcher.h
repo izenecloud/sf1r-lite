@@ -630,40 +630,43 @@ namespace sf1r {
             }
         };
 
-        struct Attribute
-        {
-            std::string name;
-            std::vector<std::string> values;
-            bool is_optional;
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & name & values & is_optional;
-            }
-            std::string GetValue() const
-            {
-                std::string result;
-                for(uint32_t i=0;i<values.size();i++)
-                {
-                    if(!result.empty()) result+="/";
-                    result+=values[i];
-                }
-                return result;
-            }
-            std::string GetText() const
-            {
-                return name+":"+GetValue();
-            }
-        };
+        typedef sf1r::b5m::Attribute Attribute;
+
+        //struct Attribute
+        //{
+        //    std::string name;
+        //    std::vector<std::string> values;
+        //    bool is_optional;
+        //    friend class boost::serialization::access;
+        //    template<class Archive>
+        //    void serialize(Archive & ar, const unsigned int version)
+        //    {
+        //        ar & name & values & is_optional;
+        //    }
+        //    std::string GetValue() const
+        //    {
+        //        std::string result;
+        //        for(uint32_t i=0;i<values.size();i++)
+        //        {
+        //            if(!result.empty()) result+="/";
+        //            result+=values[i];
+        //        }
+        //        return result;
+        //    }
+        //    std::string GetText() const
+        //    {
+        //        return name+":"+GetValue();
+        //    }
+        //};
 
 
         struct Product
         {
             Product()
-            : cid(0), aweight(0.0), tweight(0.0), score(0.0)
+            : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
+            uint32_t id;
             std::string spid;
             std::string stitle;
             std::string scategory;
@@ -674,6 +677,7 @@ namespace sf1r {
             cid_t cid;
             //double price;
             ProductPrice price;
+            std::vector<ProductPrice> offer_prices;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             UString display_attributes;
@@ -860,6 +864,8 @@ namespace sf1r {
         double PriceSim_(double offerp, double spup) const;
         bool IsValuePriceSim_(double op, double p) const;
         bool IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p, const std::vector<ProductPrice>& offer_prices) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p) const;
         double PriceDiff_(double op, double p) const;
         double PriceDiff_(const ProductPrice& op, const ProductPrice& p) const;
         void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
@@ -981,6 +987,16 @@ namespace sf1r {
 
         bool IsBlankSplit_(const UString& t1, const UString& t2) const;
 
+        void SetProductsId_()
+        {
+            for(uint32_t i=0;i<products_.size();i++)
+            {
+                products_[i].id = i;
+            }
+        }
+
+        void SetProductsPrice_(bool use_offer);
+
 
     private:
         std::string path_;
@@ -1039,7 +1055,8 @@ namespace sf1r {
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
         bool use_psm_;
-        std::vector<CategoryPsm*> psms_;
+        //std::vector<CategoryPsm*> psms_;
+        CategoryPsm* psm_;
         boost::unordered_map<uint128_t, uint128_t> psm_result_;
 
         const static double optional_weight_ = 0.2;

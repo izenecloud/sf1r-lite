@@ -37,6 +37,7 @@
 #include <glog/logging.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/unordered_set.hpp>
 
 namespace bfs = boost::filesystem;
 
@@ -310,38 +311,17 @@ bool IndexWorker::createScdSharder(
 {
     if (bundleConfig_->indexShardKeys_.empty())
     {
-        LOG(ERROR) << "No sharding key!";
+        LOG(INFO) << "No sharding key!";
         return false;
     }
-
-    std::string coll = bundleConfig_->collectionName_;
-    // handle the rebuild collection name
-    //size_t pos = coll.find("-rebuild");
-    //if (pos != std::string::npos)
-    //{
-    //    LOG(INFO) << "change the collection name for rebuild." << coll;
-    //    coll = coll.substr(0, pos);
-    //}
-    shard_cfg_.shardidList_ = bundleConfig_->col_shard_info_.shardList_;
-    // sharding configuration
-    if (shard_cfg_.shardidList_.empty())
+    if (!sharding_strategy_)
     {
-        LOG(ERROR) << "No shardid configured for " << coll;
+        LOG(INFO) << "No sharding strategy.";
         return false;
     }
 
-    ShardingConfig::RangeListT ranges;
-    ranges.push_back(100);
-    ranges.push_back(1000);
-    shard_cfg_.addRangeShardKey("UnchangableRangeProperty", ranges);
-    ShardingConfig::AttrListT strranges;
-    strranges.push_back("abc");
-    shard_cfg_.addAttributeShardKey("UnchangableAttributeProperty", strranges);
-    shard_cfg_.setUniqueShardKey(bundleConfig_->indexShardKeys_[0]);
-
-    scdSharder.reset(new ScdSharder);
-
-    if (scdSharder && scdSharder->init(shard_cfg_))
+    scdSharder.reset(new ScdSharder(sharding_strategy_));
+    if (scdSharder)
         return true;
     else
         return false;
@@ -356,7 +336,12 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     LOG(INFO) << "start BuildCollection";
     izenelib::util::ClockTimer timer;
 
-    if (!scdSharder_)
+    if (disable_sharding_)
+    {
+        LOG(INFO) << "sharding disabled.";
+        scdSharder_.reset();
+    }
+    else if (!scdSharder_)
     {
         if(!createScdSharder(scdSharder_))
         {
@@ -477,7 +462,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
                 }
             }
         }
-
     }///set cookie as true here
 
     //@brief : to check if there is fuzzy numberic or date filter;
@@ -646,6 +630,10 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
 
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
+
+    if (searchWorker_)
+        searchWorker_->clearSearchCache();
+    clearMasterCache_();
 
     return true;
 }
@@ -1686,27 +1674,25 @@ bool IndexWorker::doUpdateDoc_(
     {
     case GENERAL:
     {
-        mergeDocument_(oldId, document);
-        if (!documentManager_->removeDocument(oldId))
+        if( !mergeDocument_(oldId, document) )
         {
-            LOG(WARNING) << "document " << oldId << " is already deleted";
+            LOG(INFO) << "doc id: " << oldId << " merger failed in update. newDocId: " << document.getId();
+            return false;
         }
-        else
+        if (documentManager_->removeDocument(oldId))
         {
             miningTaskService_->EnsureHasDeletedDocDuringMining();
         }
         if (!documentManager_->insertDocument(document))
         {
             LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
-            return false;
         }
         break;
     }
     case REPLACE:
     {
-        mergeDocument_(oldId, document);
-        if(!documentManager_->updateDocument(document))
-            return false;
+        if (mergeDocument_(oldId, document) )
+            documentManager_->updateDocument(document);
         break;
     }
 
@@ -1753,6 +1739,7 @@ void IndexWorker::flushUpdateBuffer_(size_t wid)
             {
                 //updateData.get<0>() = UNKNOWN;
                 LOG(INFO) << "doc id: " << it->first << " merger failed in flush general.";
+                need_update_index = false;
                 break;
             }
 
@@ -1806,9 +1793,9 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     }
 
     CREATE_SCOPED_PROFILER (proDocumentDeleting, "IndexWorker", "IndexWorker::DeleteDocument");
+    inc_supported_index_manager_.removeDocument(docid, timestamp);
     if (documentManager_->removeDocument(docid))
     {
-        inc_supported_index_manager_.removeDocument(docid, timestamp);
         ++numDeletedDocs_;
         //indexStatus_.numDocs_ = inc_supported_index_manager_.numDocs();
         return true;
@@ -2237,6 +2224,7 @@ void IndexWorker::document2SCDDoc(const Document& document, SCDDoc& scddoc)
 
 void IndexWorker::clearMasterCache_()
 {
+    LOG(INFO) << "notify master to clear cache.";
     if (bundleConfig_->isWorkerNode())
     {
         NotifyMSG msg;
@@ -2244,6 +2232,123 @@ void IndexWorker::clearMasterCache_()
         msg.method = "CLEAR_SEARCH_CACHE";
         MasterNotifier::get()->notify(msg);
     }
+}
+
+bool IndexWorker::generateMigrateSCD(const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+    std::map<shardid_t, std::string>& generated_insert_scds,
+    std::map<shardid_t, std::string>& generated_del_scds)
+{
+    if (!documentManager_)
+    {
+        LOG(ERROR) << "documentManager is not initialized!";
+        return false;
+    }
+
+    LOG(INFO) << "Begin generate the migrate scd files.";
+    docid_t minDocId = 1;
+    docid_t maxDocId = documentManager_->getMaxDocId();
+    docid_t curDocId = 0;
+    docid_t migrated_cnt = 0;
+
+    std::map<shardid_t, boost::unordered_set<vnodeid_t> > all_migrate_scd_vnodes;
+    std::map<shardid_t, boost::shared_ptr<ScdWriter> > all_scd_generators;
+    for (std::map<shardid_t, std::vector<vnodeid_t> >::const_iterator it = vnode_list.begin();
+        it != vnode_list.end(); ++it)
+    {
+        all_migrate_scd_vnodes[it->first].insert(it->second.begin(), it->second.end());
+    }
+
+    std::string tmp_migrate_path = bundleConfig_->indexSCDPath() + "/tmp_migrate";
+    bfs::remove_all(tmp_migrate_path);
+    bfs::create_directories(tmp_migrate_path);
+
+    boost::shared_ptr<ScdWriter> del_generator;
+
+    LOG(INFO) << "doc maxDocId is " << documentManager_->getMaxDocId();
+    for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
+    {
+        if (documentManager_->isDeleted(curDocId))
+        {
+            continue;
+        }
+
+        Document document;
+        bool b = documentManager_->getDocument(curDocId, document);
+        if (!b) continue;
+        documentManager_->getRTypePropertiesForDocument(curDocId, document);
+        // update docid
+        std::string docidName("DOCID");
+        Document::doc_prop_value_strtype docidValue;
+        if (!document.getProperty(docidName, docidValue))
+        {
+            continue;
+        }
+
+        std::string docid_str = propstr_to_str(docidValue);
+        size_t scd_docid = convertUniqueIDForSharding(docid_str);
+        size_t vnode_index = scd_docid % MapShardingStrategy::MAX_MAP_SIZE;
+        shardid_t found_shardid = 0;
+        for(std::map<shardid_t, boost::unordered_set<vnodeid_t> >::const_iterator vit = all_migrate_scd_vnodes.begin();
+            vit != all_migrate_scd_vnodes.end(); ++vit)
+        {
+            if (vit->second.find(vnode_index) != vit->second.end())
+            {
+                found_shardid = vit->first;
+                break;
+            }
+        }
+        if (found_shardid == 0)
+            continue;
+
+        boost::shared_ptr<ScdWriter>& insert_generator = all_scd_generators[found_shardid];
+        if (!insert_generator)
+        {
+            insert_generator.reset(new ScdWriter(tmp_migrate_path, INSERT_SCD));
+            generated_insert_scds[found_shardid] = insert_generator->getFileName();
+        }
+        if (!del_generator)
+        {
+            del_generator.reset(new ScdWriter(tmp_migrate_path, DELETE_SCD));
+            generated_del_scds[MasterManagerBase::get()->getMyShardId()] = del_generator->getFileName();
+        }
+
+        insert_generator->Append(document);
+        del_generator->Append(document);
+
+        migrated_cnt++;
+        if (migrated_cnt % 10000 == 0)
+        {
+            LOG(INFO) << "migrated doc number: " << migrated_cnt;
+        }
+    }
+    for(std::map<shardid_t, boost::shared_ptr<ScdWriter> >::iterator it = all_scd_generators.begin();
+        it != all_scd_generators.end(); ++it)
+    {
+        if (it->second)
+        {
+            it->second->Close();
+        }
+    }
+    if (del_generator)
+        del_generator->Close();
+
+    bool ret = DistributeFileSys::get()->copyToDFS(tmp_migrate_path, "/generated_migrate_scds/" +
+        getShardidStr(MasterManagerBase::get()->getMyShardId()));
+
+    for (std::map<shardid_t, std::string>::iterator it = generated_insert_scds.begin();
+        it != generated_insert_scds.end(); ++it)
+    {
+        it->second = (bfs::path(tmp_migrate_path)/bfs::path(it->second).filename()).string();
+        LOG(INFO) << "generated insert scd : " << it->second;
+    }
+    for (std::map<shardid_t, std::string>::iterator it = generated_del_scds.begin();
+        it != generated_del_scds.end(); ++it)
+    {
+        it->second = (bfs::path(tmp_migrate_path)/bfs::path(it->second).filename()).string();
+        LOG(INFO) << "generated delete scd : " << it->second;
+    }
+
+    return ret;
 }
 
 }

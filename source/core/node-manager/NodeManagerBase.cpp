@@ -46,6 +46,7 @@ void NodeManagerBase::setZNodePaths()
     nodePath_ = ZooKeeperNamespace::getNodePath(sf1rTopology_.curNode_.replicaId_, sf1rTopology_.curNode_.nodeId_);
     primaryBasePath_ = ZooKeeperNamespace::getPrimaryBasePath();
     primaryNodeParentPath_ = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
+    LOG(INFO) << " primary parent path is :" << primaryNodeParentPath_;
     primaryNodePath_ = ZooKeeperNamespace::getPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
 }
 
@@ -72,7 +73,7 @@ void NodeManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
         {
             // while recovering we should do nothing while topology changed.
         }
-        else if (masterStarted_ && sf1rTopology_.curNode_.worker_.hasAnyService())
+        else if (masterStarted_ && sf1rTopology_.curNode_.worker_.enabled_)
         {
             detectMasters();
         }
@@ -114,7 +115,6 @@ void NodeManagerBase::detectMasters()
     boost::lock_guard<boost::mutex> lock(MasterNotifier::get()->getMutex());
     MasterNotifier::get()->clear();
 
-    replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     std::vector<std::string> children;
     std::string serverParentPath = ZooKeeperNamespace::getServerParentPath();
     zookeeper_->getZNodeChildren(serverParentPath, children, ZooKeeper::WATCH);
@@ -126,8 +126,7 @@ void NodeManagerBase::detectMasters()
             ZNode znode;
             znode.loadKvString(data);
             // if this sf1r node provides master server
-            if (znode.hasKey(ZNode::KEY_MASTER_PORT) &&
-                znode.getUInt32Value(ZNode::KEY_REPLICA_ID) == replicaId)
+            if (znode.hasKey(ZNode::KEY_MASTER_PORT))
             {
                 std::string masterHost = znode.getStrValue(ZNode::KEY_HOST);
                 uint32_t masterPort;
@@ -141,8 +140,11 @@ void NodeManagerBase::detectMasters()
                         << "\" got from master on node" << children[i] << "@" << masterHost;
                     continue;
                 }
-                LOG (INFO) << "detected Master " << masterHost << ":" << masterPort;
-                MasterNotifier::get()->addMasterAddress(masterHost, masterPort);
+                if (masterPort > 0)
+                {
+                    LOG (INFO) << "detected Master " << masterHost << ":" << masterPort;
+                    MasterNotifier::get()->addMasterAddress(masterHost, masterPort);
+                }
             }
         }
     }
@@ -399,7 +401,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
     }
     if (zkEvent.type_ == ZOO_CHILD_EVENT && masterStarted_)
     {
-        if (sf1rTopology_.curNode_.worker_.hasAnyService())
+        if (sf1rTopology_.curNode_.worker_.enabled_)
             detectMasters();
     }
 }
@@ -435,33 +437,6 @@ bool NodeManagerBase::checkZooKeeperService()
     return true;
 }
 
-void NodeManagerBase::setServicesData(ZNode& znode)
-{
-    std::string services;
-    ServiceMapT::const_iterator cit = all_distributed_services_.begin();
-    while(cit != all_distributed_services_.end())
-    {
-        if (services.empty())
-            services = cit->first;
-        else
-            services += "," + cit->first;
-
-        std::string collections;
-        const std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.getMasterCollList(cit->first);
-        for (std::vector<MasterCollection>::const_iterator it = collectionList.begin();
-                it != collectionList.end(); it++)
-        {
-            if (collections.empty())
-                collections = (*it).name_;
-            else
-                collections += "," + (*it).name_;
-        }
-        znode.setValue(cit->first + ZNode::KEY_COLLECTION, collections);
-        ++cit;
-    }
-    znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
-}
-
 void NodeManagerBase::initServices()
 {
     ServiceMapT::const_iterator cit = all_distributed_services_.begin();
@@ -495,7 +470,6 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
 
-    //setServicesData(znode);
     if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
         // zookeeper is designed to store less than 1MB data on znode.
@@ -577,12 +551,12 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     // which primary path current node belong to.
     znode.setValue(ZNode::KEY_SELF_REG_PRIMARY_PATH, self_primary_path_);
 
-    if (sf1rTopology_.curNode_.worker_.hasAnyService())
+    if (sf1rTopology_.curNode_.worker_.enabled_)
     {
         znode.setValue(ZNode::KEY_WORKER_PORT, sf1rTopology_.curNode_.worker_.port_);
     }
 
-    if (sf1rTopology_.curNode_.master_.hasAnyService())
+    if (sf1rTopology_.curNode_.master_.enabled_)
     {
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
         znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
@@ -877,7 +851,7 @@ void NodeManagerBase::enterCluster(bool start_master)
     nodeState_ = NODE_STATE_RECOVER_RUNNING;
     updateCurrentPrimary();
     LOG(INFO) << "begin recovering callback : " << self_primary_path_;
-    if (cb_on_recovering_)
+    if (cb_on_recovering_ && sf1rTopology_.curNode_.worker_.enabled_)
     {
         // unlock
         mutex_.unlock();
@@ -965,10 +939,12 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     stopping_ = false;
     nodeState_ = NODE_STATE_RECOVER_FINISHING;
 
-    mutex_.unlock();
-    if (cb_on_recover_wait_primary_)
+    if (cb_on_recover_wait_primary_ && sf1rTopology_.curNode_.worker_.enabled_)
+    {
+        mutex_.unlock();
         cb_on_recover_wait_primary_();
-    mutex_.lock();
+        mutex_.lock();
+    }
 
     nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
@@ -1005,7 +981,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
     }
 
-    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
+    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_) &&
+        sf1rTopology_.curNode_.worker_.enabled_)
     {
         LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
         unregisterPrimary();
@@ -1044,26 +1021,23 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     LOG (INFO) << CLASSNAME
                << " started, cluster[" << sf1rTopology_.clusterId_
                << "] replica[" << curNode.replicaId_
-               << "] node[" << curNode.nodeId_
+               << "] node[" << getShardidStr(curNode.nodeId_)
                << "]{"
-               << (curNode.worker_.hasAnyService() ?
-                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.nodeId_) + " ") : "")
+               << (curNode.worker_.enabled_ ?
+                       (std::string("worker") + getShardidStr(curNode.nodeId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
 
     if(start_master)
     {
         // Start Master manager
-        if (sf1rTopology_.curNode_.master_.hasAnyService())
-        {
-            startMasterManager();
-            //SuperMasterManager::get()->init(sf1rTopology_);
-            //SuperMasterManager::get()->start();
-            masterStarted_ = true;
-        }
+        startMasterManager();
+        //SuperMasterManager::get()->init(sf1rTopology_);
+        //SuperMasterManager::get()->start();
+        masterStarted_ = true;
     }
 
-    if (sf1rTopology_.curNode_.worker_.hasAnyService())
+    if (sf1rTopology_.curNode_.worker_.enabled_)
     {
         detectMasters();
     }
@@ -1521,7 +1495,7 @@ bool NodeManagerBase::isNeedReEnterCluster()
     //    LOG(WARNING) << "need re-enter cluster for primary is electing ";
     //    return true;
     //}
-    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
+    if (sf1rTopology_.curNode_.worker_.enabled_ && !cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
     {
         LOG(WARNING) << "need re-enter cluster for request log fall behind.";
         return true;
@@ -2173,6 +2147,8 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
         // new primary, and other node need re-register and sync to the new primary.
         return;
     }
+    if (!sf1rTopology_.curNode_.worker_.enabled_)
+        return;
     uint32_t cur_req_id = getLastWriteReqId();
     if( req_id < cur_req_id)
     {

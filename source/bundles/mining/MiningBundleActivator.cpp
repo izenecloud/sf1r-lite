@@ -90,6 +90,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->bundleConfig_ = config_;
             searchService_->miningManager_ = miningManager_;
             searchService_->searchAggregator_ = service->searchAggregator_;
+            searchService_->ro_searchAggregator_ = service->ro_searchAggregator_;
             searchService_->searchWorker_ = service->searchWorker_;
 
             taskService_ = new MiningTaskService(config_);

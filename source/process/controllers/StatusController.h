@@ -31,6 +31,7 @@ protected:
 
 private:
     IndexTaskService* indexTaskService_;
+    //IndexSearchService* indexSearchService_;
 };
 
 /// @}

@@ -282,7 +282,7 @@ bool CobraProcess::initNodeManager()
             std::stringstream ss;
             ss << dfs_local_root << std::string("/sf1r/nodedata/")
                 << SF1Config::get()->topologyConfig_.sf1rTopology_.clusterId_
-                << std::string("/node") << SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_;
+                << std::string("/node") << getShardidStr(SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_);
             dfs_local_root =  ss.str();
             LOG(INFO) << "local dfs enabled as : " << dfs_local_root;
             DistributeFileSys::get()->enableDFS(SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_,
@@ -290,7 +290,8 @@ bool CobraProcess::initNodeManager()
         }
 
         NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
-        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir());
+        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir(),
+            SF1Config::get()->distributedCommonConfig_.check_level_);
 
         DistributeRequestHooker::get()->init();
         ReqLogMgr::initWriteRequestSet();
@@ -327,7 +328,7 @@ bool CobraProcess::startDistributedServer()
     DistributeFileSyncMgr::get()->init();
 
     // Start worker server
-    if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
+    if (SF1Config::get()->isWorkerEnabled())
     {
         workerRouter_.reset(new net::aggregator::WorkerRouter);
         WorkerRouterInitializer routerInitializer;
@@ -341,12 +342,12 @@ bool CobraProcess::startDistributedServer()
         cout << "[WorkerServer] listen at "<<localHost<<":"<<workerPort<<endl;
 
         workerServer_.reset(new net::aggregator::WorkerServer(
-            *workerRouter_, localHost, workerPort, threadNum));
+            *workerRouter_, localHost, workerPort, threadNum*2));
         workerServer_->start();
     }
 
     // Start server for master
-    if (SF1Config::get()->isSearchMaster() || SF1Config::get()->isRecommendMaster())
+    if (SF1Config::get()->isMasterEnabled())
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;

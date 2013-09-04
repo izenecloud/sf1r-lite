@@ -217,6 +217,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         if (distSearchInfo.isOptionGatherInfo())
         {
+            LOG(INFO) << "gather dist info.";
             docIterPtr->df_cmtf(dfmap, ctfmap, maxtfmap);
             distSearchInfo.dfmap_.swap(dfmap);
             distSearchInfo.ctfmap_.swap(ctfmap);
@@ -225,6 +226,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         }
         else if (distSearchInfo.isOptionCarriedInfo())
         {
+            LOG(INFO) << "carried dist info.";
             dfmap = distSearchInfo.dfmap_;
             ctfmap = distSearchInfo.ctfmap_;
             maxtfmap = distSearchInfo.maxtfmap_;

@@ -4,6 +4,7 @@
 #include "SearchThreadParam.h"
 #include "HitQueue.h"
 
+#include <common/PropSharedLockSet.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <common/ResultType.h>
 #include <document-manager/DocumentManager.h>
@@ -106,7 +107,7 @@ bool SearchThreadMaster::mergeThreadParams(
     std::map<std::string, unsigned int>& masterCounterResults = masterParam.counterResults;
     faceted::GroupRep& masterGroupRep = masterParam.groupRep;
     faceted::OntologyRep& masterAttrRep = masterParam.attrRep;
-    std::list<faceted::OntologyRep*> otherAttrReps;
+    std::list<const faceted::OntologyRep*> otherAttrReps;
     boost::shared_ptr<HitQueue> masterQueue(masterParam.scoreItemQueue);
 
     for (std::size_t i = 1; i < threadNum; ++i)
@@ -199,13 +200,15 @@ bool SearchThreadMaster::fetchSearchResult(
     boost::shared_ptr<Sorter> pSorter(threadParam.pSorter);
     if (pSorter)
     {
+        PropSharedLockSet propSharedLockSet;
         try
         {
             // all sorters will be the same after searching,
             // so we can just use any sorter.
             preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(),
                                                              docIdList,
-                                                             distSearchInfo);
+                                                             distSearchInfo,
+                                                             propSharedLockSet);
         }
         catch (const std::exception& e)
         {

@@ -14,6 +14,7 @@
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <node-manager/DistributeFileSys.h>
+#include <aggregator-manager/MasterNotifier.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -44,6 +45,15 @@ void CollectionTask::cronTask(int calltype)
 
         doTask();
     }
+}
+
+void RebuildTask::clearMasterCache()
+{
+    LOG(INFO) << "notify master to clear cache.";
+    NotifyMSG msg;
+    msg.collection = collectionName_;
+    msg.method = "CLEAR_SEARCH_CACHE";
+    MasterNotifier::get()->notify(msg);
 }
 
 void RebuildTask::doTask()
@@ -167,7 +177,10 @@ void RebuildTask::doTask()
     //isRunning_ = false;
     //
     if (NodeManagerBase::get()->isDistributed())
+    {
+        clearMasterCache();
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
@@ -361,8 +374,21 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
                 return false;
             }
 
+            std::string map_dir = collectionHandler->indexTaskService_->getShardingMapDir();
+
+            if (bfs::exists(map_dir + collectionName_))
+            {
+                DistributeFileSys::copy_dfs_file(map_dir + collectionName_,
+                    map_dir + rebuildCollectionName_);
+            }
             LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
             collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
+        }
+
+        if (!collectionHandler->indexTaskService_->isNeedDoLocal())
+        {
+            LOG(INFO) << "local worker is disabled while rebuilding.";
+            return false;
         }
 
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
@@ -491,7 +517,10 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
     LOG(INFO) << "## end rebuild from scd for " << collectionName_;
 
     if (NodeManagerBase::get()->isDistributed())
+    {
+        clearMasterCache();
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
     return true;
 }

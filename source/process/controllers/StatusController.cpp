@@ -7,6 +7,7 @@
 #include "CollectionHandler.h"
 #include <node-manager/DistributeTest.hpp>
 #include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <bundles/index/IndexTaskService.h>
 
 #include <common/Status.h>
@@ -19,12 +20,14 @@ using namespace izenelib::driver;
 
 StatusController::StatusController()
     : indexTaskService_(NULL)
+    //, indexSearchService_(NULL)
 {
 }
 
 bool StatusController::checkCollectionService(std::string& error)
 {
     indexTaskService_ = collectionHandler_->indexTaskService_;
+    //indexSearchService_ = collectionHandler_->indexSearchService_;
 
     if (indexTaskService_)
         return true;
@@ -120,6 +123,22 @@ void StatusController::get_distribute_status()
     }
     memStatus["AliveNodeList"] = nodeliststr;
     memStatus["IsAnyWriteRunning"] = NodeManagerBase::get()->isAnyWriteRunningInReplicas()?"yes":"no";
+    std::string shardliststr;
+    memStatus["IsAnyShardingNodeBusy"] = "no";
+    if (indexTaskService_)
+    {
+        const std::vector<shardid_t>& shard_list = indexTaskService_->getShardidListForSearch();
+        for(size_t i = 0; i < shard_list.size(); ++i)
+        {
+            shardliststr += MasterManagerBase::get()->getShardNodeIP(shard_list[i]) + ", ";
+        }
+        memStatus["IsAnyShardingNodeBusy"] = MasterManagerBase::get()->isShardingNodeOK(shard_list)?"no":"yes";
+    }
+    memStatus["PrimaryShardingNodeList"] = shardliststr;
+    //if (indexSearchService_)
+    //{
+    //    // something info for read only aggregator
+    //}
 }
 
 } // namespace sf1r

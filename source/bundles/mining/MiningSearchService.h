@@ -202,9 +202,9 @@ public:
             int limit,
             std::vector<std::vector<std::string> >& pathVec);
 
-    void setShardingStrategy(ShardingStrategy* shardingstrategy)
+    void setShardingStrategy(boost::shared_ptr<ShardingStrategy> shardingstrategy)
     {
-        shardingstrategy_ = shardingstrategy;
+        sharding_strategy_ = shardingstrategy;
     }
 
 private:
@@ -214,7 +214,8 @@ private:
 
     boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
-    ShardingStrategy* shardingstrategy_;
+    boost::shared_ptr<SearchAggregator> ro_searchAggregator_;
+    boost::shared_ptr<ShardingStrategy> sharding_strategy_;
 
     friend class MiningBundleActivator;
 };

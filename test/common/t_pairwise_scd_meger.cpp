@@ -61,12 +61,11 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
     vector< vector<int> > idvec;
     vecdoc.resize(3);
     idvec.resize(3);
-    Document doc;
     SCD_TYPE type=INSERT_SCD;
     std::vector<int> docidSet;
     for(unsigned i=0; i<docnum; i++)
     {
-        doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+        Document doc;
         int docid=rand()%100000;
         int itype=rand()%3;
         if(docidSet.size()<docnum*1/2)
@@ -117,7 +116,6 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
         existdocidSet.push_back(docid);
         doc.property("DOCID") = str_to_propstr(boost::lexical_cast<string>(docid),  UString::UTF_8);
         doc.property("uuid") = str_to_propstr(boost::lexical_cast<string>(docid%3000),  UString::UTF_8);
-        doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
 
         if(itype==0)
         {
@@ -134,6 +132,11 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
         else
         {
             type=NOT_SCD;
+        }
+        if (type != DELETE_SCD)
+        {
+            doc.property("Title") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
+            doc.property("Content") = str_to_propstr(boost::lexical_cast<string>(rand()), UString::UTF_8);
         }
         scd.Append(doc,type);
         if(type==INSERT_SCD)

@@ -50,8 +50,7 @@ public:
      * @param maxNum the max number of recommended items
      * @param queryList the resulted recommended items
      */
-    void getRecommendQuery(const izenelib::util::UString& queryStr,
-                           const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
+    void getRecommendQuery(const izenelib::util::UString& queryStr, unsigned int maxNum,
                            QueryRecommendRep& queryList);
 
 private:

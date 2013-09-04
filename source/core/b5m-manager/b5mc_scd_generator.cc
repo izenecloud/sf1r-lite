@@ -69,8 +69,15 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
 void B5mcScdGenerator::Process(ScdDocument& doc)
 {
     static const std::string oid_property_name = "ProdDocid";
-    doc.eraseProperty("uuid");
     doc.eraseProperty(B5MHelper::GetBrandPropertyName());
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(!spid.empty())
+    {
+        new_count_++;
+        return;
+    }
+    doc.eraseProperty("uuid");
     std::string scid;
     doc.getString("DOCID", scid);
     if(scid.empty()) 
@@ -117,7 +124,6 @@ void B5mcScdGenerator::Process(ScdDocument& doc)
             //LOG(ERROR)<<"filter error on "<<scid<<std::endl;
         //}
     //}
-    std::string spid;
     bool pid_changed = false;
     if(has_oid)
     {

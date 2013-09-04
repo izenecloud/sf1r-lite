@@ -454,6 +454,14 @@ public:
     /// Distributed utility
     /// @{
 
+    bool isMasterEnabled()
+    {
+        return topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.master_.enabled_;
+    }
+    bool isWorkerEnabled()
+    {
+        return topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.worker_.enabled_;
+    }
     /// Dsitributed search config
     //bool isDistributedSearchService() { return isDistributedNode(); }
     bool isSearchMaster() { return isServiceMaster("search"); }
@@ -503,11 +511,8 @@ public:
     bool checkMasterAggregator(const std::string& service,
         const std::string& collectionName)
     {
-        std::string downcaseName = collectionName;
-        downCase(downcaseName);
-
         if (topologyConfig_.enabled_
-            && topologyConfig_.sf1rTopology_.curNode_.master_.checkCollection(service, downcaseName))
+            && topologyConfig_.sf1rTopology_.curNode_.master_.checkCollection(service, collectionName))
         {
             return true;
         }
@@ -525,11 +530,8 @@ public:
 
     bool checkWorker(const std::string& service, const std::string& collectionName)
     {
-        std::string downcaseName = collectionName;
-        downCase(downcaseName);
-
         if (topologyConfig_.enabled_
-            && topologyConfig_.sf1rTopology_.curNode_.worker_.checkCollection(service, downcaseName))
+            && topologyConfig_.sf1rTopology_.curNode_.worker_.checkCollection(service, collectionName))
         {
             return true;
         }
