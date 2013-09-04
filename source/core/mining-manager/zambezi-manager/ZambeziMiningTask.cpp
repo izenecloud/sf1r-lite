@@ -48,8 +48,7 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 
 bool ZambeziMiningTask::preProcess()
 {
-    // TODO
-    // startDocId_ = indexer_.maxDocId() + 1;
+    startDocId_ = indexer_.totalDocNum() + 1;
     const docid_t endDocId = documentManager_.getMaxDocId();
 
     LOG(INFO) << "zambezi mining task"
