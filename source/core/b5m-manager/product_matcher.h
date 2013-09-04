@@ -874,6 +874,7 @@ namespace sf1r {
         //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
+        void GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::pair<std::string, double> >& psm_keywords) const;
         void IndexOffer_(const std::string& offer_scd, int thread_num);
         void OfferProcess_(ScdDocument& doc);
         void IndexFuzzy_();

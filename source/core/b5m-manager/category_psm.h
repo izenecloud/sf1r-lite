@@ -27,11 +27,13 @@ namespace sf1r {
             DocVector doc_vector;
             SimHash fp;
             double price;
+            std::vector<std::string> keywords;
+            std::vector<std::string> brands;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & title & doc_vector & fp & price;
+                ar & title & doc_vector & fp & price & keywords & brands;
             }
             bool operator<(const BufferItem& b) const
             {
@@ -48,11 +50,13 @@ namespace sf1r {
             uint32_t cindex;
             //SimHash fp;
             double price;
+            std::vector<std::string> keywords;
+            std::vector<std::string> brands;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & items & cindex & price;
+                ar & items & cindex & price & keywords & brands;
             }
 
             bool operator<(const Group& g) const
@@ -111,9 +115,12 @@ namespace sf1r {
             path_ = path;
             if(boost::filesystem::exists(path))
             {
+                std::string p = path+"/result";
                 std::map<BufferKey, std::vector<Group> > rmap;
-                izenelib::am::ssf::Util<>::Load(path, rmap);
+                izenelib::am::ssf::Util<>::Load(p, rmap);
                 result_.insert(rmap.begin(), rmap.end());
+                p = path+"/brands";
+                izenelib::am::ssf::Util<>::Load(p, brand_set_);
             }
             //std::string work_dir = path+"/work_dir";
             //B5MHelper::PrepareEmptyDir(work_dir);
@@ -147,7 +154,7 @@ namespace sf1r {
             return false;
         }
 
-        bool Insert(const Document& doc)
+        bool Insert(const Document& doc, const std::vector<std::pair<std::string, double> >& keywords)
         {
             std::string scategory;
             doc.getString("Category", scategory);
@@ -161,10 +168,17 @@ namespace sf1r {
             BufferKey key;
             key.first = ncategory;
             BufferItem item;
-            if(!Analyze_(doc, key, item)) return false;
+            if(!Analyze_(doc, keywords, key, item)) return false;
             boost::unique_lock<boost::mutex> lock(mutex_);
             buffer_[key].push_back(item);
             stat_.second++;
+            //std::string stitle;
+            //doc.getString("Title", stitle);
+            //std::cerr<<"[TITLE]"<<stitle<<std::endl;
+            //for(uint32_t i=0;i<keywords.size();i++)
+            //{
+            //    std::cerr<<"\t[KEYWORD]"<<keywords[i].first<<std::endl;
+            //}
 
 
             //boost::unique_lock<boost::mutex> lock(mutex_);
@@ -179,7 +193,7 @@ namespace sf1r {
             return true;
         }
 
-        bool Search(const Document& doc, std::string& pid, std::string& ptitle)
+        bool Search(const Document& doc, const std::vector<std::pair<std::string, double> >& keywords, std::string& pid, std::string& ptitle)
         {
             std::string scategory;
             doc.getString("Category", scategory);
@@ -188,7 +202,8 @@ namespace sf1r {
             BufferKey key;
             key.first = ncategory;
             BufferItem item;
-            if(!Analyze_(doc, key, item)) return false;
+            if(!Analyze_(doc, keywords, key, item)) return false;
+            ExtractBrands_(item);
             ResultMap::const_iterator it = result_.find(key);
             if(it==result_.end()) return false;
             const std::vector<Group>& groups = it->second;
@@ -224,7 +239,7 @@ namespace sf1r {
             LOG(INFO)<<"buffer size "<<buffer_.size()<<std::endl;
             
             std::size_t p=0;
-            for(Buffer::const_iterator it = buffer_.begin();it!=buffer_.end();++it)
+            for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
             {
                 Clustering_(it->first, it->second);
                 ++p;
@@ -260,8 +275,12 @@ namespace sf1r {
                     }
                 }
             }
+            B5MHelper::PrepareEmptyDir(path);
+            std::string pa = path+"/result";
             std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
-            izenelib::am::ssf::Util<>::Save(path, rmap);
+            izenelib::am::ssf::Util<>::Save(pa, rmap);
+            pa = path+"/brands";
+            izenelib::am::ssf::Util<>::Save(pa, brand_set_);
             //dd_->RunDdAnalysis();
             //const std::vector<std::vector<uint32_t> >& group_info = table_->GetGroupInfo();
             //for(uint32_t i=0;i<group_info.size();i++)
@@ -315,7 +334,7 @@ namespace sf1r {
 
             }
         }
-        bool Analyze_(const Document& doc, BufferKey& key, BufferItem& item)
+        bool Analyze_(const Document& doc, const std::vector<std::pair<std::string, double> >& keywords, BufferKey& key, BufferItem& item)
         {
             std::string stitle;
             doc.getString("Title", stitle);
@@ -329,6 +348,11 @@ namespace sf1r {
                 const b5m::Attribute& a = attributes[i];
                 if(a.name=="品牌")
                 {
+                    for(uint32_t j=0;j<a.values.size();j++)
+                    {
+                        std::string b = boost::algorithm::to_lower_copy(a.values[j]);
+                        brand_set_.insert(b);
+                    }
                     //std::cerr<<"find brand "<<a.GetValue()<<std::endl;
                 }
             }
@@ -450,17 +474,25 @@ namespace sf1r {
                 v.push_back(wit->first);
                 weights.push_back(wit->second);
             }
+            for(uint32_t i=0;i<keywords.size();i++)
+            {
+                item.keywords.push_back(keywords[i].first);
+                v.push_back(keywords[i].first);
+                weights.push_back(keywords[i].second);
+            }
+            std::sort(item.keywords.begin(), item.keywords.end());
             algo_.generate_document_signature(v, weights, item.fp);
             return true;
         }
 
-        void Clustering_(const BufferKey& key, const BufferValue& value)
+        void Clustering_(const BufferKey& key, BufferValue& value)
         {
             if(value.size()>2000) return;
             std::vector<Group> groups;
             for(uint32_t i=0;i<value.size();i++)
             {
-                const BufferItem& item = value[i];
+                BufferItem& item = value[i];
+                ExtractBrands_(item);
                 std::pair<double, uint32_t> dist_index(-1.0, 0);
                 for(uint32_t j=0;j<groups.size();j++)
                 {
@@ -498,6 +530,10 @@ namespace sf1r {
             if(g.items.empty()) return;
             //WeightMap wm;
             double price = 0.0;
+            std::vector<std::string> common;
+            std::vector<std::string> brands;
+            bool first = true;
+            bool bfirst = true;
             for(uint32_t i=0;i<g.items.size();i++)
             {
                 //const DocVector& doc_vector = g.items[i].doc_vector;
@@ -514,9 +550,35 @@ namespace sf1r {
                 //    }
                 //}
                 price += g.items[i].price;
+                if(!g.items[i].keywords.empty())
+                {
+                    if(first) 
+                    {
+                        common = g.items[i].keywords;
+                        first = false;
+                    }
+                    else
+                    {
+                        common = CommonKeywords_(common, g.items[i].keywords);
+                    }
+                }
+                if(!g.items[i].brands.empty())
+                {
+                    if(bfirst) 
+                    {
+                        brands = g.items[i].brands;
+                        bfirst = false;
+                    }
+                    else
+                    {
+                        brands = CommonKeywords_(brands, g.items[i].brands);
+                    }
+                }
             }
             price /= g.items.size();
             g.price = price;
+            g.keywords = common;
+            g.brands = brands;
             //std::vector<std::string> v;
             //v.reserve(wm.size());
             //std::vector<double> weights;
@@ -552,6 +614,18 @@ namespace sf1r {
             return false;
         }
 
+        void ExtractBrands_(BufferItem& item) const
+        {
+            for(std::set<std::string>::const_iterator it = brand_set_.begin();it!=brand_set_.end();++it)
+            {
+                if(item.title.find(*it)!=std::string::npos)
+                {
+                    item.brands.push_back(*it);
+                }
+            }
+            std::sort(item.brands.begin(), item.brands.end());
+        }
+
         double Distance_(const BufferItem& x, const BufferItem& y) const
         {
             static const double invalid = 999.0;
@@ -582,10 +656,50 @@ namespace sf1r {
             if(pratio>2.0) return false;
             return true;
         }
+        std::vector<std::string> CommonKeywords_(const std::vector<std::string>& k1, const std::vector<std::string>& k2) const
+        {
+            std::vector<std::string> r;
+            uint32_t i1=0,i2=0;
+            while(i1<k1.size()&&i2<k2.size())
+            {
+                if(k1[i1]<k2[i2])
+                {
+                    ++i1;
+                }
+                else if(k1[i1]>k2[i2])
+                {
+                    ++i2;
+                }
+                else
+                {
+                    r.push_back(k1[i1]);
+                    ++i1;
+                    ++i2;
+                }
+            }
+            return r;
+
+        }
         double Distance_(const BufferItem& item, const Group& group) const
         {
             static const double invalid = 999.0;
             if(!ValidPrice_(item,group)) return invalid;
+            if(!item.keywords.empty()||!group.keywords.empty())
+            {
+                std::vector<std::string> common = CommonKeywords_(item.keywords, group.keywords);
+                if(common.empty())
+                {
+                    return invalid;
+                }
+            }
+            if(!item.brands.empty()||!group.brands.empty())
+            {
+                std::vector<std::string> common = CommonKeywords_(item.brands, group.brands);
+                if(common.empty())
+                {
+                    return invalid;
+                }
+            }
             for(uint32_t i=0;i<group.items.size();i++)
             {
                 const BufferItem& gitem = group.items[i];
@@ -597,7 +711,7 @@ namespace sf1r {
                 }
                 else
                 {
-                    std::cerr<<"[DIST-INVALUD]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
+                    //std::cerr<<"[DIST-INVALUD]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
                 }
             }
             return invalid;
@@ -622,6 +736,7 @@ namespace sf1r {
         CharikarAlgo algo_;
         boost::unordered_set<std::string> stop_set_;
         boost::unordered_set<std::string> model_stop_set_;
+        std::set<std::string> brand_set_;
 
         std::pair<std::size_t, std::size_t> stat_;
         boost::mutex mutex_;
