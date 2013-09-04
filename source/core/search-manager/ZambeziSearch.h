@@ -42,8 +42,16 @@ public:
 private:
     bool getTopKDocs_(
         const std::string& query,
-        std::vector<docid_t>& docIds,
+        std::vector<docid_t>& candidates,
         std::vector<float>& scores);
+
+    void rankTopKDocs_(
+        const std::vector<docid_t>& candidates,
+        const std::vector<float>& scores,
+        const SearchKeywordOperation& actionOperation,
+        std::size_t limit,
+        std::size_t offset,
+        KeywordSearchResult& searchResult);
 
 private:
     SearchManagerPreProcessor& preprocessor_;

@@ -13,6 +13,7 @@
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <ir/index_manager/utility/BitVector.h>
+#include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <iostream>
 #include <boost/scoped_ptr.hpp>
@@ -60,6 +61,68 @@ bool ZambeziSearch::search(
     if (!getTopKDocs_(query, candidates, scores))
         return false;
 
+    rankTopKDocs_(candidates, scores,
+                  actionOperation, limit, offset,
+                  searchResult);
+
+    return true;
+}
+
+bool ZambeziSearch::getTopKDocs_(
+    const std::string& query,
+    std::vector<docid_t>& candidates,
+    std::vector<float>& scores)
+{
+    if (!zambeziManager_)
+    {
+        LOG(WARNING) << "the instance of ZambeziManager is empty";
+        return false;
+    }
+
+    KNlpWrapper::token_score_list_t tokenScores;
+    KNlpWrapper::string_t kstr(query);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
+    knlpWrapper->fmmTokenize(kstr, tokenScores);
+
+    std::vector<std::string> tokenList;
+    std::cout << "tokens:" << std::endl;
+
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+    {
+        std::string token = it->first.get_bytes("utf-8");
+        tokenList.push_back(token);
+        std::cout << token << std::endl;
+    }
+    std::cout << "-----" << std::endl;
+
+    zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
+
+    if (candidates.empty())
+    {
+        LOG(INFO) << "empty search result for query: " << query << endl;
+        return false;
+    }
+
+    if (candidates.size() != scores.size())
+    {
+        LOG(WARNING) << "mismatch size of candidate docid and score";
+        return false;
+    }
+
+    return true;
+}
+
+void ZambeziSearch::rankTopKDocs_(
+    const std::vector<docid_t>& candidates,
+    const std::vector<float>& scores,
+    const SearchKeywordOperation& actionOperation,
+    std::size_t limit,
+    std::size_t offset,
+    KeywordSearchResult& searchResult)
+{
+    izenelib::util::ClockTimer timer;
+
     boost::shared_ptr<Sorter> sorter;
     CustomRankerPtr customRanker;
     preprocessor_.prepareSorterCustomRanker(actionOperation,
@@ -69,6 +132,7 @@ bool ZambeziSearch::search(
     PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<HitQueue> scoreItemQueue;
     const std::size_t heapSize = limit + offset;
+
     if (sorter)
     {
         scoreItemQueue.reset(new PropertySortedHitQueue(sorter,
@@ -144,50 +208,8 @@ bool ZambeziSearch::search(
         rankScoreList[i] = scoreItem.score;
     }
 
-    return true;
-}
-
-bool ZambeziSearch::getTopKDocs_(
-    const std::string& query,
-    std::vector<docid_t>& candidates,
-    std::vector<float>& scores)
-{
-    if (!zambeziManager_)
-    {
-        LOG(WARNING) << "the instance of ZambeziManager is empty";
-        return false;
-    }
-
-    KNlpWrapper::token_score_list_t tokenScores;
-    KNlpWrapper::string_t kstr(query);
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    knlpWrapper->fmmTokenize(kstr, tokenScores);
-
-    std::vector<std::string> tokenList;
-    std::cout << "tokens:" << std::endl;
-
-    for (KNlpWrapper::token_score_list_t::const_iterator it =
-             tokenScores.begin(); it != tokenScores.end(); ++it)
-    {
-        std::string token = it->first.get_bytes("utf-8");
-        tokenList.push_back(token);
-        std::cout << token << std::endl;
-    }
-    std::cout << "-----" << std::endl;
-
-    zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
-
-    if (candidates.empty())
-    {
-        LOG(INFO) << "empty search result for query: " << query << endl;
-        return false;
-    }
-
-    if (candidates.size() != scores.size())
-    {
-        LOG(WARNING) << "mismatch size of candidate docid and score";
-        return false;
-    }
-
-    return true;
+    LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
+              << ", total count: " << totalCount
+              << ", costs :" << timer.elapsed() << " seconds"
+              << std::endl;
 }
