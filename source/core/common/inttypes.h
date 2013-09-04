@@ -38,8 +38,6 @@ typedef uint32_t workerid_t;
 typedef uint64_t wdocid_t;
 
 typedef float score_t;
-typedef uint16_t merchant_id_t;
-typedef uint16_t category_id_t;
 
 } // namespace sf1r
 

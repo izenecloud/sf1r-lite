@@ -629,7 +629,7 @@ bool SearchWorker::getSummaryResult_(
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
     START_PROFILER ( getSummary );
 
-    DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
+    LOG(INFO) << "Begin get RawText,Summarization,Snippet" << endl;
 
     if (isDistributedSearch)
     {
@@ -655,7 +655,7 @@ bool SearchWorker::getSummaryResult_(
 
     STOP_PROFILER ( getSummary );
 
-    cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
+    LOG(INFO) << "getSummaryResult_ done." << endl; // XXX
 
     return true;
 }

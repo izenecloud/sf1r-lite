@@ -43,22 +43,22 @@ class OpinionTraining
     bool need_rebuild;
 public:
 
-    OpinionTraining(string collectionpath)
+    OpinionTraining(const std::string& training_res_dir, const string& training_path)
     {
-        string leveldbpath = collectionpath + "/OpinionTraining";
+        string leveldbpath = training_res_dir + "/OpinionTraining";
         string begin_leveldb = leveldbpath + "-begin";
         string end_leveldb = leveldbpath + "-end";
-        string path = collectionpath + "/OpinionTraining.log";
+        string path = training_path + "/OpinionTraining.log";
         need_rebuild = true;
         try{
-        if(boost::filesystem::exists(path) && 
-            boost::filesystem::exists(begin_leveldb) &&
+        if(boost::filesystem::exists(begin_leveldb) &&
             boost::filesystem::exists(end_leveldb) )
         {
             need_rebuild = false;
         }
         else
         {
+            LOG(INFO) << "training resource not found. Need rebuild from scd.";
             boost::filesystem::remove_all(path);
             boost::filesystem::remove_all(begin_leveldb);
             boost::filesystem::remove_all(end_leveldb);
@@ -67,7 +67,7 @@ public:
 
         dbTable_OpinionTraining_begin.open(begin_leveldb);
         dbTable_OpinionTraining_end.open(end_leveldb);
-        scdPath = collectionpath;
+        scdPath = training_res_dir;
         HMMmodleSize = 3;
         if(need_rebuild)
             outlog.open(path.c_str(), ios::out);
@@ -180,8 +180,8 @@ public:
                     {
                         std::cout << "\r == training processed " << count << " doc. ==" << std::flush;
                     }
-                    if(count > 10000000)
-                        break;
+                    //if(count > 10000000)
+                    //    break;
                 }
                 in.close();
             }

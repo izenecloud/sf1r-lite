@@ -2486,7 +2486,7 @@ void MiningManager::getGroupAttrRep_(
 
     propSharedLockSet.insertSharedLock(categoryValueTable);
 
-    std::vector<category_id_t> topCateIds;
+    std::vector<faceted::PropValueTable::pvid_t> topCateIds;
     for (size_t i = 0; i < res_list.size(); ++i)
     {
         if (topCateIds.size() < kTopLabelCateNum && i < kTopLabelDocNum)

@@ -43,6 +43,18 @@ static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 static const UString DOCID("DOCID", UString::UTF_8);
 static const std::size_t COMPUTE_COMMENT_NUM = 4;
 
+bool IsAllOpinionStr(const UString& ustr)
+{
+    for(size_t i = 0; i < ustr.length(); ++i)
+    {
+        if( !izenelib::util::UString::isThisChineseChar(ustr[i]) &&
+            !izenelib::util::UString::isThisDigitChar(ustr[i]) &&
+            !izenelib::util::UString::isThisAlphaChar(ustr[i]))
+            return false;
+    }
+    return true;
+}
+
 bool CheckParentKeyLogFormat(
         const SCDDocPtr& doc,
         const UString& parent_key_name)
@@ -390,6 +402,12 @@ bool MultiDocSummarizationSubManager::postProcess()
 
     string OpPath = schema_.opinionWorkingPath;
     boost::filesystem::path opPath(OpPath);
+    //if (is_rebuild_)
+    //{
+    //    LOG(INFO) << "removing the opinion working path for rebuild." << opPath;
+    //    boost::filesystem::remove_all(opPath);
+    //}
+
     if (!boost::filesystem::exists(opPath))
     {
         boost::filesystem::create_directory(opPath);
@@ -464,9 +482,9 @@ bool MultiDocSummarizationSubManager::postProcess()
         std::string cma_path;
         LAPool::getInstance()->get_cma_path(cma_path);
 
-        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
+        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath, system_resource_path_));
 
-        Ops_.back()->setSigma(0.1, 5, 0.6, 20);
+        Ops_.back()->setSigma(0.1, 5, 0.5, 20);
         //////////////////////////
         Ops_.back()->setFilterStr(filters);
         Ops_.back()->setSynonymWord(synonym_strs);
@@ -641,6 +659,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                 for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
                 {
                     bool isIN = false;
+                    Op->StripRightForNonSence(iter->second);
                     for (unsigned int j = 0; j < advantage_opinions.size(); ++j)
                     {
                         if (advantage_opinions[j].second == iter->second)
@@ -650,7 +669,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                             break;
                         }
                     }
-                    if (!isIN)
+                    if (!isIN && !Op->IsNeedFilter(iter->second) && IsAllOpinionStr(iter->second))
                         advantage_opinions.push_back(*iter);
                 }
                 if(advantage_opinions.size() >= 4)
@@ -667,6 +686,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                 for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
                 {
                     bool isIN = false;
+                    Op->StripRightForNonSence(iter->second);
                     for (unsigned int j = 0; j < disadvantage_opinions.size(); ++j)
                     {
                         if (disadvantage_opinions[j].second == iter->second)
@@ -676,7 +696,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                             break;
                         }
                     }
-                    if (!isIN)
+                    if (!isIN && !Op->IsNeedFilter(iter->second) && IsAllOpinionStr(iter->second))
                         disadvantage_opinions.push_back(*iter);
                 }
                  if(disadvantage_opinions.size() > 4)
