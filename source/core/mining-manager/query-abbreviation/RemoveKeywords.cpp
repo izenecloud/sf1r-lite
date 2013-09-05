@@ -117,7 +117,7 @@ void generateTokens(TokenArray& tokens, const std::string& query, MiningManager&
     //tokens.reserve(major_tokens.size() + minor_tokens.size());
     std::string analyzedString;
     analyzedQuery.convertString(analyzedString, izenelib::util::UString::UTF_8);
-    //std::cout<<analyzedString<<"\n";
+    std::cout<<analyzedString<<"\n";
     //std::cout<<keywords<<"\n";
     
     std::list<std::pair<UString, double> >::iterator it = major_tokens.begin();
@@ -196,6 +196,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
 {
     if (tokens.empty() || tokens.size() <= 1)
         return;
+    
     static ProductMatcher* matcher = ProductMatcherInstance::get();
     izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
     ProductMatcher::KeywordVector kv;
@@ -254,7 +255,19 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     }
 #endif
 
+    std::sort(tokens.begin(), tokens.end(), locationComparator);
+    std::reverse(tokens.begin(), tokens.end());
+    
     static QueryStatistics* qs = miningManager.getQueryStatistics();
+    for (std::size_t i = 0; i <tokens.size() - 1; i++)
+    {
+        if (qs->isCombine(tokens[i].token(), tokens[i+1].token()))
+        {
+            tokens[i] += tokens[i+1];
+            tokens.erase(tokens.begin() + i + 1);
+        }
+    }
+    
     TokenArray tokenFreqs(tokens);
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
     {
@@ -294,7 +307,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
 #ifdef DEBUG_INFO    
     std::cout<<"tuned after statistical::\n";
     normalize(tokens);
-    std::sort(tokens.begin(), tokens.end(), weightComparator);
+    //std::sort(tokens.begin(), tokens.end(), weightComparator);
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         std::cout<<tokens[i].token()<<"  "<<tokens[i].weight()<<" "<<tokens[i].isCenterToken()<<"\n";
