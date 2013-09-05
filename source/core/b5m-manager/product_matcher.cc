@@ -1483,17 +1483,24 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
-void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::pair<std::string, double> >& psm_keywords) const
+void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const
 {
     for(uint32_t i=0;i<keywords.size();i++)
     {
         const KeywordTag& k = keywords[i];
+        std::string str;
+        k.text.convertString(str, UString::UTF_8);
         if(k.kweight>=0.8&&!k.category_name_apps.empty())
         {
-            std::string str;
-            k.text.convertString(str, UString::UTF_8);
             psm_keywords.push_back(std::make_pair(str, 2.0));
         }
+        //else
+        //{
+        //    if(IsBrand_(k))
+        //    {
+        //        brands.push_back(str);
+        //    }
+        //}
     }
 }
 
@@ -1511,9 +1518,10 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     Analyze_(title, term_list);
     KeywordVector keywords;
     GetKeywords(term_list, keywords, false);
+    std::vector<std::string> brands;
     std::vector<std::pair<std::string, double> > psm_keywords;
-    GetPsmKeywords_(keywords, psm_keywords);
-    if(psm_!=NULL) psm_->Insert(doc, psm_keywords);
+    GetPsmKeywords_(keywords, brands, psm_keywords);
+    if(psm_!=NULL) psm_->Insert(doc, brands, psm_keywords);
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->TryInsert(doc);
@@ -2276,9 +2284,10 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     {
         std::string spid;
         std::string stitle;
+        std::vector<std::string> brands;
         std::vector<std::pair<std::string, double> > psm_keywords;
-        GetPsmKeywords_(keyword_vector, psm_keywords);
-        if(psm_->Search(doc, psm_keywords, spid, stitle))
+        GetPsmKeywords_(keyword_vector, brands, psm_keywords);
+        if(psm_->Search(doc, brands, psm_keywords, spid, stitle))
         {
             Product p;
             p.spid = spid;
@@ -6241,5 +6250,18 @@ double ProductMatcher::Cosine_(const FeatureVector& v1, const FeatureVector& v2)
         }
     }
     return c;
+}
+bool ProductMatcher::IsBrand_(const KeywordTag& k) const
+{
+    if(!k.category_name_apps.empty()) return false;
+    if(k.attribute_apps.empty()) return true;
+    for(uint32_t i=0;i<k.attribute_apps.size();i++)
+    {
+        if(k.attribute_apps[i].attribute_name=="品牌")
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
