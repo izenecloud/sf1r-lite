@@ -236,7 +236,7 @@ namespace sf1r {
             std::pair<double, uint32_t> dist_index(-1.0, 0);
             for(uint32_t j=0;j<groups.size();j++)
             {
-                double dist = Distance_(item, groups[j]);
+                double dist = Distance_(item, groups[j], key);
                 if(dist_index.first<0.0 || dist<dist_index.first)
                 {
                     dist_index.first = dist;
@@ -430,6 +430,7 @@ namespace sf1r {
                 if(has_digit&&!all_digit)
                 {
                     if(boost::algorithm::starts_with(stitle, candidate)) continue;
+                    if(alpha_count/digit_count>=3) continue;
                 }
                 bool error = false;
                 for(uint32_t e=0;e<error_model_regex_.size();e++)
@@ -532,7 +533,7 @@ namespace sf1r {
                 std::pair<double, uint32_t> dist_index(-1.0, 0);
                 for(uint32_t j=0;j<groups.size();j++)
                 {
-                    double dist = Distance_(item, groups[j]);
+                    double dist = Distance_(item, groups[j], key);
                     if(dist_index.first<0.0 || dist<dist_index.first)
                     {
                         dist_index.first = dist;
@@ -706,26 +707,53 @@ namespace sf1r {
             return r;
 
         }
-        double Distance_(const BufferItem& item, const Group& group) const
+        double Distance_(const BufferItem& item, const Group& group, const BufferKey& key) const
         {
             static const double invalid = 999.0;
             if(!ValidPrice_(item,group)) return invalid;
-            if(!item.keywords.empty()||!group.keywords.empty())
+            bool further = true;
+            const std::string& model = key.second;
+            uint32_t symbol_count=0,digit_count=0,alpha_count=0;
+            for(uint32_t i=0;i<model.length();i++)
             {
-                std::vector<std::string> common = CommonKeywords_(item.keywords, group.keywords);
-                if(common.empty())
+                char c = model[i];
+                if(c=='-')
                 {
-                    //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of keywords"<<std::endl;
-                    return invalid;
+                    symbol_count++;
+                }
+                else if(c>='0'&&c<='9')
+                {
+                    digit_count++;
+                }
+                else
+                {
+                    alpha_count++;
                 }
             }
-            if(!item.brands.empty()||!group.brands.empty())
+            if(digit_count>0&&alpha_count>0&&model.length()>=5)
             {
-                std::vector<std::string> common = CommonKeywords_(item.brands, group.brands);
-                if(common.empty())
+                further = false;
+            }
+            
+            if(further)
+            {
+                if(!item.keywords.empty()||!group.keywords.empty())
                 {
-                    //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of brands"<<std::endl;
-                    return invalid;
+                    std::vector<std::string> common = CommonKeywords_(item.keywords, group.keywords);
+                    if(common.empty())
+                    {
+                        //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of keywords"<<std::endl;
+                        return invalid;
+                    }
+                }
+                if(!item.brands.empty()||!group.brands.empty())
+                {
+                    std::vector<std::string> common = CommonKeywords_(item.brands, group.brands);
+                    if(common.empty())
+                    {
+                        //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of brands"<<std::endl;
+                        return invalid;
+                    }
                 }
             }
             for(uint32_t i=0;i<group.items.size();i++)

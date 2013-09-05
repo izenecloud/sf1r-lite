@@ -1544,7 +1544,7 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     doc.getString("Price", sprice);
     oprice.Parse(sprice);
     Product p;
-    //Process(doc, p, true); 
+    Process(doc, p, true); 
     //std::cerr<<"offer p result "<<p.id<<","<<p.stitle<<std::endl;
     //NFeatureVector feature_vector;
     //GenFeatureVector_(keyword_vector, feature_vector);
