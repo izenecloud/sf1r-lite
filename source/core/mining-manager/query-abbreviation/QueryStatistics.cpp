@@ -1,4 +1,5 @@
 #include "QueryStatistics.h"
+#include "RemoveKeywords.h"
 #include "../MiningManager.h"
 #include "mining-manager/suffix-match-manager/SuffixMatchManager.hpp"
 
@@ -126,32 +127,13 @@ void QueryStatistics::statistics(int callType)
     {
         const std::string& query = queries[i].getQuery();
         const uint32_t count = queries[i].getCount();
-        std::list<std::pair<UString, double> > major_tokens;
-        std::list<std::pair<UString, double> > minor_tokens;
-        izenelib::util::UString analyzedQuery;
-        double rank_boundary = 0;
-        miningManager_->getSuffixManager()->GetTokenResults(query, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
+        RK::TokenArray tokens;
+        RK::generateTokens(tokens, query, *miningManager_);
         
-        std::list<std::pair<UString, double> >::iterator it = major_tokens.begin();
-        for (; it != major_tokens.end(); it++)
+        for (std::size_t i = 0; i < tokens.size(); i++)
         {
-            std::string keyword;
-            it->first.convertString(keyword, izenelib::util::UString::UTF_8);
-            FreqType::iterator it = wordsFreq_->find(keyword);
-            if (wordsFreq_->end() == it)
-            {
-                wordsFreq_->insert(make_pair(keyword, count));
-            }
-            else
-            {
-                (it->second) += count;
-            }
-            totalWords_ += count;
-        }
-        for (it = minor_tokens.begin(); it != minor_tokens.end(); it++)
-        {
-            std::string keyword;
-            it->first.convertString(keyword, izenelib::util::UString::UTF_8);
+            const std::string& keyword = tokens[i].token();
+            
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)
             {

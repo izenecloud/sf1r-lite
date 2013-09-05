@@ -105,8 +105,9 @@ static void normalize(TokenArray& tokens)
     }
 }
 
-void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& miningManager)
+void generateTokens(TokenArray& tokens, const std::string& query, MiningManager& miningManager)
 {
+    std::string keywords = query;
     filter(keywords);
     std::list<std::pair<UString, double> > major_tokens;
     std::list<std::pair<UString, double> > minor_tokens;
@@ -114,6 +115,10 @@ void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& mi
     double rank_boundary = 0;
     miningManager.getSuffixManager()->GetTokenResults(keywords, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
     //tokens.reserve(major_tokens.size() + minor_tokens.size());
+    std::string analyzedString;
+    analyzedQuery.convertString(analyzedString, izenelib::util::UString::UTF_8);
+    //std::cout<<analyzedString<<"\n";
+    //std::cout<<keywords<<"\n";
     
     std::list<std::pair<UString, double> >::iterator it = major_tokens.begin();
     for (; it != major_tokens.end(); it++)
@@ -142,7 +147,39 @@ void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& mi
         
         tokens.push_back(token);
     }
-        
+    
+    if (tokens.empty() || tokens.size() <= 1)
+        return;
+
+    std::sort(tokens.begin(), tokens.end(), locationComparator);
+    std::reverse(tokens.begin(), tokens.end());
+    // correct location for repeated token
+    for (std::size_t i = 0; i < tokens.size() - 1; i++)
+    {
+        if (tokens[i].location() + tokens[i].token().size() > tokens[i + 1].location())
+        {
+           tokens[i + 1].setLocation(keywords.find(tokens[i+1].token(), tokens[i+1].location() + 1));
+           std::sort(tokens.begin() + i + 1, tokens.end(), locationComparator);
+           std::reverse(tokens.begin() + i + 1, tokens.end());
+        }
+    }
+
+    // combine tokens based on matcher, only combine two tokens
+    for(std::size_t i = 0; i < tokens.size() - 1; i++)
+    {
+        //std::cout<<tokens[i].token()<<" : "<<tokens[i+1].token()<<"\n";
+        std::size_t pos = analyzedString.find(tokens[i].token());
+        if (std::string::npos == pos)
+            continue;
+        std::size_t next = analyzedString.find(tokens[i + 1].token(), pos + tokens[i].token().size());
+        //std::cout<<pos + tokens[i].token().size()<<" : "<<next<<"\n";
+        if (pos + tokens[i].token().size() == next)
+        {
+            tokens[i] += tokens[i + 1];
+            tokens.erase(tokens.begin() + i + 1);
+        }
+
+    }
 #ifdef DEBUG_INFO    
     std::cout<<"word segment unit::\n";
     std::sort(tokens.begin(), tokens.end(), weightComparator);
@@ -165,12 +202,12 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     matcher->ExtractKeywords(uQuery, kv);
     
     
+    std::sort(tokens.begin(), tokens.end(), tokenComparator);
     TokenArray mTokens(tokens); // tokens from matcher
     for (std::size_t i = 0; i < mTokens.size(); i++)
     {
         mTokens[i].setWeight(0.9);
     }
-    std::sort(tokens.begin(), tokens.end(), tokenComparator);
     for (std::size_t i = 0; i< kv.size(); i++)
     {
         std::string keyword;
@@ -420,9 +457,14 @@ void removeTokens(TokenArray& tokens, TokenRecommended& queries)
     {
         std::sort(tokens.begin(), tokens.end(), weightComparator);
         TokenArray tk;
+        tk.push_back(tokens[0] + tokens[1]);
+        queries.push_back(tk);
+        tk.clear();
+        
         tk.push_back(tokens[0]);
         queries.push_back(tk);
         tk.clear();
+
         tk.push_back(tokens[1]);
         queries.push_back(tk);
         return;
@@ -436,9 +478,14 @@ void removeTokens(TokenArray& tokens, TokenRecommended& queries)
         }
         std::sort(tokens.begin(), tokens.end(), weightComparator);
         TokenArray tk;
+        tk.push_back(tokens[0] + tokens[1] + tokens[2]);
+        queries.push_back(tk);
+        tk.clear();
+        
         tk.push_back(tokens[0] + tokens[1]);
         queries.push_back(tk);
         tk.clear();
+        
         tk.push_back(tokens[0]);
         queries.push_back(tk);
         return;

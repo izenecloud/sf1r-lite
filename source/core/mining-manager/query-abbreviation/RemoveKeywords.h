@@ -43,6 +43,11 @@ public:
         return location_;
     }
 
+    void setLocation(std::size_t location)
+    {
+        location_ = location;
+    }
+
     void scale(double factor)
     {
         weight_ *= factor;
@@ -186,7 +191,7 @@ private:
     std::size_t aIndex_;
 };
 
-void generateTokens(TokenArray& tokens, std::string& keywords, MiningManager& miningManager);
+void generateTokens(TokenArray& tokens, const std::string& keywords, MiningManager& miningManager);
 void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& miningManager);
 void removeTokens(TokenArray& tokens, TokenRecommended& queries);
 void queryAbbreviation(TokenRecommended& queries, std::string& keywords, MiningManager& miningManager);
