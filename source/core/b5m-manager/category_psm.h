@@ -101,7 +101,7 @@ namespace sf1r {
             error_model_regex_.push_back(boost::regex("^.*\\dcm"));
             error_model_regex_.push_back(boost::regex("\\d{2}0"));
             error_model_regex_.push_back(boost::regex("\\d{2}\\-\\d{2}"));
-            error_model_regex_.push_back(boost::regex("\\d{1,2}0\\-\\d{2}0"));
+            error_model_regex_.push_back(boost::regex("\\d{1,3}\\-\\d{1,2}0"));
             error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
             error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
             error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
