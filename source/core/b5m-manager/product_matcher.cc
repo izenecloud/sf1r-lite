@@ -1483,6 +1483,20 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
+void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::pair<std::string, double> >& psm_keywords) const
+{
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& k = keywords[i];
+        if(k.kweight>=0.8&&!k.category_name_apps.empty())
+        {
+            std::string str;
+            k.text.convertString(str, UString::UTF_8);
+            psm_keywords.push_back(std::make_pair(str, 2.0));
+        }
+    }
+}
+
 void ProductMatcher::OfferProcess_(ScdDocument& doc)
 {
     std::string scategory;
@@ -1493,7 +1507,13 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     UString title(stitle, UString::UTF_8);
     CategoryIndex::const_iterator cit = category_index_.find(scategory);;
     if(cit==category_index_.end()) return;
-    if(psm_!=NULL) psm_->Insert(doc);
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
+    KeywordVector keywords;
+    GetKeywords(term_list, keywords, false);
+    std::vector<std::pair<std::string, double> > psm_keywords;
+    GetPsmKeywords_(keywords, psm_keywords);
+    if(psm_!=NULL) psm_->Insert(doc, psm_keywords);
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->TryInsert(doc);
@@ -1507,10 +1527,6 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     OfferCategoryApp app;
     app.cid = cid;
     app.count = 1;
-    std::vector<Term> term_list;
-    Analyze_(title, term_list);
-    KeywordVector keyword_vector;
-    GetKeywords(term_list, keyword_vector, false);
     //process feature vector
     cid_t cid1 = GetLevelCid_(scategory, 1);
     cid_t cid2 = GetLevelCid_(scategory, 2);
@@ -1520,14 +1536,14 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     doc.getString("Price", sprice);
     oprice.Parse(sprice);
     Product p;
-    Process(doc, p, true); 
+    //Process(doc, p, true); 
     //std::cerr<<"offer p result "<<p.id<<","<<p.stitle<<std::endl;
     //NFeatureVector feature_vector;
     //GenFeatureVector_(keyword_vector, feature_vector);
     boost::unique_lock<boost::mutex> lock(offer_mutex_);
-    for(uint32_t i=0;i<keyword_vector.size();i++)
+    for(uint32_t i=0;i<keywords.size();i++)
     {
-        const KeywordTag& tag = keyword_vector[i];
+        const KeywordTag& tag = keywords[i];
         oca_[tag.id][cid]+=1;
 
         //const TermList& tl = keyword_vector[i].term_list;
@@ -1535,12 +1551,12 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     }
     if(cid1!=0)
     {
-        FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
+        FeatureVectorAdd_(nfeature_vectors_[cid1], keywords);
         fv_count_[cid1]++;
     }
     if(cid2!=0)
     {
-        FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
+        FeatureVectorAdd_(nfeature_vectors_[cid2], keywords);
         fv_count_[cid2]++;
     }
     if(p.id>0&&oprice.Positive()) //is spu
@@ -2233,18 +2249,6 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
-    if(psm_!=NULL)
-    {
-        std::string spid;
-        std::string stitle;
-        if(psm_->Search(doc, spid, stitle))
-        {
-            Product p;
-            p.spid = spid;
-            result_products.resize(1, p);
-            return true;
-        }
-    }
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
@@ -2264,13 +2268,24 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         return false;
     }
     cid_t cid = GetCid_(category);
-    //keyword_vector_.resize(0);
-    //std::cout<<"[TITLE]"<<stitle<<std::endl;
     std::vector<Term> term_list;
     Analyze_(title, term_list);
     KeywordVector keyword_vector;
-    //GetKeywords_(term_list, keyword_vector, use_ngram_, true);
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
+    if(psm_!=NULL)
+    {
+        std::string spid;
+        std::string stitle;
+        std::vector<std::pair<std::string, double> > psm_keywords;
+        GetPsmKeywords_(keyword_vector, psm_keywords);
+        if(psm_->Search(doc, psm_keywords, spid, stitle))
+        {
+            Product p;
+            p.spid = spid;
+            result_products.resize(1, p);
+            return true;
+        }
+    }
     Compute2_(doc, term_list, keyword_vector, limit, result_products);
     for(uint32_t i=0;i<result_products.size();i++)
     {
