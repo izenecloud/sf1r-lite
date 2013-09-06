@@ -145,6 +145,23 @@ void QueryStatistics::statistics(int callType)
             }
             totalWords_ += count;
         }
+
+        if (tokens.size() <= 1)
+            continue;
+        for (std::size_t i = 0; i < tokens.size() - 1; i++)
+        {
+            const std::string& keyword = tokens[i].token() + tokens[i+1].token();
+            //std::cout<<keyword<<"\n"; 
+            FreqType::iterator it = wordsFreq_->find(keyword);
+            if (wordsFreq_->end() == it)
+            {
+                wordsFreq_->insert(make_pair(keyword, count));
+            }
+            else
+            {
+                (it->second) += count;
+            }
+        }
     }
 }
 
@@ -155,6 +172,25 @@ double QueryStatistics::frequency(std::string word)
     if (it == wordsFreq_->end())
         return 1000 * 0.9 / (double)(totalWords_ + 1);
     return 1000 * it->second / (double)(totalWords_ + 1);
+}
+
+bool QueryStatistics::isCombine(const std::string& lv, const std::string& rv)
+{
+    FreqType::iterator it = wordsFreq_->find(lv+rv);
+    if (wordsFreq_->end() == it)
+    {
+        it = wordsFreq_->find(rv+lv);
+        if (wordsFreq_->end() == it)
+            return false;
+    }
+    unsigned long cof = it->second * 2;
+    
+    it = wordsFreq_->find(lv);
+    if (wordsFreq_->end() == it)
+        return false;
+    unsigned long lvf = it->second;
+    std::cout<<lv <<" "<<lvf <<" : "<<lv+rv<<" "<<cof<<"\n"; 
+    return cof / (double)lvf > 0.8;
 }
 
 }
