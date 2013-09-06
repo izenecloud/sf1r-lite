@@ -320,7 +320,8 @@ bool MiningManager::open()
         if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
             mining_schema_.group_enable ||
             mining_schema_.attr_enable ||
-            mining_schema_.product_ranking_config.isEnable)
+            mining_schema_.product_ranking_config.isEnable ||
+            mining_schema_.zambezi_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
             multiThreadMiningTaskBuilder_ = new MultiThreadMiningTaskBuilder(
