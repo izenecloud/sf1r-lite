@@ -230,12 +230,6 @@ public:
             ss << endl;
         }
         ss << endl;
-        //               ss << "imgs_        : " << imgs_.size() << endl;
-        //               for (size_t i = 0; i < imgs_.size(); i ++)
-        //               {
-        //                   ss << imgs_[i] << ", ";
-        //               }
-        //               ss << endl;
 
         ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
         for (size_t i = 0; i < taxonomyString_.size(); i++)
@@ -366,8 +360,6 @@ public:
     std::vector<count_t> numberOfSimilarDocs_;
 
     std::vector<std::vector<PropertyValue::PropertyValueStrType> > docCategories_;
-
-    std::vector<uint32_t> imgs_;
 
     // --------------------------------[ Taxonomy List ]
 
@@ -509,7 +501,7 @@ public:
 //          &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
 //          &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
 //          &errno_&error_
-//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
+//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
 
     MSGPACK_DEFINE(
             rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,

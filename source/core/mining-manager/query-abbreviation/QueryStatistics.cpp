@@ -87,7 +87,7 @@ void QueryStatistics::deserialize(std::istream& in)
         return;
     in>>lastTimeStr_;
     in>>totalWords_;
-    char* kv = new char[512];
+    char kv[512];
     while (in.getline(kv, 512))
     {
         std::string kvs(kv);
@@ -99,7 +99,6 @@ void QueryStatistics::deserialize(std::istream& in)
         wordsFreq_->insert(make_pair(k,v));
         memset(kv, 0, 512);
     }
-    delete[] kv;
 }
 
 void QueryStatistics::statistics(int callType)
@@ -115,11 +114,10 @@ void QueryStatistics::statistics(int callType)
     LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
     time_t now = time(NULL);
     
-    char* last = new char[64];
+    char last[64];
     memset(last, 0, 64);
     strftime(last, 64,"%Y%2m%2dT%2H%2M%2s", localtime(&now));
     lastTimeStr_ = last;
-    delete last;
 
     LOG(INFO)<<queries.size();
     boost::unique_lock<boost::shared_mutex> ul(mtx_);
@@ -145,6 +143,23 @@ void QueryStatistics::statistics(int callType)
             }
             totalWords_ += count;
         }
+
+        if (tokens.size() <= 1)
+            continue;
+        for (std::size_t i = 0; i < tokens.size() - 1; i++)
+        {
+            const std::string& keyword = tokens[i].token() + tokens[i+1].token();
+            //std::cout<<keyword<<"\n"; 
+            FreqType::iterator it = wordsFreq_->find(keyword);
+            if (wordsFreq_->end() == it)
+            {
+                wordsFreq_->insert(make_pair(keyword, count));
+            }
+            else
+            {
+                (it->second) += count;
+            }
+        }
     }
 }
 
@@ -155,6 +170,25 @@ double QueryStatistics::frequency(std::string word)
     if (it == wordsFreq_->end())
         return 1000 * 0.9 / (double)(totalWords_ + 1);
     return 1000 * it->second / (double)(totalWords_ + 1);
+}
+
+bool QueryStatistics::isCombine(const std::string& lv, const std::string& rv)
+{
+    FreqType::iterator it = wordsFreq_->find(lv+rv);
+    if (wordsFreq_->end() == it)
+    {
+        it = wordsFreq_->find(rv+lv);
+        if (wordsFreq_->end() == it)
+            return false;
+    }
+    unsigned long cof = it->second * 2;
+    
+    it = wordsFreq_->find(lv);
+    if (wordsFreq_->end() == it)
+        return false;
+    unsigned long lvf = it->second;
+    std::cout<<lv <<" "<<lvf <<" : "<<lv+rv<<" "<<cof<<"\n"; 
+    return cof / (double)lvf > 0.8;
 }
 
 }

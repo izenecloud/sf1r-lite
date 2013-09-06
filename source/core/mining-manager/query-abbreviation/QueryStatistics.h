@@ -29,6 +29,7 @@ public:
     ~QueryStatistics();
 public:
     double frequency(std::string word);
+    bool isCombine(const std::string& lv, const std::string& rv);
     void init();
 private:
     void serialize(std::ostream& out);
