@@ -178,8 +178,13 @@ bool QueryStatistics::isCombine(const std::string& lv, const std::string& rv)
 {
     FreqType::iterator it = wordsFreq_->find(lv+rv);
     if (wordsFreq_->end() == it)
-        return false;
-    unsigned long cof = it->second;
+    {
+        it = wordsFreq_->find(rv+lv);
+        if (wordsFreq_->end() == it)
+            return false;
+    }
+    unsigned long cof = it->second * 2;
+    
     it = wordsFreq_->find(lv);
     if (wordsFreq_->end() == it)
         return false;

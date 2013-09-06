@@ -259,14 +259,6 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     std::reverse(tokens.begin(), tokens.end());
     
     static QueryStatistics* qs = miningManager.getQueryStatistics();
-    for (std::size_t i = 0; i <tokens.size() - 1; i++)
-    {
-        if (qs->isCombine(tokens[i].token(), tokens[i+1].token()))
-        {
-            tokens[i] += tokens[i+1];
-            tokens.erase(tokens.begin() + i + 1);
-        }
-    }
     
     TokenArray tokenFreqs(tokens);
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
@@ -274,6 +266,20 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         double f = qs->frequency(tokenFreqs[i].token());
         tokenFreqs[i].setWeight(f);
     }
+    
+    // combine via frequency
+    for (std::size_t i = 0; i <tokenFreqs.size() - 1; i++)
+    {
+        if (qs->isCombine(tokenFreqs[i].token(), tokenFreqs[i+1].token()))
+        {
+            tokenFreqs[i] += tokenFreqs[i+1];
+            tokenFreqs.erase(tokenFreqs.begin() + i + 1);
+            tokens[i] += tokens[i+1];
+            tokens.erase(tokens.begin() + i + 1);
+        }
+    }
+    
+
     normalize(tokenFreqs);
     bool reNormalize = false;
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
