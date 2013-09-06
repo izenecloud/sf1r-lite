@@ -87,7 +87,7 @@ void QueryStatistics::deserialize(std::istream& in)
         return;
     in>>lastTimeStr_;
     in>>totalWords_;
-    char* kv = new char[512];
+    char kv[512];
     while (in.getline(kv, 512))
     {
         std::string kvs(kv);
@@ -99,7 +99,6 @@ void QueryStatistics::deserialize(std::istream& in)
         wordsFreq_->insert(make_pair(k,v));
         memset(kv, 0, 512);
     }
-    delete[] kv;
 }
 
 void QueryStatistics::statistics(int callType)
@@ -115,11 +114,10 @@ void QueryStatistics::statistics(int callType)
     LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
     time_t now = time(NULL);
     
-    char* last = new char[64];
+    char last[64];
     memset(last, 0, 64);
     strftime(last, 64,"%Y%2m%2dT%2H%2M%2s", localtime(&now));
     lastTimeStr_ = last;
-    delete last;
 
     LOG(INFO)<<queries.size();
     boost::unique_lock<boost::shared_mutex> ul(mtx_);
