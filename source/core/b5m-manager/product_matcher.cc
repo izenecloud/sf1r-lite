@@ -244,7 +244,7 @@ ProductMatcher::ProductMatcher()
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
  book_category_("书籍/杂志/报纸"),
- use_psm_(false), psm_(NULL)
+ use_psm_(true), use_avg_price_(true), psm_(NULL)
 {
 }
 
@@ -1544,18 +1544,15 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     doc.getString("Price", sprice);
     oprice.Parse(sprice);
     Product p;
-    Process(doc, p, true); 
-    //std::cerr<<"offer p result "<<p.id<<","<<p.stitle<<std::endl;
-    //NFeatureVector feature_vector;
-    //GenFeatureVector_(keyword_vector, feature_vector);
+    if(use_avg_price_)
+    {
+        Process(doc, p, true); 
+    }
     boost::unique_lock<boost::mutex> lock(offer_mutex_);
     for(uint32_t i=0;i<keywords.size();i++)
     {
         const KeywordTag& tag = keywords[i];
         oca_[tag.id][cid]+=1;
-
-        //const TermList& tl = keyword_vector[i].term_list;
-        //trie_[tl].offer_category_apps.push_back(app);
     }
     if(cid1!=0)
     {

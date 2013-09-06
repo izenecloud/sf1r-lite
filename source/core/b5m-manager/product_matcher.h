@@ -835,6 +835,11 @@ namespace sf1r {
             use_psm_ = b;
         }
 
+        void SetUseAvgPrice(bool b)
+        {
+            use_avg_price_ = b;
+        }
+
         //if given category empty, do SPU matching only
         void SetMatcherOnly(bool m)
         { matcher_only_ = m; }
@@ -1058,6 +1063,7 @@ namespace sf1r {
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
         bool use_psm_;
+        bool use_avg_price_;
         //std::vector<CategoryPsm*> psms_;
         CategoryPsm* psm_;
         boost::unordered_map<uint128_t, uint128_t> psm_result_;
