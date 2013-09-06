@@ -218,7 +218,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     {
         delete docComparators[i];
     }
-    delete docComparators;
+    delete[] docComparators;
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
 
     getMiningResult(workerResults, mergeResult);
