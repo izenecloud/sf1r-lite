@@ -8,6 +8,7 @@
 #include <common/ResultType.h>
 #include <common/ResourceManager.h>
 #include <common/PropSharedLockSet.h>
+#include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/zambezi-manager/ZambeziManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
@@ -26,9 +27,11 @@ const std::size_t kZambeziTopKNum = 1e6;
 using namespace sf1r;
 
 ZambeziSearch::ZambeziSearch(
+    DocumentManager& documentManager,
     SearchManagerPreProcessor& preprocessor,
     QueryBuilder& queryBuilder)
-    : preprocessor_(preprocessor)
+    : documentManager_(documentManager)
+    , preprocessor_(preprocessor)
     , queryBuilder_(queryBuilder)
     , groupFilterBuilder_(NULL)
     , zambeziManager_(NULL)
@@ -171,11 +174,12 @@ void ZambeziSearch::rankTopKDocs_(
         docid_t docId = candidates[i];
         float score = scores[i];
 
-        if (filterBitVector && !filterBitVector->test(docId))
+        if (documentManager_.isDeleted(docId) ||
+            (filterBitVector && !filterBitVector->test(docId)) ||
+            (groupFilter && !groupFilter->test(docId)))
+        {
             continue;
-
-        if (groupFilter && !groupFilter->test(docId))
-            continue;
+        }
 
         ScoreDoc scoreItem(docId, score);
         if (customRanker)

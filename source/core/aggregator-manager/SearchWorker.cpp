@@ -521,10 +521,10 @@ bool SearchWorker::getSearchResult_(
         bool isUsePrune = false;
         //isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
         bool is_getResult = true;
-        if (!searchManager_->searchBase_->search(actionOperation,
-                                                 resultItem,
-                                                 search_limit,
-                                                 topKStart) || resultItem.totalCount_ == 0)
+        if (!searchManager_->normalSearch_->search(actionOperation,
+                                                   resultItem,
+                                                   search_limit,
+                                                   topKStart) || resultItem.totalCount_ == 0)
         {
             cout<<"resultItem.totalCount_:"<<resultItem.totalCount_<<endl;
             if (time(NULL) - start_search > 5)
@@ -581,10 +581,10 @@ bool SearchWorker::getSearchResult_(
                     return true;
                 }
                 QueryPruneTimes--;
-                is_getResult =  searchManager_->searchBase_->search(actionOperation,
-                                                         resultItem,
-                                                         search_limit,
-                                                         topKStart);
+                is_getResult =  searchManager_->normalSearch_->search(actionOperation,
+                                                                      resultItem,
+                                                                      search_limit,
+                                                                      topKStart);
                 rawQuery = newQuery;
             } while(isUsePrune && QueryPruneTimes > 0 && (!is_getResult || resultItem.totalCount_ == 0));
         }

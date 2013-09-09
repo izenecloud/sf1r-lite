@@ -14,6 +14,7 @@
 
 namespace sf1r
 {
+class DocumentManager;
 class SearchManagerPreProcessor;
 class QueryBuilder;
 class ZambeziManager;
@@ -27,6 +28,7 @@ class ZambeziSearch : public SearchBase
 {
 public:
     ZambeziSearch(
+        DocumentManager& documentManager,
         SearchManagerPreProcessor& preprocessor,
         QueryBuilder& queryBuilder);
 
@@ -54,6 +56,8 @@ private:
         KeywordSearchResult& searchResult);
 
 private:
+    DocumentManager& documentManager_;
+
     SearchManagerPreProcessor& preprocessor_;
 
     QueryBuilder& queryBuilder_;
