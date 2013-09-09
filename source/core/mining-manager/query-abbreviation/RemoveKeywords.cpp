@@ -164,22 +164,6 @@ void generateTokens(TokenArray& tokens, const std::string& query, MiningManager&
         }
     }
 
-    // combine tokens based on matcher, only combine two tokens
-    for(std::size_t i = 0; i < tokens.size() - 1; i++)
-    {
-        //std::cout<<tokens[i].token()<<" : "<<tokens[i+1].token()<<"\n";
-        std::size_t pos = analyzedString.find(tokens[i].token());
-        if (std::string::npos == pos)
-            continue;
-        std::size_t next = analyzedString.find(tokens[i + 1].token(), pos + tokens[i].token().size());
-        //std::cout<<pos + tokens[i].token().size()<<" : "<<next<<"\n";
-        if (pos + tokens[i].token().size() == next)
-        {
-            tokens[i] += tokens[i + 1];
-            tokens.erase(tokens.begin() + i + 1);
-        }
-
-    }
 #ifdef DEBUG_INFO    
     std::cout<<"word segment unit::\n";
     std::sort(tokens.begin(), tokens.end(), weightComparator);
@@ -197,68 +181,10 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     if (tokens.empty() || tokens.size() <= 1)
         return;
     
-    static ProductMatcher* matcher = ProductMatcherInstance::get();
-    izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
-    ProductMatcher::KeywordVector kv;
-    matcher->ExtractKeywords(uQuery, kv);
-    
-    
-    std::sort(tokens.begin(), tokens.end(), tokenComparator);
-    TokenArray mTokens(tokens); // tokens from matcher
-    for (std::size_t i = 0; i < mTokens.size(); i++)
-    {
-        mTokens[i].setWeight(0.9);
-    }
-    for (std::size_t i = 0; i< kv.size(); i++)
-    {
-        std::string keyword;
-        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
-        double w = kv[i].category_name_apps.size() + kv[i].attribute_apps.size();
-        Token token(keyword, w, 0);
-        std::size_t found = bSearch(mTokens, token, tokenComparator);
-        if (((std::size_t)-1 != found) && (mTokens[found].token() == token.token()))
-        {
-            if ((w > 10) && (kv[i].IsModel() || kv[i].IsBrand()))
-            {
-                tokens[found].setCenterToken(true);
-                mTokens[found].setWeight(std::numeric_limits<double>::max());
-            }
-            else
-                mTokens[found].setWeight(w);
-        }
-    }
-    normalize(mTokens);
-    
-#ifdef DEBUG_INFO    
-    std::cout<<"word from product matcher::\n";
-    for (std::size_t i = 0; i < mTokens.size(); i++)
-    {
-        std::cout<<mTokens[i].token()<<" "<<mTokens[i].weight()<<"\n";
-    }
-#endif
-
-    double factor = 1.5;
-    for (std::size_t i = 0; i < tokens.size(); i++)
-    {
-        //tokens[i].scale(mTokens[i].weight() * factor);
-        tokens[i].combine(mTokens[i].weight() * factor);
-    }
-    mTokens.clear();
-    
-#ifdef DEBUG_INFO    
-    std::cout<<"tuned after product_matcher::\n";
-    normalize(tokens);
-    std::sort(tokens.begin(), tokens.end(), weightComparator);
-    for (std::size_t i = 0; i < tokens.size(); i++)
-    {
-        std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
-    }
-#endif
-
     std::sort(tokens.begin(), tokens.end(), locationComparator);
     std::reverse(tokens.begin(), tokens.end());
     
-    static QueryStatistics* qs = miningManager.getQueryStatistics();
+    QueryStatistics* qs = miningManager.getQueryStatistics();
     
     TokenArray tokenFreqs(tokens);
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
@@ -279,7 +205,6 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         }
     }
     
-
     normalize(tokenFreqs);
     bool reNormalize = false;
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
@@ -301,7 +226,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         std::cout<<tokenFreqs[i].token()<<"  "<<tokenFreqs[i].weight()<<"\n";
     }
 #endif
-    factor = 1.5;
+    double factor = 1.5;
     //cin>>factor;
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
@@ -313,12 +238,143 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
 #ifdef DEBUG_INFO    
     std::cout<<"tuned after statistical::\n";
     normalize(tokens);
-    //std::sort(tokens.begin(), tokens.end(), weightComparator);
+    std::sort(tokens.begin(), tokens.end(), weightComparator);
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         std::cout<<tokens[i].token()<<"  "<<tokens[i].weight()<<" "<<tokens[i].isCenterToken()<<"\n";
     }
 #endif
+    
+    
+    static ProductMatcher* matcher = ProductMatcherInstance::get();
+    izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
+    ProductMatcher::KeywordVector kv;
+    matcher->ExtractKeywords(uQuery, kv);
+   
+    /*
+    std::string analyzedString = "";
+    for (std::size_t i = 0; i< kv.size(); i++)
+    {
+        std::string keyword;
+        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
+        analyzedString += keyword;
+        analyzedString += " ";
+    }
+
+    std::sort(tokens.begin(), tokens.end(), locationComparator);
+    std::reverse(tokens.begin(), tokens.end());
+    // combine tokens based on matcher, only combine two tokens
+    for(std::size_t i = 0; i < tokens.size() - 1; i++)
+    {
+        //std::cout<<tokens[i].token()<<" : "<<tokens[i+1].token()<<"\n";
+        std::size_t pos = analyzedString.find(tokens[i].token());
+        if (std::string::npos == pos)
+            continue;
+        std::size_t next = analyzedString.find(tokens[i + 1].token(), pos + tokens[i].token().size());
+        //std::cout<<pos + tokens[i].token().size()<<" : "<<next<<"\n";
+        if (pos + tokens[i].token().size() == next)
+        {
+            tokens[i] += tokens[i + 1];
+            tokens.erase(tokens.begin() + i + 1);
+        }
+    }*/
+   
+    //remove overlap
+    
+    /*for (std::size_t i = 0; i < kv.size(); i++)
+    {
+        std::string keyword;
+        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
+        
+        if ( i+1 >= kv.size())
+            break;
+        
+        std::string next;
+        kv[i+1].text.convertString(next, izenelib::util::UString::UTF_8);
+        if (std::string::npos != keyword.find(next))
+        {
+            kv.erase(kv.begin() + i + 1);
+            continue;
+        }
+        if (std::string::npos != next.find(keyword))
+        {
+            kv.erase(kv.begin() + i);
+            i--;
+        }
+    }*/
+    
+    std::sort(tokens.begin(), tokens.end(), tokenComparator);
+    TokenArray mTokens(tokens); // tokens from matcher
+    for (std::size_t i = 0; i < mTokens.size(); i++)
+    {
+        mTokens[i].setWeight(0.9);
+    }
+
+    for (std::size_t i = 0; i< kv.size(); i++)
+    {
+        std::string keyword;
+        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
+        
+        double w = kv[i].category_name_apps.size() + kv[i].attribute_apps.size();
+        std::string attributeName = "";
+        if (kv[i].attribute_apps.size() > 0)
+        {
+            attributeName = kv[i].attribute_apps[0].attribute_name;
+        }
+        // remove color
+        if ("颜色" == attributeName)
+        {
+            Token token(keyword, 0.0, 0);
+            std::size_t found = bSearch(mTokens, token, tokenComparator);
+            if (((std::size_t)-1 != found) && (mTokens[found].token() == token.token()))
+            {
+                tokens[found].setWeight(0.0);
+                mTokens[found].setWeight(0.0);
+            }
+            continue;
+        }
+
+        Token token(keyword, w, keywords.find(keyword));
+        std::size_t found = bSearch(mTokens, token, tokenComparator);
+        if (((std::size_t)-1 != found) && (mTokens[found].token() == token.token()))
+        {
+            if (w > 10)
+            {
+                tokens[found].setCenterToken(true);
+                mTokens[found].setWeight(std::numeric_limits<double>::max());
+            }
+            else
+                mTokens[found].setWeight(w);
+        }
+    }
+    
+    normalize(mTokens);
+    
+#ifdef DEBUG_INFO    
+    std::cout<<"word from product matcher::\n";
+    for (std::size_t i = 0; i < mTokens.size(); i++)
+    {
+        std::cout<<mTokens[i].token()<<" "<<mTokens[i].weight()<<"\n";
+    }
+#endif
+
+    factor = 1.5;
+    for (std::size_t i = 0; i < tokens.size(); i++)
+    {
+        tokens[i].combine(mTokens[i].weight() * factor);
+    }
+    mTokens.clear();
+    
+#ifdef DEBUG_INFO    
+    std::cout<<"tuned after product_matcher::\n";
+    normalize(tokens);
+    std::sort(tokens.begin(), tokens.end(), weightComparator);
+    for (std::size_t i = 0; i < tokens.size(); i++)
+    {
+        std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
+    }
+#endif
+
     normalize(tokens);
 }
 
