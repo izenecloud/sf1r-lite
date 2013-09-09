@@ -33,7 +33,7 @@ public:
      * as 0 is reserved as invalid id, meaning no property value is availabe,
      * the valid id range is [1, 2^16) (65535 ids)
      */
-    typedef uint16_t pvid_t;
+    typedef uint32_t pvid_t;
 
     typedef PropIdTable<pvid_t, uint32_t> ValueIdTable;
     typedef ValueIdTable::PropIdList PropIdList;
@@ -49,11 +49,8 @@ public:
     typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-    // mapping from similarity string to the value string in PropStrMap
-    typedef std::map<izenelib::util::UString, izenelib::util::UString> PropStrSimMap;
-    typedef std::vector<PropStrSimMap> ChildSimMapTable;
 
-    PropValueTable(const std::string& dirPath, const std::string& propName, bool check_similarity = false);
+    PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
 
     bool open();
@@ -192,8 +189,6 @@ private:
     unsigned int saveIndexNum_;
     /** the number of elements in @c valueIdTable_.multiValueTable_ saved in file */
     unsigned int saveValueNum_;
-    bool check_similarity_;
-    ChildSimMapTable childSimMapTable_;
 };
 
 template<typename SetType>

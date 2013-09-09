@@ -12,6 +12,7 @@
 #define REFINE_THRESHOLD  4
 #define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  100
 #define RUBBISH_COMMENT_THRESHOLD  0.3
+#define REASONABLE_MAX_LENGTH  15
 
 using namespace std;
 using namespace cma;
@@ -202,6 +203,14 @@ void OpinionsManager::StripRightForNonSence(UString& ustr)
     }
 }
 
+inline bool isAdjective(int pos)
+{
+    return pos >= 1 && pos <= 4;
+}
+inline bool isNoun(int pos)
+{
+    return (pos >= 19 && pos <= 25) || pos == 29;
+}
 
 OpinionsManager::OpinionsManager(const string& log_dir, const std::string& dictpath,
         const string& training_data_path, const std::string& training_res_dir)
@@ -214,6 +223,10 @@ OpinionsManager::OpinionsManager(const string& log_dir, const std::string& dictp
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     //analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
     //analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
+    if (!knowledge_->isSupportPOS())
+    {
+        LOG(ERROR) << "the knowledge has no POS support.";
+    }
     analyzer_->setKnowledge(knowledge_);
     //analyzer->setPOSDelimiter(posDelimiter.data());
     training_data_ = new OpinionTraining(training_res_dir + "/opinion", training_data_path);
@@ -442,6 +455,62 @@ void OpinionsManager::WordVectorToString(WordStrType& Mi,const WordSegContainerT
     }
 }
 
+bool OpinionsManager::hasAdjectiveAndNoun(const WordStrType& phrase)
+{
+    std::string phrase_str;
+    phrase.convertString(phrase_str, encodingType_);
+    cma::Sentence single_sen(phrase_str.c_str());
+    bool hasAdj = false;
+    bool hasNoun = false;
+    int res = analyzer_->runWithSentence(single_sen);
+    if (res == 1)
+    {
+        int best = single_sen.getOneBestIndex();
+        if (single_sen.getCount(best) > 1)
+        {
+            for(int i = 0; i < single_sen.getCount(best); i++)
+            {
+                int pos = single_sen.getPOS(best, i);
+                if (isAdjective(pos))
+                {
+                    hasAdj = true;
+                }
+                else if (isNoun(pos))
+                {
+                    hasNoun = true;
+                }
+                if (hasAdj && hasNoun)
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool OpinionsManager::hasAdjectiveOrNoun(const WordStrType& phrase)
+{
+    std::string phrase_str;
+    phrase.convertString(phrase_str, encodingType_);
+    cma::Sentence single_sen(phrase_str.c_str());
+    int res = analyzer_->runWithSentence(single_sen);
+    if (res == 1)
+    {
+        int best = single_sen.getOneBestIndex();
+        if (single_sen.getCount(best) > 1)
+        {
+            for(int i = 0; i < single_sen.getCount(best); i++)
+            {
+                int pos = single_sen.getPOS(best, i);
+                if (isAdjective(pos) || isNoun(pos))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 double OpinionsManager::getTopicScore(const WordStrType& phrase,
     const WordSegContainerT& words, size_t check_step)
 {
@@ -468,16 +537,37 @@ double OpinionsManager::getTopicScore(const WordStrType& phrase,
             max_alone = std::max(max_alone, alone);
         }
         if (seg_num > 3 && max_alone > 0)
+        {
             appear_alone /= max_alone;
+            --seg_num;
+        }
         // we make sure the phrase AB will have high score if AB is :
         // 1. AB always appear in the same window
         // 2. A or B appear alone very unlikely.
-        ret  = log((double)Z.size() * phrase.length() * joinpossib / appear_alone / seg_num) / log(2);
+        ret  = log((double)Z.size() * joinpossib / appear_alone / seg_num) / log(2);
         if(ret < (double)VERY_LOW)
         {
             ret = (double)VERY_LOW;
         }
     }
+
+    if (phrase.length() > 4 && ret > 0)
+    {
+        if (hasAdjectiveAndNoun(phrase))
+        {
+            if (phrase.length() < REASONABLE_MAX_LENGTH)
+                ret *= 2*(double)REASONABLE_MAX_LENGTH/phrase.length();
+            //std::string phrase_str;
+            //phrase.convertString(phrase_str, encodingType_);
+            //out << "a phrase has both adjective and noun: " << phrase_str << ", score: " << ret << std::endl;
+        }
+        else 
+        {
+            if (phrase.length() > REASONABLE_MAX_LENGTH)
+                ret /= 2*(double)phrase.length()/REASONABLE_MAX_LENGTH;
+        }
+    }
+
     return ret;
 }
 
@@ -918,10 +1008,10 @@ bool OpinionsManager::FilterBigramByPossib(double possib, const OpinionsManager:
 
 bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
 {
-    if(begin_bigrams_.find(bigram) != begin_bigrams_.end())
+    WordFreqMapT::const_iterator it = begin_bigrams_.find(bigram);
+    if(it != begin_bigrams_.end() && it->second > 2)
     {
-        if(begin_bigrams_[bigram] > 2)
-            return true;
+        return true;
     }
     if(training_data_->Freq_Begin(bigram) > SigmaRead)
     {
@@ -932,10 +1022,10 @@ bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
 
 bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
 {
-    if(end_bigrams_.find(bigram) != end_bigrams_.end())
+    WordFreqMapT::const_iterator it = end_bigrams_.find(bigram);
+    if(it != end_bigrams_.end() && it->second > 2)
     {
-        if(end_bigrams_[bigram] > 2)
-            return true;
+        return true;
     }
     if(training_data_->Freq_End(bigram) > SigmaRead)
     {
@@ -1083,17 +1173,11 @@ void OpinionsManager::RefineCandidateNgram(OpinionCandidateContainerT& candList)
     // and more, we can assume at least one noun phrase or adjective phrase should exist.
     for(size_t index = 0; index < candList.size(); ++index)
     {
-        bool need_refine = false;
         const NgramPhraseT& cand_phrase = candList[index].first;
-        double max_possib = 0;
-        for(size_t j = 0; j < cand_phrase.size() - 1; ++j)
-        {
-            WordStrType tmpphrase = cand_phrase[j];
-            tmpphrase.append(cand_phrase[j + 1]);
-            max_possib = max(max_possib, Possib(tmpphrase));
-        }
-        need_refine = (max_possib < REFINE_THRESHOLD);
-        if(need_refine)
+
+        WordStrType phrase;
+        WordVectorToString(phrase, cand_phrase);
+        if (!hasAdjectiveOrNoun(phrase))
         {
             out << "candidate refined: " << getSentence(candList[index].first) << endl;
             candList[index].second = SigmaRep - 1;
@@ -1417,12 +1501,6 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
     }
 
     cached_valid_ngrams_[phrasestr] = 1;
-    double score = Score(phrase);
-    if(score < SigmaRep_dynamic.top())
-    {
-        out << "skip phrase since score is less than min dynamic score : " << getSentence(phrase) << ", " << score << ", top score:" <<SigmaRep_dynamic.top() << std::endl;
-        return;
-    }
 
     WordStrType end_bigram_str = phrase[phrase.size() - 2];
     end_bigram_str.append(phrase[phrase.size() - 1]);
@@ -1437,6 +1515,13 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
         return;
     }
 
+    double score = Score(phrase);
+    if(score < SigmaRep_dynamic.top())
+    {
+        //out << "skip phrase since score is less than min dynamic score : " << getSentence(phrase) << ", " << score << ", top score:" <<SigmaRep_dynamic.top() << std::endl;
+        return;
+    }
+
     bool can_insert = true;
     bool is_larger_replace_exist = false;
 
@@ -1444,7 +1529,7 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
     size_t remove_end = candList.size();
     while( start < remove_end )
     {
-        if(Sim(phrase, candList[start].first) > SigmaSim)
+        if(Sim(phrase, candList[start].first) > SigmaSim*1.2)
         {
             can_insert = false;
             if(score > candList[start].second)

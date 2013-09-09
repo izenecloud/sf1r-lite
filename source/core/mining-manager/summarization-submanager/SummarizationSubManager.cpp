@@ -1033,7 +1033,9 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
             return;
         }
 
-        comment_cache_storage_->setRecentTime(reqlog.cron_time/1000000);
+        int64_t ts = reqlog.cron_time/1000000;
+        ts -= 30*24*60*60;
+        comment_cache_storage_->setRecentTime(ts);
         comment_cache_storage_->updateRecentComments();
 
         DISTRIBUTE_WRITE_FINISH(true);

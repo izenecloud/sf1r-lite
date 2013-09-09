@@ -20,7 +20,6 @@ const char* SUFFIX_PARENT_ID = ".parent_id.bin";
 const char* SUFFIX_INDEX_ID = ".index_id.bin";
 const char* SUFFIX_VALUE_ID = ".value_id.bin";
 const char* SUFFIX_PARENT_STR = ".parent_str.txt";
-const char* SUFFIX_SIM_PROP_STR = ".sim_prop_str.bin";
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
@@ -65,7 +64,7 @@ NS_FACETED_BEGIN
 
 // as id 0 is reserved for empty value,
 // members are initialized to size 1
-PropValueTable::PropValueTable(const std::string& dirPath, const std::string& propName, bool check_similarity)
+PropValueTable::PropValueTable(const std::string& dirPath, const std::string& propName)
     : dirPath_(dirPath)
     , propName_(propName)
     , propStrVec_(1)
@@ -75,8 +74,6 @@ PropValueTable::PropValueTable(const std::string& dirPath, const std::string& pr
     , childMapTable_(1)
     , saveIndexNum_(0)
     , saveValueNum_(0)
-    , check_similarity_(check_similarity)
-    , childSimMapTable_(1)
 {
 }
 
@@ -91,8 +88,6 @@ PropValueTable::PropValueTable(const PropValueTable& table)
     , valueIdTable_(table.valueIdTable_)
     , saveIndexNum_(table.saveIndexNum_)
     , saveValueNum_(table.saveValueNum_)
-    , check_similarity_(table.check_similarity_)
-    , childSimMapTable_(table.childSimMapTable_)
 {
 }
 
@@ -136,46 +131,6 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
         }
         else
         {
-            if (check_similarity_ && pathNode.length() > 2)
-            {
-                izenelib::util::UString matched_path;
-
-                PropStrSimMap& propStrSimMap = childSimMapTable_[pvId];
-                PropStrSimMap::const_iterator findSimIt = propStrSimMap.find(pathNode);
-                if (findSimIt != propStrSimMap.end())
-                {
-                    matched_path = findSimIt->second;
-                }
-                else
-                {
-                    // compute similarity.
-                    for(PropStrMap::const_iterator tmpit = propStrMap.begin(); tmpit != propStrMap.end(); ++tmpit)
-                    {
-                        if (abs(pathNode.length() - tmpit->first.length()) > 3)
-                            continue;
-                        unsigned int ed = getDistance(pathNode, tmpit->first);
-                        if (ed < 0.19*(pathNode.length() + tmpit->first.length()))
-                        {
-                            matched_path = tmpit->first;
-                            std::string tmpstr, tmpstr2;
-                            matched_path.convertString(tmpstr, izenelib::util::UString::UTF_8);
-                            pathNode.convertString(tmpstr2, izenelib::util::UString::UTF_8);
-                            LOG(INFO) << "computed a similar group path : " << tmpstr << " VS " << tmpstr2;
-                            break;
-                        }
-                    }
-                }
-                if (!matched_path.empty())
-                {
-                    propStrSimMap[pathNode] = matched_path;
-                    PropStrMap::const_iterator findIt2 = propStrMap.find(matched_path);
-                    if (findIt2 != propStrMap.end())
-                    {
-                        pvId = findIt2->second;
-                        continue;
-                    }
-                }
-            }
             pvid_t parentId = pvId;
             pvId = propStrVec_.size();
 
@@ -185,10 +140,6 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
                 propStrVec_.push_back(pathNode);
                 parentIdVec_.push_back(parentId);
                 childMapTable_.push_back(PropStrMap());
-                if (check_similarity_)
-                {
-                    childSimMapTable_.push_back(PropStrSimMap());
-                }
             }
             else
             {
@@ -224,21 +175,6 @@ PropValueTable::pvid_t PropValueTable::propValueId(
         }
         else
         {
-            if (check_similarity_)
-            {
-                const PropStrSimMap& propStrSimMap = childSimMapTable_[pvId];
-                PropStrSimMap::const_iterator simit = propStrSimMap.find(*pathIt);
-
-                if (simit != propStrSimMap.end())
-                {
-                    PropStrMap::const_iterator it2 = propStrMap.find(simit->second);
-                    if (it2 != propStrMap.end())
-                    {
-                        pvId = it2->second;
-                        continue;
-                    }
-                }
-            }
             return 0;
         }
     }
@@ -275,22 +211,6 @@ bool PropValueTable::open()
         childMapTable_[parentId][valueStr] = i;
     }
 
-    if (check_similarity_)
-    {
-        childSimMapTable_.clear();
-        childSimMapTable_.resize(1);
-        unsigned int tmpsize = 1;
-        if(!load_container_febird(dirPath_, propName_ + SUFFIX_SIM_PROP_STR, childSimMapTable_, tmpsize))
-        {
-            LOG(ERROR) << "load sim propstr failed.";
-            return false;
-        }
-        if (tmpsize != valueNum)
-        {
-            LOG(ERROR) << "unequal for sim propstr. " << tmpsize << " VS " << valueNum;
-            return false;
-        }
-    }
     return true;
 }
 
@@ -302,8 +222,7 @@ bool PropValueTable::flush()
            save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) &&
            save_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) &&
            save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) &&
-           save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_) &&
-           save_container_febird(dirPath_, propName_ + SUFFIX_SIM_PROP_STR, childSimMapTable_);
+           save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_);
 }
 
 void PropValueTable::clear()
@@ -318,12 +237,6 @@ void PropValueTable::clear()
 
     childMapTable_.clear();
     childMapTable_.resize(1);
-
-    if (check_similarity_)
-    {
-        childSimMapTable_.clear();
-        childSimMapTable_.resize(1);
-    }
 
     valueIdTable_.clear();
     saveIndexNum_ = 0;

@@ -76,8 +76,7 @@ bool GroupManager::open()
 bool GroupManager::createPropValueTable_(const std::string& propName, bool isRtype)
 {
     std::pair<StrPropMap::iterator, bool> res =
-        strPropMap_.insert(StrPropMap::value_type(propName, PropValueTable(dirPath_, propName,
-                    isRtype)));
+        strPropMap_.insert(StrPropMap::value_type(propName, PropValueTable(dirPath_, propName)));
 
     if (res.second)
     {

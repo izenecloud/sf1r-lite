@@ -106,6 +106,8 @@ public:
     bool IsNeedFilter(const WordStrType& teststr);
     static void StripRightForNonSence(UString& ustr);
     void CleanCacheData();
+    bool hasAdjectiveOrNoun(const WordStrType& phrase);
+    bool hasAdjectiveAndNoun(const WordStrType& phrase);
 
 private:
     void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
