@@ -872,17 +872,17 @@ void MiningManager::DoContinue()
     }
 }
 
-bool MiningManager::DOMiningTask()
+bool MiningManager::DOMiningTask(int64_t timestamp)
 {
    
     if (multiThreadMiningTaskBuilder_)
     {
-        multiThreadMiningTaskBuilder_->buildCollection();
+        multiThreadMiningTaskBuilder_->buildCollection(timestamp);
     }
 
     if (miningTaskBuilder_)
     {
-        miningTaskBuilder_->buildCollection();
+        miningTaskBuilder_->buildCollection(timestamp);
     }
     return true;
 }
@@ -1111,7 +1111,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
         }
     }
 
-    DOMiningTask();
+    DOMiningTask(timestamp);
 
     if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {

@@ -201,7 +201,7 @@ public:
 
         checkCollection_();
 
-        BOOST_CHECK(miningTaskBuilder_->buildCollection());
+        BOOST_CHECK(miningTaskBuilder_->buildCollection(0));
         //BOOST_CHECK(attrManager_->processCollection());
     }
 

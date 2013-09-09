@@ -69,6 +69,34 @@ private:
     mutable bool first_time_;
 };
 
+struct RecentCommentItem
+{
+    int64_t oldest_time;
+    docid_t  oldest_docid;
+    std::map<docid_t, int64_t> all_times;
+    
+    template<class DataIO>
+    friend void DataIO_loadObject(DataIO& dio, RecentCommentItem& x);
+    template<class DataIO>
+    friend void DataIO_saveObject(DataIO& dio, const RecentCommentItem& x);
+};
+
+template<class DataIO>
+inline void DataIO_loadObject(DataIO& dio, RecentCommentItem& x)
+{
+    dio & x.oldest_time;
+    dio & x.oldest_docid;
+    dio & x.all_times;
+}
+
+template<class DataIO>
+inline void DataIO_saveObject(DataIO& dio, const RecentCommentItem& x)
+{
+    dio & x.oldest_time;
+    dio & x.oldest_docid;
+    dio & x.all_times;
+}
+
 class CommentCacheStorage
 {
 public:
@@ -82,6 +110,8 @@ public:
     > CommentCacheDrumType;
 
     typedef izenelib::am::leveldb::Table<KeyType, char> DirtyKeyDbType;
+    typedef izenelib::am::leveldb::Table<KeyType, RecentCommentItem> RecentCommentDbType;
+    typedef izenelib::am::AMIterator<RecentCommentDbType> RecentCommentIteratorType;
     typedef izenelib::am::AMIterator<DirtyKeyDbType> DirtyKeyIteratorType;
 
     typedef stx::btree_map<KeyType, CommentCacheItemType> BufferType;
@@ -101,7 +131,8 @@ public:
     ~CommentCacheStorage();
 
     void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content,
-       const AdvantageType& advantage, const DisadvantageType& disadvantage, const ScoreType& score);
+       const AdvantageType& advantage, const DisadvantageType& disadvantage,
+       const ScoreType& score, int64_t timestamp);
 
     void ExpelUpdate(const KeyType& key, uint32_t docid);
 
@@ -113,6 +144,10 @@ public:
 
     bool ClearDirtyKey();
 
+    void setRecentTime(int64_t timestamp);
+    void updateRecentComments();
+    size_t setRecentComments(const KeyType& key, const CommentCacheItemType& comments);
+
 private:
     inline bool IsBufferFull_()
     {
@@ -123,6 +158,8 @@ private:
     friend class MultiDocSummarizationSubManager;
 
     DirtyKeyDbType dirty_key_db_;
+    RecentCommentDbType recent_comment_db_;
+    int64_t  recent_timestamp_;
     CommentCacheDispatcher<KeyType, CommentCacheItemType, char> dispatcher_;
     boost::shared_ptr<CommentCacheDrumType> comment_cache_drum_;
 
@@ -135,5 +172,7 @@ private:
 };
 
 }
+
+MAKE_FEBIRD_SERIALIZATION(sf1r::RecentCommentItem)
 
 #endif

@@ -26,7 +26,7 @@ public:
 
     void addTask(MiningTask* task);
 
-    bool buildCollection();
+    bool buildCollection(int64_t timestamp);
 
 private:
     void buildDocs_(

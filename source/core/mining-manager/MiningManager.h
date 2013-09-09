@@ -179,7 +179,7 @@ public:
     bool DoMiningCollection(int64_t timestamp);
     bool DoMiningCollectionFromAPI();
 
-    bool DOMiningTask();
+    bool DOMiningTask(int64_t timestamp);
 
     void DoContinue();
 
