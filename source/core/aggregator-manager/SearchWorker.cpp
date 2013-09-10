@@ -718,9 +718,13 @@ bool SearchWorker::buildQuery(
         KeywordSearchResult& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
-            || actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+    SearchingMode::SearchingModeType mode = actionOperation.actionItem_.searchingMode_.mode_;
+    if (mode == SearchingMode::KNN ||
+        mode == SearchingMode::SUFFIX_MATCH ||
+        mode == SearchingMode::ZAMBEZI)
+    {
         return true;
+    }
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
     CREATE_PROFILER ( analyzeQuery, "IndexSearchService", "processGetSearchResults: analyze query");
