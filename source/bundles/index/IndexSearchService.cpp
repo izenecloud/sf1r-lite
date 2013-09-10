@@ -170,6 +170,8 @@ bool IndexSearchService::getSearchResult(
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);
 
+        LOG(INFO) << "result.count: " << resultItem.count_ << ", is disableGetDocs_:" << actionItem.disableGetDocs_;
+
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
         if (resultMap.empty())
