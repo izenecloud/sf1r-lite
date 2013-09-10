@@ -177,12 +177,11 @@ size_t CommentCacheStorage::setRecentComments(const KeyType& key, const CommentC
     return recent_item.all_times.size();
 }
 
-void CommentCacheStorage::updateRecentComments()
+void CommentCacheStorage::updateRecentComments(std::vector<KeyType>& update_keys,
+    std::vector<uint32_t>& recent_comment_count_list)
 {
     RecentCommentIteratorType it(recent_comment_db_);
     RecentCommentIteratorType it_end;
-    std::vector<KeyType> update_keys;
-
     for( ; it != it_end; ++it)
     {
         if (it->second.oldest_time > recent_timestamp_)
@@ -192,6 +191,7 @@ void CommentCacheStorage::updateRecentComments()
         }
         update_keys.push_back(it->first);
     }
+    recent_comment_count_list.resize(update_keys.size(), 0);
     LOG(INFO) << "udpate recent comments num : " << update_keys.size();
     for(size_t i = 0; i < update_keys.size(); ++i)
     {
@@ -223,6 +223,7 @@ void CommentCacheStorage::updateRecentComments()
             recent_comment_db_.del(key);
             continue;
         }
+        recent_comment_count_list[i] = (uint32_t)newitem.all_times.size();
         recent_comment_db_.insert(key, newitem);
     }
 }

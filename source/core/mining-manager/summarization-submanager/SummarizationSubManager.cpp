@@ -1036,7 +1036,61 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
         int64_t ts = reqlog.cron_time/1000000;
         ts -= 30*24*60*60;
         comment_cache_storage_->setRecentTime(ts);
-        comment_cache_storage_->updateRecentComments();
+        std::vector<KeyType> update_keys;
+        std::vector<uint32_t> recent_comment_count_list;
+        comment_cache_storage_->updateRecentComments(update_keys, recent_comment_count_list);
+        LOG(INFO) << "recent comments update finished: " << update_keys.size();
+        if (!update_keys.empty() && !schema_.commentCountPropName.empty())
+        {
+            if (score_scd_writer_)
+            {
+                LOG(WARNING) << "score scd write is currently using. skip generate recent comments SCD.";
+            }
+            else
+            {
+                string OpPath = schema_.opinionWorkingPath;
+                boost::filesystem::path opPath(OpPath);
+
+                if (!boost::filesystem::exists(opPath))
+                {
+                    boost::filesystem::create_directory(opPath);
+                }
+
+                boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
+                boost::filesystem::create_directory(generated_scds_path);
+
+                score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+
+                for (size_t i = 0; i < update_keys.size(); ++i)
+                {
+                    std::string key_str;
+                    key_str = Utilities::uint128ToUuid(update_keys[i]);
+                    Document doc;
+                    doc.property("DOCID") = str_to_propstr(key_str);
+                    doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
+                    score_scd_writer_->Append(doc);
+                }
+                score_scd_writer_->Close();
+                score_scd_writer_.reset();
+
+                if (DistributeRequestHooker::get()->isRunningPrimary())
+                {
+                    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+                    SynchroData syncData;
+                    syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+                    syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+                    syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+                    if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+                    {
+                        syncProducer->wait();
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "produce incre syncData error";
+                    }
+                }
+            }
+        }
 
         DISTRIBUTE_WRITE_FINISH(true);
     }

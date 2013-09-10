@@ -145,7 +145,8 @@ public:
     bool ClearDirtyKey();
 
     void setRecentTime(int64_t timestamp);
-    void updateRecentComments();
+    void updateRecentComments(std::vector<KeyType>& update_keys,
+        std::vector<uint32_t>& recent_comment_count_list);
     size_t setRecentComments(const KeyType& key, const CommentCacheItemType& comments);
 
 private:
