@@ -150,7 +150,7 @@ void QueryStatistics::statistics(int callType)
         for (std::size_t i = 0; i < tokens.size() - 1; i++)
         {
             const std::string& keyword = tokens[i].token() + tokens[i+1].token();
-            double weight = tokens[i].weight() + tokens[i+1].weight();
+            //double weight = tokens[i].weight() + tokens[i+1].weight();
             //std::cout<<keyword<<"\n"; 
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)

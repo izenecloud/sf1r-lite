@@ -181,128 +181,11 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     if (tokens.empty() || tokens.size() <= 1)
         return;
     
-    std::sort(tokens.begin(), tokens.end(), locationComparator);
-    std::reverse(tokens.begin(), tokens.end());
-    
-    QueryStatistics* qs = miningManager.getQueryStatistics();
-    
-    TokenArray tokenFreqs(tokens);
-    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
-    {
-        double f = qs->frequency(tokenFreqs[i].token());
-        tokenFreqs[i].setWeight(f);
-    }
-    
-    // combine via frequency
-    for (std::size_t i = 0; i <tokenFreqs.size() - 1; i++)
-    {
-        if (qs->isCombine(tokenFreqs[i].token(), tokenFreqs[i+1].token()))
-        {
-            tokenFreqs[i] += tokenFreqs[i+1];
-            tokenFreqs.erase(tokenFreqs.begin() + i + 1);
-            tokens[i] += tokens[i+1];
-            tokens.erase(tokens.begin() + i + 1);
-        }
-    }
-    
-    normalize(tokenFreqs);
-    bool reNormalize = false;
-    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
-    {
-        if (tokenFreqs[i].weight() > 0.8)
-        {
-            tokens[i].setCenterToken(true);
-            tokenFreqs[i].setWeight(std::numeric_limits<double>::max());
-            reNormalize = true;
-            break;
-        }
-    }
-    if (reNormalize)
-        normalize(tokenFreqs);
-#ifdef DEBUG_INFO    
-    std::cout<<"freq::\n";
-    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
-    {
-        std::cout<<tokenFreqs[i].token()<<"  "<<tokenFreqs[i].weight()<<"\n";
-    }
-#endif
-    double factor = 1.5;
-    //cin>>factor;
-    for (std::size_t i = 0; i < tokens.size(); i++)
-    {
-        double f = tokenFreqs[i].weight();
-        //tokens[i].scale(factor * f);
-        tokens[i].combine(factor * f);
-    }
-    tokenFreqs.clear();
-#ifdef DEBUG_INFO    
-    std::cout<<"tuned after statistical::\n";
-    normalize(tokens);
-    std::sort(tokens.begin(), tokens.end(), weightComparator);
-    for (std::size_t i = 0; i < tokens.size(); i++)
-    {
-        std::cout<<tokens[i].token()<<"  "<<tokens[i].weight()<<" "<<tokens[i].isCenterToken()<<"\n";
-    }
-#endif
-    
-    
     static ProductMatcher* matcher = ProductMatcherInstance::get();
     izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
     ProductMatcher::KeywordVector kv;
     matcher->ExtractKeywords(uQuery, kv);
    
-    /*
-    std::string analyzedString = "";
-    for (std::size_t i = 0; i< kv.size(); i++)
-    {
-        std::string keyword;
-        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
-        analyzedString += keyword;
-        analyzedString += " ";
-    }
-
-    std::sort(tokens.begin(), tokens.end(), locationComparator);
-    std::reverse(tokens.begin(), tokens.end());
-    // combine tokens based on matcher, only combine two tokens
-    for(std::size_t i = 0; i < tokens.size() - 1; i++)
-    {
-        //std::cout<<tokens[i].token()<<" : "<<tokens[i+1].token()<<"\n";
-        std::size_t pos = analyzedString.find(tokens[i].token());
-        if (std::string::npos == pos)
-            continue;
-        std::size_t next = analyzedString.find(tokens[i + 1].token(), pos + tokens[i].token().size());
-        //std::cout<<pos + tokens[i].token().size()<<" : "<<next<<"\n";
-        if (pos + tokens[i].token().size() == next)
-        {
-            tokens[i] += tokens[i + 1];
-            tokens.erase(tokens.begin() + i + 1);
-        }
-    }*/
-   
-    //remove overlap
-    
-    /*for (std::size_t i = 0; i < kv.size(); i++)
-    {
-        std::string keyword;
-        kv[i].text.convertString(keyword, izenelib::util::UString::UTF_8);
-        
-        if ( i+1 >= kv.size())
-            break;
-        
-        std::string next;
-        kv[i+1].text.convertString(next, izenelib::util::UString::UTF_8);
-        if (std::string::npos != keyword.find(next))
-        {
-            kv.erase(kv.begin() + i + 1);
-            continue;
-        }
-        if (std::string::npos != next.find(keyword))
-        {
-            kv.erase(kv.begin() + i);
-            i--;
-        }
-    }*/
-    
     std::sort(tokens.begin(), tokens.end(), tokenComparator);
     TokenArray mTokens(tokens); // tokens from matcher
     for (std::size_t i = 0; i < mTokens.size(); i++)
@@ -358,7 +241,7 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     }
 #endif
 
-    factor = 1.5;
+    double factor = 1.5;
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         tokens[i].combine(mTokens[i].weight() * factor);
@@ -372,6 +255,70 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     for (std::size_t i = 0; i < tokens.size(); i++)
     {
         std::cout<<tokens[i].token()<<" "<<tokens[i].weight()<<"\n";
+    }
+#endif
+    
+    std::sort(tokens.begin(), tokens.end(), locationComparator);
+    std::reverse(tokens.begin(), tokens.end());
+    
+    QueryStatistics* qs = miningManager.getQueryStatistics();
+    
+    TokenArray tokenFreqs(tokens);
+    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
+    {
+        double f = qs->frequency(tokenFreqs[i].token());
+        tokenFreqs[i].setWeight(f);
+    }
+    
+    // combine via frequency
+    for (std::size_t i = 0; i <tokenFreqs.size() - 1; i++)
+    {
+        if (qs->isCombine(tokenFreqs[i].token(), tokenFreqs[i+1].token()))
+        {
+            tokenFreqs[i] += tokenFreqs[i+1];
+            tokenFreqs.erase(tokenFreqs.begin() + i + 1);
+            tokens[i] += tokens[i+1];
+            tokens.erase(tokens.begin() + i + 1);
+        }
+    }
+    
+    normalize(tokenFreqs);
+    bool reNormalize = false;
+    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
+    {
+        if (tokenFreqs[i].weight() > 0.8)
+        {
+            tokens[i].setCenterToken(true);
+            tokenFreqs[i].setWeight(std::numeric_limits<double>::max());
+            reNormalize = true;
+            break;
+        }
+    }
+    if (reNormalize)
+        normalize(tokenFreqs);
+#ifdef DEBUG_INFO    
+    std::cout<<"freq::\n";
+    for (std::size_t i = 0; i < tokenFreqs.size(); i++)
+    {
+        std::cout<<tokenFreqs[i].token()<<"  "<<tokenFreqs[i].weight()<<"\n";
+    }
+#endif
+    factor = 1.5;
+    //cin>>factor;
+    for (std::size_t i = 0; i < tokens.size(); i++)
+    {
+        double f = tokenFreqs[i].weight();
+        //tokens[i].scale(factor * f);
+        tokens[i].combine(factor * f);
+    }
+    tokenFreqs.clear();
+#ifdef DEBUG_INFO    
+    std::cout<<"tuned after statistical::\n";
+    normalize(tokens);
+    std::sort(tokens.begin(), tokens.end(), weightComparator);
+    for (std::size_t i = 0; i < tokens.size(); i++)
+    {
+        std::cout<<tokens[i].token()<<"  "<<tokens[i].weight()<<" "<<tokens[i].isCenterToken()<<"\n";
     }
 #endif
 
