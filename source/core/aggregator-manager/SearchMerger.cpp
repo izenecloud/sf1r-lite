@@ -552,6 +552,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
 
     for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
+        if ( topstart >= start_inpage + totalResult.count_ )
+        {
+            break;
+        }
         workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
         std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
         KeywordSearchResult& workerResult = inserted_ret.first->second;
@@ -569,17 +573,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
             workerResult.docsInPage_.reserve(totalResult.topKDocs_.size()/2);
         }
-        if ( topstart < start_inpage + totalResult.count_ )
-        {
-            workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
-            workerResult.pageOffsetList_.push_back(i);
-            ++i;
-            ++workerResult.count_;
-        }
-        else
-        {
-            break;
-        }
+        workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
+        workerResult.pageOffsetList_.push_back(i);
+        ++i;
+        ++workerResult.count_;
         //workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
         //workerResult.topKWorkerIds_.push_back(curWorkerId);
     }
