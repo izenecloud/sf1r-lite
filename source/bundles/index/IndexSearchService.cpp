@@ -146,7 +146,7 @@ bool IndexSearchService::getSearchResult(
             {
                 // empty is meaning we do not need send request to any worker to get 
                 // any documents. But we do need to get mining result.
-                LOG(INFO) << "empty worker map after split. get mining result from all workers";
+                LOG(INFO) << "empty worker map after split.";
             }
             else
             {
@@ -172,16 +172,22 @@ bool IndexSearchService::getSearchResult(
 
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-        RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-        for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+        if (resultMap.empty())
         {
-            workerid_t workerid = it->first;
-            KeywordSearchResult& subResultItem = it->second;
-            requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+            LOG(INFO) << "empty worker map after split.";
         }
-
-        ret = ro_searchAggregator_->distributeRequest(
+        else
+        {
+            RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+            for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+            {
+                workerid_t workerid = it->first;
+                KeywordSearchResult& subResultItem = it->second;
+                requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+            }
+            ret = ro_searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getSummaryResult", requestGroup, resultItem);
+        }
     }
 
     cout << "Total count: " << resultItem.totalCount_ << endl;

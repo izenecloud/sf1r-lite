@@ -717,12 +717,14 @@ bool DocumentsSearchHandler::validateSearchResult(
             summaryPropertySize++;
         }
     }
-//     std::cout<<"**XX**"<<siaResult.fullTextOfDocumentInPage_.size()<<std::endl;
-//     std::cout<<"**YY**"<<siaResult.snippetTextOfDocumentInPage_.size()<<std::endl;
-//     std::cout<<"**ZZ**"<<siaResult.rawTextOfSummaryInPage_.size()<<std::endl;
-//     std::cout<<"**AA**"<<siaResult.count_<<std::endl;
-//     std::cout<<"**BB**"<<siaResult.start_<<std::endl;
-//     std::cout<<"**CC**"<<siaResult.topKDocs_.size()<<std::endl;
+    LOG(INFO)<<"**XX**"<<siaResult.fullTextOfDocumentInPage_.size()<<std::endl;
+    LOG(INFO)<<"**YY**"<<siaResult.snippetTextOfDocumentInPage_.size()<<std::endl;
+    LOG(INFO)<<"**ZZ**"<<siaResult.rawTextOfSummaryInPage_.size()<<std::endl;
+    LOG(INFO)<<"**AA**"<<siaResult.count_<<std::endl;
+    LOG(INFO)<<"**BB**"<<siaResult.start_<<std::endl;
+    LOG(INFO)<<"**CC**"<<siaResult.topKDocs_.size()<<std::endl;
+    LOG(INFO)<<"**DD**"<<summaryPropertySize<<std::endl;
+    LOG(INFO)<<"**EE**"<<displayPropertySize<<std::endl;
     if ( !validateTextList(siaResult.fullTextOfDocumentInPage_,
                            siaResult.count_,
                            displayPropertySize) ||

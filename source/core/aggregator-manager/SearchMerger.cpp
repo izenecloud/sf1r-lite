@@ -290,7 +290,10 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     const size_t workerNum = workerResults.size();
 
     if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
         return;
+    }
 
     for(size_t workerId = 0; workerId < workerNum; ++workerId)
     {
@@ -301,10 +304,12 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         }
     }
 
-    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin";
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
+
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin. pageCount:" << pageCount
+        << ", displayPropertyNum:" << displayPropertyNum << ", summary:" << isSummaryOn;
 
     // initialize summary info for result
     mergeResult.snippetTextOfDocumentInPage_.clear();
