@@ -129,7 +129,8 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_
+      << ", query: " << actionItem.env_.queryString_ << endl;
 
     getSummaryResult_(actionItem, resultItem);
 }
@@ -334,6 +335,7 @@ void SearchWorker::makeQueryIdentity(
         identity.groupParam = item.groupParam_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
+        identity.distActionType = distActionType;
         break;
     default:
         identity.query = item.env_.queryString_;

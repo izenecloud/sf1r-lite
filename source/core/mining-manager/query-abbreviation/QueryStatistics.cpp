@@ -95,8 +95,9 @@ void QueryStatistics::deserialize(std::istream& in)
         if (std::string::npos == delim)
             continue;
         std::string k = kvs.substr(0, delim);
+        
         unsigned long v = atol(kvs.substr(delim + 1).c_str());
-        wordsFreq_->insert(make_pair(k,v));
+        wordsFreq_->insert(make_pair(k, v));
         memset(kv, 0, 512);
     }
 }
@@ -139,7 +140,7 @@ void QueryStatistics::statistics(int callType)
             }
             else
             {
-                (it->second) += count;
+                it->second += count;
             }
             totalWords_ += count;
         }
@@ -149,6 +150,7 @@ void QueryStatistics::statistics(int callType)
         for (std::size_t i = 0; i < tokens.size() - 1; i++)
         {
             const std::string& keyword = tokens[i].token() + tokens[i+1].token();
+            //double weight = tokens[i].weight() + tokens[i+1].weight();
             //std::cout<<keyword<<"\n"; 
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)
@@ -157,7 +159,7 @@ void QueryStatistics::statistics(int callType)
             }
             else
             {
-                (it->second) += count;
+                it->second += count;
             }
         }
     }
@@ -175,20 +177,25 @@ double QueryStatistics::frequency(std::string word)
 bool QueryStatistics::isCombine(const std::string& lv, const std::string& rv)
 {
     FreqType::iterator it = wordsFreq_->find(lv+rv);
-    if (wordsFreq_->end() == it)
+    unsigned long cof = 0;
+    if (wordsFreq_->end() != it)
     {
-        it = wordsFreq_->find(rv+lv);
-        if (wordsFreq_->end() == it)
-            return false;
+        cof += it->second;
     }
-    unsigned long cof = it->second * 2;
-    
+    it = wordsFreq_->find(rv+lv);
+    if (wordsFreq_->end() != it)
+    {
+        cof += it->second;
+    }
+    if (0 == cof)
+        return false;
+
     it = wordsFreq_->find(lv);
     if (wordsFreq_->end() == it)
         return false;
     unsigned long lvf = it->second;
-    std::cout<<lv <<" "<<lvf <<" : "<<lv+rv<<" "<<cof<<"\n"; 
-    return cof / (double)lvf > 0.8;
+    std::cout<<lv + rv <<" "<<cof <<" : "<<lv<<" "<<lvf<<"\n";
+    return cof / (double)lvf > 0.25;
 }
 
 }
