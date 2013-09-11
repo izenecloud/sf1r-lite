@@ -44,6 +44,8 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     bool independent=true;
     Document::doc_prop_value_strtype pid;
     odocs.front().getProperty("uuid", pid);
+    std::size_t sales_amount = 0;
+    bool has_sales_amount = false;
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
@@ -115,6 +117,20 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             std::string ssource = propstr_to_str(usource);
             psource.insert(ssource);
         }
+        std::string samount;
+        doc.getString(B5MHelper::GetSalesAmountPropertyName(), samount);
+        if(!samount.empty())
+        {
+            try {
+                std::size_t m = boost::lexical_cast<std::size_t>(samount);
+                sales_amount += m;
+                has_sales_amount = true;
+            }
+            catch(std::exception& ex)
+            {
+                std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
+            }
+        }
         //if(!uattribute.empty())
         //{
             //std::vector<ProductMatcher::Attribute> attributes;
@@ -159,6 +175,10 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         ssource+=*it;
     }
     if(!ssource.empty()) pdoc.property("Source") = str_to_propstr(ssource, UString::UTF_8);
+    if(has_sales_amount)
+    {
+        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;
+    }
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
     {

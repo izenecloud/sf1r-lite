@@ -663,9 +663,10 @@ namespace sf1r {
         struct Product
         {
             Product()
-            : cid(0), aweight(0.0), tweight(0.0), score(0.0)
+            : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
+            uint32_t id;
             std::string spid;
             std::string stitle;
             std::string scategory;
@@ -676,6 +677,7 @@ namespace sf1r {
             cid_t cid;
             //double price;
             ProductPrice price;
+            std::vector<ProductPrice> offer_prices;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             UString display_attributes;
@@ -814,6 +816,7 @@ namespace sf1r {
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_model);
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res);
+        void ExtractKeywords(const UString& text, KeywordVector& keywords);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
         bool GetSynonymId(const UString& pattern, int& setid);
@@ -830,6 +833,11 @@ namespace sf1r {
         void SetUsePsm(bool b)
         {
             use_psm_ = b;
+        }
+
+        void SetUseAvgPrice(bool b)
+        {
+            use_avg_price_ = b;
         }
 
         //if given category empty, do SPU matching only
@@ -861,6 +869,8 @@ namespace sf1r {
         double PriceSim_(double offerp, double spup) const;
         bool IsValuePriceSim_(double op, double p) const;
         bool IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p, const std::vector<ProductPrice>& offer_prices) const;
+        ProductPrice GetProductPriceRange_(const ProductPrice& p) const;
         double PriceDiff_(double op, double p) const;
         double PriceDiff_(const ProductPrice& op, const ProductPrice& p) const;
         void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
@@ -870,6 +880,7 @@ namespace sf1r {
         //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
+        void GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const;
         void IndexOffer_(const std::string& offer_scd, int thread_num);
         void OfferProcess_(ScdDocument& doc);
         void IndexFuzzy_();
@@ -982,6 +993,18 @@ namespace sf1r {
 
         bool IsBlankSplit_(const UString& t1, const UString& t2) const;
 
+        void SetProductsId_()
+        {
+            for(uint32_t i=0;i<products_.size();i++)
+            {
+                products_[i].id = i;
+            }
+        }
+
+        void SetProductsPrice_(bool use_offer);
+
+        bool IsBrand_(const KeywordTag& k) const;
+
 
     private:
         std::string path_;
@@ -1040,6 +1063,7 @@ namespace sf1r {
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
         bool use_psm_;
+        bool use_avg_price_;
         //std::vector<CategoryPsm*> psms_;
         CategoryPsm* psm_;
         boost::unordered_map<uint128_t, uint128_t> psm_result_;

@@ -118,6 +118,7 @@ class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
 class QueryIntentManager;
+class QueryStatistics;
 
 namespace sim
 {
@@ -515,6 +516,11 @@ public:
     {
         return queryIntentManager_;
     }
+
+    QueryStatistics* getQueryStatistics()
+    {
+        return queryStatistics_;
+    }
     
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -743,6 +749,8 @@ private:
 
     /** For Query Intent */
     QueryIntentManager* queryIntentManager_;
+
+    QueryStatistics* queryStatistics_;
 
     /** TDT */
     std::string tdt_path_;

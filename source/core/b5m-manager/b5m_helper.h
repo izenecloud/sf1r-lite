@@ -206,6 +206,12 @@ namespace sf1r {
             return p;
         }
 
+        static std::string GetSalesAmountPropertyName()
+        {
+            static std::string p("SalesAmount");
+            return p;
+        }
+
         static std::string BookCategoryName()
         {
             static std::string name("书籍/杂志/报纸");

@@ -15,6 +15,7 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <mining-manager/query-abbreviation/RemoveKeywords.h>
 
 #include "CollectionHandler.h"
 #include "DocumentsGetHandler.h"
@@ -57,6 +58,37 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
 {
     DocumentsSearchHandler handler(request,response,*this);
     handler.search();
+    if (response.success() && (0 == asInt(response[Keys::total_count])) && (request[Keys::search].hasKey("query_abbreviation")))
+    {
+        std::string keywords = asString(request[Keys::search][Keys::keywords]);
+        int toSuccess = 0;
+        toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
+        RK::TokenRecommended queries;
+        RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
+        int success = 0;
+        bool isLastSuccess = false;
+        while (true)
+        {
+            const std::string& query = queries.nextToken(isLastSuccess);
+            if (RK::INVALID == query)
+                break;
+            request[Keys::search][Keys::keywords] = query;
+            ::izenelib::driver::Response newResponse;
+            DocumentsSearchHandler sHandler(request, newResponse, *this);
+            sHandler.search();
+            if (response.success() && (0 != asInt(newResponse[Keys::total_count])))
+            {
+                isLastSuccess = true;
+                ::izenelib::driver::Value& value = response["removed_keywords"]();
+                newResponse["new_query"] = query;
+                value.assign(newResponse.get());
+                if (++success > toSuccess)
+                    break;
+            }
+            else
+                isLastSuccess = false;
+        }
+    }
 }
 
 void CollectionHandler::get(::izenelib::driver::Request& request, ::izenelib::driver::Response& response)
