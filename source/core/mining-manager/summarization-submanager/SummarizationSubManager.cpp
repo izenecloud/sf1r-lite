@@ -1049,45 +1049,45 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
             else
             {
                 string OpPath = schema_.opinionWorkingPath;
-                boost::filesystem::path opPath(OpPath);
-
-                if (!boost::filesystem::exists(opPath))
+                try
                 {
-                    boost::filesystem::create_directory(opPath);
-                }
+                    boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
+                    boost::filesystem::create_directories(generated_scds_path);
 
-                boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
-                boost::filesystem::create_directory(generated_scds_path);
+                    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
 
-                score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-
-                for (size_t i = 0; i < update_keys.size(); ++i)
-                {
-                    std::string key_str;
-                    key_str = Utilities::uint128ToUuid(update_keys[i]);
-                    Document doc;
-                    doc.property("DOCID") = str_to_propstr(key_str);
-                    doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
-                    score_scd_writer_->Append(doc);
-                }
-                score_scd_writer_->Close();
-                score_scd_writer_.reset();
-
-                if (DistributeRequestHooker::get()->isRunningPrimary())
-                {
-                    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-                    SynchroData syncData;
-                    syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-                    syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-                    syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-                    if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+                    for (size_t i = 0; i < update_keys.size(); ++i)
                     {
-                        syncProducer->wait();
+                        std::string key_str;
+                        key_str = Utilities::uint128ToUuid(update_keys[i]);
+                        Document doc;
+                        doc.property("DOCID") = str_to_propstr(key_str);
+                        doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
+                        score_scd_writer_->Append(doc);
                     }
-                    else
+                    score_scd_writer_->Close();
+                    score_scd_writer_.reset();
+
+                    if (DistributeRequestHooker::get()->isRunningPrimary())
                     {
-                        LOG(WARNING) << "produce incre syncData error";
+                        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+                        SynchroData syncData;
+                        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+                        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+                        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+                        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+                        {
+                            syncProducer->wait();
+                        }
+                        else
+                        {
+                            LOG(WARNING) << "produce incre syncData error";
+                        }
                     }
+                }
+                catch(const std::exception& e)
+                {
+                    LOG(ERROR) << "failed while update recent comment." << e.what();
                 }
             }
         }
