@@ -588,6 +588,7 @@ bool B5moProcessor::OMap_(const OriginalMapper& omapper, Document& doc) const
     std::string category;
     if(omapper.Map(source, original_category, category))
     {
+        if(!category.empty()) category+=">";
         doc.property("Category") = str_to_propstr(category);
         return true;
     }
