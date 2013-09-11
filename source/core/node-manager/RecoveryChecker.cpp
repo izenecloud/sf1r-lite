@@ -1025,7 +1025,10 @@ bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll, bool de
     {
         config_file_list.erase(current.filename().string());
         if (bfs::is_regular_file(current))
+        {
+            copy_file_keep_modification(current, current.string() + ".removed");
             bfs::remove(current);
+        }
         LOG(INFO) << "config file removed : " << current;
         return true;
     }

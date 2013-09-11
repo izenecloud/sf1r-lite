@@ -60,7 +60,7 @@ bool ProductScdReceiver::getTotalComment(const std::string& scd_source_dir)
     LOG(INFO)<<"ProductScdReceiver::getTotalComment "<<mine_source_dir<<std::endl;
     bool isRebuild = true;
     std::string rebuild_scd_dir = index_service_->getScdDir(isRebuild);
-    LOG(INFO)<<"rebuild_scd_dir"<<rebuild_scd_dir;
+    LOG(INFO)<<"rebuild_scd_dir: " << rebuild_scd_dir;
 
     bfs::create_directories(rebuild_scd_dir);
     ScdParser parser(izenelib::util::UString::UTF_8);

@@ -25,6 +25,7 @@ struct CommentSummaryT
     AdvantageType advantage;
     DisadvantageType disadvantage;
     ScoreType  score;
+    int64_t   timestamp;
     
     template<class DataIO>
     friend void DataIO_loadObject(DataIO& dio, CommentSummaryT& x);
@@ -42,6 +43,7 @@ inline void DataIO_loadObject(DataIO& dio, CommentSummaryT& x)
     dio & x.advantage;
     dio & x.disadvantage;
     dio & x.score;
+    dio & x.timestamp;
 }
 
 template<class DataIO>
@@ -51,6 +53,7 @@ inline void DataIO_saveObject(DataIO& dio, const CommentSummaryT& x)
     dio & x.advantage;
     dio & x.disadvantage;
     dio & x.score;
+    dio & x.timestamp;
 }
 
 typedef std::map<uint32_t, CommentSummaryT > CommentCacheItemType;

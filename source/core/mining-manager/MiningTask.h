@@ -20,7 +20,7 @@ public:
 
     virtual bool buildDocument(docid_t docID, const Document& doc) = 0;
 
-    virtual bool preProcess() = 0;
+    virtual bool preProcess(int64_t timestamp) = 0;
 
     virtual bool postProcess() = 0;
 

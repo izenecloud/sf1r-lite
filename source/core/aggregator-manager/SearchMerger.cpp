@@ -137,11 +137,18 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.propertyRange_.highValue_ = rangeHigh;
     mergeResult.attrRep_.merge(0, otherAttrReps);
 
-    size_t endOffset = mergeResult.start_ + mergeResult.count_;
-    size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
-    size_t topKCount = std::min(endTopK, totalTopKCount);
+    //size_t endOffset = mergeResult.start_ + mergeResult.count_;
+    size_t topKStart = Utilities::roundDown(mergeResult.start_, TOP_K_NUM);
+    size_t topKCount = 0;
+    if (topKStart < totalTopKCount)
+        topKCount = totalTopKCount - topKStart;
 
-    LOG(INFO) << "SearchMerger topKStart : << " << endTopK << ", topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    topKCount = std::min(TOP_K_NUM, topKCount);
+
+    LOG(INFO) << "SearchMerger topKStart : << " << topKStart
+        << ", topKCount: " << topKCount
+        << ", totalTopKCount: " << totalTopKCount
+        << ", TOP_K_NUM: " << TOP_K_NUM << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
@@ -211,7 +218,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     {
         delete docComparators[i];
     }
-    delete docComparators;
+    delete[] docComparators;
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
 
     getMiningResult(workerResults, mergeResult);
@@ -283,7 +290,10 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     const size_t workerNum = workerResults.size();
 
     if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
         return;
+    }
 
     for(size_t workerId = 0; workerId < workerNum; ++workerId)
     {
@@ -292,12 +302,17 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
             mergeResult.error_ = workerResults.result(workerId).error_;
             return;
         }
+        LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
+        LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
     }
 
-    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin";
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
+
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin. pageCount:" << pageCount
+        << ", displayPropertyNum:" << displayPropertyNum << ", summary:" << isSummaryOn
+        << ", workNum: " << workerNum;
 
     // initialize summary info for result
     mergeResult.snippetTextOfDocumentInPage_.clear();
@@ -537,6 +552,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
 
     for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
+        if ( topstart >= start_inpage + totalResult.count_ )
+        {
+            break;
+        }
         workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
         std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
         KeywordSearchResult& workerResult = inserted_ret.first->second;
@@ -554,17 +573,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
             workerResult.docsInPage_.reserve(totalResult.topKDocs_.size()/2);
         }
-        if ( topstart < start_inpage + totalResult.count_ )
-        {
-            workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
-            workerResult.pageOffsetList_.push_back(i);
-            ++i;
-            ++workerResult.count_;
-        }
-        else
-        {
-            break;
-        }
+        workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
+        workerResult.pageOffsetList_.push_back(i);
+        ++i;
+        ++workerResult.count_;
         //workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
         //workerResult.topKWorkerIds_.push_back(curWorkerId);
     }

@@ -1611,7 +1611,7 @@ void MasterManagerBase::setServicesData(ZNode& znode)
         }
 
         znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
-        znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+        znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
         znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
     }
 }
@@ -1706,7 +1706,6 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
 
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
-    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
 
     setServicesData(znode);
     LOG(INFO) << "current master service state changed : " << old_state << " to " << new_state;
@@ -1751,10 +1750,14 @@ bool MasterManagerBase::findServiceMasterAddress(const std::string& service, std
             if (service_names.find(service) == std::string::npos)
                 continue;
 
-            LOG(INFO) << "find service master address success : " << service << ", on server :" << serviceMasterPath;
             host = znode.getStrValue(ZNode::KEY_HOST);
             port = znode.getUInt32Value(ZNode::KEY_MASTER_PORT);
-            return true;
+
+            if (znode.hasKey(ZNode::KEY_MASTER_PORT) && port > 0)
+            {
+                LOG(INFO) << "find service master address success : " << service << ", on server :" << serviceMasterPath;
+                return true;
+            }
         }
     }
     return false;
@@ -1773,7 +1776,6 @@ void MasterManagerBase::registerServiceServer()
     ZNode znode;
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
-    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
 
     setServicesData(znode);
 

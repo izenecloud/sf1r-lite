@@ -29,7 +29,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20130726000000");
+const std::string ProductMatcher::AVERSION("20130901000000");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -244,7 +244,7 @@ ProductMatcher::ProductMatcher()
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
  book_category_("书籍/杂志/报纸"),
- use_psm_(false), psm_(NULL)
+ use_psm_(true), use_avg_price_(true), psm_(NULL)
 {
 }
 
@@ -294,6 +294,7 @@ bool ProductMatcher::Open(const std::string& kpath)
             Init_();
             std::string path = path_+"/products";
             izenelib::am::ssf::Util<>::Load(path, products_);
+            SetProductsId_();
             LOG(INFO)<<"products size "<<products_.size()<<std::endl;
             path = path_+"/category_list";
             izenelib::am::ssf::Util<>::Load(path, category_list_);
@@ -696,6 +697,11 @@ void ProductMatcher::Init_()
     term_index_map_.clear();
     back2front_.clear();
     feature_vectors_.clear();
+    if(psm_!=NULL)
+    {
+        delete psm_;
+        psm_ = NULL;
+    }
     //nf_.clear();
 
 }
@@ -1161,6 +1167,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         LOG(INFO)<<"find "<<keyword_set_.size()<<" keywords"<<std::endl;
         ConstructKeywordTrie_(suffix_trie);
     }
+    SetProductsId_();
+    SetProductsPrice_(false);
+    is_open_ = true;
     std::string offer_scd = scd_path+"/OFFER.SCD";
     if(boost::filesystem::exists(offer_scd))
     {
@@ -1474,6 +1483,27 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
+void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const
+{
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& k = keywords[i];
+        std::string str;
+        k.text.convertString(str, UString::UTF_8);
+        if(k.kweight>=0.8&&!k.category_name_apps.empty())
+        {
+            psm_keywords.push_back(std::make_pair(str, 2.0));
+        }
+        //else
+        //{
+        //    if(IsBrand_(k))
+        //    {
+        //        brands.push_back(str);
+        //    }
+        //}
+    }
+}
+
 void ProductMatcher::OfferProcess_(ScdDocument& doc)
 {
     std::string scategory;
@@ -1484,7 +1514,14 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     UString title(stitle, UString::UTF_8);
     CategoryIndex::const_iterator cit = category_index_.find(scategory);;
     if(cit==category_index_.end()) return;
-    if(psm_!=NULL) psm_->Insert(doc);
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
+    KeywordVector keywords;
+    GetKeywords(term_list, keywords, false);
+    std::vector<std::string> brands;
+    std::vector<std::pair<std::string, double> > psm_keywords;
+    GetPsmKeywords_(keywords, brands, psm_keywords);
+    if(psm_!=NULL) psm_->Insert(doc, brands, psm_keywords);
     //for(uint32_t i=0;i<psms_.size();i++)
     //{
         //psms_[i]->TryInsert(doc);
@@ -1498,33 +1535,39 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     OfferCategoryApp app;
     app.cid = cid;
     app.count = 1;
-    std::vector<Term> term_list;
-    Analyze_(title, term_list);
-    KeywordVector keyword_vector;
-    GetKeywords(term_list, keyword_vector, false);
     //process feature vector
     cid_t cid1 = GetLevelCid_(scategory, 1);
     cid_t cid2 = GetLevelCid_(scategory, 2);
-    //NFeatureVector feature_vector;
-    //GenFeatureVector_(keyword_vector, feature_vector);
-    boost::unique_lock<boost::mutex> lock(offer_mutex_);
-    for(uint32_t i=0;i<keyword_vector.size();i++)
+    //do spu matching
+    ProductPrice oprice;
+    std::string sprice;
+    doc.getString("Price", sprice);
+    oprice.Parse(sprice);
+    Product p;
+    if(use_avg_price_)
     {
-        const KeywordTag& tag = keyword_vector[i];
+        Process(doc, p, true); 
+    }
+    boost::unique_lock<boost::mutex> lock(offer_mutex_);
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& tag = keywords[i];
         oca_[tag.id][cid]+=1;
-
-        //const TermList& tl = keyword_vector[i].term_list;
-        //trie_[tl].offer_category_apps.push_back(app);
     }
     if(cid1!=0)
     {
-        FeatureVectorAdd_(nfeature_vectors_[cid1], keyword_vector);
+        FeatureVectorAdd_(nfeature_vectors_[cid1], keywords);
         fv_count_[cid1]++;
     }
     if(cid2!=0)
     {
-        FeatureVectorAdd_(nfeature_vectors_[cid2], keyword_vector);
+        FeatureVectorAdd_(nfeature_vectors_[cid2], keywords);
         fv_count_[cid2]++;
+    }
+    if(p.id>0&&oprice.Positive()) //is spu
+    {
+        //std::cerr<<"oprice add "<<p.id<<","<<oprice.Min()<<std::endl;
+        products_[p.id].offer_prices.push_back(oprice);
     }
     
 
@@ -1602,6 +1645,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
             }
         }
     }
+    //process average prices
+    SetProductsPrice_(true);
 
     //if(use_ngram_)
     //{
@@ -2209,18 +2254,6 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
-    if(psm_!=NULL)
-    {
-        std::string spid;
-        std::string stitle;
-        if(psm_->Search(doc, spid, stitle))
-        {
-            Product p;
-            p.spid = spid;
-            result_products.resize(1, p);
-            return true;
-        }
-    }
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
@@ -2240,13 +2273,25 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         return false;
     }
     cid_t cid = GetCid_(category);
-    //keyword_vector_.resize(0);
-    //std::cout<<"[TITLE]"<<stitle<<std::endl;
     std::vector<Term> term_list;
     Analyze_(title, term_list);
     KeywordVector keyword_vector;
-    //GetKeywords_(term_list, keyword_vector, use_ngram_, true);
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
+    if(psm_!=NULL)
+    {
+        std::string spid;
+        std::string stitle;
+        std::vector<std::string> brands;
+        std::vector<std::pair<std::string, double> > psm_keywords;
+        GetPsmKeywords_(keyword_vector, brands, psm_keywords);
+        if(psm_->Search(doc, brands, psm_keywords, spid, stitle))
+        {
+            Product p;
+            p.spid = spid;
+            result_products.resize(1, p);
+            return true;
+        }
+    }
     Compute2_(doc, term_list, keyword_vector, limit, result_products);
     for(uint32_t i=0;i<result_products.size();i++)
     {
@@ -2651,6 +2696,16 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
     }
 
 }
+
+void ProductMatcher::ExtractKeywords(const UString& text, KeywordVector& keywords)
+{
+    if(!IsOpen()) return;
+    ATermList term_list;
+    Analyze_(text, term_list);
+    GetKeywords(term_list, keywords, false);
+    return;
+}
+
 void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res_model)
 {
     if(!IsOpen()) return;
@@ -5149,13 +5204,86 @@ bool ProductMatcher::IsValuePriceSim_(double op, double p) const
     if(v>=thlow&&v<=thhigh) return true;
     else return false;
 }
+ProductPrice ProductMatcher::GetProductPriceRange_(const ProductPrice& p) const
+{
+    ProductPrice result = p;
+    static const double thlow = 0.25;
+    double dp = 0.0;
+    p.GetMid(dp);
+    double thhigh = 4.0;
+    if(dp<=100.0) thhigh = 4.0;
+    else if(dp<=5000.0) thhigh = 3.0;
+    else thhigh = 2.0;
+    if(!p.Positive())
+    {
+        result.value.first = 0.0;
+        result.value.second = std::numeric_limits<double>::max();
+    }
+    else
+    {
+        result.value.first *= thlow;
+        result.value.second *= thhigh;
+    }
+    return result;
+}
+
+ProductPrice ProductMatcher::GetProductPriceRange_(const ProductPrice& p, const std::vector<ProductPrice>& offer_prices) const
+{
+    ProductPrice result = p;
+    if(offer_prices.size()>=20)
+    {
+        double avg = 0.0;
+        for(uint32_t j=0;j<offer_prices.size();j++)
+        {
+            avg += offer_prices[j].Min();
+        }
+        if(avg>0.0)
+        {
+            avg /= offer_prices.size();
+        }
+        if(avg>=1000.0)
+        {
+            avg *= 0.7;
+            uint32_t invalid_count = 0;
+            for(uint32_t j=0;j<offer_prices.size();j++)
+            {
+                if(offer_prices[j].Min()<avg) ++invalid_count;
+            }
+            double invalid_ratio = (double)invalid_count/offer_prices.size();
+            if(invalid_ratio<=0.2)
+            {
+                double t = avg*1.1;
+                std::cerr<<"change lower bound from "<<result.value.first<<" to "<<t<<std::endl;
+                result.value.first = t;
+            }
+        }
+    }
+    return result;
+}
+void ProductMatcher::SetProductsPrice_(bool use_offer)
+{
+    for(uint32_t i=1;i<products_.size();i++)
+    {
+        Product& p = products_[i];
+        if(!use_offer)
+        {
+            p.price = GetProductPriceRange_(p.price);
+        }
+        else
+        {
+            std::cerr<<"setting spu price for "<<p.stitle<<std::endl;
+            p.price = GetProductPriceRange_(p.price, p.offer_prices);
+        }
+    }
+}
 
 bool ProductMatcher::IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const
 {
     if(!p.Positive()) return true;
     if(!op.Positive()) return false;
-    if(IsValuePriceSim_(op.Min(), p.Min())) return true;
-    if(IsValuePriceSim_(op.Max(), p.Max())) return true;
+    //if(IsValuePriceSim_(op.Min(), p.Min())) return true;
+    //if(IsValuePriceSim_(op.Max(), p.Max())) return true;
+    if(op.Min()>=p.Min()&&op.Max()<=p.Max()) return true;
     return false;
 }
 
@@ -5276,6 +5404,8 @@ void ProductMatcher::AnalyzeNoSymbol_(const izenelib::util::UString& btext, std:
 
 void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes)
 {
+    B5MHelper::ParseAttributes(ustr, attributes);
+    return;
     std::vector<AttrPair> attrib_list;
     std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
     split_attr_pair(ustr, attrib_list);
@@ -6117,5 +6247,18 @@ double ProductMatcher::Cosine_(const FeatureVector& v1, const FeatureVector& v2)
         }
     }
     return c;
+}
+bool ProductMatcher::IsBrand_(const KeywordTag& k) const
+{
+    if(!k.category_name_apps.empty()) return false;
+    if(k.attribute_apps.empty()) return true;
+    for(uint32_t i=0;i<k.attribute_apps.size();i++)
+    {
+        if(k.attribute_apps[i].attribute_name=="品牌")
+        {
+            return true;
+        }
+    }
+    return false;
 }
 

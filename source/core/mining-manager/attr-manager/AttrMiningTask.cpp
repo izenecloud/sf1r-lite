@@ -20,27 +20,27 @@ AttrMiningTask::AttrMiningTask(DocumentManager& documentManager
 
 }
 
-bool AttrMiningTask::processCollection_forTest()
-{
-    preProcess();
-    docid_t MaxDocid = documentManager_.getMaxDocId();
-    const docid_t startDocId = attrTable_.docIdNum();
-    Document doc;
+//bool AttrMiningTask::processCollection_forTest()
+//{
+//    preProcess(0);
+//    docid_t MaxDocid = documentManager_.getMaxDocId();
+//    const docid_t startDocId = attrTable_.docIdNum();
+//    Document doc;
+//
+//    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
+//    {
+//        if (docid % 10000 == 0)
+//        {
+//            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
+//        }
+//        documentManager_.getDocument(docid, doc);
+//        buildDocument(docid, doc);
+//    }
+//    postProcess();
+//    return true;
+//}
 
-    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
-    {
-        if (docid % 10000 == 0)
-        {
-            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
-        }
-        documentManager_.getDocument(docid, doc);
-        buildDocument(docid, doc);
-    }
-    postProcess();
-    return true;
-}
-
-bool AttrMiningTask::preProcess()
+bool AttrMiningTask::preProcess(int64_t timestamp)
 {
     const docid_t startDocId = attrTable_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();

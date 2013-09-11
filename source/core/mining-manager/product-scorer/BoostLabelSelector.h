@@ -31,6 +31,8 @@ struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
 
+using faceted::category_id_t;
+using faceted::merchant_id_t;
 class BoostLabelSelector
 {
 public:

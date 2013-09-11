@@ -186,11 +186,6 @@ void DocumentsRenderer::renderDocuments(
                 searchResult.topKtids_[indexInTopK];
         }
 
-        if (searchResult.imgs_.size() == searchResult.topKDocs_.size())
-        {
-            newResource[Keys::_image_id] = searchResult.imgs_[indexInTopK];
-        }
-
         if (searchResult.docCategories_.size()
             == searchResult.topKDocs_.size())
         {

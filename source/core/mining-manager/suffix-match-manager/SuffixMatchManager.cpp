@@ -961,7 +961,7 @@ void SuffixMatchManager::buildTokenizeDic()
 void SuffixMatchManager::updateFmindex()
 {
     LOG (INFO) << "Merge cron-job with fm-index...";
-    suffixMatchTask_->preProcess();
+    suffixMatchTask_->preProcess(0);
     docid_t start_doc = suffixMatchTask_->getLastDocId();
     for (uint32_t docid = start_doc + 1; docid < document_manager_->getMaxDocId(); ++docid)
     {

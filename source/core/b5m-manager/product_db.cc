@@ -21,9 +21,11 @@ B5mpDocGenerator::B5mpDocGenerator()
     sub_doc_props_.insert("isCOD");
     sub_doc_props_.insert("isGenuine");
     //sub_doc_props_.clear();
+    default_source_weight_ = 1;
     subdoc_weighter_.insert(std::make_pair("卓越亚马逊", 10));
     subdoc_weighter_.insert(std::make_pair("京东商城", 9));
     subdoc_weighter_.insert(std::make_pair("天猫", 8));
+    subdoc_weighter_.insert(std::make_pair("淘宝网", 0));
 }
 void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
@@ -42,6 +44,8 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     bool independent=true;
     Document::doc_prop_value_strtype pid;
     odocs.front().getProperty("uuid", pid);
+    std::size_t sales_amount = 0;
+    bool has_sales_amount = false;
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
@@ -113,6 +117,20 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             std::string ssource = propstr_to_str(usource);
             psource.insert(ssource);
         }
+        std::string samount;
+        doc.getString(B5MHelper::GetSalesAmountPropertyName(), samount);
+        if(!samount.empty())
+        {
+            try {
+                std::size_t m = boost::lexical_cast<std::size_t>(samount);
+                sales_amount += m;
+                has_sales_amount = true;
+            }
+            catch(std::exception& ex)
+            {
+                std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
+            }
+        }
         //if(!uattribute.empty())
         //{
             //std::vector<ProductMatcher::Attribute> attributes;
@@ -157,6 +175,10 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         ssource+=*it;
     }
     if(!ssource.empty()) pdoc.property("Source") = str_to_propstr(ssource, UString::UTF_8);
+    if(has_sales_amount)
+    {
+        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;
+    }
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
     {
@@ -181,51 +203,69 @@ bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
     return xprice.Min()<yprice.Min();
 
 }
+bool B5mpDocGenerator::ReversePriceCompare_(const Document& x, const Document& y)
+{
+    std::string xstr;
+    std::string ystr;
+    x.getString("Price", xstr);
+    y.getString("Price", ystr);
+    ProductPrice xprice;
+    xprice.Parse(xstr);
+    ProductPrice yprice;
+    yprice.Parse(ystr);
+    if(!xprice.Positive()) return true;
+    if(!yprice.Positive()) return false;
+    return xprice.Min()>yprice.Min();
+}
 
 void B5mpDocGenerator::SelectSubDocs_(std::vector<Document>& subdocs) const
 {
     static const uint32_t max = 10u;
     if(subdocs.size()<=max) return;
-    std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
-    subdocs.resize(max);
-    //boost::unordered_map<std::string, SubDocSelector> source_map;
-    //for(uint32_t i=0;i<subdocs.size();i++)
-    //{
-        //const Document& doc = subdocs[i];
-        //std::string source;
-        //doc.getString("Source", source);
-        //source_map[source].docs.push_back(doc);
-    //}
-    //std::vector<SubDocSelector> list;
-    //for(boost::unordered_map<std::string, SubDocSelector>::iterator it = source_map.begin();it!=source_map.end();++it)
-    //{
-        //boost::unordered_map<std::string, int>::const_iterator wit = subdoc_weighter_.find(it->first);
-        //int weight = 0;
-        //if(wit!=subdoc_weighter_.end())
-        //{
-            //weight = wit->second;
-        //}
-        //it->second.weight = weight;
-        //list.push_back(it->second);
-    //}
-    //std::sort(list.begin(), list.end());
-    //std::vector<Document> new_subdocs;
-    //while(true)
-    //{
-        //if(new_subdocs.size()==max) break;
-        //bool find = false;
-        //for(uint32_t i=0;i<list.size();i++)
-        //{
-            //if(new_subdocs.size()==max) break;
-            //SubDocSelector& s = list[i];
-            //if(s.docs.empty()) continue;
-            //new_subdocs.push_back(s.docs.back());
-            //s.docs.resize(s.docs.size()-1);
-            //find = true;
-        //}
-        //if(!find) break;
-    //}
-    //subdocs.swap(new_subdocs);
+    //std::sort(subdocs.begin(), subdocs.end(), SubDocCompare_);
+    //subdocs.resize(max);
+    boost::unordered_map<std::string, SubDocSelector> source_map;
+    for(uint32_t i=0;i<subdocs.size();i++)
+    {
+        const Document& doc = subdocs[i];
+        std::string source;
+        doc.getString("Source", source);
+        source_map[source].docs.push_back(doc);
+    }
+    std::vector<SubDocSelector> list;
+    for(boost::unordered_map<std::string, SubDocSelector>::iterator it = source_map.begin();it!=source_map.end();++it)
+    {
+        boost::unordered_map<std::string, int>::const_iterator wit = subdoc_weighter_.find(it->first);
+        int weight = default_source_weight_;
+        if(wit!=subdoc_weighter_.end())
+        {
+            weight = wit->second;
+        }
+        it->second.weight = weight;
+        list.push_back(it->second);
+    }
+    std::sort(list.begin(), list.end());
+    for(uint32_t i=0;i<list.size();i++)
+    {
+        std::sort(list[i].docs.begin(), list[i].docs.end(), ReversePriceCompare_);
+    }
+    std::vector<Document> new_subdocs;
+    while(true)
+    {
+        if(new_subdocs.size()==max) break;
+        bool find = false;
+        for(uint32_t i=0;i<list.size();i++)
+        {
+            if(new_subdocs.size()==max) break;
+            SubDocSelector& s = list[i];
+            if(s.docs.empty()) continue;
+            new_subdocs.push_back(s.docs.back());
+            s.docs.resize(s.docs.size()-1);
+            find = true;
+        }
+        if(!find) break;
+    }
+    subdocs.swap(new_subdocs);
 }
 
 ProductProperty::ProductProperty()

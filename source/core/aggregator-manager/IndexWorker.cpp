@@ -631,6 +631,10 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
+    if (searchWorker_)
+        searchWorker_->clearSearchCache();
+    clearMasterCache_();
+
     return true;
 }
 
@@ -2220,6 +2224,7 @@ void IndexWorker::document2SCDDoc(const Document& document, SCDDoc& scddoc)
 
 void IndexWorker::clearMasterCache_()
 {
+    LOG(INFO) << "notify master to clear cache.";
     if (bundleConfig_->isWorkerNode())
     {
         NotifyMSG msg;

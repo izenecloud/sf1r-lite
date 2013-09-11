@@ -41,13 +41,8 @@ bool HasCategoryPrefix(
 
 QueryCategorizer::QueryCategorizer()
     :matcher_(NULL)
-    ,spu_classifier_(NULL)
-    ,suffix_manager_(NULL)
     ,cache_(10000)
 {
-    //modes_.push_back(MATCHER);
-    //modes_.push_back(SEARCH_PRODUCT);	
-    //modes_.push_back(SEARCH_SPU);
 }
 
 QueryCategorizer::~QueryCategorizer()
@@ -109,22 +104,6 @@ bool QueryCategorizer::GetSplittedCategories_(
     return true;
 }
 
-void QueryCategorizer::SetWorkingMode(std::string& mode)
-{
-    if(mode.empty()) return;
-    LOG(INFO)<<"SetWorkingMode "<<mode;
-	
-    modes_.clear();
-    std::vector<std::string> modes;
-    boost::algorithm::split( modes, mode, boost::algorithm::is_any_of("+") );
-    for(unsigned i = 0; i < modes.size(); ++i)	
-    {
-        if(modes[i] == "M") modes_.push_back(MATCHER);
-        else if(modes[i] == "S") modes_.push_back(SEARCH_SPU);
-        else if(modes[i] == "P") modes_.push_back(SEARCH_PRODUCT);
-    }
-}
-
 bool QueryCategorizer::GetProductCategory(
     const std::string& query,
     int limit,
@@ -152,30 +131,6 @@ bool QueryCategorizer::GetProductCategory(
         }
     }
     
-/*    if(!modes_.empty()&&frontCategories.empty())
-    {
-        std::string enriched_query;
-        spu_classifier_->GetEnrichedQuery(query, enriched_query);
-
-        for(unsigned i = 0; i < modes_.size(); ++i)
-        {
-            switch(modes_[i])
-            {
-            case MATCHER:
-                //GetCategoryByMatcher_(query, limit, frontCategories);
-                //LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
-                break;
-            case SEARCH_SPU:
-                GetCategoryBySPU_(enriched_query, frontCategories);
-                LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
-                break;
-            case SEARCH_PRODUCT:
-                GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
-                LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
-                break;
-            }
-        }
-    }*/
     bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);
     cache_.insertValue(query, pathVec);
     return ret;

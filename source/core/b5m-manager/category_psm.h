@@ -18,35 +18,6 @@ namespace sf1r {
     class CategoryPsm
     {
 
-        //struct CacheItem
-        //{
-            //uint128_t oid;
-            //std::string title;
-            //std::string source;
-        //};
-
-        //struct Attach
-        //{
-            //bool dd(const Attach& other) const
-            //{
-                //if(models.empty()||other.models.empty()) return false;
-                //std::size_t i=0, j=0;
-                //while(i<models.size()&&j<other.models.size())
-                //{
-                    //if(models[i]==other.models[j]) return true;
-                    //if(models[i]<other.models[j]) ++i;
-                    //else ++j;
-                //}
-                //return false;
-            //}
-            //friend class boost::serialization::access;
-            //template<class Archive>
-            //void serialize(Archive & ar, const unsigned int version)
-            //{
-                //ar & models;
-            //}
-            //std::vector<std::string> models;
-        //};
         typedef std::vector<std::pair<std::string, double> > DocVector;
         typedef idmlib::dd::SimHash SimHash;
         typedef idmlib::dd::CharikarAlgo CharikarAlgo;
@@ -56,11 +27,17 @@ namespace sf1r {
             DocVector doc_vector;
             SimHash fp;
             double price;
+            std::vector<std::string> keywords;
+            std::vector<std::string> brands;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & title & doc_vector & fp & price;
+                ar & title & doc_vector & fp & price & keywords & brands;
+            }
+            bool operator<(const BufferItem& b) const
+            {
+                return price<b.price;
             }
         };
         typedef std::vector<BufferItem> BufferValue;
@@ -71,13 +48,15 @@ namespace sf1r {
         {
             std::vector<BufferItem> items;
             uint32_t cindex;
-            SimHash fp;
+            //SimHash fp;
             double price;
+            std::vector<std::string> keywords;
+            std::vector<std::string> brands;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & items & cindex & fp & price;
+                ar & items & cindex & price & keywords & brands;
             }
 
             bool operator<(const Group& g) const
@@ -92,7 +71,7 @@ namespace sf1r {
         //typedef DDType::GroupTableType GroupTableType;
         //typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, Attach> PsmType;
         CategoryPsm():
-        model_regex_("[a-zA-Z\\d\\-]{4,}")
+        model_regex_("[a-zA-Z\\d\\-]{3,}")
           , algo_()
           //, table_(NULL), dd_(NULL)
           , stat_(0,0)
@@ -106,22 +85,25 @@ namespace sf1r {
             model_stop_set_.insert("13kim");
             model_stop_set_.insert("nike360");
             model_stop_set_.insert("8080s");
-            category_list_.push_back(std::make_pair(boost::regex("^服装服饰.*$"), "服装服饰"));
-            category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外服饰.*$"), "服装服饰"));
-            category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动服饰.*$"), "服装服饰"));
-            category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动鞋.*$"), "鞋子"));
-            category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外鞋.*$"), "鞋子"));
-            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男鞋.*$"), "鞋子"));
-            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女鞋.*$"), "鞋子"));
-            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男包.*$"), "包包"));
-            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女包.*$"), "包包"));
+            category_list_.push_back(std::make_pair(boost::regex("^服装服饰>男装.*$"), "男装"));
+            category_list_.push_back(std::make_pair(boost::regex("^服装服饰>女装.*$"), "女装"));
+            category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外服饰.*$"), "户外服饰"));
+            category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动服饰.*$"), "运动服饰"));
+            category_list_.push_back(std::make_pair(boost::regex("^运动户外>运动鞋.*$"), "运动鞋"));
+            category_list_.push_back(std::make_pair(boost::regex("^运动户外>户外鞋.*$"), "户外鞋"));
+            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男鞋.*$"), "男鞋"));
+            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女鞋.*$"), "女鞋"));
+            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>男包.*$"), "男包"));
+            category_list_.push_back(std::make_pair(boost::regex("^鞋包配饰>女包.*$"), "女包"));
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>孕产妇>孕妇装$"), "孕妇装"));
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>儿童服饰.*$"), "童装"));
             category_list_.push_back(std::make_pair(boost::regex("^母婴童装>婴儿服饰.*$"), "童装"));
-            error_model_regex_.push_back(boost::regex("\\d{2}cm"));
+            error_model_regex_.push_back(boost::regex("^.*\\dcm"));
+            error_model_regex_.push_back(boost::regex("\\d{2}0"));
             error_model_regex_.push_back(boost::regex("\\d{2}\\-\\d{2}"));
-            error_model_regex_.push_back(boost::regex("[a-z]+201\\d"));
-            error_model_regex_.push_back(boost::regex("201\\d[a-z]+"));
+            error_model_regex_.push_back(boost::regex("\\d{1,3}\\-\\d{1,2}0"));
+            error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
+            error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
             error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
         }
         ~CategoryPsm()
@@ -135,9 +117,12 @@ namespace sf1r {
             path_ = path;
             if(boost::filesystem::exists(path))
             {
+                std::string p = path+"/result";
                 std::map<BufferKey, std::vector<Group> > rmap;
-                izenelib::am::ssf::Util<>::Load(path, rmap);
+                izenelib::am::ssf::Util<>::Load(p, rmap);
                 result_.insert(rmap.begin(), rmap.end());
+                p = path+"/brands";
+                izenelib::am::ssf::Util<>::Load(p, brand_set_);
             }
             //std::string work_dir = path+"/work_dir";
             //B5MHelper::PrepareEmptyDir(work_dir);
@@ -171,7 +156,7 @@ namespace sf1r {
             return false;
         }
 
-        bool Insert(const Document& doc)
+        bool Insert(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords)
         {
             std::string scategory;
             doc.getString("Category", scategory);
@@ -185,10 +170,42 @@ namespace sf1r {
             BufferKey key;
             key.first = ncategory;
             BufferItem item;
-            if(!Analyze_(doc, key, item)) return false;
+            if(!Analyze_(doc, brands, keywords, key, item)) return false;
+            UString ua;
+            doc.getString("Attribute", ua);
+            std::vector<b5m::Attribute> attributes;
+            B5MHelper::ParseAttributes(ua, attributes);
             boost::unique_lock<boost::mutex> lock(mutex_);
             buffer_[key].push_back(item);
             stat_.second++;
+            for(uint32_t i=0;i<attributes.size();i++)
+            {
+                const b5m::Attribute& a = attributes[i];
+                if(a.name=="品牌")
+                {
+                    //for(uint32_t j=0;j<a.values.size();j++)
+                    //{
+                        //std::string b = boost::algorithm::to_lower_copy(a.values[j]);
+                        //if(brand_set_.find(b)==brand_set_.end())
+                        //{
+                            //std::cerr<<"[BRAND]"<<b<<std::endl;
+                        //    brand_set_.insert(b);
+                        //}
+                    //}
+                    //std::cerr<<"find brand "<<a.GetValue()<<std::endl;
+                }
+            }
+            //std::string stitle;
+            //doc.getString("Title", stitle);
+            //std::cerr<<"[TITLE]"<<stitle<<std::endl;
+            //for(uint32_t i=0;i<keywords.size();i++)
+            //{
+            //    std::cerr<<"\t[KEYWORD]"<<keywords[i].first<<std::endl;
+            //}
+            //for(uint32_t i=0;i<brands.size();i++)
+            //{
+            //    std::cerr<<"\t[BRAND]"<<brands[i]<<std::endl;
+            //}
 
 
             //boost::unique_lock<boost::mutex> lock(mutex_);
@@ -203,7 +220,7 @@ namespace sf1r {
             return true;
         }
 
-        bool Search(const Document& doc, std::string& pid, std::string& ptitle)
+        bool Search(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords, std::string& pid, std::string& ptitle)
         {
             std::string scategory;
             doc.getString("Category", scategory);
@@ -212,14 +229,14 @@ namespace sf1r {
             BufferKey key;
             key.first = ncategory;
             BufferItem item;
-            if(!Analyze_(doc, key, item)) return false;
+            if(!Analyze_(doc, brands, keywords, key, item)) return false;
             ResultMap::const_iterator it = result_.find(key);
             if(it==result_.end()) return false;
             const std::vector<Group>& groups = it->second;
             std::pair<double, uint32_t> dist_index(-1.0, 0);
             for(uint32_t j=0;j<groups.size();j++)
             {
-                double dist = Distance_(item, groups[j]);
+                double dist = Distance_(item, groups[j], key);
                 if(dist_index.first<0.0 || dist<dist_index.first)
                 {
                     dist_index.first = dist;
@@ -248,43 +265,74 @@ namespace sf1r {
             LOG(INFO)<<"buffer size "<<buffer_.size()<<std::endl;
             
             std::size_t p=0;
-            for(Buffer::const_iterator it = buffer_.begin();it!=buffer_.end();++it)
+            for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
             {
                 Clustering_(it->first, it->second);
                 ++p;
-                if(p%100000==0)
+                if(p%10000==0)
                 {
                     LOG(INFO)<<"Processing clustering "<<p<<std::endl;
                 }
+                ResultMap::const_iterator rit = result_.find(it->first);
+                if(rit!=result_.end())
+                {
+                    const BufferKey& key = it->first;
+                    std::cout<<"[Category]"<<key.first<<" [Model]"<<key.second<<" : "<<std::endl;
+                    const std::vector<Group>& groups = rit->second;
+                    if(groups.size()>1)
+                    {
+                        std::cout<<"MULTI GROUPS "<<groups.size()<<std::endl;
+                    }
+                    for(uint32_t i=0;i<groups.size();i++)
+                    {
+                        const Group& group = groups[i];
+                        const BufferItem& center = group.items[group.cindex];
+                        std::cout<<"\t[Group]"<<center.title<<","<<center.price<<" : "<<group.items.size()<<std::endl;
+                        if(group.items.size()>100)
+                        {
+                            std::cout<<"\tLARGE GROUP "<<group.items.size()<<std::endl;
+                        }
+                        for(uint32_t j=0;j<group.items.size();j++)
+                        {
+                            const BufferItem& item = group.items[j];
+                            std::cout<<"\t\t[InGroup]"<<item.title<<","<<item.price<<std::endl;
+                        }
+                    }
+                }
             }
             buffer_.clear();
-            for(ResultMap::const_iterator it = result_.begin();it!=result_.end();++it)
-            {
-                const BufferKey& key = it->first;
-                std::cout<<"[Category]"<<key.first<<" [Model]"<<key.second<<" : "<<std::endl;
-                const std::vector<Group>& groups = it->second;
-                if(groups.size()>1)
-                {
-                    std::cout<<"MULTI GROUPS "<<groups.size()<<std::endl;
-                }
-                for(uint32_t i=0;i<groups.size();i++)
-                {
-                    const Group& group = groups[i];
-                    const BufferItem& center = group.items[group.cindex];
-                    std::cout<<"\t[Group]"<<center.title<<","<<center.price<<" : "<<group.items.size()<<std::endl;
-                    if(group.items.size()>100)
-                    {
-                        std::cout<<"\tLARGE GROUP "<<group.items.size()<<std::endl;
-                    }
-                    for(uint32_t j=0;j<group.items.size();j++)
-                    {
-                        const BufferItem& item = group.items[j];
-                        std::cout<<"\t\t[InGroup]"<<item.title<<","<<item.price<<std::endl;
-                    }
-                }
-            }
+            LOG(INFO)<<"result size "<<result_.size()<<std::endl;
+            //for(ResultMap::const_iterator it = result_.begin();it!=result_.end();++it)
+            //{
+            //    const BufferKey& key = it->first;
+            //    std::cout<<"[Category]"<<key.first<<" [Model]"<<key.second<<" : "<<std::endl;
+            //    const std::vector<Group>& groups = it->second;
+            //    if(groups.size()>1)
+            //    {
+            //        std::cout<<"MULTI GROUPS "<<groups.size()<<std::endl;
+            //    }
+            //    for(uint32_t i=0;i<groups.size();i++)
+            //    {
+            //        const Group& group = groups[i];
+            //        const BufferItem& center = group.items[group.cindex];
+            //        std::cout<<"\t[Group]"<<center.title<<","<<center.price<<" : "<<group.items.size()<<std::endl;
+            //        if(group.items.size()>100)
+            //        {
+            //            std::cout<<"\tLARGE GROUP "<<group.items.size()<<std::endl;
+            //        }
+            //        for(uint32_t j=0;j<group.items.size();j++)
+            //        {
+            //            const BufferItem& item = group.items[j];
+            //            std::cout<<"\t\t[InGroup]"<<item.title<<","<<item.price<<std::endl;
+            //        }
+            //    }
+            //}
+            B5MHelper::PrepareEmptyDir(path);
+            std::string pa = path+"/result";
             std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
-            izenelib::am::ssf::Util<>::Save(path, rmap);
+            izenelib::am::ssf::Util<>::Save(pa, rmap);
+            pa = path+"/brands";
+            izenelib::am::ssf::Util<>::Save(pa, brand_set_);
             //dd_->RunDdAnalysis();
             //const std::vector<std::vector<uint32_t> >& group_info = table_->GetGroupInfo();
             //for(uint32_t i=0;i<group_info.size();i++)
@@ -320,25 +368,25 @@ namespace sf1r {
             {
                 if(i>=terms.size()) break;
                 UString ut = terms[i++].text;
-                if(ut.isChineseChar(0))
-                {
-                    if(i<terms.size())
-                    {
-                        UString nut = terms[i].text;
-                        if(nut.isChineseChar(0))
-                        {
-                            ut.append(nut);
-                            ++i;
-                        }
-                    }
-                }
+                //if(ut.isChineseChar(0))
+                //{
+                //    if(i<terms.size())
+                //    {
+                //        UString nut = terms[i].text;
+                //        if(nut.isChineseChar(0))
+                //        {
+                //            ut.append(nut);
+                //            ++i;
+                //        }
+                //    }
+                //}
                 std::string str;
                 ut.convertString(str, UString::UTF_8);
                 term_list.push_back(str);
 
             }
         }
-        bool Analyze_(const Document& doc, BufferKey& key, BufferItem& item)
+        bool Analyze_(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords, BufferKey& key, BufferItem& item)
         {
             std::string stitle;
             doc.getString("Title", stitle);
@@ -373,13 +421,16 @@ namespace sf1r {
                         alpha_count++;
                     }
                 }
+                if(symbol_count>1) continue;
                 bool has_digit = (digit_count!=0);
                 bool all_digit = (symbol_count==0&&alpha_count==0&&digit_count>0);
                 if(!has_digit) continue; 
-                if(all_digit&&candidate.length()<=4) continue;
+                if(!all_digit&&candidate.length()<4) continue;
+                //if(all_digit&&candidate.length()<=4) continue;
                 if(has_digit&&!all_digit)
                 {
                     if(boost::algorithm::starts_with(stitle, candidate)) continue;
+                    if(alpha_count/digit_count>=3) continue;
                 }
                 bool error = false;
                 for(uint32_t e=0;e<error_model_regex_.size();e++)
@@ -391,45 +442,6 @@ namespace sf1r {
                     }
                 }
                 if(error) continue;
-                //if(has_digit&&!all_digit)
-                //{
-                //    if(boost::algorithm::starts_with(stitle, candidate)) continue;
-                //    uint32_t start_alpha_size = 0;
-                //    uint32_t end_digit_size = 0;
-                //    for(uint32_t i=0;i<candidate.length();i++)
-                //    {
-                //        char c = candidate[i];
-                //        if(c>='a'&&c<='z')
-                //        {
-                //            start_alpha_size++;
-                //        }
-                //        else
-                //        {
-                //            break;
-                //        }
-                //    }
-                //    uint32_t i=candidate.length()-1;
-                //    while(true)
-                //    {
-                //        char c = candidate[i];
-                //        if(c>='0'&&c<='9') end_digit_size++;
-                //        else break;
-                //        if(i==0) break;
-                //        i--;
-                //    }
-                //    if(start_alpha_size+end_digit_size==candidate.length())
-                //    {
-                //        if(start_alpha_size>=4&&end_digit_size<=2)
-                //        {
-                //            continue;
-                //        }
-                //        if(end_digit_size>0)
-                //        {
-                //            std::string end_digit = candidate.substr(candidate.length()-end_digit_size);
-                //            if(IsYear_(end_digit)) continue;
-                //        }
-                //    }
-                //}
                 models.push_back(candidate);
             }
             //std::cerr<<"[Category]"<<scategory<<std::endl;
@@ -474,20 +486,20 @@ namespace sf1r {
                     wit->second+=weight;
                 }
             }
-            for(uint32_t i=0;i<models.size();i++)
-            {
-                const std::string& str = models[i];
-                WeightMap::iterator wit = wm.find(str);
-                double weight = 4.0;
-                if(wit==wm.end())
-                {
-                    wm.insert(std::make_pair(str, weight));
-                }
-                else
-                {
-                    wit->second+=weight;
-                }
-            }
+            //for(uint32_t i=0;i<models.size();i++)
+            //{
+            //    const std::string& str = models[i];
+            //    WeightMap::iterator wit = wm.find(str);
+            //    double weight = 4.0;
+            //    if(wit==wm.end())
+            //    {
+            //        wm.insert(std::make_pair(str, weight));
+            //    }
+            //    else
+            //    {
+            //        wit->second+=weight;
+            //    }
+            //}
             std::vector<std::string> v;
             v.reserve(wm.size());
             std::vector<double> weights;
@@ -498,20 +510,30 @@ namespace sf1r {
                 v.push_back(wit->first);
                 weights.push_back(wit->second);
             }
+            for(uint32_t i=0;i<keywords.size();i++)
+            {
+                item.keywords.push_back(keywords[i].first);
+                v.push_back(keywords[i].first);
+                weights.push_back(keywords[i].second);
+            }
+            std::sort(item.keywords.begin(), item.keywords.end());
+            item.brands = brands;
+            std::sort(item.brands.begin(), item.brands.end());
             algo_.generate_document_signature(v, weights, item.fp);
             return true;
         }
 
-        void Clustering_(const BufferKey& key, const BufferValue& value)
+        void Clustering_(const BufferKey& key, BufferValue& value)
         {
+            if(value.size()>2000) return;
             std::vector<Group> groups;
             for(uint32_t i=0;i<value.size();i++)
             {
-                const BufferItem& item = value[i];
+                BufferItem& item = value[i];
                 std::pair<double, uint32_t> dist_index(-1.0, 0);
                 for(uint32_t j=0;j<groups.size();j++)
                 {
-                    double dist = Distance_(item, groups[j]);
+                    double dist = Distance_(item, groups[j], key);
                     if(dist_index.first<0.0 || dist<dist_index.first)
                     {
                         dist_index.first = dist;
@@ -530,7 +552,12 @@ namespace sf1r {
                     g.items.push_back(item);
                     GroupRefresh_(g);
                     groups.push_back(g);
+                    //std::cerr<<"new group for item "<<item.title<<std::endl;
                 }
+            }
+            for(uint32_t i=0;i<groups.size();i++)
+            {
+                GroupCentroid_(groups[i]);
             }
             std::stable_sort(groups.begin(), groups.end());
             result_[key] = groups;
@@ -539,50 +566,84 @@ namespace sf1r {
         void GroupRefresh_(Group& g)
         {
             if(g.items.empty()) return;
-            WeightMap wm;
+            //WeightMap wm;
             double price = 0.0;
+            std::vector<std::string> common;
+            std::vector<std::string> brands;
+            bool first = true;
+            bool bfirst = true;
             for(uint32_t i=0;i<g.items.size();i++)
             {
-                const DocVector& doc_vector = g.items[i].doc_vector;
-                for(uint32_t j=0;j<doc_vector.size();j++)
+                //const DocVector& doc_vector = g.items[i].doc_vector;
+                //for(uint32_t j=0;j<doc_vector.size();j++)
+                //{
+                //    WeightMap::iterator it = wm.find(doc_vector[j].first);
+                //    if(it==wm.end())
+                //    {
+                //        wm.insert(std::make_pair(doc_vector[j].first, doc_vector[j].second));
+                //    }
+                //    else
+                //    {
+                //        it->second+=doc_vector[j].second;
+                //    }
+                //}
+                price += g.items[i].price;
+                if(!g.items[i].keywords.empty())
                 {
-                    WeightMap::iterator it = wm.find(doc_vector[j].first);
-                    if(it==wm.end())
+                    if(first) 
                     {
-                        wm.insert(std::make_pair(doc_vector[j].first, doc_vector[j].second));
+                        common = g.items[i].keywords;
+                        first = false;
                     }
                     else
                     {
-                        it->second+=doc_vector[j].second;
+                        common = CommonKeywords_(common, g.items[i].keywords);
                     }
                 }
-                price += g.items[i].price;
+                if(!g.items[i].brands.empty())
+                {
+                    if(bfirst) 
+                    {
+                        brands = g.items[i].brands;
+                        bfirst = false;
+                    }
+                    else
+                    {
+                        brands = CommonKeywords_(brands, g.items[i].brands);
+                    }
+                }
             }
             price /= g.items.size();
             g.price = price;
-            std::vector<std::string> v;
-            v.reserve(wm.size());
-            std::vector<double> weights;
-            weights.reserve(wm.size());
-            for(WeightMap::const_iterator it = wm.begin();it!=wm.end();++it)
-            {
-                v.push_back(it->first);
-                weights.push_back(it->second);
-            }
-            algo_.generate_document_signature(v, weights, g.fp);
-            std::vector<std::pair<double, uint32_t> > dist_index;
-            for(uint32_t i=0;i<g.items.size();i++)
-            {
-                double dist = Distance_(g.items[i], g);
-                dist_index.push_back(std::make_pair(dist, i));
-            }
-            std::sort(dist_index.begin(), dist_index.end());
-            g.cindex = dist_index[0].second;
+            g.keywords = common;
+            g.brands = brands;
+            //std::vector<std::string> v;
+            //v.reserve(wm.size());
+            //std::vector<double> weights;
+            //weights.reserve(wm.size());
+            //for(WeightMap::const_iterator it = wm.begin();it!=wm.end();++it)
+            //{
+            //    v.push_back(it->first);
+            //    weights.push_back(it->second);
+            //}
+            //algo_.generate_document_signature(v, weights, g.fp);
+            //std::vector<std::pair<double, uint32_t> > dist_index;
+            //for(uint32_t i=0;i<g.items.size();i++)
+            //{
+            //    double dist = Distance_(g.items[i], g);
+            //   dist_index.push_back(std::make_pair(dist, i));
+            //}
+            //std::sort(dist_index.begin(), dist_index.end());
+            //g.cindex = dist_index[0].second;
 
         }
 
-
-    private:
+        void GroupCentroid_(Group& g) const
+        {
+            if(g.items.empty()) return;
+            std::sort(g.items.begin(), g.items.end());
+            g.cindex = 0;
+        }
 
         bool IsYear_(const std::string& str) const
         {
@@ -591,27 +652,131 @@ namespace sf1r {
             return false;
         }
 
-        double Distance_(const BufferItem& item, const Group& group) const
+
+        double Distance_(const BufferItem& x, const BufferItem& y) const
         {
+            static const double invalid = 999.0;
             uint32_t hamming_dist = 0;
 
             for (uint32_t i = 0; i < SimHash::FP_SIZE; i++)
             {
-                hamming_dist += __builtin_popcountl(item.fp.desc[i] ^ group.fp.desc[i]);
+                hamming_dist += __builtin_popcountl(x.fp.desc[i] ^ y.fp.desc[i]);
             }
+            if(hamming_dist>35) return invalid;
+            double maxp = x.price;
+            double minp = y.price;
+            if(minp>maxp) std::swap(maxp, minp);
+            double pratio = maxp/minp;
+            if(pratio>2.0) return invalid;
+            return (double)hamming_dist;
+            //double hratio = std::log((double)hamming_dist+2.0);
+            //double dist = pratio*hratio;
+            //return dist;
+        }
+
+        bool ValidPrice_(const BufferItem& item, const Group& group) const
+        {
             double maxp = item.price;
             double minp = group.price;
             if(minp>maxp) std::swap(maxp, minp);
             double pratio = maxp/minp;
-            if(pratio>2.0) return 999.0;
-            double hratio = std::log((double)hamming_dist+2.0);
-            double dist = pratio*hratio;
-            return dist;
+            if(pratio>2.0) return false;
+            return true;
+        }
+        std::vector<std::string> CommonKeywords_(const std::vector<std::string>& k1, const std::vector<std::string>& k2) const
+        {
+            std::vector<std::string> r;
+            uint32_t i1=0,i2=0;
+            while(i1<k1.size()&&i2<k2.size())
+            {
+                if(k1[i1]<k2[i2])
+                {
+                    ++i1;
+                }
+                else if(k1[i1]>k2[i2])
+                {
+                    ++i2;
+                }
+                else
+                {
+                    r.push_back(k1[i1]);
+                    ++i1;
+                    ++i2;
+                }
+            }
+            return r;
+
+        }
+        double Distance_(const BufferItem& item, const Group& group, const BufferKey& key) const
+        {
+            static const double invalid = 999.0;
+            if(!ValidPrice_(item,group)) return invalid;
+            bool further = true;
+            const std::string& model = key.second;
+            uint32_t symbol_count=0,digit_count=0,alpha_count=0;
+            for(uint32_t i=0;i<model.length();i++)
+            {
+                char c = model[i];
+                if(c=='-')
+                {
+                    symbol_count++;
+                }
+                else if(c>='0'&&c<='9')
+                {
+                    digit_count++;
+                }
+                else
+                {
+                    alpha_count++;
+                }
+            }
+            if(digit_count>0&&alpha_count>0&&model.length()>=5)
+            {
+                further = false;
+            }
+            
+            if(further)
+            {
+                if(!item.keywords.empty()||!group.keywords.empty())
+                {
+                    std::vector<std::string> common = CommonKeywords_(item.keywords, group.keywords);
+                    if(common.empty())
+                    {
+                        //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of keywords"<<std::endl;
+                        return invalid;
+                    }
+                }
+                if(!item.brands.empty()||!group.brands.empty())
+                {
+                    std::vector<std::string> common = CommonKeywords_(item.brands, group.brands);
+                    if(common.empty())
+                    {
+                        //std::cerr<<item.title<<" not in group "<<group.items[0].title<<" because of brands"<<std::endl;
+                        return invalid;
+                    }
+                }
+            }
+            for(uint32_t i=0;i<group.items.size();i++)
+            {
+                const BufferItem& gitem = group.items[i];
+                double dist = Distance_(item, gitem);
+                if(ValidDistance_(dist))
+                {
+                    //std::cerr<<"[DIST]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
+                    return dist;
+                }
+                else
+                {
+                    //std::cerr<<"[DIST-INVALUD]"<<item.title<<","<<gitem.title<<":"<<dist<<std::endl;
+                }
+            }
+            //std::cerr<<item.title<<" not in group because of hamming"<<std::endl;
+            return invalid;
         }
 
         bool ValidDistance_(double distance) const
         {
-            return distance<4.5;
+            return distance<=100.0;
         }
 
     private:
@@ -628,6 +793,7 @@ namespace sf1r {
         CharikarAlgo algo_;
         boost::unordered_set<std::string> stop_set_;
         boost::unordered_set<std::string> model_stop_set_;
+        std::set<std::string> brand_set_;
 
         std::pair<std::size_t, std::size_t> stat_;
         boost::mutex mutex_;

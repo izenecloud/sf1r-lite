@@ -12,9 +12,12 @@
 #include <common/inttypes.h>
 #include <vector>
 #include <algorithm> // swap
+#include "../group-manager/GroupParam.h"
 
 namespace sf1r
 {
+
+using faceted::merchant_id_t;
 
 struct ProductScore
 {

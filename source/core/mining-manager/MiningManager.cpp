@@ -64,6 +64,7 @@
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
+#include "query-abbreviation/QueryStatistics.h"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -235,6 +236,7 @@ MiningManager::~MiningManager()
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
+    if (queryStatistics_) delete queryStatistics_;
 
     close();
 }
@@ -252,6 +254,7 @@ void MiningManager::close()
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
     handler->deleteCollection(collectionName_);
+    
 }
 
 bool MiningManager::open()
@@ -572,7 +575,7 @@ bool MiningManager::open()
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
             summarizationManagerTask_ =
-                new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
+                new MultiDocSummarizationSubManager(summarization_path_, system_resource_path_, collectionName_,
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
@@ -602,8 +605,6 @@ bool MiningManager::open()
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
-            //product_categorizer_->SetSuffixMatchManager(suffixMatchManager_);
-            product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
@@ -712,10 +713,6 @@ bool MiningManager::open()
             if (suffixMatchManager_)
                 suffixMatchManager_->setProductMatcher(matcher);
 
-            //SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
-            //product_classifier->Open(system_resource_path_+"/spu-classifier");
-            //product_categorizer_->SetSPUProductClassifier(product_classifier);
-            //product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
@@ -760,6 +757,10 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
+
+        /** query statistics */
+        queryStatistics_ = new QueryStatistics(this, collectionName_);
+        
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -888,17 +889,17 @@ void MiningManager::DoContinue()
     }
 }
 
-bool MiningManager::DOMiningTask()
+bool MiningManager::DOMiningTask(int64_t timestamp)
 {
    
     if (multiThreadMiningTaskBuilder_)
     {
-        multiThreadMiningTaskBuilder_->buildCollection();
+        multiThreadMiningTaskBuilder_->buildCollection(timestamp);
     }
 
     if (miningTaskBuilder_)
     {
-        miningTaskBuilder_->buildCollection();
+        miningTaskBuilder_->buildCollection(timestamp);
     }
     return true;
 }
@@ -1127,7 +1128,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
         }
     }
 
-    DOMiningTask();
+    DOMiningTask(timestamp);
 
     if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
@@ -2502,7 +2503,7 @@ void MiningManager::getGroupAttrRep_(
 
     propSharedLockSet.insertSharedLock(categoryValueTable);
 
-    std::vector<category_id_t> topCateIds;
+    std::vector<faceted::PropValueTable::pvid_t> topCateIds;
     for (size_t i = 0; i < res_list.size(); ++i)
     {
         if (topCateIds.size() < kTopLabelCateNum && i < kTopLabelDocNum)

@@ -15,12 +15,14 @@
 
 #include "ProductScorer.h"
 #include "../group-manager/PropValueTable.h"
+#include "../group-manager/GroupParam.h"
 #include <vector>
 #include <map>
 
 namespace sf1r
 {
 
+using faceted::category_id_t;
 class CategoryScorer : public ProductScorer
 {
 public:
