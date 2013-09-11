@@ -25,7 +25,7 @@ public:
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
-    virtual bool preProcess();
+    virtual bool preProcess(int64_t timestamp);
 
     virtual bool postProcess();
 
