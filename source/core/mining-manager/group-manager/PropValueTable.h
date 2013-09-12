@@ -33,7 +33,7 @@ public:
      * as 0 is reserved as invalid id, meaning no property value is availabe,
      * the valid id range is [1, 2^16) (65535 ids)
      */
-    typedef uint16_t pvid_t;
+    typedef uint32_t pvid_t;
 
     typedef PropIdTable<pvid_t, uint32_t> ValueIdTable;
     typedef ValueIdTable::PropIdList PropIdList;
@@ -48,6 +48,7 @@ public:
 
     typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
+
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);

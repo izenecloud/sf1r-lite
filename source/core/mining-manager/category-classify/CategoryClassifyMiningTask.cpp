@@ -135,7 +135,7 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
     }
 }
 
-bool CategoryClassifyMiningTask::preProcess()
+bool CategoryClassifyMiningTask::preProcess(int64_t timestamp)
 {
     startDocId_ = classifyTable_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();

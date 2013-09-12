@@ -10,6 +10,7 @@
 
 #include <common/inttypes.h>
 #include <3rdparty/febird/io/DataIO.h>
+#include "../group-manager/GroupParam.h"
 
 #include <string>
 #include <map>
@@ -19,6 +20,8 @@ using namespace febird;
 
 namespace sf1r
 {
+using faceted::category_id_t;
+using faceted::merchant_id_t;
 
 template <typename CategoryT>
 struct CategoryScore

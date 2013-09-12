@@ -59,7 +59,7 @@ bool GroupManager::open()
 
         if (groupConfig.isStringType())
         {
-            result = createPropValueTable_(propName);
+            result = createPropValueTable_(propName, groupConfig.isRTypeStr);
         }
         else if (groupConfig.isDateTimeType())
         {
@@ -73,8 +73,7 @@ bool GroupManager::open()
     return true;
 }
 
-
-bool GroupManager::createPropValueTable_(const std::string& propName)
+bool GroupManager::createPropValueTable_(const std::string& propName, bool isRtype)
 {
     std::pair<StrPropMap::iterator, bool> res =
         strPropMap_.insert(StrPropMap::value_type(propName, PropValueTable(dirPath_, propName)));

@@ -29,11 +29,11 @@ public:
         , std::string dirPath
         , const AttrConfig& attrConfig);
 
-    bool preProcess();
+    bool preProcess(int64_t timestamp);
     bool postProcess();
     bool buildDocument(docid_t docID, const Document& doc);
     docid_t getLastDocId();
-    bool processCollection_forTest();
+    //bool processCollection_forTest();
 
 private:
     sf1r::DocumentManager& documentManager_;

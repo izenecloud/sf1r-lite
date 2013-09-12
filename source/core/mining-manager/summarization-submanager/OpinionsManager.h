@@ -92,8 +92,8 @@ public:
     typedef std::pair<CommentScoreT, UString> OpinionCandStringT;
     typedef std::vector< OpinionCandStringT > OpinionCandStringContainerT;
 
-    OpinionsManager(const string& colPath, const std::string& dictpath,
-        const string& training_data_path);//string enc,string cate,string posDelimiter,
+    OpinionsManager(const string& log_dir, const std::string& dictpath,
+        const string& training_data_path, const string& training_res_path);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
     void setComment(const SentenceContainerT& Z_);
     std::vector< std::pair<double, WordStrType> > getOpinion(bool need_orig_comment_phrase = true);
@@ -103,7 +103,11 @@ public:
     void setEncoding(izenelib::util::UString::EncodingType encoding);
     void setFilterStr(const std::vector<WordStrType>& filter_strs);
     void setSynonymWord(WordSegContainerT& synonyms);
+    bool IsNeedFilter(const WordStrType& teststr);
+    static void StripRightForNonSence(UString& ustr);
     void CleanCacheData();
+    bool hasAdjectiveOrNoun(const WordStrType& phrase);
+    bool hasAdjectiveAndNoun(const WordStrType& phrase);
 
 private:
     void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
@@ -118,6 +122,7 @@ private:
     double Srep(const NgramPhraseT& words);
     double SrepSentence(const UString& phrase_str);
     double Score(const NgramPhraseT& words);
+    double getTopicScore(const WordStrType& phrase, const WordSegContainerT& words, size_t check_step);
     //rep
     double PMIlocal(const WordSegContainerT& words, const int& offset, int C=3);
     double PMImodified(const WordStrType& Wi, const WordStrType& Wj, int C=3);
@@ -140,7 +145,6 @@ private:
     void changeForm(const OpinionCandidateContainerT& candList, OpinionCandStringContainerT& newForm);
 
     std::string getSentence(const WordSegContainerT& candVector);
-    bool IsNeedFilter(const WordStrType& teststr);
     void GetOrigCommentsByBriefOpinion(OpinionCandStringContainerT& candOpinionString);
     bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
@@ -181,6 +185,7 @@ private:
     WordJoinPossibilityMapT  cached_pmimodified_;
     OriginalCommentContainerT orig_comments_;
     WordSegContainerT  filter_strs_;
+    WordSegContainerT  any_filter_strs_;
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     size_t word_cache_hit_num_;

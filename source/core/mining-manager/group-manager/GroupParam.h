@@ -28,6 +28,9 @@ class MiningSchema;
 
 NS_FACETED_BEGIN
 
+typedef uint32_t category_id_t;
+typedef uint32_t merchant_id_t;
+
 struct GroupPropParam
 {
     std::string property_;

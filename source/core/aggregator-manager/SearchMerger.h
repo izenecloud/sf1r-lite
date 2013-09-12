@@ -27,7 +27,7 @@ class Summarization;
 class SearchMerger : public net::aggregator::BindCallProxyBase<SearchMerger>
 {
 public:
-    SearchMerger(std::size_t topKNum = 4000) : TOP_K_NUM(topKNum) {}
+    SearchMerger(){}
 
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
@@ -78,7 +78,7 @@ public:
     void getDistKeyCount(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult);
 
 private:
-    std::size_t TOP_K_NUM;
+    //std::size_t TOP_K_NUM;
     boost::shared_ptr<MiningManager> miningManager_;
 
     friend class IndexBundleActivator;

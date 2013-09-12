@@ -36,7 +36,7 @@ void MultiThreadMiningTaskBuilder::addTask(MiningTask* task)
     }
 }
 
-bool MultiThreadMiningTaskBuilder::buildCollection()
+bool MultiThreadMiningTaskBuilder::buildCollection(int64_t timestamp)
 {
     docid_t endDocId = documentManager_->getMaxDocId();
     docid_t startDocId = endDocId;
@@ -46,7 +46,7 @@ bool MultiThreadMiningTaskBuilder::buildCollection()
 
     for (std::size_t i = 0; i < taskList_.size(); ++i)
     {
-        if (taskList_[i]->preProcess())
+        if (taskList_[i]->preProcess(timestamp))
         {
             taskFlag_[i] = true;
             ++buildNum;
