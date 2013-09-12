@@ -745,8 +745,10 @@ bool MiningManager::open()
 
         /** zambezi */
         if (!initZambeziManager_(mining_schema_.zambezi_config))
+        {
+            LOG(ERROR) << "init ZambeziManager fail";
             return false;
-
+        }
         /** product rank */
         const ProductRankingConfig& rankConfig =
             mining_schema_.product_ranking_config;
@@ -3007,7 +3009,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
     if (!KNlpResourceManager::getResource()->loadDictFiles())
         return false;
 
-    if (!AttrTokenizeWrapper::get()->loadDictFiles(system_resource_path_ + "/dict/attr_tokenize"));
+    if (!AttrTokenizeWrapper::get()->loadDictFiles(system_resource_path_ + "/dict/attr_tokenize"))
         return false;
 
     const bfs::path parentDir(collectionDataPath_);
