@@ -79,6 +79,7 @@ FILE(GLOB mining_SRC
   "mining-manager/tdt-submanager/wavelet-tree/*.cpp"  
   "mining-manager/suffix-match-manager/*.cpp"
   "mining-manager/query-intent/*.cpp"
+  "mining-manager/query-abbreviation/*.cpp"
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
   "mining-manager/zambezi-manager/*.cpp"

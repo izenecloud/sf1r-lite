@@ -222,7 +222,8 @@ void ZambeziSearch::rankTopKDocs_(
     {
         preprocessor_.fillSearchInfoWithSortPropertyData(sorter.get(),
                                                          docIdList,
-                                                         searchResult.distSearchInfo_);
+                                                         searchResult.distSearchInfo_,
+                                                         propSharedLockSet);
     }
 
     LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum

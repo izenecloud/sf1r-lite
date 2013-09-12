@@ -33,10 +33,12 @@ namespace sf1r {
     private:
         void SelectSubDocs_(std::vector<Document>& subdocs) const;
         static bool SubDocCompare_(const Document& x, const Document& y);
+        static bool ReversePriceCompare_(const Document& x, const Document& y);
 
     private:
         boost::unordered_set<std::string> sub_doc_props_;
         boost::unordered_map<std::string, int> subdoc_weighter_;
+        int default_source_weight_;
     };
 
     class ProductProperty

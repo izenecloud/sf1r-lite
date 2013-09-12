@@ -119,6 +119,7 @@ class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
 class QueryIntentManager;
 class ZambeziManager;
+class QueryStatistics;
 
 namespace sim
 {
@@ -180,7 +181,7 @@ public:
     bool DoMiningCollection(int64_t timestamp);
     bool DoMiningCollectionFromAPI();
 
-    bool DOMiningTask();
+    bool DOMiningTask(int64_t timestamp);
 
     void DoContinue();
 
@@ -522,6 +523,11 @@ public:
         return zambeziManager_;
     }
 
+    QueryStatistics* getQueryStatistics()
+    {
+        return queryStatistics_;
+    }
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -751,6 +757,8 @@ private:
 
     /** For Query Intent */
     QueryIntentManager* queryIntentManager_;
+
+    QueryStatistics* queryStatistics_;
 
     /** TDT */
     std::string tdt_path_;

@@ -13,6 +13,7 @@
 #define SF1R_MERCHANT_SCORE_EVALUATOR_H
 
 #include "ProductScoreEvaluator.h"
+#include "../group-manager/GroupParam.h"
 #include <common/PropSharedLock.h>
 #include <vector>
 
@@ -20,6 +21,7 @@ namespace sf1r
 {
 class MerchantScoreManager;
 namespace faceted { class PropValueTable; }
+using faceted::category_id_t;
 
 class MerchantScoreEvaluator : public ProductScoreEvaluator
 {

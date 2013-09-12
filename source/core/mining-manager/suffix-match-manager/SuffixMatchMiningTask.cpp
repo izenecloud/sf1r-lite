@@ -36,7 +36,7 @@ SuffixMatchMiningTask::~SuffixMatchMiningTask()
 
 }
 
-bool SuffixMatchMiningTask::preProcess()
+bool SuffixMatchMiningTask::preProcess(int64_t timestamp)
 {
     if (!is_incrememtalTask_)
     {

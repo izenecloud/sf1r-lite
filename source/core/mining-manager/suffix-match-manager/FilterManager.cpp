@@ -1038,6 +1038,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeExact(size_t prop
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeGreater(size_t prop_id, const StrFilterKeyT& str_filter, bool include)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it = include
@@ -1067,6 +1069,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeGreater(size_t pr
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeLess(size_t prop_id, const StrFilterKeyT& str_filter, bool include)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it = std::lower_bound(str_key_set.begin(), str_key_set.end(), str_filter);
@@ -1098,6 +1102,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeLess(size_t prop_
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangePrefix(size_t prop_id, const StrFilterKeyT& str_filter)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it0 = std::lower_bound(str_key_set.begin(), str_key_set.end(), str_filter, PrefixCompare(str_filter.length()));

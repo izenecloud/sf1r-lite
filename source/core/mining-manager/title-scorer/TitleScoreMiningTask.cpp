@@ -46,7 +46,7 @@ docid_t TitleScoreMiningTask::getLastDocId()
     return titleScoreList_->getLastDocId_() + 1;
 }
 
-bool TitleScoreMiningTask::preProcess()
+bool TitleScoreMiningTask::preProcess(int64_t timestamp)
 {
     if (titleScoreList_->getLastDocId_() == 0)
     {

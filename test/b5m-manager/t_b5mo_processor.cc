@@ -515,10 +515,10 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.omapper.push_back(MapperData("JD", "电视机", "大家电>平板电视"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机","", "aaa"));
+            , "手机数码>手机>","", "aaa"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE2","JD"
-            , "大家电>平板电视","", "bbb"));
+            , "大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"ccc", "BOOK1","DD"
             , "","", B5MHelper::GetPidByIsbn("101")));
@@ -549,10 +549,10 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
 
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机",1));
+            , "手机数码>手机>",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"bbb", "TITLE2","JD"
-            , "大家电>平板电视",1));
+            , "大家电>平板电视>",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|BOOK11","DD,PUB"
             ,"",2));
@@ -577,32 +577,32 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机配件","", "aaa"));
+            , "手机数码>手机配件>","", "aaa"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE2","JD"
-            , "家电>大家电>平板电视","", "bbb"));
+            , "家电>大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
-            , "家电>大家电>平板电视","", "bbb"));
+            , "家电>大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK11","PUB"
-            , "化妆品","", "eee"));
+            , "化妆品>","", "eee"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
-            , "化妆品","", "eee"));
+            , "化妆品>","", "eee"));
 
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"aaa", "",""
-            , "手机数码>手机配件",0));
+            , "手机数码>手机配件>",0));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"bbb", "TITLE3",""
-            , "家电>大家电>平板电视",0));
+            , "家电>大家电>平板电视>",0));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|","DD"
             ,"",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
-            ,"化妆品",1));
+            ,"化妆品>",1));
         tester.Test(item);
     }
     {
@@ -618,13 +618,13 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机","", "aaa"));
+            , "手机数码>手机>","", "aaa"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
             , "","", "aaa"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
-            , "家电>大家电>电视","", "bbb"));
+            , "家电>大家电>电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "","", B5MHelper::GetPidByIsbn("110")));
@@ -634,7 +634,7 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
             , "",0));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,"bbb", "",""
-            , "家电>大家电>电视",0));
+            , "家电>大家电>电视>",0));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("110")
             , "BOOK12","PUB"

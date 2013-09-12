@@ -6,13 +6,13 @@
 
 using namespace sf1r;
 B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
-:m_(m), mcount_(mcount), index_(0), sort_thread_(NULL)
+:m_(m), mcount_(mcount), index_(0), last_pitemid_(1), sort_thread_(NULL)
 {
 }
 
 void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
+    boost::unique_lock<MutexType> lock(mutex_);
     if(buffer_.size()==mcount_)
     {
         WaitUntilSortFinish_();
@@ -23,7 +23,7 @@ void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
 
 bool B5moSorter::StageOne()
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
+    boost::unique_lock<MutexType> lock(mutex_);
     WaitUntilSortFinish_();
     if(!buffer_.empty())
     {
@@ -88,12 +88,19 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     std::istream is(&stream);
     std::string line;
     std::string spid;
-    typedef std::vector<Value> BufferType;
+    //typedef std::vector<Value> BufferType;
+    typedef PItem BufferType;
+    uint32_t id = 1;
     BufferType* buffer = new BufferType;
-    thread_num = 1;
+    buffer->id = id++;
+    //thread_num = 1;
     B5mThreadPool<BufferType> pool(thread_num, boost::bind(&B5moSorter::OBag_, this, _1));
     while(std::getline(is, line))
     {
+        //if(id%100000==0)
+        //{
+        //    LOG(INFO)<<"Processing obag id "<<id<<std::endl;
+        //}
         Value value;
         if(!value.Parse(line, &json_reader_))
         {
@@ -102,15 +109,16 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
         }
         //std::cerr<<"find value "<<value.spid<<","<<value.is_update<<","<<value.ts<<","<<value.doc.getPropertySize()<<std::endl;
 
-        if(!buffer->empty())
+        if(!buffer->odocs.empty())
         {
-            if(value.spid!=buffer->back().spid)
+            if(value.spid!=buffer->odocs.back().spid)
             {
                 pool.schedule(buffer);
                 buffer = new BufferType;
+                buffer->id = id++;
             }
         }
-        buffer->push_back(value);
+        buffer->odocs.push_back(value);
     }
     pool.schedule(buffer);
     pool.wait();
@@ -174,7 +182,7 @@ void B5moSorter::WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, con
     Json::FastWriter writer;
     std::string str_value = writer.write(json_value);
     boost::algorithm::trim(str_value);
-    boost::unique_lock<boost::mutex> lock(mutex_);
+    boost::unique_lock<MutexType> lock(mutex_);
     ofs<<spid<<"\t"<<doc.type<<"\t"<<ts<<"\t"<<str_value<<std::endl;
 }
 void B5moSorter::Sort_(std::vector<Value>& docs)
@@ -196,101 +204,163 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
     ofs.close();
 }
 
-void B5moSorter::OBag_(std::vector<Value>& docs)
+void B5moSorter::OBag_(PItem& pitem)
 {
 
     bool modified=false;
-    for(uint32_t i=0;i<docs.size();i++)
+    for(uint32_t i=0;i<pitem.odocs.size();i++)
     {
         //std::cerr<<"ts "<<docs[i].ts<<","<<ts_<<std::endl;
-        if(docs[i].ts==ts_)
+        if(pitem.odocs[i].ts==ts_)
         {
             modified=true;
             break;
         }
     }
     //std::cerr<<"docs count "<<docs.size()<<","<<modified<<std::endl;
-    if(!modified)
+    //if(!modified)
+    //{
+    //    for(uint32_t i=0;i<docs.size();i++)
+    //    {
+    //        WriteValueSafe_(mirror_ofs_, docs[i].doc, docs[i].ts);
+    //    }
+    //    return;
+    //}
+
+    if(modified)
     {
+        std::vector<Value>& docs = pitem.odocs;
+        std::sort(docs.begin(), docs.end(), OCompare_);
+        std::vector<ScdDocument> prev_odocs;
+        std::vector<ScdDocument> odocs;
         for(uint32_t i=0;i<docs.size();i++)
         {
-            WriteValueSafe_(mirror_ofs_, docs[i].doc, docs[i].ts);
+            const Value& v = docs[i];
+            //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
+            const ScdDocument& doc = v.doc;
+            ODocMerge_(odocs, doc);
+            if(v.ts<ts_)
+            {
+                ODocMerge_(prev_odocs, doc);
+            }
         }
-        return;
-    }
-
-    std::sort(docs.begin(), docs.end(), OCompare_);
-    std::vector<ScdDocument> prev_odocs;
-    std::vector<ScdDocument> odocs;
-    //Document pdoc;
-    //ProductProperty pp;
-    //Document prev_odoc;
-    //Document odoc;
-    //std::string last_soid;
-    for(uint32_t i=0;i<docs.size();i++)
-    {
-        const Value& v = docs[i];
-        //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
-        const ScdDocument& doc = v.doc;
-        ODocMerge_(odocs, doc);
-        if(v.ts<ts_)
+        pitem.odocs.clear();
+        for(uint32_t i=0;i<odocs.size();i++)
         {
-            ODocMerge_(prev_odocs, doc);
+            if(odocs[i].type!=DELETE_SCD)
+            {
+                Value v;
+                v.doc = odocs[i];
+                v.ts = ts_;
+                pitem.odocs.push_back(v);
+                //WriteValueSafe_(mirror_ofs_, odocs[i], ts_);
+            }
         }
-    }
-    for(uint32_t i=0;i<odocs.size();i++)
-    {
-        if(odocs[i].type!=DELETE_SCD)
+        ScdDocument& pdoc = pitem.pdoc;
+        pgenerator_.Gen(odocs, pdoc, spu_only_);
+        if(pdoc.type==NOT_SCD)
         {
-            //std::string pid;
-            //odocs[i].getString("uuid", pid);
-            //if(pid=="00001c622f172281f128f65d8d526ccc")
-            //{
-            //    LOG(INFO)<<"XXXXX "<<pid<<" in mirror"<<std::endl;
-            //}
-            WriteValueSafe_(mirror_ofs_, odocs[i], ts_);
         }
-    }
-    ScdDocument pdoc;
-    pgenerator_.Gen(odocs, pdoc, spu_only_);
-    if(pdoc.type==NOT_SCD)
-    {
-    }
-    else if(pdoc.type==DELETE_SCD)
-    {
-    }
-    else
-    {
-        ScdDocument prev_pdoc;
-        if(!prev_odocs.empty())
+        else if(pdoc.type==DELETE_SCD)
         {
-            pgenerator_.Gen(prev_odocs, prev_pdoc);
-            pdoc.diff(prev_pdoc);
         }
-        int64_t itemcount=0;
-        pdoc.getProperty("itemcount", itemcount);
-        //if(itemcount>=100) return;
-        SCD_TYPE ptype = pdoc.type;
-        if(pdoc.getPropertySize()<2)
+        else
         {
-            ptype = NOT_SCD;
-        }
-        else if(pdoc.getPropertySize()==2)//DATE only update
-        {
-            if(pdoc.hasProperty("DATE"))
+            ScdDocument prev_pdoc;
+            if(!prev_odocs.empty())
+            {
+                pgenerator_.Gen(prev_odocs, prev_pdoc);
+                pdoc.diff(prev_pdoc);
+            }
+            int64_t itemcount=0;
+            pdoc.getProperty("itemcount", itemcount);
+            //if(itemcount>=100) return;
+            SCD_TYPE ptype = pdoc.type;
+            if(pdoc.getPropertySize()<2)
             {
                 ptype = NOT_SCD;
             }
+            else if(pdoc.getPropertySize()==2)//DATE only update
+            {
+                if(pdoc.hasProperty("DATE"))
+                {
+                    ptype = NOT_SCD;
+                }
+            }
+            pdoc.type = ptype;
         }
-        pdoc.type = ptype;
+        //if(pdoc.type!=NOT_SCD)
+        //{
+        //    boost::unique_lock<boost::mutex> lock(mutex_);
+        //    pwriter_->Append(pdoc);
+        //}
     }
-    if(pdoc.type!=NOT_SCD)
+    for(uint32_t i=0;i<pitem.odocs.size();i++)
     {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        pwriter_->Append(pdoc);
+        const ScdDocument& doc = pitem.odocs[i].doc;
+        std::string spid;
+        doc.getString("uuid", spid);
+        if(spid.empty()) continue;
+        Json::Value json_value;
+        JsonDocument::ToJson(doc, json_value);
+        //for(Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
+        //{
+            //const PropertyValue& v = it->second;
+            //const UString& uv = v.get<UString>();
+            //std::string sv;
+            //uv.convertString(sv, UString::UTF_8);
+            //json_value[it->first] = sv;
+        //}
+        Json::FastWriter writer;
+        std::string str_value = writer.write(json_value);
+        boost::algorithm::trim(str_value);
+        std::stringstream ss;
+        ss<<spid<<"\t"<<doc.type<<"\t"<<pitem.odocs[i].ts<<"\t"<<str_value<<std::endl;
+        pitem.odocs[i].text = ss.str();
     }
+    WritePItem_(pitem);
+    
 }
 
+void B5moSorter::WritePItem_(const PItem& pitem)
+{
+    while(true)
+    {
+        //boost::upgrade_lock<boost::shared_mutex> lock(mutex_);
+        if(pitem.id==last_pitemid_)
+        {
+            //boost::upgrade_to_unique_lock<boost::shared_mutex> ulock(lock);
+            boost::unique_lock<MutexType> lock(mutex_);
+            if(pitem.id%100000==0)
+            {
+                LOG(INFO)<<"Processing pitem id "<<pitem.id<<std::endl;
+            }
+            
+            //std::cerr<<"write pitem id "<<pitem.id<<","<<last_pitemid_<<std::endl;
+            //for(uint32_t i=0;i<pitem.odocs.size();i++)
+            //{
+            //    WriteValue_(mirror_ofs_, pitem.odocs[i].doc, pitem.odocs[i].ts);
+            //}
+            for(uint32_t i=0;i<pitem.odocs.size();i++)
+            {
+                if(!pitem.odocs[i].text.empty())
+                {
+                    mirror_ofs_<<pitem.odocs[i].text<<std::endl;
+                }
+            }
+            if(pitem.pdoc.type!=NOT_SCD)
+            {
+                pwriter_->Append(pitem.pdoc);
+            }
+            last_pitemid_ = pitem.id+1;
+            break;
+        }
+        else
+        {
+            sched_yield();
+        }
+    }
+}
 void B5moSorter::ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc)
 {
     if(vec.empty()) vec.push_back(doc);

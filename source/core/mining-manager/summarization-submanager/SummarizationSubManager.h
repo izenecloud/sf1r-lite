@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include "../MiningTask.h"
+#include <util/cronexpression.h>
 
 #include "OpinionsClassificationManager.h"
 namespace idmlib
@@ -36,6 +37,7 @@ class MultiDocSummarizationSubManager: public MiningTask
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
+            const std::string& sys_res_path,
             const std::string& collectionName,
             const std::string& scdPath,
             SummarizeConfig schema,
@@ -54,11 +56,12 @@ public:
     
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
-    virtual bool preProcess();
+    virtual bool preProcess(int64_t timestamp);
 
     virtual bool postProcess();
 
     virtual docid_t getLastDocId();
+    void updateRecentComments(int calltype);
 
 private:
     void commentsClassify(int x);
@@ -134,6 +137,9 @@ private:
     std::vector<boost::thread*> comment_classify_threads_;
     std::queue<std::pair<Document, docid_t> > docList_;
     bool  can_quit_compute_;
+    std::string system_resource_path_;
+    izenelib::util::CronExpression cronExpression_;
+    std::string cronJobName_;
 };
 
 }

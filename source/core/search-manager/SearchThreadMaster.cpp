@@ -4,6 +4,7 @@
 #include "SearchThreadParam.h"
 #include "HitQueue.h"
 
+#include <common/PropSharedLockSet.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <common/ResultType.h>
 #include <document-manager/DocumentManager.h>
@@ -199,13 +200,15 @@ bool SearchThreadMaster::fetchSearchResult(
     boost::shared_ptr<Sorter> pSorter(threadParam.pSorter);
     if (pSorter)
     {
+        PropSharedLockSet propSharedLockSet;
         try
         {
             // all sorters will be the same after searching,
             // so we can just use any sorter.
             preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(),
                                                              docIdList,
-                                                             distSearchInfo);
+                                                             distSearchInfo,
+                                                             propSharedLockSet);
         }
         catch (const std::exception& e)
         {

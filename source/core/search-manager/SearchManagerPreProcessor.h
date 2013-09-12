@@ -62,7 +62,8 @@ public:
     void fillSearchInfoWithSortPropertyData(
         Sorter* pSorter,
         std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo);
+        DistKeywordSearchInfo& distSearchInfo,
+        PropSharedLockSet& propSharedLockSet);
 
     void prepareSorterCustomRanker(
         const SearchKeywordOperation& actionOperation,

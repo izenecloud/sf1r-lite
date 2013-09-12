@@ -28,7 +28,7 @@ public:
 
     bool buildDocument(docid_t docID, const Document& doc);
     
-    bool preProcess();
+    bool preProcess(int64_t timestamp);
 
     bool postProcess();
 

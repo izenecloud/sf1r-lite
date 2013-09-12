@@ -18,7 +18,7 @@ MiningTaskBuilder::~MiningTaskBuilder()
     }
 }
 
-bool MiningTaskBuilder::buildCollection()
+bool MiningTaskBuilder::buildCollection(int64_t timestamp)
 {
     docid_t MaxDocid = document_manager_->getMaxDocId();
 
@@ -29,7 +29,7 @@ bool MiningTaskBuilder::buildCollection()
     size_t false_count = 0;
     for (size_t i = 0; i < taskList_.size(); ++i)
     {
-        if (!taskList_[i]->preProcess())
+        if (!taskList_[i]->preProcess(timestamp))
         {
             taskFlag[i] = false;
             ++false_count;

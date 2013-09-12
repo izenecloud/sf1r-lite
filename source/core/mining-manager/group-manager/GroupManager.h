@@ -94,7 +94,7 @@ public:
     bool isRebuildProp_(const std::string& propName) const;
 
 private:
-    bool createPropValueTable_(const std::string& propName);
+    bool createPropValueTable_(const std::string& propName, bool isRtype);
     bool createDateGroupTable_(const std::string& propName);
 
 private:

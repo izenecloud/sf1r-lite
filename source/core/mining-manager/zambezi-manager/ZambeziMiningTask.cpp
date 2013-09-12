@@ -71,7 +71,7 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     return true;
 }
 
-bool ZambeziMiningTask::preProcess()
+bool ZambeziMiningTask::preProcess(int64_t timestamp)
 {
     startDocId_ = indexer_.totalDocNum() + 1;
     const docid_t endDocId = documentManager_.getMaxDocId();
