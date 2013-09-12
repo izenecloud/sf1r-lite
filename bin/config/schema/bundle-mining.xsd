@@ -289,9 +289,7 @@
 
     <xs:element name="Zambezi">
         <xs:complexType>
-            <xs:sequence>
-                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
-            </xs:sequence>
+            <xs:attribute name="debug" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 
