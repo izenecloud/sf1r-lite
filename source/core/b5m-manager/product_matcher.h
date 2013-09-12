@@ -800,8 +800,8 @@ namespace sf1r {
         bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
         bool FuzzyDiff(const std::string& scd_path, const std::string& output_file="");
-        bool Process(const Document& doc, Product& result_product, bool use_fuzzy = false);
-        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false);
+        bool Process(const Document& doc, Product& result_product, bool use_fuzzy = false, bool use_psm=true);
+        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false, bool use_psm=true);
         void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBookStatic(const Document& doc, Product& result_product);

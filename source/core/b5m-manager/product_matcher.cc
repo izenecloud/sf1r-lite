@@ -1546,7 +1546,7 @@ void ProductMatcher::OfferProcess_(ScdDocument& doc)
     Product p;
     if(use_avg_price_)
     {
-        Process(doc, p, true); 
+        Process(doc, p, true, false); 
     }
     boost::unique_lock<boost::mutex> lock(offer_mutex_);
     for(uint32_t i=0;i<keywords.size();i++)
@@ -2238,11 +2238,11 @@ bool ProductMatcher::ProcessBookStatic(const Document& doc, Product& result_prod
     return false;
 }
 
-bool ProductMatcher::Process(const Document& doc, Product& result_product, bool use_fuzzy)
+bool ProductMatcher::Process(const Document& doc, Product& result_product, bool use_fuzzy, bool use_psm)
 {
     static const uint32_t limit = 1;
     std::vector<Product> products;
-    if(Process(doc, limit, products, use_fuzzy) && !products.empty())
+    if(Process(doc, limit, products, use_fuzzy, use_psm) && !products.empty())
     {
         result_product = products.front();
         return true;
@@ -2250,7 +2250,7 @@ bool ProductMatcher::Process(const Document& doc, Product& result_product, bool 
     return false;
 }
 
-bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy)
+bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy, bool use_psm)
 {
     if(!IsOpen()) return false;
     if(limit==0) return false;
@@ -2277,7 +2277,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     Analyze_(title, term_list);
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
-    if(psm_!=NULL)
+    if(use_psm&&psm_!=NULL)
     {
         std::string spid;
         std::string stitle;
