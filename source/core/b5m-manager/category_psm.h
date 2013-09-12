@@ -171,12 +171,23 @@ namespace sf1r {
             key.first = ncategory;
             BufferItem item;
             if(!Analyze_(doc, brands, keywords, key, item)) return false;
+            //return true;
             UString ua;
             doc.getString("Attribute", ua);
             std::vector<b5m::Attribute> attributes;
             B5MHelper::ParseAttributes(ua, attributes);
             boost::unique_lock<boost::mutex> lock(mutex_);
-            buffer_[key].push_back(item);
+            Buffer::iterator bit = buffer_.find(key);
+            if(bit==buffer_.end())
+            {
+                BufferValue v(1, item);
+                buffer_.insert(std::make_pair(key, v));
+            }
+            else
+            {
+                bit->second.push_back(item);
+            }
+            //buffer_[key].push_back(item);
             stat_.second++;
             for(uint32_t i=0;i<attributes.size();i++)
             {
@@ -273,6 +284,7 @@ namespace sf1r {
                 {
                     LOG(INFO)<<"Processing clustering "<<p<<std::endl;
                 }
+                continue;
                 ResultMap::const_iterator rit = result_.find(it->first);
                 if(rit!=result_.end())
                 {
@@ -560,7 +572,8 @@ namespace sf1r {
                 GroupCentroid_(groups[i]);
             }
             std::stable_sort(groups.begin(), groups.end());
-            result_[key] = groups;
+            result_.insert(std::make_pair(key, groups));
+            //result_[key] = groups;
         }
 
         void GroupRefresh_(Group& g)
