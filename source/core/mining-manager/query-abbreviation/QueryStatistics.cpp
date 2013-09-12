@@ -22,8 +22,6 @@
 namespace sf1r
 {
 
-static std::string cronJobName_ = "QueryStatistics";
-
 QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionName)
     : miningManager_(mining)
     , collectionName_(collectionName)
@@ -31,7 +29,7 @@ QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionN
     wordsFreq_ = new FreqType;
     lastTimeStr_ = "20120100T000000";
     totalWords_ = 0;
-
+    cronJobName_ = "QueryStatistics##" + collectionName_;
     init();
     LOG(INFO)<<lastTimeStr_<<" "<<totalWords_;
     
@@ -50,9 +48,9 @@ QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionN
 
 QueryStatistics::~QueryStatistics()
 {
-
     delete wordsFreq_;
-    izenelib::util::Scheduler::removeJob(cronJobName_);
+    wordsFreq_ = NULL;
+    izenelib::util::Scheduler::removeJob(cronJobName_, true);
 }
 
 void QueryStatistics::init()

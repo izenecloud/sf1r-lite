@@ -43,6 +43,7 @@ private:
     unsigned long totalWords_;
     FreqType* wordsFreq_;
     boost::shared_mutex mtx_;
+    std::string cronJobName_;
 
     izenelib::util::CronExpression cronExpression_;
 };
