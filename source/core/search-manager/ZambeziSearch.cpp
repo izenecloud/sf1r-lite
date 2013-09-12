@@ -42,7 +42,6 @@ ZambeziSearch::ZambeziSearch(
 void ZambeziSearch::setMiningManager(
     const boost::shared_ptr<MiningManager>& miningManager)
 {
-    miningManager_ = miningManager;
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
     zambeziManager_ = miningManager->getZambeziManager();
 }

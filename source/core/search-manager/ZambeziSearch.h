@@ -62,8 +62,6 @@ private:
 
     QueryBuilder& queryBuilder_;
 
-    boost::shared_ptr<MiningManager> miningManager_;
-
     const faceted::GroupFilterBuilder* groupFilterBuilder_;
 
     ZambeziManager* zambeziManager_;
