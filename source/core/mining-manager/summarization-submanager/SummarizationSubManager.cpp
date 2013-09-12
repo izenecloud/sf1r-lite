@@ -442,8 +442,8 @@ bool MultiDocSummarizationSubManager::postProcess()
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
@@ -587,8 +587,8 @@ bool MultiDocSummarizationSubManager::postProcess()
             SynchroData syncData;
             syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
             syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.string());
+            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path)))
             {
                 syncProducer->wait();
             }
@@ -606,7 +606,7 @@ bool MultiDocSummarizationSubManager::postProcess()
             syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
             syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
-            if (syncProducer->produce(syncTotalData))
+            if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, generated_scds_path)))
             {
                 syncProducer->wait();
             }
@@ -1054,7 +1054,7 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
                     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
                     boost::filesystem::create_directories(generated_scds_path);
 
-                    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+                    score_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
 
                     for (size_t i = 0; i < update_keys.size(); ++i)
                     {
@@ -1074,8 +1074,8 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
                         SynchroData syncData;
                         syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
                         syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-                        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-                        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+                        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.string());
+                        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path)))
                         {
                             syncProducer->wait();
                         }
