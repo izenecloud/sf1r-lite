@@ -3,6 +3,7 @@
 #include "Sorter.h"
 #include "QueryBuilder.h"
 #include "HitQueue.h"
+#include <la-manager/AttrTokenizeWrapper.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/QueryTypeDef.h> // FilteringType
 #include <common/ResultType.h>
@@ -21,7 +22,7 @@
 
 namespace
 {
-const std::size_t kZambeziTopKNum = 1e6;
+const std::size_t kZambeziTopKNum = 3e6;
 }
 
 using namespace sf1r;
@@ -82,22 +83,8 @@ bool ZambeziSearch::getTopKDocs_(
         return false;
     }
 
-    KNlpWrapper::token_score_list_t tokenScores;
-    KNlpWrapper::string_t kstr(query);
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    knlpWrapper->fmmTokenize(kstr, tokenScores);
-
     std::vector<std::string> tokenList;
-    std::cout << "tokens:" << std::endl;
-
-    for (KNlpWrapper::token_score_list_t::const_iterator it =
-             tokenScores.begin(); it != tokenScores.end(); ++it)
-    {
-        std::string token = it->first.get_bytes("utf-8");
-        tokenList.push_back(token);
-        std::cout << token << std::endl;
-    }
-    std::cout << "-----" << std::endl;
+    tokenList = AttrTokenizeWrapper::get()->attr_tokenize(query);
 
     zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
 
@@ -169,26 +156,30 @@ void ZambeziSearch::rankTopKDocs_(
 
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
-    for (size_t i = 0; i < candNum; ++i)
+    
     {
-        docid_t docId = candidates[i];
-        float score = scores[i];
-
-        if (documentManager_.isDeleted(docId) ||
-            (filterBitVector && !filterBitVector->test(docId)) ||
-            (groupFilter && !groupFilter->test(docId)))
+        boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
+        for (size_t i = 0; i < candNum; ++i)
         {
-            continue;
-        }
+            docid_t docId = candidates[i];
+            float score = scores[i];
 
-        ScoreDoc scoreItem(docId, score);
-        if (customRanker)
-        {
-            scoreItem.custom_score = customRanker->evaluate(docId);
-        }
-        scoreItemQueue->insert(scoreItem);
+            if (documentManager_.isDeleted(docId, false) ||
+                (filterBitVector && !filterBitVector->test(docId)) ||
+                (groupFilter && !groupFilter->test(docId)))
+            {
+                continue;
+            }
 
-        ++totalCount;
+            ScoreDoc scoreItem(docId, score);
+            if (customRanker)
+            {
+                scoreItem.custom_score = customRanker->evaluate(docId);
+            }
+            scoreItemQueue->insert(scoreItem);
+
+            ++totalCount;
+        }
     }
 
     searchResult.totalCount_ = totalCount;

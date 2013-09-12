@@ -210,9 +210,13 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId)
+bool DocumentManager::isDeleted(docid_t docId, bool use_lock)
 {
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
+    if (use_lock)
+    {
+        lock.lock();
+    }
     if (docId == 0 || docId > delfilter_.size())
     {
         return false;

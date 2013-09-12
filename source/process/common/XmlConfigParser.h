@@ -372,6 +372,12 @@ public:
         return (dir / "dict" / "term_category").string();
     }
 
+    std::string getAttrTokenDictDir() const
+    {
+        boost::filesystem::path dir(resource_dir_);
+        return (dir / "dict" / "attr_tokenize").string();
+    }
+
     const std::string& getLogConnString() const
     {
         return log_conn_str_;

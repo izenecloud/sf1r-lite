@@ -136,7 +136,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId);
+    bool isDeleted(docid_t docId, bool use_lock = true);
 
     /**
      * @brief gets one document by id
@@ -288,6 +288,11 @@ public:
     bool isThereRtypePro()
     {
         return RtypeDocidPros_.size() > 0;
+    }
+
+    boost::shared_mutex& getMutex()
+    { 
+        return delfilter_mutex_;
     }
 
     std::set<string> RtypeDocidPros_;

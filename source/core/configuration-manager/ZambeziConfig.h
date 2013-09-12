@@ -15,11 +15,13 @@ class ZambeziConfig
 public:
     bool isEnable;
 
-    std::string indexPropName;
+    bool isDebug;
 
     std::string indexFilePath;
 
-    ZambeziConfig() : isEnable(false) {}
+    ZambeziConfig() : isEnable(false) 
+                    , isDebug(false)
+    {}
 
 private:
     friend class boost::serialization::access;
@@ -28,7 +30,7 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & isEnable;
-        ar & indexPropName;
+        ar & isDebug;
         ar & indexFilePath;
     }
 };

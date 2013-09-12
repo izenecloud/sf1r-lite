@@ -1,4 +1,5 @@
 #include "ZambeziMiningTask.h"
+#include <la-manager/AttrTokenizeWrapper.h>
 #include <configuration-manager/ZambeziConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <common/ResourceManager.h>
@@ -16,30 +17,54 @@ ZambeziMiningTask::ZambeziMiningTask(
     , indexer_(indexer)
     , startDocId_(0)
 {
+    if (config_.isDebug)
+    {
+        ofs_debug_.open((config_.indexFilePath + "debug").c_str(), ios::app);
+    }
+    
 }
 
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
     std::string propValue;
-    doc.getProperty(config_.indexPropName, propValue);
+    std::vector<std::string> propNameList;
+    std::vector<std::string> propValueList;
+    propNameList.push_back("Title");
+    propNameList.push_back("Attribute");
+    propNameList.push_back("Category");
+    propNameList.push_back("OriginalCategory");
+    propNameList.push_back("source");
 
-    KNlpWrapper::token_score_list_t tokenScores;
-    KNlpWrapper::string_t kstr(propValue);
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    knlpWrapper->fmmTokenize(kstr, tokenScores);
+    for (std::vector<std::string>::iterator i = propNameList.begin(); i != propNameList.end(); ++i)
+    {
+        doc.getProperty(*i, propValue);
+        propValueList.push_back(propValue);
+    }
 
+    std::vector<std::pair<std::string, double> > tokenScoreList;
+    tokenScoreList = AttrTokenizeWrapper::get()->attr_tokenize_index(propValueList[0]
+                                                                , propValueList[1]
+                                                                , propValueList[2]
+                                                                , propValueList[3]
+                                                                , propValueList[4]);
     std::vector<std::string> tokenList;
     std::vector<uint32_t> scoreList;
-    // TODO
-    // currently each term is assigned with a default score,
-    // it should be replaced when the calculation interface is available
-    const uint32_t defaultScore = 1;
 
-    for (KNlpWrapper::token_score_list_t::const_iterator it =
-             tokenScores.begin(); it != tokenScores.end(); ++it)
+    for (std::vector<std::pair<std::string, double> >::const_iterator it =
+             tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
     {
-        tokenList.push_back(it->first.get_bytes("utf-8"));
-        scoreList.push_back(defaultScore);
+        tokenList.push_back(it->first);
+        scoreList.push_back(uint32_t(it->second));
+    }
+
+    if (config_.isDebug)
+    {
+        ofs_debug_ << docID << '\t' ;
+        for (unsigned int i = 0; i < tokenList.size(); ++i)
+        {
+            ofs_debug_ << tokenList[i] << " " << scoreList[i] << " ; ";
+        }
+        ofs_debug_ << std::endl;
     }
 
     indexer_.insertDoc(docID, tokenList, scoreList);

@@ -90,6 +90,7 @@
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/KNlpDictMonitor.h>
+#include <la-manager/AttrTokenizeWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -3003,6 +3004,9 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
         return true;
 
     if (!KNlpResourceManager::getResource()->loadDictFiles())
+        return false;
+
+    if (!AttrTokenizeWrapper::get()->loadDictFiles(system_resource_path_ + "/dict/attr_tokenize"));
         return false;
 
     const bfs::path parentDir(collectionDataPath_);
