@@ -317,6 +317,13 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
     }
+    std::string scategory;
+    doc.getString("Category", scategory);
+    if(!scategory.empty()) 
+    {
+        scategory+=">";
+        doc.property("Category") = str_to_propstr(scategory);
+    }
     if(!product.spic.empty() && !title.empty())
     {
         //TODO remove this restrict
@@ -588,7 +595,6 @@ bool B5moProcessor::OMap_(const OriginalMapper& omapper, Document& doc) const
     std::string category;
     if(omapper.Map(source, original_category, category))
     {
-        if(!category.empty()) category+=">";
         doc.property("Category") = str_to_propstr(category);
         return true;
     }
