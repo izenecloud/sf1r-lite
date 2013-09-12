@@ -32,9 +32,10 @@ public:
     bool isCombine(const std::string& lv, const std::string& rv);
     void init();
 private:
-    void serialize(std::ostream& out);
-    void deserialize(std::istream& in);
-    void statistics(int callType);
+    void serialize_(std::ostream& out);
+    void deserialize_(std::istream& in);
+    bool statistics_();
+    void cronJob_(int callType);
 private:
     MiningManager* miningManager_;
     std::string lastTimeStr_;

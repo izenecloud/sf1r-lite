@@ -8,6 +8,12 @@
 #include <log-manager/UserQuery.h>
 #include <log-manager/LogAnalysis.h>
 
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+
 #include <iostream>
 #include <time.h>
 #include <string.h>
@@ -16,7 +22,7 @@
 namespace sf1r
 {
 
-static std::string cronJobName = "QueryStatistics";
+static std::string cronJobName_ = "QueryStatistics";
 
 QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionName)
     : miningManager_(mining)
@@ -31,31 +37,22 @@ QueryStatistics::QueryStatistics(MiningManager* mining, std::string& collectionN
     
     if (cronExpression_.setExpression("00 3 * * *"))
     {
-        bool ret = izenelib::util::Scheduler::addJob(cronJobName, 
+        bool ret = izenelib::util::Scheduler::addJob(cronJobName_, 
                                                      60*1000,
                                                      0,
-                                                     boost::bind(&QueryStatistics::statistics, this, _1));
+                                                     boost::bind(&QueryStatistics::cronJob_, this, _1));
         if (!ret)
         {
-            LOG(INFO)<<"Failed to addJob:"<<cronJobName;
+            LOG(INFO)<<"Failed to addJob:"<<cronJobName_;
         }
     }
 }
 
 QueryStatistics::~QueryStatistics()
 {
-    std::ofstream ofs;
-    std::string wordsFreqFile = miningManager_->system_resource_path_ + "/query-abbreviation/wordsFreq" + collectionName_;
-    if (!boost::filesystem::exists(wordsFreqFile))
-    {
-        boost::filesystem::create_directory(miningManager_->system_resource_path_ + "/query-abbreviation/");
-    }
-    ofs.open(wordsFreqFile.c_str(), std::ofstream::out | std::ofstream::trunc);
-    serialize(ofs);
-    ofs.close();
 
     delete wordsFreq_;
-    izenelib::util::Scheduler::removeJob(cronJobName);
+    izenelib::util::Scheduler::removeJob(cronJobName_);
 }
 
 void QueryStatistics::init()
@@ -65,12 +62,12 @@ void QueryStatistics::init()
     ifs.open(wordsFreqFile.c_str(), std::ifstream::in);
     if (ifs)
     {
-        deserialize(ifs);
+        deserialize_(ifs);
         ifs.close();
     }
 }
 
-void QueryStatistics::serialize(std::ostream& out)
+void QueryStatistics::serialize_(std::ostream& out)
 {
     out<<lastTimeStr_<<"\n";
     out<<totalWords_<<"\n";
@@ -81,7 +78,7 @@ void QueryStatistics::serialize(std::ostream& out)
     }
 }
 
-void QueryStatistics::deserialize(std::istream& in)
+void QueryStatistics::deserialize_(std::istream& in)
 {
     if (!in)
         return;
@@ -102,14 +99,52 @@ void QueryStatistics::deserialize(std::istream& in)
     }
 }
 
-void QueryStatistics::statistics(int callType)
+void QueryStatistics::cronJob_(int calltype)
 {
-    if ((!cronExpression_.matches_now()) )
+    if (cronExpression_.matches_now() || calltype > 0)
     {
-        return;
+        if(calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+            }
+            else
+                LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+            return;
+        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+            return;
+        }
+
+        bool ret = statistics_();
+        if (ret)
+        {
+            std::ofstream ofs;
+            std::string wordsFreqFile = miningManager_->system_resource_path_ + "/query-abbreviation/wordsFreq" + collectionName_;
+            if (!boost::filesystem::exists(wordsFreqFile))
+            {
+                boost::filesystem::create_directory(miningManager_->system_resource_path_ + "/query-abbreviation/");
+            }
+            ofs.open(wordsFreqFile.c_str(), std::ofstream::out | std::ofstream::trunc);
+            serialize_(ofs);
+            ofs.close();
+        }
+        DISTRIBUTE_WRITE_FINISH(true);
     }
+}
+
+bool QueryStatistics::statistics_()
+{
     if (NULL == miningManager_)
-        return;
+        return false;
     std::vector<UserQuery> queries;
     LOG(INFO)<<"Begin time:"<<lastTimeStr_<<" Collection:"<<collectionName_;
     LogAnalysis::getRecentKeywordFreqList(collectionName_, lastTimeStr_, queries);
@@ -150,7 +185,7 @@ void QueryStatistics::statistics(int callType)
         for (std::size_t i = 0; i < tokens.size() - 1; i++)
         {
             const std::string& keyword = tokens[i].token() + tokens[i+1].token();
-            double weight = tokens[i].weight() + tokens[i+1].weight();
+            //double weight = tokens[i].weight() + tokens[i+1].weight();
             //std::cout<<keyword<<"\n"; 
             FreqType::iterator it = wordsFreq_->find(keyword);
             if (wordsFreq_->end() == it)
@@ -163,6 +198,7 @@ void QueryStatistics::statistics(int callType)
             }
         }
     }
+    return true;
 }
 
 double QueryStatistics::frequency(std::string word)
@@ -170,7 +206,11 @@ double QueryStatistics::frequency(std::string word)
     boost::shared_lock<boost::shared_mutex> sl(mtx_);
     FreqType::iterator it = wordsFreq_->find(word);
     if (it == wordsFreq_->end())
+    {
+        if (0 == totalWords_)
+            return 0.001;
         return 1000 * 0.9 / (double)(totalWords_ + 1);
+    }
     return 1000 * it->second / (double)(totalWords_ + 1);
 }
 
@@ -194,7 +234,7 @@ bool QueryStatistics::isCombine(const std::string& lv, const std::string& rv)
     if (wordsFreq_->end() == it)
         return false;
     unsigned long lvf = it->second;
-    std::cout<<lv + rv <<" "<<cof <<" : "<<lv<<" "<<lvf<<"\n";
+    //std::cout<<lv + rv <<" "<<cof <<" : "<<lv<<" "<<lvf<<"\n";
     return cof / (double)lvf > 0.25;
 }
 

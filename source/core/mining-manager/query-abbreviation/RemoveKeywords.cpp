@@ -113,6 +113,9 @@ void generateTokens(TokenArray& tokens, const std::string& query, MiningManager&
     std::list<std::pair<UString, double> > minor_tokens;
     izenelib::util::UString analyzedQuery;
     double rank_boundary = 0;
+    if (NULL == miningManager.getSuffixManager())
+        return;
+
     miningManager.getSuffixManager()->GetTokenResults(keywords, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
     //tokens.reserve(major_tokens.size() + minor_tokens.size());
     std::string analyzedString;
@@ -182,6 +185,8 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
         return;
     
     static ProductMatcher* matcher = ProductMatcherInstance::get();
+    if (NULL == matcher)
+        return;
     izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
     ProductMatcher::KeywordVector kv;
     matcher->ExtractKeywords(uQuery, kv);
@@ -262,7 +267,9 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     std::reverse(tokens.begin(), tokens.end());
     
     QueryStatistics* qs = miningManager.getQueryStatistics();
-    
+    if (NULL == qs)
+        return;
+
     TokenArray tokenFreqs(tokens);
     for (std::size_t i = 0; i < tokenFreqs.size(); i++)
     {
