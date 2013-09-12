@@ -431,7 +431,7 @@ void GroupManagerTestFixture::createDocument(int num)
 
     checkCollection_();
 
-    BOOST_CHECK(miningTaskBuilder_->buildCollection());
+    BOOST_CHECK(miningTaskBuilder_->buildCollection(0));
 
     numericTableBuilder_->clearTableMap();
 }

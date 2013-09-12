@@ -50,7 +50,7 @@ public:
         return true;
     }
 
-    bool preProcess()
+    bool preProcess(int64_t timestamp)
     {
         if (isRebuildProp_(propValueTable_.propName()))
         {

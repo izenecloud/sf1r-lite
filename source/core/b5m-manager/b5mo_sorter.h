@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <boost/thread.hpp>
+#include <boost/atomic.hpp>
 #include "b5m_helper.h"
 #include "b5m_types.h"
 #include "product_db.h"
@@ -16,6 +17,7 @@
 namespace sf1r {
     using izenelib::util::UString;
     class B5moSorter {
+    typedef boost::mutex MutexType;
     public:
         struct Value
         {
@@ -24,6 +26,7 @@ namespace sf1r {
             //Document doc;
             //bool is_update;//else delete
             std::string ts;
+            std::string text;
             Value(){}
             Value(const ScdDocument& d, const std::string& t):doc(d), ts(t)
             {
@@ -52,6 +55,15 @@ namespace sf1r {
                 JsonDocument::ToDocument(value, doc);
                 return true;
             }
+        };
+
+        struct PItem{
+            PItem():id(0), pdoc(NOT_SCD)
+            {
+            }
+            uint32_t id;
+            std::vector<Value> odocs;
+            ScdDocument pdoc;
         };
         B5moSorter(const std::string& m, uint32_t mcount=100000);
 
@@ -100,10 +112,11 @@ namespace sf1r {
         void WaitUntilSortFinish_();
         void DoSort_();
         void Sort_(std::vector<Value>& docs);
-        void OBag_(std::vector<Value>& docs);
+        void OBag_(PItem& pitem);
         static void ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc);
         bool GenMirrorBlock_(const std::string& mirror_path);
         bool GenMBlock_();
+        void WritePItem_(const PItem& pitem);
 
     private:
         std::string m_;
@@ -112,13 +125,15 @@ namespace sf1r {
         uint32_t mcount_;
         uint32_t index_;
         std::string buffer_size_;
+        boost::atomic<uint32_t> last_pitemid_;
+        //uint32_t last_pitemid_;
         std::vector<Value> buffer_;
         boost::thread* sort_thread_;
         std::ofstream mirror_ofs_;
         boost::shared_ptr<ScdTypeWriter> pwriter_;
         B5mpDocGenerator pgenerator_;
         Json::Reader json_reader_;
-        boost::mutex mutex_;
+        MutexType mutex_;
     };
 
 }

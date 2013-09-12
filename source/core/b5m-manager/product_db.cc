@@ -128,7 +128,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             }
             catch(std::exception& ex)
             {
-                std::cerr<<"sales amount error: "<<samount<<std::endl;
+                std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
             }
         }
         //if(!uattribute.empty())

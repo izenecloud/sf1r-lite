@@ -290,7 +290,10 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     const size_t workerNum = workerResults.size();
 
     if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
         return;
+    }
 
     for(size_t workerId = 0; workerId < workerNum; ++workerId)
     {
@@ -299,12 +302,17 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
             mergeResult.error_ = workerResults.result(workerId).error_;
             return;
         }
+        LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
+        LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
     }
 
-    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin";
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
+
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin. pageCount:" << pageCount
+        << ", displayPropertyNum:" << displayPropertyNum << ", summary:" << isSummaryOn
+        << ", workNum: " << workerNum;
 
     // initialize summary info for result
     mergeResult.snippetTextOfDocumentInPage_.clear();
@@ -544,6 +552,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
 
     for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
+        if ( topstart >= start_inpage + totalResult.count_ )
+        {
+            break;
+        }
         workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
         std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
         KeywordSearchResult& workerResult = inserted_ret.first->second;
@@ -561,17 +573,10 @@ void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalR
             workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
             workerResult.docsInPage_.reserve(totalResult.topKDocs_.size()/2);
         }
-        if ( topstart < start_inpage + totalResult.count_ )
-        {
-            workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
-            workerResult.pageOffsetList_.push_back(i);
-            ++i;
-            ++workerResult.count_;
-        }
-        else
-        {
-            break;
-        }
+        workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
+        workerResult.pageOffsetList_.push_back(i);
+        ++i;
+        ++workerResult.count_;
         //workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
         //workerResult.topKWorkerIds_.push_back(curWorkerId);
     }

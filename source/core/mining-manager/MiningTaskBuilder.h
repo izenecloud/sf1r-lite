@@ -19,7 +19,7 @@ public:
     explicit MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
     ~MiningTaskBuilder();
 
-    bool buildCollection();
+    bool buildCollection(int64_t timestamp);
     void addTask(MiningTask*);
 
 private:

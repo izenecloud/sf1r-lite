@@ -23,6 +23,41 @@ const char* SUFFIX_PARENT_STR = ".parent_str.txt";
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
+
+inline unsigned int getDistance(
+    const izenelib::util::UString& s1,
+    const izenelib::util::UString& s2)
+{
+    izenelib::util::UString ls1(s1);
+    izenelib::util::UString ls2(s2);
+    ls1.toLowerString();
+    ls2.toLowerString();
+    const unsigned int HEIGHT = ls1.length() + 1;
+    const unsigned int WIDTH = ls2.length() + 1;
+    unsigned int eArray[HEIGHT][WIDTH];
+    unsigned int i;
+    unsigned int j;
+
+    for (i = 0; i < HEIGHT; i++)
+        eArray[i][0] = i;
+
+    for (j = 0; j < WIDTH; j++)
+        eArray[0][j] = j;
+
+    for (i = 1; i < HEIGHT; i++)
+    {
+        for (j = 1; j < WIDTH; j++)
+        {
+            eArray[i][j] = min(
+                eArray[i - 1][j - 1] +
+                (ls1[i-1] == ls2[j-1] ? 0 : 1),
+                min(eArray[i - 1][j] + 1, eArray[i][j - 1] + 1));
+        }
+    }
+
+    return eArray[HEIGHT - 1][WIDTH - 1];
+}
+
 }
 
 NS_FACETED_BEGIN
@@ -109,8 +144,8 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
             else
             {
                 // overflow
-                throw MiningException(
-                    "property value count is out of range",
+                throw MiningException(propName_ + 
+                    ": property value count is out of range",
                     boost::lexical_cast<std::string>(propStrVec_.size()),
                     "PropValueTable::insertPropValueId"
                 );
