@@ -93,7 +93,6 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
     mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
-    TOP_K_NUM = result0.TOP_K_NUM;
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
@@ -138,17 +137,17 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.attrRep_.merge(0, otherAttrReps);
 
     //size_t endOffset = mergeResult.start_ + mergeResult.count_;
-    size_t topKStart = Utilities::roundDown(mergeResult.start_, TOP_K_NUM);
+    size_t topKStart = Utilities::roundDown(mergeResult.start_, mergeResult.TOP_K_NUM);
     size_t topKCount = 0;
     if (topKStart < totalTopKCount)
         topKCount = totalTopKCount - topKStart;
 
-    topKCount = std::min(TOP_K_NUM, topKCount);
+    topKCount = std::min((size_t)mergeResult.TOP_K_NUM, topKCount);
 
     LOG(INFO) << "SearchMerger topKStart : << " << topKStart
         << ", topKCount: " << topKCount
         << ", totalTopKCount: " << totalTopKCount
-        << ", TOP_K_NUM: " << TOP_K_NUM << endl;
+        << ", TOP_K_NUM: " << mergeResult.TOP_K_NUM << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
