@@ -120,7 +120,7 @@ void generateTokens(TokenArray& tokens, const std::string& query, MiningManager&
     //tokens.reserve(major_tokens.size() + minor_tokens.size());
     std::string analyzedString;
     analyzedQuery.convertString(analyzedString, izenelib::util::UString::UTF_8);
-    std::cout<<analyzedString<<"\n";
+    //std::cout<<analyzedString<<"\n";
     //std::cout<<keywords<<"\n";
     
     std::list<std::pair<UString, double> >::iterator it = major_tokens.begin();
