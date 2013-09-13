@@ -89,6 +89,11 @@ private:
     void SetLastDocid_(uint32_t docid) const;
 
     void check_rebuild();
+    bool sendCommentSCDs(const std::string& syncID, const std::string& scddir,
+        const std::string& total_scd_dir, bool isrebuild, bool send_total);
+    void ComputeCommentForOffer();
+    void doUpdateRecentCommentAndSendSCD(CommentCacheStorage* storage,
+        boost::shared_ptr<ScdWriter>& scd_writer, const std::string& scd_dir, const std::string& syncID);
 
 private:
     bool is_rebuild_;
@@ -96,6 +101,7 @@ private:
     std::string total_scd_path_;
     std::string collectionName_;
     std::string homePath_;
+    std::string scdPath_;
     SummarizeConfig schema_;
 
     fstream total_Opinion_Scd_;
@@ -104,10 +110,12 @@ private:
     //boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<ScdWriter> score_scd_writer_;
     boost::shared_ptr<ScdWriter> opinion_scd_writer_;
+    boost::shared_ptr<ScdWriter> offer_comment_scd_writer_;
 
     idmlib::util::IDMAnalyzer* analyzer_;
 
     CommentCacheStorage* comment_cache_storage_;
+    CommentCacheStorage* offer_comment_cache_storage_;
     SummarizationStorage* summarization_storage_;
 
     Corpus* corpus_;
