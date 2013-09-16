@@ -19,6 +19,8 @@ namespace sf1r {
             std::string to;
             uint32_t days;
             double price;
+            ScdDocument doc;
+            bool bcluster;
             bool operator<(const BufferValueItem& another) const
             {
                 return days<another.days;
@@ -26,6 +28,7 @@ namespace sf1r {
         };
         typedef std::vector<BufferValueItem> BufferValue;
         typedef boost::unordered_map<BufferKey, BufferValue> Buffer;
+        typedef BufferValue Group;
 
 
     public:
@@ -37,11 +40,14 @@ namespace sf1r {
         void Insert_(ScdDocument& doc);
         uint32_t ParseDays_(const std::string& sdays) const;
         void Finish_();
+        void FindGroups_(BufferValue& value);
+        void GenP_(Group& g, Document& doc) const;
 
 
     private:
+        std::string m_;
         Buffer buffer_;
-        boost::shared_ptr<ScdWriter> pwriter_;
+        boost::mutex mutex_;
     };
 
 }
