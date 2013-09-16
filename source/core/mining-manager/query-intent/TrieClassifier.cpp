@@ -350,7 +350,8 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
     voters.clear();
     //std::cout<<query<<"\n"<<removedWords<"\n";
     //std::cout<<"vote end\n";
-    reserveKeywords(mvContainer, removedWords);
+    if (ret && (!removedWords.empty()))
+        reserveKeywords(mvContainer, removedWords);
     // combine.
     // query:男装 外套
     // 男装=>服饰鞋帽>男装
