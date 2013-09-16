@@ -14,6 +14,10 @@ namespace sf1r
 class SummarizeConfig
 {
 public:
+    SummarizeConfig()
+        :isSyncSCDOnly(false), recent_days(30)
+    {
+    }
     /// property name
     std::string docidPropName;
     std::string uuidPropName;
@@ -23,10 +27,12 @@ public:
     std::string titlePropName;
     std::string scorePropName;
     std::string commentCountPropName;
+    std::string recentCommentCountPropName;
     std::string opinionPropName;
     std::string opinionWorkingPath;
     std::string opinionSyncId;
     bool isSyncSCDOnly;
+    int32_t recent_days;
 
     friend class boost::serialization::access;
 
@@ -41,10 +47,12 @@ public:
         ar & titlePropName;
         ar & scorePropName;
         ar & commentCountPropName;
+        ar & recentCommentCountPropName;
         ar & opinionPropName;
         ar & opinionWorkingPath;
         ar & opinionSyncId;
         ar & isSyncSCDOnly;
+        ar & recent_days;
     }
 };
 

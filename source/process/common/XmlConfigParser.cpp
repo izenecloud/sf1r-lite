@@ -1823,6 +1823,16 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
+        {
+            Iterator<Element> it("RecentCommentCountProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.recentCommentCountPropName = property_name;
+                getAttribute(it.Get(), "days", mining_schema.summarization_schema.recent_days, false);
+            }
+        }
+
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)
         {

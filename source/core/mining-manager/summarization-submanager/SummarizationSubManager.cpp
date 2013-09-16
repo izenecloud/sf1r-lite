@@ -344,7 +344,7 @@ bool MultiDocSummarizationSubManager::preProcess(int64_t timestamp)
 
     // store the recent comments in 30 days.
     int64_t ts = timestamp/1000000;
-    ts -= 30*24*60*60;
+    ts -= schema_.recent_days*24*60*60;
 
     comment_cache_storage_->setRecentTime(ts);
 
@@ -894,7 +894,9 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             doc.property("DOCID") = str_to_propstr(key_str);
             doc.property(schema_.scorePropName) = str_to_propstr(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
             if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
+                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(count));
+            if(!schema_.recentCommentCountPropName.empty())
+                doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
             score_scd_writer_->Append(doc);
         }
         if (total_Score_Scd_.good())
@@ -903,7 +905,13 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             total_Score_Scd_ << "<" << schema_.scorePropName << ">" << boost::lexical_cast<std::string>(avg_score) << endl;
             if(!schema_.commentCountPropName.empty())
             {
-                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">" << boost::lexical_cast<std::string>(recent_count) << endl;
+                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(count) << endl;
+            }
+            if(!schema_.recentCommentCountPropName.empty())
+            {
+                total_Score_Scd_ << "<" << schema_.recentCommentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(recent_count) << endl;
             }
          }
     }
@@ -1034,13 +1042,13 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
         }
 
         int64_t ts = reqlog.cron_time/1000000;
-        ts -= 30*24*60*60;
+        ts -= schema_.recent_days*24*60*60;
         comment_cache_storage_->setRecentTime(ts);
         std::vector<KeyType> update_keys;
         std::vector<uint32_t> recent_comment_count_list;
         comment_cache_storage_->updateRecentComments(update_keys, recent_comment_count_list);
         LOG(INFO) << "recent comments update finished: " << update_keys.size();
-        if (!update_keys.empty() && !schema_.commentCountPropName.empty())
+        if (!update_keys.empty() && !schema_.recentCommentCountPropName.empty())
         {
             if (score_scd_writer_)
             {
@@ -1062,7 +1070,7 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
                         key_str = Utilities::uint128ToUuid(update_keys[i]);
                         Document doc;
                         doc.property("DOCID") = str_to_propstr(key_str);
-                        doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
+                        doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
                         score_scd_writer_->Append(doc);
                     }
                     score_scd_writer_->Close();
