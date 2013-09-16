@@ -7,6 +7,7 @@
 #include <common/ScdTypeWriter.h>
 #include <document-manager/ScdDocument.h>
 #include <boost/threadpool.hpp>
+#include <glog/logging.h>
 #include "b5m_threadpool.h"
 
 namespace sf1r {
