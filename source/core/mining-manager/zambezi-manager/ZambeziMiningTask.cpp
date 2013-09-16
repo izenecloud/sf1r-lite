@@ -32,7 +32,7 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     propNameList.push_back("Attribute");
     propNameList.push_back("Category");
     propNameList.push_back("OriginalCategory");
-    propNameList.push_back("source");
+    propNameList.push_back("Source");
 
     for (std::vector<std::string>::iterator i = propNameList.begin(); i != propNameList.end(); ++i)
     {
