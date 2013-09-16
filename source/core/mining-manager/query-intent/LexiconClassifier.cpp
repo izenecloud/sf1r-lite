@@ -172,47 +172,9 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
             pos = found+1;
         }
     }
-    reserveKeywords(wmvs[*keyPtr_], removedWords);
-    
+    if (ret && (!removedWords.empty()))
+        reserveKeywords(wmvs[*keyPtr_], removedWords);
     return ret;
-
-    /*size_t pos = 0;
-    size_t end = query.size() - 1;
-    unsigned short wordSize = maxLength_;
-    while (pos <= end)
-    {
-        while (minLength_ <= wordSize)
-        {
-            if (end < pos + wordSize -1)
-            {
-                wordSize--;
-                continue;
-            }
-            
-            std::string word = query.substr(pos, wordSize);
-            boost::unordered_map<std::string, std::string>::iterator it = lexicons_.find(word);
-            if (lexicons_.end() != it)
-            {
-                word = it->second;
-            }
-            else
-            {
-                wordSize--;
-                continue;
-            }
-            intents[iCategory_].push_back(word);
-            query.erase(pos, wordSize);
-            if (end <= wordSize)
-                return true;
-            end -= wordSize;
-            wordSize = maxLength_;
-        }
-        if (minLength_ > wordSize)
-        {
-            pos++;
-            wordSize = maxLength_;
-        }
-    }*/
 }
 
 }

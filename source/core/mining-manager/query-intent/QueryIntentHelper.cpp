@@ -91,6 +91,8 @@ static void refineConditions(izenelib::driver::Value& conditions,
                 break;
             std::string vs = item->first;
             boost::trim(vs);
+            if (vs.size() < 1)
+                continue;
             values() = vs;
             queryIntentValues() = vs;
             LOG(INFO)<<vs;
