@@ -26,7 +26,6 @@ ZambeziMiningTask::ZambeziMiningTask(
 
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
-    std::string propValue;
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
     propNameList.push_back("Title");
@@ -37,6 +36,7 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 
     for (std::vector<std::string>::iterator i = propNameList.begin(); i != propNameList.end(); ++i)
     {
+        std::string propValue;
         doc.getProperty(*i, propValue);
         propValueList.push_back(propValue);
     }
