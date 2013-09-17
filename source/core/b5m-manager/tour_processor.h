@@ -24,7 +24,7 @@ namespace sf1r {
         {
             std::string from;
             std::string to;
-            uint32_t days;
+            std::pair<uint32_t, uint32_t> days;
             double price;
             ScdDocument doc;
             bool bcluster;
@@ -47,7 +47,7 @@ namespace sf1r {
     private:
 
         void Insert_(ScdDocument& doc);
-        uint32_t ParseDays_(const std::string& sdays) const;
+        std::pair<uint32_t, uint32_t> ParseDays_(const std::string& sdays) const;
         void Finish_();
 		
         void FindGroups_(BufferValue& value);

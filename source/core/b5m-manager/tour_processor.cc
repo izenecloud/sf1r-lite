@@ -27,6 +27,7 @@ bool TourProcessor::Generate(const std::string& scd_path, const std::string& mdb
     ScdDocProcessor sd_processor(p, thread_num);
     sd_processor.AddInput(scd_path);
     sd_processor.Process();
+    Finish_();
 	return true;
 }
 
@@ -39,8 +40,7 @@ void TourProcessor::Insert_(ScdDocument& doc)
     doc.getString(SCD_TO_CITY, value.to);
 	doc.getString(SCD_PRICE,price);
     doc.getString(SCD_TIME_PLAN, sdays);
-    uint32_t days = ParseDays_(sdays);
-    value.days = days;
+    value.days = ParseDays_(sdays);
     value.doc = doc;
     value.price = 0.0;
     try {
@@ -51,15 +51,16 @@ void TourProcessor::Insert_(ScdDocument& doc)
         std::cerr<<"parse tour price error for "<< price<<std::endl;
     }
     value.bcluster = true;
-    if(value.days==0||value.price==0.0||value.from.empty()||value.to.empty()) value.bcluster = false;
+    if(value.days.second==0||value.price==0.0||value.from.empty()||value.to.empty()) value.bcluster = false;
     BufferKey key(value.from, value.to);
     boost::unique_lock<boost::mutex> lock(mutex_);
     buffer_[key].push_back(value);
 }
 
-uint32_t TourProcessor::ParseDays_(const std::string& sdays) const
+std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays) const
 {
     //find "天" Ps:4-7天/8天
+    std::pair<uint32_t, uint32_t> r(0,0);
 	size_t pos = sdays.find("天");
 	if(pos == std::string::npos)
 	{
@@ -71,18 +72,22 @@ uint32_t TourProcessor::ParseDays_(const std::string& sdays) const
 	pos = tmp_days.find('-');
 	if(pos == std::string::npos)
 	{
-		return atoi(tmp_days.c_str());
+		r.first = atoi(tmp_days.c_str());
+		r.second = r.first;
 	}
 	else
 	{
 		int min_days = atoi(tmp_days.substr(0,pos).c_str());
 		int max_days = atoi(tmp_days.substr(pos+1).c_str());
-		return (min_days + max_days + 1)/2;
+		r.first = min_days;
+		r.second = max_days;
 	}
+	return r;
 }
 
 void TourProcessor::Finish_()
 {
+    LOG(INFO)<<"buffer size "<<buffer_.size()<<std::endl;
     std::string odir = m_+"/b5mo";
     std::string pdir = m_+"/b5mp";
     boost::filesystem::create_directories(odir);
@@ -91,28 +96,32 @@ void TourProcessor::Finish_()
     ScdWriter pwriter(pdir, UPDATE_SCD);
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
     {
+        const BufferKey& key = it->first;
         BufferValue& value = it->second;
+        LOG(INFO)<<"processing "<<key.first<<","<<key.second<<","<<value.size()<<std::endl;
         std::sort(value.begin(), value.end());
         std::vector<Group> groups;
         for(uint32_t i=0;i<value.size();i++)
         {
             const BufferValueItem& vi = value[i];
+            LOG(INFO)<<"find value item "<<vi.from<<","<<vi.to<<",["<<vi.days.first<<","<<vi.days.second<<"],"<<vi.price<<","<<vi.bcluster<<std::endl;
             Group* find_group = NULL;
             for(uint32_t j=0;j<groups.size();j++)
             {
                 Group& g = groups[j];
                 if(!g.front().bcluster) continue;
                 //compare vi with g;
-                uint32_t g_mindays = g.front().days;
-                if((double)vi.days/g_mindays>1.5) continue;
-                double avg_price = 0.0;
-                for(uint32_t k=0;k<g.size();k++)
-                {
-                    avg_price += g[k].price;
-                }
-                avg_price/=g.size();
-                double p_ratio = std::max(vi.price, avg_price)/std::min(vi.price, avg_price);
-                if(p_ratio>1.5) continue;
+                std::pair<uint32_t, uint32_t> g_mindays = g.front().days;
+                if(vi.days.first>g_mindays.second&&vi.days.first-g_mindays.second>1) continue;
+                //if(vi.days-g_mindays>1) continue;
+                //double avg_price = 0.0;
+                //for(uint32_t k=0;k<g.size();k++)
+                //{
+                //    avg_price += g[k].price;
+                //}
+                //avg_price/=g.size();
+                //double p_ratio = std::max(vi.price, avg_price)/std::min(vi.price, avg_price);
+                //if(p_ratio>1.5) continue;
                 find_group = &g;
             }
 
@@ -121,6 +130,7 @@ void TourProcessor::Finish_()
                 Group g;
                 g.push_back(vi);
                 groups.push_back(g);
+                LOG(INFO)<<"create new group"<<std::endl;
             }
             else
             {
@@ -150,22 +160,24 @@ void TourProcessor::Finish_()
 void TourProcessor::GenP_(Group& g, Document& doc) const
 {
 	assert(g.size() >= 1);
-	std::string source;
+	doc = g[0].doc;
+	doc.eraseProperty("uuid");
 	std::string price;
 	std::string p_docid;
-	Set		    source_set;
+    Set source_set;
 	double min_price = g[0].price;
 	double max_price = g[0].price;
-	//get first doc  docid
-	g[0].doc.getString(SCD_DOC_ID,p_docid);
+	//get first doc uuid as pid
+	g[0].doc.getString(SCD_UUID,p_docid);
 	//set docid default use first docid
-	doc.property(SCD_DOC_ID) = p_docid;
-	for(size_t i = 0; i<g.size();i++)
+	doc.property(SCD_DOC_ID) = str_to_propstr(p_docid);
+	for(std::size_t i=0;i<g.size();i++)
 	{
-		ScdDocument &doc_ref = g[i].doc;
+		ScdDocument& doc_ref = g[i].doc;
 		//get source list
+        std::string source;
 		doc_ref.getString(SCD_SOURCE,source);
-        source_set.insert(source);   
+		if(!source.empty()) source_set.insert(source);   
 		//get price range
 		min_price = std::min(min_price,g[i].price);
 		max_price = std::max(max_price,g[i].price);
@@ -173,15 +185,13 @@ void TourProcessor::GenP_(Group& g, Document& doc) const
 	}
 
 	//generate p <source>
-	source.clear();
-	Set::iterator iter = source_set.begin();
-	while(iter != source_set.end())
+    std::string source;
+	for(Set::const_iterator it = source_set.begin();it!=source_set.end();++it)
 	{
-		source += *iter;
-		source += ',';
+	    if(!source.empty()) source+=",";
+		source += *it;
 	}
-	source.erase(--source.end());
-	doc.property(SCD_SOURCE)=source;
+	doc.property(SCD_SOURCE)=str_to_propstr(source);
 
 	//generate p <price>
 	std::stringstream ss;
@@ -195,7 +205,8 @@ void TourProcessor::GenP_(Group& g, Document& doc) const
 		ss << min_price;
 	}
 	ss >> price;
-	doc.property(SCD_PRICE) = price;
+	doc.property(SCD_PRICE) = str_to_propstr(price);
+	doc.property("itemcount") = (int64_t)(g.size());
 	//may have other attribute to set property todo......
 	//
 	//
