@@ -1096,9 +1096,9 @@ void MultiDocSummarizationSubManager::ComputeCommentForOffer()
             }
         }
 
-        if (++count % 1000 == 0)
+        if (++count % 10000 == 0)
         {
-            std::cout << "\r === comupte offer comment count: " << count << " ===" << std::flush;
+            std::cout << "\r === compute offer comment count: " << count << " ===" << std::flush;
         }
     }
 

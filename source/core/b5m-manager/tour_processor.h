@@ -26,16 +26,19 @@ namespace sf1r {
             std::string to;
             uint32_t days;
             double price;
-			std::string docid;
-			bool operator<(const BufferValueItem& another) const
+            ScdDocument doc;
+            bool bcluster;
+            bool operator<(const BufferValueItem& another) const
             {
                 return days<another.days;
             }
         };
         typedef std::vector<BufferValueItem> BufferValue;
         typedef boost::unordered_map<BufferKey, BufferValue> Buffer;
-		typedef boost::unordered_map<std::string,ScdDocument*> DocHash;
 		typedef boost::unordered_set<std::string> Set;
+        typedef BufferValue Group;
+
+
     public:
         TourProcessor();
 		~TourProcessor();
@@ -47,24 +50,14 @@ namespace sf1r {
         uint32_t ParseDays_(const std::string& sdays) const;
         void Finish_();
 		
-		/**init the b5mo path*/
-		int InitializeOPath(const std::string &mdb_instance);
-		/**init the b5mp path*/
-		int InitializePPath(const std::string &mdb_instance);
-		/**set uuid*/
-		void SetUUID(ScdDocument&doc);
-
-		/**merage o */
-		void Merger();
-		
-		/**aggregate p information*/
-		void AggregateP(const BufferValue&value);
+        void FindGroups_(BufferValue& value);
+        void GenP_(Group& g, Document& doc) const;
 
     private:
-        Buffer  buffer_;
-		DocHash doc_hash_;
-		boost::shared_ptr<ScdWriter> pwriter_;
-	};
+        std::string m_;
+        Buffer buffer_;
+        boost::mutex mutex_;
+    };
 }
 
 #endif

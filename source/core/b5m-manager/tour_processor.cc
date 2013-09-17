@@ -16,113 +16,45 @@ TourProcessor::TourProcessor()
 
 TourProcessor::~TourProcessor()
 {
-	//destroy all docs
-	for(DocHash::iterator iter = doc_hash_.begin();
-			iter != doc_hash_.end();iter++)
-	{
-		assert(iter->second);
-		delete (iter->second);
-	}
-}
-
-int TourProcessor::InitializeOPath(const std::string& mdb_instance)
-{
-    std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
-    B5MHelper::PrepareEmptyDir(b5mo_path);
-    try
-	{
-		ScdWriter *o_writer = new ScdWriter(b5mo_path,UPDATE_SCD);
-		pwriter_.reset(o_writer);
-	}
-	catch(std::exception&e)
-	{
-		LOG(INFO) << e.what() << std::endl;
-		return 0;
-	}
-	return 1;
-}
-
-
-int TourProcessor::InitializePPath(const std::string& mdb_instance)
-{
-    std::string b5mp_path = B5MHelper::GetB5mpPath(mdb_instance);
-    B5MHelper::PrepareEmptyDir(b5mp_path);
-    try
-	{
-		ScdWriter *p_writer = new ScdWriter(b5mp_path,UPDATE_SCD);
-		pwriter_.reset(p_writer);
-	}
-	catch(std::exception&e)
-	{
-		LOG(INFO) << e.what() << std::endl;
-		return 0;
-	}
-	return 1;
 }
 
 bool TourProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
 {
-	if(0 == InitializeOPath(mdb_instance))
-	{
-		return false;
-	}
-
 	//scan all the *.scd
+    m_ = mdb_instance;
     ScdDocProcessor::ProcessorType p = boost::bind(&TourProcessor::Insert_, this, _1);
     int thread_num = 1;
     ScdDocProcessor sd_processor(p, thread_num);
     sd_processor.AddInput(scd_path);
     sd_processor.Process();
-	Merger();
-	LOG(INFO) << "1--->O output finished." << std::endl;
-	if(0 == InitializePPath(mdb_instance))
-	{
-		return false;
-	}
-	//Ouput p 
-	Finish_();
-	LOG(INFO) << "1--->P output finished." << std::endl;
 	return true;
-}
-
-void TourProcessor::SetUUID(ScdDocument &doc)
-{
-	std::string doc_id;
-	doc.getProperty(SCD_DOC_ID,doc_id);
-	doc.property(SCD_UUID) = doc_id;  
-}
-
-void TourProcessor::Merger()
-{
 }
 
 void TourProcessor::Insert_(ScdDocument& doc)
 {
-	//callback function aggregate the documents have the same 
-	//fromcity/tocity
-	//sorted by timeplan
 	std::string sdays;
 	std::string price;
 	BufferValueItem value;
     doc.getString(SCD_FROM_CITY, value.from);
     doc.getString(SCD_TO_CITY, value.to);
-	doc.getString(SCD_DOC_ID,value.docid);
 	doc.getString(SCD_PRICE,price);
-	value.price = atof(price.c_str());
     doc.getString(SCD_TIME_PLAN, sdays);
     uint32_t days = ParseDays_(sdays);
     value.days = days;
+    value.doc = doc;
+    value.price = 0.0;
+    try {
+        value.price = boost::lexical_cast<double>(price);
+    }
+    catch(std::exception& ex)
+    {
+        std::cerr<<"parse tour price error for "<< price<<std::endl;
+    }
+    value.bcluster = true;
+    if(value.days==0||value.price==0.0||value.from.empty()||value.to.empty()) value.bcluster = false;
     BufferKey key(value.from, value.to);
+    boost::unique_lock<boost::mutex> lock(mutex_);
     buffer_[key].push_back(value);
-
-	//set b5mo scd <docid>------><uuid>
-	SetUUID(doc);
-	//write o result
-	pwriter_->Append(doc);
-
-	//generate one copy of doc prepare for the p result
-	ScdDocument *copy_doc = new ScdDocument(doc);
-	doc_hash_[value.docid] = copy_doc;
 }
 
 uint32_t TourProcessor::ParseDays_(const std::string& sdays) const
@@ -149,34 +81,97 @@ uint32_t TourProcessor::ParseDays_(const std::string& sdays) const
 	}
 }
 
-void TourProcessor::AggregateP(const BufferValue&value)
-{	
-	assert(value.size() >= 1);
+void TourProcessor::Finish_()
+{
+    std::string odir = m_+"/b5mo";
+    std::string pdir = m_+"/b5mp";
+    boost::filesystem::create_directories(odir);
+    boost::filesystem::create_directories(pdir);
+    ScdWriter owriter(odir, UPDATE_SCD);
+    ScdWriter pwriter(pdir, UPDATE_SCD);
+    for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
+    {
+        BufferValue& value = it->second;
+        std::sort(value.begin(), value.end());
+        std::vector<Group> groups;
+        for(uint32_t i=0;i<value.size();i++)
+        {
+            const BufferValueItem& vi = value[i];
+            Group* find_group = NULL;
+            for(uint32_t j=0;j<groups.size();j++)
+            {
+                Group& g = groups[j];
+                if(!g.front().bcluster) continue;
+                //compare vi with g;
+                uint32_t g_mindays = g.front().days;
+                if((double)vi.days/g_mindays>1.5) continue;
+                double avg_price = 0.0;
+                for(uint32_t k=0;k<g.size();k++)
+                {
+                    avg_price += g[k].price;
+                }
+                avg_price/=g.size();
+                double p_ratio = std::max(vi.price, avg_price)/std::min(vi.price, avg_price);
+                if(p_ratio>1.5) continue;
+                find_group = &g;
+            }
+
+            if(find_group==NULL)
+            {
+                Group g;
+                g.push_back(vi);
+                groups.push_back(g);
+            }
+            else
+            {
+                find_group->push_back(vi);
+            }
+        }
+        for(uint32_t i=0;i<groups.size();i++)
+        {
+            Group& g = groups[i];
+            std::string pid;
+            g.front().doc.getString("DOCID", pid);
+            for(uint32_t j=0;j<g.size();j++)
+            {
+                BufferValueItem& vi = g[j];
+                vi.doc.property("uuid") = str_to_propstr(pid);
+                owriter.Append(vi.doc);
+            }
+            Document pdoc;
+            GenP_(g, pdoc);
+            pwriter.Append(pdoc);
+        }
+    }
+    owriter.Close();
+    pwriter.Close();
+}
+
+void TourProcessor::GenP_(Group& g, Document& doc) const
+{
+	assert(g.size() >= 1);
 	std::string source;
 	std::string price;
-	std::string p_docid = value[0].docid;
+	std::string p_docid;
 	Set		    source_set;
-	ScdDocument *doc = NULL;
-	double min_price = value[0].price;
-	double max_price = value[0].price;
-	for(size_t i = 0; i<value.size();i++)
+	double min_price = g[0].price;
+	double max_price = g[0].price;
+	//get first doc  docid
+	g[0].doc.getString(SCD_DOC_ID,p_docid);
+	//set docid default use first docid
+	doc.property(SCD_DOC_ID) = p_docid;
+	for(size_t i = 0; i<g.size();i++)
 	{
-		const std::string& docid = value[i].docid;
-		doc = doc_hash_[docid];
-		assert(doc != NULL);
+		ScdDocument &doc_ref = g[i].doc;
 		//get source list
-		doc->getString(SCD_SOURCE,source);
+		doc_ref.getString(SCD_SOURCE,source);
         source_set.insert(source);   
 		//get price range
-		min_price = std::min(min_price,value[i].price);
-		max_price = std::max(max_price,value[i].price);
+		min_price = std::min(min_price,g[i].price);
+		max_price = std::max(max_price,g[i].price);
 		//maybe some other rules TODO........
-		//
 	}
 
-
-	doc = doc_hash_[p_docid];
-	assert(doc != NULL);
 	//generate p <source>
 	source.clear();
 	Set::iterator iter = source_set.begin();
@@ -186,7 +181,7 @@ void TourProcessor::AggregateP(const BufferValue&value)
 		source += ',';
 	}
 	source.erase(--source.end());
-	doc->property(SCD_SOURCE)=source;
+	doc.property(SCD_SOURCE)=source;
 
 	//generate p <price>
 	std::stringstream ss;
@@ -200,16 +195,8 @@ void TourProcessor::AggregateP(const BufferValue&value)
 		ss << min_price;
 	}
 	ss >> price;
-	doc->property(SCD_PRICE) = price;
-	pwriter_->Append(*doc);
-}
-
-void TourProcessor::Finish_()
-{
-    for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
-    {
-        BufferValue& value = it->second;
-        std::sort(value.begin(), value.end());
-		AggregateP(value);
-	}
+	doc.property(SCD_PRICE) = price;
+	//may have other attribute to set property todo......
+	//
+	//
 }
