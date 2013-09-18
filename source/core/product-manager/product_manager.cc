@@ -76,10 +76,7 @@ bool ProductManager::HookInsert(const PMDocumentType& doc, time_t timestamp)
             if (doc.getProperty(config_.docid_property_name, docid))
             {
                 std::string docid_str = propstr_to_str(docid);
-                if (timestamp == -1) 
-                    GetTimestamp_(doc, timestamp);
-                else
-                    timestamp *= 1000000; // convert seconds to microseconds
+                if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 uint128_t num_docid = Utilities::md5ToUint128(docid_str);
                 task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
                 jobScheduler_.addTask(task);
@@ -119,10 +116,7 @@ bool ProductManager::HookUpdate(const PMDocumentType& to, docid_t oldid, time_t 
         {
             std::string docid_str;
             docid_str = propstr_to_str(docid);
-            if (timestamp == -1) 
-                GetTimestamp_(to, timestamp);
-            else
-                timestamp *= 1000000; // convert seconds to microseconds
+            if (timestamp == -1) GetTimestamp_(to, timestamp);
             uint128_t num_docid = Utilities::md5ToUint128(docid_str);
             std::map<std::string, std::string> group_prop_map;
             GetGroupProperties_(to, group_prop_map);
