@@ -81,21 +81,21 @@ bool convertRangeLabel(const std::string& src, NumericRangeGroupLabel::NumericRa
         return false;
     }
 
-    int64_t lowerBound = std::numeric_limits<int64_t>::min();
-    int64_t upperBound = std::numeric_limits<int64_t>::max();
+    float lowerBound = std::numeric_limits<float>::min();
+    float upperBound = std::numeric_limits<float>::max();
 
     try
     {
         if (delimitPos)
         {
             std::string sub = src.substr(0, delimitPos);
-            lowerBound = boost::lexical_cast<int64_t>(sub);
+            lowerBound = boost::lexical_cast<float>(sub);
         }
 
         if (delimitPos+1 != src.size())
         {
             std::string sub = src.substr(delimitPos+1);
-            upperBound = boost::lexical_cast<int64_t>(sub);
+            upperBound = boost::lexical_cast<float>(sub);
         }
     }
     catch(const boost::bad_lexical_cast& e)

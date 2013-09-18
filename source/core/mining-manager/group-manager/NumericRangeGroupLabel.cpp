@@ -36,8 +36,8 @@ bool NumericRangeGroupLabel::test1(docid_t doc) const
 
 bool NumericRangeGroupLabel::test2(docid_t doc) const
 {
-    int32_t value = 0;
-    if (numericPropertyTable_->getInt32Value(doc, value, false))
+    float value = 0;
+    if (numericPropertyTable_->getFloatValue(doc, value, false))
     {
         for (NumericRangeVec::const_iterator rangeIt = ranges_.begin();
             rangeIt != ranges_.end(); ++rangeIt)
