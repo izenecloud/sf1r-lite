@@ -902,7 +902,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #define MAX_SENT_COUNT 1000
 
     ScoreType total_score = 0;
-    uint32_t count = 0;
+    size_t total_count = comment_cache_item.size();
+    uint32_t score_count = 0;
 
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
@@ -912,15 +913,17 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     {
         if (it->second.score)
         {
-            ++count;
+            ++score_count;
             total_score += (it->second).score;
         }
     }
     size_t recent_count = comment_cache_storage_->setRecentComments(key, comment_cache_item);
-    if (count)
+    if (total_count > 0)
     {
         std::vector<std::pair<double, UString> > score_list(1);
-        double avg_score = (double)total_score / (double)count;
+        double avg_score = 0;
+        if (score_count > 0)
+            avg_score = (double)total_score / (double)score_count;
         score_list[0].first = avg_score;
         summarization.updateProperty("avg_score", score_list);
 
@@ -930,7 +933,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             doc.property("DOCID") = str_to_propstr(key_str);
             doc.property(schema_.scorePropName) = str_to_propstr(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
             if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(count));
+                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(total_count));
             if(!schema_.recentCommentCountPropName.empty())
                 doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
             score_scd_writer_->Append(doc);
@@ -942,7 +945,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             if(!schema_.commentCountPropName.empty())
             {
                 total_Score_Scd_ << "<" << schema_.commentCountPropName << ">"
-                    << boost::lexical_cast<std::string>(count) << endl;
+                    << boost::lexical_cast<std::string>(total_count) << endl;
             }
             if(!schema_.recentCommentCountPropName.empty())
             {
