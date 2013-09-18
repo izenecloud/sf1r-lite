@@ -1931,7 +1931,7 @@ bool IndexWorker::prepareDocument_(
                 document.property(dateProperty_.getName()).swap(propData);
             }
             // using the timestamp in the scd file.
-            timestamp = ts;
+            timestamp = ts * (int64_t)1000000;
             STOP_PROFILER(pid_date);
         }
         else if (isIndexSchema)
