@@ -19,7 +19,7 @@ ZambeziMiningTask::ZambeziMiningTask(
 {
     if (config_.isDebug)
     {
-        ofs_debug_.open((config_.indexFilePath + "debug").c_str(), ios::app);
+        ofs_debug_.open((config_.indexFilePath + ".debug").c_str(), ios::app);
     }
     
 }
