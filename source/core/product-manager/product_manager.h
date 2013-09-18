@@ -36,6 +36,7 @@ public:
 
     ~ProductManager();
 
+    // timestamp second resolution!!!
     bool HookInsert(const PMDocumentType& doc, time_t timestamp);
 
     bool HookUpdate(const PMDocumentType& to, docid_t oldid, time_t timestamp);
