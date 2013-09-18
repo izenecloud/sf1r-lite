@@ -3006,9 +3006,6 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
     if (!zambeziConfig.isEnable)
         return true;
 
-    if (!KNlpResourceManager::getResource()->loadDictFiles())
-        return false;
-
     if (!AttrTokenizeWrapper::get()->loadDictFiles(system_resource_path_ + "/dict/attr_tokenize"))
         return false;
 
