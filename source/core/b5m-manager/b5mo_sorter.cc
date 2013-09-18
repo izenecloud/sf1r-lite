@@ -151,14 +151,6 @@ void B5moSorter::WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const s
     if(spid.empty()) return;
     Json::Value json_value;
     JsonDocument::ToJson(doc, json_value);
-    //for(Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
-    //{
-        //const PropertyValue& v = it->second;
-        //const UString& uv = v.get<UString>();
-        //std::string sv;
-        //uv.convertString(sv, UString::UTF_8);
-        //json_value[it->first] = sv;
-    //}
     Json::FastWriter writer;
     std::string str_value = writer.write(json_value);
     boost::algorithm::trim(str_value);
@@ -171,14 +163,6 @@ void B5moSorter::WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, con
     if(spid.empty()) return;
     Json::Value json_value;
     JsonDocument::ToJson(doc, json_value);
-    //for(Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
-    //{
-        //const PropertyValue& v = it->second;
-        //const UString& uv = v.get<UString>();
-        //std::string sv;
-        //uv.convertString(sv, UString::UTF_8);
-        //json_value[it->first] = sv;
-    //}
     Json::FastWriter writer;
     std::string str_value = writer.write(json_value);
     boost::algorithm::trim(str_value);
@@ -315,7 +299,7 @@ void B5moSorter::OBag_(PItem& pitem)
         std::string str_value = writer.write(json_value);
         boost::algorithm::trim(str_value);
         std::stringstream ss;
-        ss<<spid<<"\t"<<doc.type<<"\t"<<pitem.odocs[i].ts<<"\t"<<str_value<<std::endl;
+        ss<<spid<<"\t"<<doc.type<<"\t"<<pitem.odocs[i].ts<<"\t"<<str_value;
         pitem.odocs[i].text = ss.str();
     }
     WritePItem_(pitem);

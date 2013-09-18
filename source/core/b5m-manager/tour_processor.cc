@@ -8,6 +8,8 @@
 #include <document-manager/ScdDocument.h>
 #include <assert.h>
 
+//#define TOUR_DEBUG
+
 using namespace sf1r;
 
 TourProcessor::TourProcessor()
@@ -98,13 +100,17 @@ void TourProcessor::Finish_()
     {
         const BufferKey& key = it->first;
         BufferValue& value = it->second;
+#ifdef TOUR_DEBUG
         LOG(INFO)<<"processing "<<key.first<<","<<key.second<<","<<value.size()<<std::endl;
+#endif
         std::sort(value.begin(), value.end());
         std::vector<Group> groups;
         for(uint32_t i=0;i<value.size();i++)
         {
             const BufferValueItem& vi = value[i];
+#ifdef TOUR_DEBUG
             LOG(INFO)<<"find value item "<<vi.from<<","<<vi.to<<",["<<vi.days.first<<","<<vi.days.second<<"],"<<vi.price<<","<<vi.bcluster<<std::endl;
+#endif
             Group* find_group = NULL;
             for(uint32_t j=0;j<groups.size();j++)
             {
@@ -130,7 +136,9 @@ void TourProcessor::Finish_()
                 Group g;
                 g.push_back(vi);
                 groups.push_back(g);
+#ifdef TOUR_DEBUG
                 LOG(INFO)<<"create new group"<<std::endl;
+#endif
             }
             else
             {
