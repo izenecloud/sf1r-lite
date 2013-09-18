@@ -83,9 +83,16 @@ bool ZambeziSearch::getTopKDocs_(
     }
 
     std::vector<std::string> tokenList;
-    tokenList = AttrTokenizeWrapper::get()->attr_tokenize(query);
+    AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
 
+    tokenList = attrTokenize->attr_tokenize(query);
     zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
+
+    if (candidates.empty())
+    {
+        tokenList = attrTokenize->attr_subtokenize(tokenList);
+        zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
+    }
 
     if (candidates.empty())
     {
