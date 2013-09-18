@@ -640,19 +640,19 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                 size_t delimitPos = str_value.find('-');
                 if (delimitPos != std::string::npos)
                 {
-                    int64_t lowerBound = std::numeric_limits<int64_t>::min();
-                    int64_t upperBound = std::numeric_limits<int64_t>::max();
+                    float lowerBound = std::numeric_limits<float>::min();
+                    float upperBound = std::numeric_limits<float>::max();
 
                     try
                     {
                         if (delimitPos)
                         {
-                            lowerBound = boost::lexical_cast<int64_t>(str_value.substr(0, delimitPos));
+                            lowerBound = boost::lexical_cast<float>(str_value.substr(0, delimitPos));
                         }
 
                         if (delimitPos + 1 != str_value.size())
                         {
-                            upperBound = boost::lexical_cast<int64_t>(str_value.substr(delimitPos + 1));
+                            upperBound = boost::lexical_cast<float>(str_value.substr(delimitPos + 1));
                         }
                     }
                     catch (const boost::bad_lexical_cast& e)

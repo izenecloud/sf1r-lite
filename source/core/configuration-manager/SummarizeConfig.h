@@ -21,6 +21,7 @@ public:
     /// property name
     std::string docidPropName;
     std::string uuidPropName;
+    std::string offerIdPropName;
     std::string contentPropName;
     std::string advantagePropName;
     std::string disadvantagePropName;
@@ -41,6 +42,7 @@ public:
     {
         ar & docidPropName;
         ar & uuidPropName;
+        ar & offerIdPropName;
         ar & contentPropName;
         ar & advantagePropName;
         ar & disadvantagePropName;

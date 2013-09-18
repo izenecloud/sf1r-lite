@@ -22,7 +22,7 @@ class NumericRangeGroupLabel : public GroupLabel
 {
 public:
     /** lower bound and upper bound */
-    typedef std::pair<int64_t, int64_t> NumericRange;
+    typedef std::pair<float, float> NumericRange;
     typedef std::vector<NumericRange> NumericRangeVec;
 
     NumericRangeGroupLabel(const NumericPropertyTableBase *numericPropertyTable, const std::vector<float>& targetValues);

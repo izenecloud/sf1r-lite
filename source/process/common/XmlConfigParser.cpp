@@ -1747,6 +1747,16 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.uuidPropName = property_name;
             }
         }
+
+        {
+            Iterator<Element> it("OfferIdProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.offerIdPropName = property_name;
+            }
+        }
+
         {
             Iterator<Element> it("ContentProperty");
             for (it = it.begin(task_node); it != it.end(); it++)

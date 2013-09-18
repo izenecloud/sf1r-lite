@@ -252,6 +252,7 @@
             <xs:sequence>
                 <xs:element name="DocidProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="UuidProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="OfferIdProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="ContentProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="AdvantageProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="DisadvantageProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
