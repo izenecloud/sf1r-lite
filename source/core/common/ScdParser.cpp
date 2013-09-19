@@ -720,7 +720,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
                     right_index = i;
                     break;
                 }
-                else if( (c>='a'&&c<='z') || (c>='A'&&c<='Z') )
+                else if( (c>='a'&&c<='z') || (c>='A'&&c<='Z') || (c>='0'&&c<='9') )
                 {
                 }
                 else
