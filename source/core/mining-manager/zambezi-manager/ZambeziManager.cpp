@@ -9,12 +9,15 @@ using namespace sf1r;
 
 namespace
 {
+const bool kIsReverseIndex = true;
+
 const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
 
 ZambeziManager::ZambeziManager(const ZambeziConfig& config)
     : config_(config)
+    , indexer_(kIsReverseIndex)
 {
 }
 
