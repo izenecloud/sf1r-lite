@@ -54,9 +54,13 @@ void TourProcessor::Insert_(ScdDocument& doc)
     }
     value.bcluster = true;
     if(value.days.second==0||value.price==0.0||value.from.empty()||value.to.empty()) value.bcluster = false;
-    BufferKey key(value.from, value.to);
+ 
+	//generate union key by to_city
+	UnionBufferKey union_key;
+	GenerateUnionKey(union_key,value.from,value.to);
+	//BufferKey key(value.from, value.to);
     boost::unique_lock<boost::mutex> lock(mutex_);
-    buffer_[key].push_back(value);
+    buffer_[union_key].push_back(value);
 }
 
 std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays) const
@@ -87,6 +91,40 @@ std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays
 	return r;
 }
 
+void TourProcessor::GenerateUnionKey(UnionBufferKey& union_key,
+									 const std::string& from_city,
+									 const std::string& to_city)const
+{
+	std::vector<std::string> union_to_city;
+	boost::split(union_to_city,to_city,boost::is_any_of("，"));
+
+	if(union_to_city.size() == 0)
+	{
+		union_key.push_back(std::make_pair(from_city,""));
+		return;
+	}
+
+	for(size_t i = 0;i<union_to_city.size();i++)
+	{
+		//ps:from city:上海  to city：上海，马累，马尔代夫 
+		//so we should remove key pair(上海，上海)
+		if(union_to_city[i].empty()) continue;
+		if(union_to_city.size() >= 2)
+		{
+			if(from_city == union_to_city[i]) continue;
+		}
+		union_key.push_back(std::make_pair(from_city,union_to_city[i]));
+	}
+
+	if(union_key.size()==0)
+	{
+		union_key.push_back(std::make_pair(from_city,from_city));
+	}
+
+	//sort key vector
+	std::sort(union_key.union_key_.begin(),union_key.union_key_.end());
+}
+
 void TourProcessor::Finish_()
 {
     LOG(INFO)<<"buffer size "<<buffer_.size()<<std::endl;
@@ -98,10 +136,15 @@ void TourProcessor::Finish_()
     ScdWriter pwriter(pdir, UPDATE_SCD);
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
     {
-        const BufferKey& key = it->first;
+        const UnionBufferKey& key = it->first;
         BufferValue& value = it->second;
 #ifdef TOUR_DEBUG
-        LOG(INFO)<<"processing "<<key.first<<","<<key.second<<","<<value.size()<<std::endl;
+	    LOG(INFO) << "1---->processing:"; 	
+		for(size_t i = 0; i<key.size();i++)
+		{
+			LOG(INFO) << key[i].first << "," << key[i].second << "	";
+		}
+		LOG(INFO) << value.size() << std::endl;
 #endif
         std::sort(value.begin(), value.end());
         std::vector<Group> groups;

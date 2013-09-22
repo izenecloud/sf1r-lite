@@ -20,6 +20,43 @@ namespace sf1r {
         typedef izenelib::util::UString UString;
 
         typedef std::pair<std::string, std::string> BufferKey;
+
+		struct UnionBufferKey
+		{
+			std::vector<BufferKey> union_key_;
+
+			bool operator<(const UnionBufferKey&key)const 
+			{
+				boost::unordered_set<BufferKey> key_set;
+				for(std::vector<BufferKey>::const_iterator iter = union_key_.begin();
+							iter != union_key_.end(); ++iter)
+				{
+					key_set.insert(*iter);
+				}
+
+				for(std::vector<BufferKey>::const_iterator iter = key.union_key_.begin();
+							iter != key.union_key_.end(); ++iter)
+				{
+					if(key_set.find(*iter) != key_set.end())
+					{
+						//notice:equal key return false
+						return false;
+					}
+				}
+				return union_key_[0] < key.union_key_[0] ? true:false;
+			}
+
+			void push_back(const BufferKey&key)
+			{
+				union_key_.push_back(key);
+			}
+
+			size_t size()const
+			{
+				return union_key_.size();
+			}
+		};
+
         struct BufferValueItem
         {
             std::string from;
@@ -33,11 +70,11 @@ namespace sf1r {
                 return days<another.days;
             }
         };
+
         typedef std::vector<BufferValueItem> BufferValue;
-        typedef boost::unordered_map<BufferKey, BufferValue> Buffer;
+        typedef std::map<UnionBufferKey, BufferValue> Buffer;
 		typedef boost::unordered_set<std::string> Set;
         typedef BufferValue Group;
-
 
     public:
         TourProcessor();
@@ -52,6 +89,10 @@ namespace sf1r {
 		
         void FindGroups_(BufferValue& value);
         void GenP_(Group& g, Document& doc) const;
+
+		void GenerateUnionKey(UnionBufferKey&union_key,
+							  const std::string&from_city,
+							  const std::string& to_city)const;
 
     private:
         std::string m_;
