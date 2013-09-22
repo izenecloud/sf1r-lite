@@ -215,7 +215,7 @@ bool QueryCorrectionSubmanager::getRefinedToken_(
     if (enableChn_)
     {
         std::vector<izenelib::util::UString> vec_result;
-        if (cmgr_->GetResult(token, vec_result))
+        if (cmgr_ && cmgr_->GetResult(token, vec_result))
         {
             if (vec_result.size() > 0)
             {
@@ -316,7 +316,8 @@ bool QueryCorrectionSubmanager::getPinyin(
     std::vector<izenelib::util::UString>& pinyin)
 {
     std::vector<std::string> result_list;
-    cmgr_->GetPinyin(hanzi, result_list);
+    if (cmgr_)
+        cmgr_->GetPinyin(hanzi, result_list);
     for (uint32_t i=0; i<result_list.size(); i++)
     {
         boost::algorithm::replace_all(result_list[i], ",", "");
@@ -332,7 +333,8 @@ bool QueryCorrectionSubmanager::getPinyin2(
     std::vector<izenelib::util::UString>& pinyin)
 {
     std::vector<std::string> result_list;
-    cmgr_->GetPinyin2(hanzi, result_list);
+    if (cmgr_)
+        cmgr_->GetPinyin2(hanzi, result_list);
     for (uint32_t i=0; i<result_list.size(); i++)
     {
         boost::algorithm::replace_all(result_list[i], ",", "");
@@ -345,7 +347,8 @@ bool QueryCorrectionSubmanager::getPinyin2(
 bool QueryCorrectionSubmanager::getRelativeList(const izenelib::util::UString& hanzi,std::vector<std::pair<izenelib::util::UString,uint32_t> >& ResultList)
 {
 
-    cmgr_->GetRelativeList(hanzi, ResultList);
+    if (cmgr_)
+        cmgr_->GetRelativeList(hanzi, ResultList);
 
 
     return ResultList.size() > 0;
@@ -371,7 +374,8 @@ void QueryCorrectionSubmanager::updateCogramAndDict(
     const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    cmgr_->Update(queryList, labelList);
+    if (cmgr_)
+        cmgr_->Update(queryList, labelList);
 }
 
 void QueryCorrectionSubmanager::Inject(
