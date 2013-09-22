@@ -430,7 +430,8 @@ private:
     static const std::string PROPERTY_LENGTH_FILE;
     static const std::string PROPERTY_BLOCK_SUFFIX;
     static unsigned int CACHE_SIZE;
-friend class IndexWorker;
+
+    friend class IndexWorker;
 };
 
 } // end - namespace sf1r
