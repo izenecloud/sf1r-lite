@@ -372,8 +372,12 @@ bool SearchManagerPreProcessor::isNeedCustomDocIterator(
 bool SearchManagerPreProcessor::isNeedRerank(
     const KeywordSearchActionItem& actionItem) const
 {
+    SearchingMode::SearchingModeType searchMode =
+        actionItem.searchingMode_.mode_;
+
     return isSortByRankProp(actionItem.sortPriorityList_) &&
-        isProductRanking_(actionItem);
+        isProductRanking_(actionItem) &&
+        searchMode != SearchingMode::ZAMBEZI;
 }
 
 bool SearchManagerPreProcessor::hasSortByRankProp(
