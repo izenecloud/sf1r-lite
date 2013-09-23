@@ -58,6 +58,11 @@ bool BoostLabelSelector::selectLabel(
                 boostLabels.push_back(topLabel);
             }
 
+        if (boostLabels.size() > limit)
+        {
+            boostLabels.resize(limit);
+        }
+
         return !boostLabels.empty();
     }
 

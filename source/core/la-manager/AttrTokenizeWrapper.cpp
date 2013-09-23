@@ -36,7 +36,6 @@ bool AttrTokenizeWrapper::loadDictFiles(const std::string& dictDir)
 
     try
     {
-
         attr_tokenizer_.reset(new ilplib::knlp::AttributeTokenize( dirPath.string() ));
         LOG(INFO) << "load /single_term2cate.mapping" ;
         std::string queryCate = "/single_term2cate.mapping";
