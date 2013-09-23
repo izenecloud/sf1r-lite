@@ -66,23 +66,23 @@ void ZambeziManager::search(
     std::vector<uint32_t> intScores;
     indexer_.retrieval(kAlgorithm, tokens, limit, docids, intScores);
     
-    //AttrTable::ScopedReadLock lock(AttrTable::getMutex());
-
+    faceted::AttrTable& attTable = attrManager_->getAttrTable();
+    faceted::AttrTable::ScopedReadLock lock(attTable.getMutex());
+    float maxScore = 1;
     for (unsigned int i = 0; i < docids.size(); ++i)
     {
         faceted::AttrTable::ValueIdList attrvids;
-        attrManager_->getAttrTable().getValueIdList(docids[i], attrvids);
+        attTable.getValueIdList(docids[i], attrvids);
         uint32_t attr_size = attrvids.size();
-        if (i < 100)
-        {
-            std::cout << "    intScores[" << i << "]:" << intScores[i];
-        }
-        std::cout << std::endl;
         float score = intScores[i]*pow(attr_size, 0.3);
-
-        // normalize score to <0,1>;
+        if (score > maxScore)
+            maxScore = score;
 
         scores.push_back(score);
+    }
+    for (unsigned int i = 0; i < scores.size(); ++i)
+    {
+        scores[i] /= maxScore;
     }
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
