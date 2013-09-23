@@ -17,6 +17,8 @@ using namespace sf1r;
 
 namespace
 {
+const bool kIsReverseIndex = true;
+
 const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
@@ -24,6 +26,7 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
 ZambeziManager::ZambeziManager(const ZambeziConfig& config, faceted::AttrManager* attrManager)
     : config_(config)
     , attrManager_(attrManager)
+    , indexer_(kIsReverseIndex)
 {
 }
 
