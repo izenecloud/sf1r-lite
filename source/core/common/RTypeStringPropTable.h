@@ -70,7 +70,7 @@ public:
     
     std::size_t size(bool isLock = true) const
     {
-        return maxDocId_;
+        return maxDocId_+1;
     }
 
     bool init(const std::string& path)
@@ -157,7 +157,7 @@ public:
             ScopedWriteBoolLock lock(mutex_, true);
             if (sortEnabled_)
             {
-                if (docId > dataInMem_.size())
+                if (docId >= dataInMem_.size())
                 {
                     dataInMem_.resize(docId+1, invalidValue_);
                 }
@@ -203,8 +203,8 @@ private:
     void load_()
     {
         dataInMem_.clear();
-        dataInMem_.resize(maxDocId_, invalidValue_);
-        for (unsigned int docId = 0; docId < maxDocId_; docId++)
+        dataInMem_.resize(maxDocId_+1, invalidValue_);
+        for (unsigned int docId = 0; docId <= maxDocId_; ++docId)
         {
             std::string value;
             if (getRTypeString(docId, value))
