@@ -96,7 +96,7 @@ void TourProcessor::GenerateUnionKey(UnionBufferKey& union_key,
 									 const std::string& to_city)const
 {
 	std::vector<std::string> union_to_city;
-	boost::split(union_to_city,to_city,boost::is_any_of("，"));
+	boost::split(union_to_city,to_city,boost::is_any_of(","));
 
 	if(union_to_city.size() == 0)
 	{
@@ -132,19 +132,19 @@ void TourProcessor::Finish_()
     std::string pdir = m_+"/b5mp";
     boost::filesystem::create_directories(odir);
     boost::filesystem::create_directories(pdir);
-    ScdWriter owriter(odir, UPDATE_SCD);
+	ScdWriter owriter(odir, UPDATE_SCD);
     ScdWriter pwriter(pdir, UPDATE_SCD);
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
     {
         const UnionBufferKey& key = it->first;
         BufferValue& value = it->second;
 #ifdef TOUR_DEBUG
-	    LOG(INFO) << "1---->processing:"; 	
-		for(size_t i = 0; i<key.size();i++)
+		LOG(INFO) << "1---->processing:";
+		for(size_t i = 0; i<key.union_key_.size();i++)
 		{
-			LOG(INFO) << key[i].first << "," << key[i].second << "	";
+			LOG(INFO) << key.union_key_[i].first << "," << key.union_key_[i].second << "	";
 		}
-		LOG(INFO) << value.size() << std::endl;
+		LOG(INFO) << "aggregate count:" << value.size();
 #endif
         std::sort(value.begin(), value.end());
         std::vector<Group> groups;
