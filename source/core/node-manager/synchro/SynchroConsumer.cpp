@@ -29,6 +29,7 @@ SynchroConsumer::SynchroConsumer(
 
 SynchroConsumer::~SynchroConsumer()
 {
+    zookeeper_->disconnect();
 }
 
 /**
