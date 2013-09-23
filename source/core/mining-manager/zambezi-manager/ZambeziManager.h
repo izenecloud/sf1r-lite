@@ -13,6 +13,13 @@
 
 namespace sf1r
 {
+
+namespace faceted
+{
+class GroupManager;
+class AttrManager;
+}
+
 class DocumentManager;
 class MiningTask;
 class ZambeziConfig;
@@ -20,7 +27,8 @@ class ZambeziConfig;
 class ZambeziManager
 {
 public:
-    ZambeziManager(const ZambeziConfig& config);
+    ZambeziManager(const ZambeziConfig& config
+                , faceted::AttrManager* attrManager);
 
     bool open();
 
@@ -34,6 +42,8 @@ public:
 
 private:
     const ZambeziConfig& config_;
+
+    faceted::AttrManager* attrManager_;
 
     izenelib::ir::Zambezi::NewInvertedIndex indexer_;
 };

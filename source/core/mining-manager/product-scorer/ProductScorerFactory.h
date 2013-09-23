@@ -47,6 +47,10 @@ private:
         ProductScoreSum& scoreSum,
         const ProductScoreParam& scoreParam);
 
+    void createZambeziModeScorer_(
+        ProductScoreSum& scoreSum,
+        const ProductScoreParam& scoreParam);
+
     ProductScorer* createScorerImpl_(
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);

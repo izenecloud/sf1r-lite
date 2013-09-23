@@ -61,7 +61,7 @@ bool ZambeziSearch::search(
     std::vector<docid_t> candidates;
     std::vector<float> scores;
 
-    if (!getTopKDocs_(query, candidates, scores))
+    if (!getCandidateDocs_(query, candidates, scores))
         return false;
 
     rankTopKDocs_(candidates, scores,
@@ -71,7 +71,7 @@ bool ZambeziSearch::search(
     return true;
 }
 
-bool ZambeziSearch::getTopKDocs_(
+bool ZambeziSearch::getCandidateDocs_( // 300W
     const std::string& query,
     std::vector<docid_t>& candidates,
     std::vector<float>& scores)
@@ -112,14 +112,21 @@ void ZambeziSearch::rankTopKDocs_(
 {
     izenelib::util::ClockTimer timer;
 
+    PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<ProductScorer> productScorer(
+        preprocessor_.createProductScorer(actionOperation.actionItem_, propSharedLockSet, NULL));
+
+    if (!productScorer)
+        return;
+
     boost::shared_ptr<Sorter> sorter;
     CustomRankerPtr customRanker;
     preprocessor_.prepareSorterCustomRanker(actionOperation,
                                             sorter,
                                             customRanker);
 
-    PropSharedLockSet propSharedLockSet;
-    boost::scoped_ptr<HitQueue> scoreItemQueue;
+    //PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<HitQueue> scoreItemQueue;// size 4w;
     const std::size_t heapSize = limit + offset;
 
     if (sorter)
@@ -161,7 +168,8 @@ void ZambeziSearch::rankTopKDocs_(
         for (size_t i = 0; i < candNum; ++i)
         {
             docid_t docId = candidates[i];
-            float score = scores[i];
+            int categoryScore = productScorer->score(docId);
+            float score = scores[i] + categoryScore;
 
             if (documentManager_.isDeleted(docId, false) ||
                 (filterBitVector && !filterBitVector->test(docId)) ||
@@ -181,7 +189,7 @@ void ZambeziSearch::rankTopKDocs_(
         }
     }
 
-    searchResult.totalCount_ = totalCount;
+    searchResult.totalCount_ = totalCount; //100w
 
     if (groupFilter)
     {

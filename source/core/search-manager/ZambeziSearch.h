@@ -9,6 +9,9 @@
 
 #include "SearchBase.h"
 #include <common/inttypes.h>
+#include <mining-manager/product-scorer/ProductScorer.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <string>
 #include <vector>
 
@@ -42,7 +45,7 @@ public:
         std::size_t offset);
 
 private:
-    bool getTopKDocs_(
+    bool getCandidateDocs_(
         const std::string& query,
         std::vector<docid_t>& candidates,
         std::vector<float>& scores);
@@ -65,6 +68,8 @@ private:
     const faceted::GroupFilterBuilder* groupFilterBuilder_;
 
     ZambeziManager* zambeziManager_;
+
+    boost::scoped_ptr<ProductScorer> productScorer_;
 };
 
 } // namespace sf1r

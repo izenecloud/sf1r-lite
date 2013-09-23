@@ -82,6 +82,10 @@ ProductScorer* ProductScorerFactory::createScorer(
     {
         createFuzzyModeScorer_(*scoreSum, scoreParam);
     }
+    else if (scoreParam.searchMode_ == SearchingMode::ZAMBEZI)
+    {
+        createZambeziModeScorer_(*scoreSum, scoreParam);
+    }
     else
     {
         for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
@@ -99,6 +103,18 @@ ProductScorer* ProductScorerFactory::createScorer(
         return NULL;
 
     return scoreSum.release();
+}
+
+void ProductScorerFactory::createZambeziModeScorer_(
+    ProductScoreSum& scoreSum,
+    const ProductScoreParam& scoreParam)
+{
+    ProductScorer* scorer = createCategoryScorer_(config_.scores[CATEGORY_SCORE], 
+                                                  scoreParam);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
 }
 
 void ProductScorerFactory::createFuzzyModeScorer_(
@@ -191,7 +207,7 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
         return NULL;
 
     return new CategoryScorer(scoreConfig,
-                              *categoryValueTable_,
+                              *categoryValueTable_,//
                               boostLabels);
 }
 

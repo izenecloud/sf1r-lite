@@ -742,13 +742,14 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
-
+        
         /** zambezi */
         if (!initZambeziManager_(mining_schema_.zambezi_config))
         {
             LOG(ERROR) << "init ZambeziManager fail";
             return false;
         }
+
         /** product rank */
         const ProductRankingConfig& rankConfig =
             mining_schema_.product_ranking_config;
@@ -3020,7 +3021,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 
     const bfs::path filePath(zambeziDir / "index.bin");
     zambeziConfig.indexFilePath = filePath.string();
-    zambeziManager_ = new ZambeziManager(zambeziConfig);
+    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_);
 
     if (!zambeziManager_->open())
     {

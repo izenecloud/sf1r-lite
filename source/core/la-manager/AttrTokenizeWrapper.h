@@ -16,6 +16,7 @@ namespace ilplib
 namespace knlp
 {
     class AttributeTokenize;
+    class VectorDictionary;
 }
 }
 
@@ -45,9 +46,12 @@ public:
 
     std::vector<std::string> attr_subtokenize(const std::vector<std::string>& tks);
 
+    std::vector<char*>** get_TermCategory(const std::string& query);
+
 private:
     std::string dictDir_;
     bool isDictLoaded_;
+    boost::scoped_ptr<ilplib::knlp::VectorDictionary> queryMultiCatesDict_;
 
     boost::scoped_ptr<ilplib::knlp::AttributeTokenize> attr_tokenizer_;
 };

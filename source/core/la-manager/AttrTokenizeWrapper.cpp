@@ -1,5 +1,6 @@
 #include "AttrTokenizeWrapper.h"
 #include <knlp/attr_tokenize.h>
+#include <knlp/dictionary.h>
 #include <exception>
 #include <glog/logging.h>
 #include <util/singleton.h>
@@ -36,6 +37,9 @@ bool AttrTokenizeWrapper::loadDictFiles(const std::string& dictDir)
     try
     {
         attr_tokenizer_.reset(new ilplib::knlp::AttributeTokenize( dirPath.string() ));
+
+        std::string queryCate = "/single_term2cate.mapping";
+        queryMultiCatesDict_.reset(new ilplib::knlp::VectorDictionary(dictDir_ + queryCate));
     }
     catch (const std::exception& e)
     {
@@ -66,4 +70,9 @@ std::vector<std::string> AttrTokenizeWrapper::attr_tokenize(const std::string& Q
 std::vector<std::string> AttrTokenizeWrapper::attr_subtokenize(const std::vector<std::string>& tks)
 {
     return attr_tokenizer_->subtokenize(tks);
+}
+
+std::vector<char*>** AttrTokenizeWrapper::get_TermCategory(const std::string& query)
+{
+    return queryMultiCatesDict_->value(KString(query), true);
 }
