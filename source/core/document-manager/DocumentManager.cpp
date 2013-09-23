@@ -101,7 +101,7 @@ bool DocumentManager::flush()
     {
         it->second->flush();
     }
-    
+
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
             it != numericPropertyTables_.end(); ++it)
     {
@@ -222,19 +222,15 @@ bool DocumentManager::isDeleted(docid_t docId, bool use_lock)
         return false;
     }
 
-    return delfilter_[docId - 1];
+    return delfilter_.test(docId - 1);
 }
 
 bool DocumentManager::removeDocument(docid_t docId)
 {
     if (docId < 1) return false;
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if (delfilter_.size() < docId)
-    {
-        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
-        if (delfilter_.size() < docId)
-            delfilter_.resize(docId);
-    }
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
+        delfilter_.resize(docId);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
@@ -547,7 +543,7 @@ bool DocumentManager::getRawTextOfDocuments(
         Document::doc_prop_value_strtype rawText; // raw text
         izenelib::util::UString rawUText; // raw text
         Document::doc_prop_value_strtype result; // output variable to store return value
-        izenelib::util::UString resultU; 
+        izenelib::util::UString resultU;
 
         bool ret = false;
         for (unsigned int listId = 0; listId != docListSize; ++listId)
