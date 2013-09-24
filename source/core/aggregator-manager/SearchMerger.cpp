@@ -83,7 +83,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         if(!workerResults.result(workerId).error_.empty())
         {
             mergeResult.error_ = workerResults.result(workerId).error_;
-            LOG(ERROR) << "!!! getDistSearchResult error for worker: " << workerId;
+            LOG(ERROR) << "!!! getDistSearchResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
     }
@@ -316,7 +316,7 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         if(!workerResults.result(workerId).error_.empty())
         {
             mergeResult.error_ = workerResults.result(workerId).error_;
-            LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId;
+            LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
         LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
@@ -412,7 +412,7 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
         if(!workerResults.result(i).error_.empty())
         {
             mergeResult.error_ = workerResults.result(i).error_;
-            LOG(ERROR) << "getMiningResult error for worker: " << i;
+            LOG(ERROR) << "getMiningResult error for worker: " << i << ", error :" << mergeResult.error_;
             return;
         }
     }
@@ -495,6 +495,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
     if (workerNum == 0)
     {
         mergeResult.error_ = "empty worker result.";
+        LOG(ERROR) << "getDocumentsByIds empty worker result. ";
         return;
     }
 
@@ -503,7 +504,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
         if(!workerResults.result(i).error_.empty())
         {
             mergeResult.error_ = workerResults.result(i).error_;
-            LOG(ERROR) << "getDocumentsByIds error for worker: " << i;
+            LOG(ERROR) << "getDocumentsByIds error for worker: " << i << ", err:" << mergeResult.error_;
             return;
         }
     }
