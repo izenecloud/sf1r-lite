@@ -241,7 +241,9 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         }
         matcher_->GetProduct(spid, product);
     }
-    doc.eraseProperty("Attribute");
+    std::string original_attribute;
+    doc.getString("Attribute", original_attribute);
+    //doc.eraseProperty("Attribute");
     if(!product.spid.empty())
     {
         //has SPU matched
@@ -311,6 +313,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     else
     {
+        if(!original_attribute.empty())
+        {
+            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
+        }
         spid = sdocid;
     }
     if(!product.stitle.empty() && !title.empty())
@@ -366,6 +372,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             sorter_->Append(old_doc, ts_);
         }
         ScdDocument sdoc(doc, type);
+        if(!original_attribute.empty())
+        {
+            sdoc.property("Attribute") = str_to_propstr(original_attribute);
+        }
         sorter_->Append(sdoc, ts_);
     }
     //delete Attribute after write block
