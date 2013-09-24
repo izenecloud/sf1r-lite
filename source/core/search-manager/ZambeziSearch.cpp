@@ -123,16 +123,12 @@ void ZambeziSearch::rankTopKDocs_(
     boost::scoped_ptr<ProductScorer> productScorer(
         preprocessor_.createProductScorer(actionOperation.actionItem_, propSharedLockSet, NULL));
 
-    if (!productScorer)
-        return;
-
     boost::shared_ptr<Sorter> sorter;
     CustomRankerPtr customRanker;
     preprocessor_.prepareSorterCustomRanker(actionOperation,
                                             sorter,
                                             customRanker);
 
-    //PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<HitQueue> scoreItemQueue;// size 4w;
     const std::size_t heapSize = limit + offset;
 
@@ -175,7 +171,11 @@ void ZambeziSearch::rankTopKDocs_(
         for (size_t i = 0; i < candNum; ++i)
         {
             docid_t docId = candidates[i];
-            int categoryScore = productScorer->score(docId);
+
+            int categoryScore = 0;
+            if (!productScorer)
+               categoryScore = productScorer->score(docId);
+            
             float score = scores[i] + categoryScore;
 
             if (documentManager_.isDeleted(docId, false) ||

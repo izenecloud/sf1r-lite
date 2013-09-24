@@ -36,35 +36,7 @@ bool BoostLabelSelector::selectLabel(
     std::vector<category_id_t>& boostLabels)
 {
     if (scoreParam.searchMode_ == SearchingMode::ZAMBEZI)
-    {
-        const std::string& query = scoreParam.query_;
-        std::vector<char*>** cateinfo = AttrTokenizeWrapper::get()->get_TermCategory(query);
-    
-        if (cateinfo)
-            for(uint32_t i = 0; i < (*cateinfo)->size(); ++i)
-            {
-                std::cout << std::string((*cateinfo)->at(i)) << std::endl;
-
-                izenelib::util::UString UCategory(std::string((*cateinfo)->at(i)),izenelib::util::UString::UTF_8);
-
-                std::vector<std::vector<izenelib::util::UString> > groupPaths;
-                split_group_path(UCategory, groupPaths);
-                if (groupPaths.empty())
-                    continue;
-
-                faceted::PropValueTable::pvid_t topLabel =
-                    propValueTable_.propValueId(groupPaths[0], false);
-
-                boostLabels.push_back(topLabel);
-            }
-
-        if (boostLabels.size() > limit)
-        {
-            boostLabels.resize(limit);
-        }
-
-        return !boostLabels.empty();
-    }
+        return convertZambeziLabelIds_(scoreParam, limit, boostLabels);
 
     if (convertLabelIds_(scoreParam.groupParam_.boostGroupLabels_, boostLabels) ||
         getFreqLabel_(scoreParam.query_, limit, boostLabels) ||
@@ -75,6 +47,40 @@ bool BoostLabelSelector::selectLabel(
         {
             boostLabels.resize(limit);
         }
+    }
+
+    return !boostLabels.empty();
+}
+
+bool BoostLabelSelector::convertZambeziLabelIds_(    
+    const ProductScoreParam& scoreParam,
+    std::size_t limit,
+    std::vector<category_id_t>& boostLabels)
+{
+    const std::string& query = scoreParam.query_;
+    std::vector<char*>** cateinfo = AttrTokenizeWrapper::get()->get_TermCategory(query);
+
+    if (cateinfo)
+        for(uint32_t i = 0; i < (*cateinfo)->size(); ++i)
+        {
+            std::cout << std::string((*cateinfo)->at(i)) << std::endl;
+
+            izenelib::util::UString UCategory(std::string((*cateinfo)->at(i)),izenelib::util::UString::UTF_8);
+
+            std::vector<std::vector<izenelib::util::UString> > groupPaths;
+            split_group_path(UCategory, groupPaths);
+            if (groupPaths.empty())
+                continue;
+
+            faceted::PropValueTable::pvid_t topLabel =
+                propValueTable_.propValueId(groupPaths[0], false);
+
+            boostLabels.push_back(topLabel);
+        }
+
+    if (boostLabels.size() > limit)
+    {
+        boostLabels.resize(limit);
     }
 
     return !boostLabels.empty();
