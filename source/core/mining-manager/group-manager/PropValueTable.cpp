@@ -105,9 +105,12 @@ void PropValueTable::appendPropIdList(const std::vector<pvid_t>& inputIdList)
     valueIdTable_.appendIdList(inputIdList);
 }
 
-void PropValueTable::propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const
+void PropValueTable::propValueStr(
+    pvid_t pvId,
+    izenelib::util::UString& ustr,
+    bool isLock) const
 {
-    ScopedReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
 
     ustr = propStrVec_[pvId];
 }

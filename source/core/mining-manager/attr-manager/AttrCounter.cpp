@@ -6,57 +6,23 @@
 
 namespace
 {
-/** attribute name id, and its doc count */
-typedef std::pair<sf1r::faceted::AttrTable::nid_t, int> AttrFreq;
+/** attribute name id, and its score */
+typedef std::pair<sf1r::faceted::AttrTable::nid_t, double> AttrScore;
 
-class AttrFreqQueue : public izenelib::util::PriorityQueue<AttrFreq>
+class AttrScoreQueue : public izenelib::util::PriorityQueue<AttrScore>
 {
     public:
-        AttrFreqQueue(size_t size)
+        AttrScoreQueue(size_t size)
         {
             this->initialize(size);
         }
 
     protected:
-        bool lessThan(const AttrFreq& p1, const AttrFreq& p2) const
+        bool lessThan(const AttrScore& p1, const AttrScore& p2) const
         {
             return (p1.second < p2.second);
         }
 };
-
-/**
- * get attribute name ids with top freq.
- * @param nameCountTable map from name id to doc count
- * @param topNum limit the size of @p topNameIds, zero for not limit size
- * @param topNameIds store the top attribute name ids
- */
-void getTopNameIds(
-    const std::vector<int>& nameCountTable,
-    int topNum,
-    std::vector<sf1r::faceted::AttrTable::nid_t>& topNameIds
-)
-{
-    if (topNum == 0)
-    {
-        topNum = nameCountTable.size();
-    }
-
-    AttrFreqQueue queue(topNum);
-    for (size_t nameId = 0; nameId < nameCountTable.size(); ++nameId)
-    {
-        if (nameCountTable[nameId])
-        {
-            queue.insert(AttrFreq(nameId, nameCountTable[nameId]));
-        }
-    }
-
-    topNameIds.resize(queue.size());
-    for (std::vector<sf1r::faceted::AttrTable::nid_t>::reverse_iterator rit = topNameIds.rbegin();
-        rit != topNameIds.rend(); ++rit)
-    {
-        *rit = queue.pop().first;
-    }
-}
 
 }
 
@@ -116,11 +82,24 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
     }
 }
 
+double AttrCounter::getNameScore_(AttrTable::nid_t nameId) const
+{
+    return nameCountTable_[nameId];
+}
+
 void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
 {
-    typedef std::map<AttrTable::vid_t, int> ValueCountMap;
-    typedef std::map<AttrTable::nid_t, ValueCountMap> NameCountMap;
+    std::vector<AttrTable::nid_t> topNameIds;
+    getTopNameIds_(topGroupNum, topNameIds);
+
     NameCountMap nameCountMap;
+    getNameCountMap_(nameCountMap);
+
+    generateGroupRep_(topNameIds, nameCountMap, groupRep);
+}
+
+void AttrCounter::getNameCountMap_(NameCountMap& nameCountMap) const
+{
     for (std::size_t valueId = 1; valueId < valueCountTable_.size(); ++valueId)
     {
         int count = valueCountTable_[valueId];
@@ -130,13 +109,45 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
             nameCountMap[nameId][valueId] = count;
         }
     }
+}
 
-    std::vector<AttrTable::nid_t> topNameIds;
-    getTopNameIds(nameCountTable_, topGroupNum, topNameIds);
+void AttrCounter::getTopNameIds_(
+    int topNum,
+    std::vector<AttrTable::nid_t>& topNameIds) const
+{
+    if (topNum == 0)
+    {
+        topNum = nameCountTable_.size();
+    }
 
+    AttrScoreQueue queue(topNum);
+    for (size_t nameId = 0; nameId < nameCountTable_.size(); ++nameId)
+    {
+        double score = getNameScore_(nameId);
+        if (score > 0)
+        {
+            AttrScore attrScore(nameId, score);
+            queue.insert(attrScore);
+        }
+    }
+
+    topNameIds.resize(queue.size());
+    for (std::vector<sf1r::faceted::AttrTable::nid_t>::reverse_iterator rit = topNameIds.rbegin();
+        rit != topNameIds.rend(); ++rit)
+    {
+        *rit = queue.pop().first;
+    }
+}
+
+void AttrCounter::generateGroupRep_(
+    const AttrNameIds& topNameIds,
+    NameCountMap& nameCountMap,
+    OntologyRep& groupRep) const
+{
     std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
+
     for (std::vector<AttrTable::nid_t>::const_iterator nameIt = topNameIds.begin();
-        nameIt != topNameIds.end(); ++nameIt)
+         nameIt != topNameIds.end(); ++nameIt)
     {
         // attribute name as root node
         itemList.push_back(OntologyRepItem());

@@ -21,13 +21,34 @@ class AttrCounter
 public:
     AttrCounter(const AttrTable& attrTable);
 
-    void addDoc(docid_t doc);
+    virtual ~AttrCounter() {}
 
-    void addAttrDoc(AttrTable::nid_t nId, docid_t doc);
+    virtual void addDoc(docid_t doc);
+
+    virtual void addAttrDoc(AttrTable::nid_t nId, docid_t doc);
 
     void getGroupRep(int topGroupNum, OntologyRep& groupRep) const;
 
-private:
+protected:
+    virtual double getNameScore_(AttrTable::nid_t nameId) const;
+
+    typedef std::vector<AttrTable::nid_t> AttrNameIds;
+
+    void getTopNameIds_(
+        int topNum,
+        AttrNameIds& topNameIds) const;
+
+    typedef std::map<AttrTable::vid_t, int> ValueCountMap;
+    typedef std::map<AttrTable::nid_t, ValueCountMap> NameCountMap;
+
+    void getNameCountMap_(NameCountMap& nameCountMap) const;
+
+    void generateGroupRep_(
+        const AttrNameIds& topNameIds,
+        NameCountMap& nameCountMap,
+        OntologyRep& groupRep) const;
+
+protected:
     const AttrTable& attrTable_;
 
     /** map from name id to doc count */
@@ -42,4 +63,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif
