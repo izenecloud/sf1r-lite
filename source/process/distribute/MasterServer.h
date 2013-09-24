@@ -88,6 +88,11 @@ private:
         {
             RawTextResultFromSIA resultItem;
             collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
+            if (!resultItem.error_.empty())
+            {
+                LOG(ERROR) << "get documents failed.";
+                action.print();
+            }
             req.result(resultItem);
         }
         else

@@ -234,6 +234,11 @@ bool IndexSearchService::getDocumentsByIds(
         ro_searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
     }
 
+    if (!resultItem.error_.empty())
+    {
+        LOG(ERROR) << "failed to get documents in . " << __FUNCTION__ << std::endl;
+        actionItem.print();
+    }
     return !resultItem.idList_.empty();
 }
 
