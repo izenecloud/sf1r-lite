@@ -72,7 +72,13 @@ std::vector<std::string> AttrTokenizeWrapper::attr_subtokenize(const std::vector
     return attr_tokenizer_->subtokenize(tks);
 }
 
+double AttrTokenizeWrapper::att_weight(const std::string& attr_name, const std::string& cate)
+{
+    return attr_tokenizer_->att_weight(attr_name, cate);
+}
+
 std::vector<char*>** AttrTokenizeWrapper::get_TermCategory(const std::string& query)
 {
     return queryMultiCatesDict_->value(KString(query), true);
 }
+
