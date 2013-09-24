@@ -173,7 +173,7 @@ void ZambeziSearch::rankTopKDocs_(
             docid_t docId = candidates[i];
 
             int categoryScore = 0;
-            if (!productScorer)
+            if (productScorer)
                categoryScore = productScorer->score(docId);
             
             float score = scores[i] + categoryScore;
