@@ -3,6 +3,11 @@
 #include "../util/convert_ustr.h"
 #include <la-manager/AttrTokenizeWrapper.h>
 
+namespace
+{
+const double kMinNameScore = 0.1;
+}
+
 NS_FACETED_BEGIN
 
 AttrScoreCounter::AttrScoreCounter(
@@ -29,14 +34,18 @@ void AttrScoreCounter::addDoc(docid_t doc)
         AttrTable::vid_t vId = valueIdList[i];
         if (vId < valueIdNum_)
         {
-            ++valueCountTable_[vId];
-
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
             if (nameIdSet.insert(nameId).second)
             {
+                double score = nameCateScore_(nameId, categoryStr);
+                if (score < kMinNameScore)
+                    continue;
+
+                nameScoreTable_[nameId] += score;
                 ++nameCountTable_[nameId];
-                nameScoreTable_[nameId] += nameCateScore_(nameId, categoryStr);
             }
+
+            ++valueCountTable_[vId];
         }
     }
 }
