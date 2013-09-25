@@ -6,6 +6,7 @@
 #include "b5m_types.h"
 #include "attribute_id_manager.h"
 #include "category_psm.h"
+#include "brand_manager.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -677,7 +678,6 @@ namespace sf1r {
             cid_t cid;
             //double price;
             ProductPrice price;
-            std::vector<ProductPrice> offer_prices;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             UString display_attributes;
@@ -796,6 +796,7 @@ namespace sf1r {
         static std::string GetAVersion(const std::string& path);
         static std::string GetRVersion(const std::string& path);
         bool Index(const std::string& path, const std::string& scd_path, int mode, int thread_num);
+        bool IndexPost(const std::string& scd_path, int thread_num);
         void Test(const std::string& scd_path);
         bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
@@ -835,9 +836,11 @@ namespace sf1r {
             use_psm_ = b;
         }
 
-        void SetUseAvgPrice(bool b)
+        
+        ilplib::knlp::AttributeNormalize* GetAttributeNormalize() const
         {
-            use_avg_price_ = b;
+            if(psm_==NULL) return NULL;
+            return psm_->GetAttributeNormalize();
         }
 
         //if given category empty, do SPU matching only
@@ -880,9 +883,10 @@ namespace sf1r {
         //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
-        void GetPsmKeywords_(const KeywordVector& keywords, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const;
+        void GetPsmKeywords_(const KeywordVector& keywords, const std::string& scategory, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const;
         void IndexOffer_(const std::string& offer_scd, int thread_num);
         void OfferProcess_(ScdDocument& doc);
+        void PostProcess_(ScdDocument& doc);
         void IndexFuzzy_();
         void ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range);
 
@@ -1003,7 +1007,7 @@ namespace sf1r {
 
         void SetProductsPrice_(bool use_offer);
 
-        bool IsBrand_(const KeywordTag& k) const;
+        bool IsBrand_(const std::string& scategory, const KeywordTag& k) const;
 
 
     private:
@@ -1063,10 +1067,12 @@ namespace sf1r {
         boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
         bool use_psm_;
-        bool use_avg_price_;
         //std::vector<CategoryPsm*> psms_;
         CategoryPsm* psm_;
+        BrandManager* brand_manager_;
         boost::unordered_map<uint128_t, uint128_t> psm_result_;
+        boost::unordered_map<std::string, std::vector<ProductPrice> > spu_offer_prices_;
+        bool offer_prices_finish_;
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;

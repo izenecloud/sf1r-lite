@@ -12,6 +12,8 @@
 #include <boost/unordered_map.hpp>
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <idmlib/duplicate-detection/psm.h>
+#include <knlp/cluster_detector.h>
+#include <knlp/attr_normalize.h>
 
 namespace sf1r {
 
@@ -70,11 +72,14 @@ namespace sf1r {
         //typedef idmlib::dd::DupDetector<uint32_t, uint32_t, Attach> DDType;
         //typedef DDType::GroupTableType GroupTableType;
         //typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, Attach> PsmType;
-        CategoryPsm():
+        CategoryPsm(const std::string& knowledge):
         model_regex_("[a-zA-Z\\d\\-]{3,}")
           , algo_()
           //, table_(NULL), dd_(NULL)
           , stat_(0,0)
+          , gp_(NULL)
+          , attr_(NULL)
+          , attrn_(NULL)
         {
             idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
             csconfig.symbol = false;
@@ -105,12 +110,23 @@ namespace sf1r {
             error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
             error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
             error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
+            gp_ = new ilplib::knlp::GarbagePattern(knowledge+"/garbage.pat");
+            attr_ = new ilplib::knlp::ClusterDetector(knowledge+"/product_name.dict", knowledge+"/att.syn", gp_);
+            attrn_ = new ilplib::knlp::AttributeNormalize(knowledge+"/att.syn");
         }
         ~CategoryPsm()
         {
             //if(table_!=NULL) delete table_;
             //if(dd_!=NULL) delete dd_;
             delete analyzer_;
+            if(gp_!=NULL) delete gp_;
+            if(attr_!=NULL) delete attr_;
+            if(attrn_!=NULL) delete attrn_;
+        }
+
+        ilplib::knlp::AttributeNormalize* GetAttributeNormalize() const
+        {
+            return attrn_;
         }
         bool Open(const std::string& path)
         {
@@ -121,8 +137,14 @@ namespace sf1r {
                 std::map<BufferKey, std::vector<Group> > rmap;
                 izenelib::am::ssf::Util<>::Load(p, rmap);
                 result_.insert(rmap.begin(), rmap.end());
+                LOG(INFO)<<"psm result size "<<result_.size()<<std::endl;
                 p = path+"/brands";
                 izenelib::am::ssf::Util<>::Load(p, brand_set_);
+                p = path+"/attr";
+                std::set<std::string> attr_stdset;
+                izenelib::am::ssf::Util<>::Load(p, attr_stdset);
+                attr_set_.insert(attr_stdset.begin(), attr_stdset.end());
+                LOG(INFO)<<"psm attr size "<<attr_set_.size()<<std::endl;
             }
             //std::string work_dir = path+"/work_dir";
             //B5MHelper::PrepareEmptyDir(work_dir);
@@ -156,12 +178,35 @@ namespace sf1r {
             return false;
         }
 
-        bool Insert(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords)
+        bool Insert(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords, const std::string& pid)
         {
             std::string scategory;
             doc.getString("Category", scategory);
             std::string ncategory;
-            if(!CategoryMatch(scategory, ncategory)) return false;
+            if(!CategoryMatch(scategory, ncategory))
+            {
+                if(attr_!=NULL)
+                {
+                    if(pid.empty())
+                    {
+                        std::string stitle;
+                        std::string sattr;
+                        doc.getString("Title", stitle);
+                        doc.getString("Attribute", sattr);
+                        std::string attrnc = attrn_->attr_normalize(sattr, scategory, false);
+                        std::string ap = attr_->cluster_detect(stitle, scategory, attrnc);
+                        if(!ap.empty())
+                        {
+                            std::string apid = B5MHelper::GetPidByUrl(ap);
+                            boost::unique_lock<boost::mutex> lock(mutex_);
+                            //std::cerr<<"attr match "<<stitle<<","<<ap<<std::endl;
+                            //std::cerr<<"attr normalize "<<sattr<<","<<attrnc<<std::endl;
+                            attr_vector_.push_back(apid);
+                        }
+                    }
+                }
+                return false;
+            }
             stat_.first++;
             std::string ssource;
             doc.getString("Source", ssource);
@@ -171,7 +216,6 @@ namespace sf1r {
             key.first = ncategory;
             BufferItem item;
             if(!Analyze_(doc, brands, keywords, key, item)) return false;
-            //return true;
             UString ua;
             doc.getString("Attribute", ua);
             std::vector<b5m::Attribute> attributes;
@@ -236,7 +280,29 @@ namespace sf1r {
             std::string scategory;
             doc.getString("Category", scategory);
             std::string ncategory;
-            if(!CategoryMatch(scategory, ncategory)) return false;
+            if(!CategoryMatch(scategory, ncategory)) 
+            {
+                if(!attr_set_.empty())
+                {
+                    std::string stitle;
+                    std::string sattr;
+                    doc.getString("Title", stitle);
+                    doc.getString("Attribute", sattr);
+                    std::string ap = attr_->cluster_detect(stitle, scategory, sattr);
+                    if(!ap.empty())
+                    {
+                        //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
+                        std::string apid = B5MHelper::GetPidByUrl(ap);
+                        if(attr_set_.find(apid)!=attr_set_.end())
+                        {
+                            pid = apid;
+                            //std::cerr<<"attr find pid "<<pid<<std::endl;
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
             BufferKey key;
             key.first = ncategory;
             BufferItem item;
@@ -256,11 +322,12 @@ namespace sf1r {
             }
             if(dist_index.first>=0.0&&ValidDistance_(dist_index.first))
             {
-                const Group& g = groups[dist_index.second];
                 std::string url = "http://www.b5m.com/"+key.first+"/"+key.second+"/"+boost::lexical_cast<std::string>(dist_index.second);
                 pid = B5MHelper::GetPidByUrl(url);
-                const BufferItem& center = g.items[g.cindex];
-                ptitle = center.title;
+                //std::cerr<<"psm find pid "<<pid<<std::endl;
+                //const Group& g = groups[dist_index.second];
+                //const BufferItem& center = g.items[g.cindex];
+                //ptitle = center.title;
                 return true;
             }
             else
@@ -284,7 +351,7 @@ namespace sf1r {
                 {
                     LOG(INFO)<<"Processing clustering "<<p<<std::endl;
                 }
-                continue;
+                //continue;
                 ResultMap::const_iterator rit = result_.find(it->first);
                 if(rit!=result_.end())
                 {
@@ -314,6 +381,40 @@ namespace sf1r {
             }
             buffer_.clear();
             LOG(INFO)<<"result size "<<result_.size()<<std::endl;
+            std::sort(attr_vector_.begin(), attr_vector_.end());
+            uint32_t count=0;
+            for(uint32_t i=0;i<attr_vector_.size();i++)
+            {
+                std::string t;
+                if(i==0)
+                {
+                    ++count;
+                }
+                else if(i==attr_vector_.size()-1)
+                {
+                    ++count;
+                    t = attr_vector_[i];
+                }
+                else
+                {
+                    if(attr_vector_[i]==attr_vector_[i-1])
+                    {
+                        ++count;
+                    }
+                    else
+                    {
+                        t = attr_vector_[i-1];
+                    }
+                }
+                if(!t.empty())
+                {
+                    if(count>1)
+                    {
+                        attr_set_.insert(t);
+                    }
+                    count = 1;
+                }
+            }
             //for(ResultMap::const_iterator it = result_.begin();it!=result_.end();++it)
             //{
             //    const BufferKey& key = it->first;
@@ -345,6 +446,9 @@ namespace sf1r {
             izenelib::am::ssf::Util<>::Save(pa, rmap);
             pa = path+"/brands";
             izenelib::am::ssf::Util<>::Save(pa, brand_set_);
+            std::set<std::string> attr_stdset(attr_set_.begin(), attr_set_.end());
+            pa = path+"/attr";
+            izenelib::am::ssf::Util<>::Save(pa, attr_stdset);
             //dd_->RunDdAnalysis();
             //const std::vector<std::vector<uint32_t> >& group_info = table_->GetGroupInfo();
             //for(uint32_t i=0;i<group_info.size();i++)
@@ -810,6 +914,11 @@ namespace sf1r {
 
         std::pair<std::size_t, std::size_t> stat_;
         boost::mutex mutex_;
+        ilplib::knlp::GarbagePattern* gp_;
+        ilplib::knlp::ClusterDetector* attr_;
+        ilplib::knlp::AttributeNormalize* attrn_;
+        std::vector<std::string> attr_vector_;
+        boost::unordered_set<std::string> attr_set_;
     };
 
 }

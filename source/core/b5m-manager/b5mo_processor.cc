@@ -23,9 +23,15 @@ B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
     int mode, 
     RpcServerConnectionConfig* img_server_config)
 :odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
+,attr_(matcher->GetAttributeNormalize())
+//,attr_(NULL)
+, stat1_(0), stat2_(0)
 {
 }
 
+B5moProcessor::~B5moProcessor()
+{
+}
 void B5moProcessor::LoadMobileSource(const std::string& file)
 {
     std::ifstream ifs(file.c_str());
@@ -229,6 +235,23 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         need_do_match = true;
     }
     ProductMatcher::Product product;
+    if(attr_!=NULL)
+    {
+        std::string sattr;
+        doc.getString("Attribute", sattr);
+        if(!sattr.empty())
+        {
+            //{
+            //    boost::unique_lock<boost::shared_mutex> lock(mutex_);
+            //    std::cerr<<"normalizing "<<sattr<<std::endl;
+            //}
+            sattr = attr_->attr_normalize(sattr);
+        }
+        if(!sattr.empty())
+        {
+            doc.property("Attribute") = str_to_propstr(sattr);
+        }
+    }
     if(need_do_match)
     {
         matcher_->Process(doc, product, true);
@@ -241,9 +264,16 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         }
         matcher_->GetProduct(spid, product);
     }
-    doc.eraseProperty("Attribute");
+    if(attr_!=NULL)
+    {
+    }
+    else
+    {
+        doc.eraseProperty("Attribute");
+    }
     if(!product.spid.empty())
     {
+        stat1_+=1;
         //has SPU matched
         spid = product.spid;
         if(!title.empty()) 
@@ -258,52 +288,86 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
                     //doc.property(tcp) = front;
                 //}
             //}
-            if(!product.display_attributes.empty()||!product.filter_attributes.empty())
+            if(attr_==NULL)
             {
-                if(!product.display_attributes.empty())
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
                 {
-                    doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
+                    if(!product.display_attributes.empty())
+                    {
+                        doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
+                    }
+                    if(!product.filter_attributes.empty())
+                    {
+                        doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
+                        doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
+                    }
                 }
-                if(!product.filter_attributes.empty())
+                else
                 {
-                    doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
-                    doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
+                    const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
+                    const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
+                    if(!attributes.empty()||!dattributes.empty())
+                    {
+                        if(!dattributes.empty())
+                        {
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                        }
+                        else if(!attributes.empty())
+                        {
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                        }
+                        //else
+                        //{
+                            //std::vector<ProductMatcher::Attribute> eattributes;
+                            //UString attrib_ustr;
+                            //doc.getProperty("Attribute", attrib_ustr);
+                            //std::string attrib_str;
+                            //attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                            //boost::algorithm::trim(attrib_str);
+                            //if(!attrib_str.empty())
+                            //{
+                                //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                            //}
+                            //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
+                            ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
+                            //ProductMatcher::MergeAttributes(new_attributes, eattributes);
+                            //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                        //}
+                    }
                 }
             }
             else
             {
-                const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
-                const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
-                if(!attributes.empty()||!dattributes.empty())
+                std::vector<ProductMatcher::Attribute> eattributes;
+                std::string sattrib;
+                doc.getString("Attribute", sattrib);
+                boost::algorithm::trim(sattrib);
+                if(!sattrib.empty())
                 {
-                    if(!dattributes.empty())
-                    {
-                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                        doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                    }
-                    else if(!attributes.empty())
-                    {
-                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                        doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                    }
-                    //else
-                    //{
-                        //std::vector<ProductMatcher::Attribute> eattributes;
-                        //UString attrib_ustr;
-                        //doc.getProperty("Attribute", attrib_ustr);
-                        //std::string attrib_str;
-                        //attrib_ustr.convertString(attrib_str, UString::UTF_8);
-                        //boost::algorithm::trim(attrib_str);
-                        //if(!attrib_str.empty())
-                        //{
-                            //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
-                        //}
-                        //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
-                        ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
-                        //ProductMatcher::MergeAttributes(new_attributes, eattributes);
-                        //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
-                    //}
+                    UString uattrib(sattrib, UString::UTF_8);
+                    ProductMatcher::ParseAttributes(uattrib, eattributes);
                 }
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
+                {
+                    std::vector<ProductMatcher::Attribute> v;
+                    ProductMatcher::ParseAttributes(product.filter_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                    v.clear();
+                    ProductMatcher::ParseAttributes(product.display_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                }
+                else
+                {
+                    ProductMatcher::MergeAttributes(eattributes, product.attributes);
+                    ProductMatcher::MergeAttributes(eattributes, product.dattributes);
+                }
+                UString new_uattrib = ProductMatcher::AttributesText(eattributes);
+                std::string new_sattrib;
+                new_uattrib.convertString(new_sattrib, UString::UTF_8);
+                new_sattrib = attr_->attr_normalize(new_sattrib);
+                doc.property("Attribute") = str_to_propstr(new_sattrib);
             }
 
         }
@@ -315,6 +379,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(!product.stitle.empty() && !title.empty())
     {
+        stat2_+=1;
         doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
     }
     std::string scategory;
@@ -524,6 +589,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         delete omapper_;
         omapper_ = NULL;
     }
+    LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<std::endl;
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())

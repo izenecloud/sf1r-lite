@@ -9,6 +9,8 @@
 #include "product_matcher.h"
 #include "b5mo_sorter.h"
 #include "original_mapper.h"
+#include <knlp/attr_normalize.h>
+#include <boost/atomic.hpp>
 //#include "history_db_helper.h"
 
 namespace sf1r {
@@ -18,6 +20,7 @@ namespace sf1r {
         B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
             int mode,
             RpcServerConnectionConfig* img_server_config);
+        ~B5moProcessor();
 
         void LoadMobileSource(const std::string& file);
         void SetHumanMatchFile(const std::string& file) {human_match_file_ = file;}
@@ -48,6 +51,9 @@ namespace sf1r {
         std::ofstream cmatch_ofs_;
         boost::unordered_set<uint128_t> changed_match_;
         boost::shared_mutex mutex_;
+        ilplib::knlp::AttributeNormalize* attr_;
+        boost::atomic<uint32_t> stat1_;
+        boost::atomic<uint32_t> stat2_;
     };
 
 }

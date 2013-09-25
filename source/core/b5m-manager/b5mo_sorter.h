@@ -116,7 +116,7 @@ namespace sf1r {
         static void ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc);
         bool GenMirrorBlock_(const std::string& mirror_path);
         bool GenMBlock_();
-        void WritePItem_(const PItem& pitem);
+        void WritePItem_(PItem& pitem);
 
     private:
         std::string m_;

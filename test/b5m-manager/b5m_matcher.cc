@@ -270,6 +270,7 @@ int do_main(int ac, char** av)
         ("help", "produce help message")
         ("attribute-index", "build attribute index")
         ("product-train", "do product training")
+        ("product-train-post", "do product post training")
         ("product-match", "do product matching test")
         ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
@@ -652,24 +653,46 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         //ProductMatcher::Clear(knowledge_dir, mode);
+        {
+            ProductMatcher matcher;
+            matcher.SetCmaPath(cma_path);
+            use_psm = true;
+            if(use_psm)
+            {
+                matcher.SetUsePsm(true);
+            }
+            if(!matcher.Index(knowledge_dir, scd_path, mode, thread_num))
+            {
+                return EXIT_FAILURE;
+            }
+        }
+        {
+            ProductMatcher matcher;
+            matcher.SetCmaPath(cma_path);
+            if(!matcher.Open(knowledge_dir))
+            {
+                LOG(ERROR)<<"matcher open failed"<<std::endl;
+                return EXIT_FAILURE;
+            }
+            if(!matcher.IndexPost(scd_path, thread_num))
+            {
+                return EXIT_FAILURE;
+            }
+        }
+    } 
+    if (vm.count("product-train-post")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        use_psm = true;
-        if(use_psm)
+        if(!matcher.Open(knowledge_dir))
         {
-            matcher.SetUsePsm(true);
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
         }
-        matcher.SetUseAvgPrice(use_avg_price);
-        //if(!matcher.Open(knowledge_dir))
-        //{
-            //LOG(ERROR)<<"matcher open failed"<<std::endl;
-            //return EXIT_FAILURE;
-        //}
-        //if(!category_group.empty()&&boost::filesystem::exists(category_group))
-        //{
-            //matcher.LoadCategoryGroup(category_group);
-        //}
-        if(!matcher.Index(knowledge_dir, scd_path, mode, thread_num))
+        if(!matcher.IndexPost(scd_path, thread_num))
         {
             return EXIT_FAILURE;
         }

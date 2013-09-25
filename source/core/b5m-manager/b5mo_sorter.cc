@@ -43,7 +43,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
         ts_ = bfs::path(m_).parent_path().filename().string();
     }
     std::string buffer_size = buffer_size_;
-    if(buffer_size.empty()) buffer_size = "1000M";
+    if(buffer_size.empty()) buffer_size = "10G";
     std::string cmd = "sort -m --buffer-size="+buffer_size+" "+sorter_path+"/*";
     if(!last_m.empty())
     {
@@ -306,7 +306,7 @@ void B5moSorter::OBag_(PItem& pitem)
     
 }
 
-void B5moSorter::WritePItem_(const PItem& pitem)
+void B5moSorter::WritePItem_(PItem& pitem)
 {
     while(true)
     {
@@ -335,6 +335,17 @@ void B5moSorter::WritePItem_(const PItem& pitem)
             if(pitem.pdoc.type!=NOT_SCD)
             {
                 pwriter_->Append(pitem.pdoc);
+            }
+            if(pitem.odocs.size()>1)
+            {
+                for(uint32_t i=0;i<pitem.odocs.size();i++)
+                {
+                    ScdDocument& odoc = pitem.odocs[i].doc;
+                    odoc.type = UPDATE_SCD;
+                    odoc.property("itemcount") = (int64_t)1;
+                    odoc.eraseProperty("uuid");
+                    pwriter_->Append(odoc);
+                }
             }
             last_pitemid_ = pitem.id+1;
             break;
