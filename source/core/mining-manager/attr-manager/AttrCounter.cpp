@@ -87,26 +87,31 @@ double AttrCounter::getNameScore_(AttrTable::nid_t nameId) const
     return nameCountTable_[nameId];
 }
 
+double AttrCounter::getValueScore_(AttrTable::vid_t valueId) const
+{
+    return valueCountTable_[valueId];
+}
+
 void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
 {
     std::vector<AttrTable::nid_t> topNameIds;
     getTopNameIds_(topGroupNum, topNameIds);
 
-    NameCountMap nameCountMap;
-    getNameCountMap_(nameCountMap);
+    NameValueMap nameValueMap;
+    getNameValueMap_(nameValueMap);
 
-    generateGroupRep_(topNameIds, nameCountMap, groupRep);
+    generateGroupRep_(topNameIds, nameValueMap, groupRep);
 }
 
-void AttrCounter::getNameCountMap_(NameCountMap& nameCountMap) const
+void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap) const
 {
     for (std::size_t valueId = 1; valueId < valueCountTable_.size(); ++valueId)
     {
-        int count = valueCountTable_[valueId];
-        if (count)
+        double score = getValueScore_(valueId);
+        if (score > 0)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
-            nameCountMap[nameId][count].push_back(valueId);
+            nameValueMap[nameId][score].push_back(valueId);
         }
     }
 }
@@ -141,7 +146,7 @@ void AttrCounter::getTopNameIds_(
 
 void AttrCounter::generateGroupRep_(
     const AttrNameIds& topNameIds,
-    NameCountMap& nameCountMap,
+    NameValueMap& nameValueMap,
     OntologyRep& groupRep) const
 {
     std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
@@ -155,17 +160,17 @@ void AttrCounter::generateGroupRep_(
         nameItem.text = attrTable_.nameStr(*nameIt);
         nameItem.doc_count = nameCountTable_[*nameIt];
 
-        // attribute values are sort by count in descending order
-        const CountValueMap& countValueMap = nameCountMap[*nameIt];
-        for (CountValueMap::const_reverse_iterator mapIt = countValueMap.rbegin();
-             mapIt != countValueMap.rend(); ++mapIt)
+        // attribute values are sort by score in descending order
+        const ScoreValueMap& scoreValueMap = nameValueMap[*nameIt];
+        for (ScoreValueMap::const_reverse_iterator mapIt = scoreValueMap.rbegin();
+             mapIt != scoreValueMap.rend(); ++mapIt)
         {
-            int count = mapIt->first;
             const AttrValueIds& valueIds = mapIt->second;
 
             for (AttrValueIds::const_iterator idIt = valueIds.begin();
                  idIt != valueIds.end(); ++idIt)
             {
+                AttrTable::vid_t vid = *idIt;
                 itemList.push_back(OntologyRepItem());
                 OntologyRepItem& valueItem = itemList.back();
 
@@ -173,9 +178,9 @@ void AttrCounter::generateGroupRep_(
                 valueItem.level = 1;
 
                 // store id for quick find while merge attribute values.
-                valueItem.id = *idIt;
-                valueItem.text = attrTable_.valueStr(*idIt);
-                valueItem.doc_count = count;
+                valueItem.id = vid;
+                valueItem.text = attrTable_.valueStr(vid);
+                valueItem.doc_count = valueCountTable_[vid];
             }
         }
     }

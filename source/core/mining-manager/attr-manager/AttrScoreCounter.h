@@ -29,12 +29,14 @@ public:
 protected:
     virtual double getNameScore_(AttrTable::nid_t nameId) const;
 
-private:
-    void categoryStr_(docid_t doc, std::string& categoryStr) const;
+    virtual double getValueScore_(AttrTable::vid_t valueId) const;
 
-    double nameCateScore_(
-        AttrTable::nid_t nameId,
-        const std::string& categoryStr) const;
+private:
+    void nameStr_(AttrTable::nid_t nameId, std::string& nameStr) const;
+
+    void valueStr_(AttrTable::vid_t valueId, std::string& valueStr) const;
+
+    void categoryStr_(docid_t doc, std::string& categoryStr) const;
 
 private:
     const PropValueTable& categoryValueTable_;
@@ -43,6 +45,9 @@ private:
 
     /** map from name id to score */
     std::vector<double> nameScoreTable_;
+
+    /** map from value id to score */
+    std::vector<double> valueScoreTable_;
 };
 
 NS_FACETED_END

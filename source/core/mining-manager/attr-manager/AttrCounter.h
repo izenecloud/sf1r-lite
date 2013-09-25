@@ -32,6 +32,8 @@ public:
 protected:
     virtual double getNameScore_(AttrTable::nid_t nameId) const;
 
+    virtual double getValueScore_(AttrTable::vid_t valueId) const;
+
     typedef std::vector<AttrTable::nid_t> AttrNameIds;
 
     void getTopNameIds_(
@@ -39,14 +41,14 @@ protected:
         AttrNameIds& topNameIds) const;
 
     typedef std::vector<AttrTable::vid_t> AttrValueIds;
-    typedef std::map<int, AttrValueIds> CountValueMap;
-    typedef std::map<AttrTable::nid_t, CountValueMap> NameCountMap;
+    typedef std::map<double, AttrValueIds> ScoreValueMap;
+    typedef std::map<AttrTable::nid_t, ScoreValueMap> NameValueMap;
 
-    void getNameCountMap_(NameCountMap& nameCountMap) const;
+    void getNameValueMap_(NameValueMap& nameValueMap) const;
 
     void generateGroupRep_(
         const AttrNameIds& topNameIds,
-        NameCountMap& nameCountMap,
+        NameValueMap& nameValueMap,
         OntologyRep& groupRep) const;
 
 protected:
