@@ -243,7 +243,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     std::string original_attribute;
     doc.getString("Attribute", original_attribute);
-    //doc.eraseProperty("Attribute");
+    doc.eraseProperty("Attribute");
     if(!product.spid.empty())
     {
         //has SPU matched
