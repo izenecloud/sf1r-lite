@@ -313,10 +313,6 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     else
     {
-        if(!original_attribute.empty())
-        {
-            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
-        }
         spid = sdocid;
     }
     if(!product.stitle.empty() && !title.empty())
@@ -360,6 +356,15 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
+    if(!original_attribute.empty())
+    {
+        std::string nda;
+        doc.getString("DisplayAttribute", nda);
+        if(nda.empty())
+        {
+            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
+        }
+    }
     if(sorter_!=NULL)
     {
         if(old_spid!=spid&&!old_spid.empty())
