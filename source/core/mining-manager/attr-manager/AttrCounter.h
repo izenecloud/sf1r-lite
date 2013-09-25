@@ -38,8 +38,9 @@ protected:
         int topNum,
         AttrNameIds& topNameIds) const;
 
-    typedef std::map<AttrTable::vid_t, int> ValueCountMap;
-    typedef std::map<AttrTable::nid_t, ValueCountMap> NameCountMap;
+    typedef std::vector<AttrTable::vid_t> AttrValueIds;
+    typedef std::map<int, AttrValueIds> CountValueMap;
+    typedef std::map<AttrTable::nid_t, CountValueMap> NameCountMap;
 
     void getNameCountMap_(NameCountMap& nameCountMap) const;
 

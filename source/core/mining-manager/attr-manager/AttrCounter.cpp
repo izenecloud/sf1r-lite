@@ -106,7 +106,7 @@ void AttrCounter::getNameCountMap_(NameCountMap& nameCountMap) const
         if (count)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
-            nameCountMap[nameId][valueId] = count;
+            nameCountMap[nameId][count].push_back(valueId);
         }
     }
 }
@@ -155,18 +155,28 @@ void AttrCounter::generateGroupRep_(
         nameItem.text = attrTable_.nameStr(*nameIt);
         nameItem.doc_count = nameCountTable_[*nameIt];
 
-        // attribute values are appended as level 1
-        const ValueCountMap& valueCountMap = nameCountMap[*nameIt];
-        for (ValueCountMap::const_iterator mapIt = valueCountMap.begin();
-            mapIt != valueCountMap.end(); ++mapIt)
+        // attribute values are sort by count in descending order
+        const CountValueMap& countValueMap = nameCountMap[*nameIt];
+        for (CountValueMap::const_reverse_iterator mapIt = countValueMap.rbegin();
+             mapIt != countValueMap.rend(); ++mapIt)
         {
-            itemList.push_back(OntologyRepItem());
-            OntologyRepItem& valueItem = itemList.back();
-            valueItem.level = 1;
-            // store id for quick find while merge attribute values.
-            valueItem.id = mapIt->first;
-            valueItem.text = attrTable_.valueStr(mapIt->first);
-            valueItem.doc_count = mapIt->second;
+            int count = mapIt->first;
+            const AttrValueIds& valueIds = mapIt->second;
+
+            for (AttrValueIds::const_iterator idIt = valueIds.begin();
+                 idIt != valueIds.end(); ++idIt)
+            {
+                itemList.push_back(OntologyRepItem());
+                OntologyRepItem& valueItem = itemList.back();
+
+                // attribute values are appended as level 1
+                valueItem.level = 1;
+
+                // store id for quick find while merge attribute values.
+                valueItem.id = *idIt;
+                valueItem.text = attrTable_.valueStr(*idIt);
+                valueItem.doc_count = count;
+            }
         }
     }
 }
