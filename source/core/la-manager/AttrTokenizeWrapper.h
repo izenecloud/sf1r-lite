@@ -46,7 +46,14 @@ public:
 
     std::vector<std::string> attr_subtokenize(const std::vector<std::string>& tks);
 
-    double att_weight(const std::string& attr_name, const std::string& cate);
+    double att_name_weight(
+        const std::string& attr_name,
+        const std::string& cate);
+
+    double att_value_weight(
+        const std::string& attr_name,
+        const std::string& attr_value,
+        const std::string& cate);
 
     std::vector<char*>** get_TermCategory(const std::string& query);
 

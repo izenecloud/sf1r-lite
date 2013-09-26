@@ -23,6 +23,7 @@
 namespace
 {
 const std::size_t kZambeziTopKNum = 3e6;
+const std::size_t kAttrTopDocNum = 120;
 }
 
 using namespace sf1r;
@@ -143,12 +144,16 @@ void ZambeziSearch::rankTopKDocs_(
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
     }
 
+    // reset attr to false
+    faceted::GroupParam& groupParam = actionOperation.actionItem_.groupParam_;
+    const bool originIsAttrGroup = groupParam.isAttrGroup_;
+    groupParam.isAttrGroup_ = false;
+
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
     if (groupFilterBuilder_)
     {
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_,
-                                              propSharedLockSet));
+            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
     const std::vector<QueryFiltering::FilteringType>& filterList =
@@ -165,7 +170,7 @@ void ZambeziSearch::rankTopKDocs_(
 
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
-    
+
     {
         boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
         for (size_t i = 0; i < candNum; ++i)
@@ -175,7 +180,7 @@ void ZambeziSearch::rankTopKDocs_(
             int categoryScore = 0;
             if (productScorer)
                categoryScore = productScorer->score(docId);
-            
+
             float score = scores[i] + categoryScore;
 
             if (documentManager_.isDeleted(docId, false) ||
@@ -197,11 +202,6 @@ void ZambeziSearch::rankTopKDocs_(
     }
 
     searchResult.totalCount_ = totalCount; //100w
-
-    if (groupFilter)
-    {
-        groupFilter->getGroupRep(searchResult.groupRep_, searchResult.attrRep_);
-    }
 
     std::size_t topKCount = 0;
     if (offset < scoreItemQueue->size())
@@ -229,6 +229,36 @@ void ZambeziSearch::rankTopKDocs_(
         if (customRanker)
         {
             customScoreList[i] = scoreItem.custom_score;
+        }
+    }
+
+    if (groupFilter)
+    {
+        sf1r::faceted::OntologyRep tempAttrRep;
+        groupFilter->getGroupRep(searchResult.groupRep_, tempAttrRep);
+    }
+
+    // get attr results for top docs
+    if (originIsAttrGroup && groupFilterBuilder_)
+    {
+        faceted::GroupParam attrGroupParam;
+        attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
+        attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
+        attrGroupParam.searchMode_ = groupParam.searchMode_;
+
+        boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
+            groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));
+
+        if (attrGroupFilter)
+        {
+            const size_t topNum = std::min(docIdList.size(), kAttrTopDocNum);
+            for (size_t i = 0; i < topNum; ++i)
+            {
+                attrGroupFilter->test(docIdList[i]);
+            }
+
+            faceted::GroupRep tempGroupRep;
+            attrGroupFilter->getGroupRep(tempGroupRep, searchResult.attrRep_);
         }
     }
 

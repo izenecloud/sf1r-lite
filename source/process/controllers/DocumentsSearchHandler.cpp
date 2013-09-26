@@ -509,6 +509,7 @@ bool DocumentsSearchHandler::parse()
     // attrParser
     actionItem_.groupParam_.isAttrGroup_ = attrParser.attrResult();
     actionItem_.groupParam_.attrGroupNum_ = attrParser.attrTop();
+    actionItem_.groupParam_.searchMode_ = actionItem_.searchingMode_.mode_;
 
     // rangeParser
     actionItem_.rangePropertyName_ = rangeParser.rangeProperty();

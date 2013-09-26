@@ -19,27 +19,62 @@ NS_FACETED_BEGIN
 class AttrCounter
 {
 public:
-    AttrCounter(const AttrTable& attrTable);
+    AttrCounter(
+        const AttrTable& attrTable,
+        int minValueCount = 1);
 
-    void addDoc(docid_t doc);
+    virtual ~AttrCounter() {}
 
-    void addAttrDoc(AttrTable::nid_t nId, docid_t doc);
+    virtual void addDoc(docid_t doc);
 
-    void getGroupRep(int topGroupNum, OntologyRep& groupRep) const;
+    virtual void addAttrDoc(AttrTable::nid_t nId, docid_t doc);
 
-private:
+    void getGroupRep(int topGroupNum, OntologyRep& groupRep);
+
+protected:
+    virtual double getNameScore_(AttrTable::nid_t nameId) const;
+
+    virtual double getValueScore_(AttrTable::vid_t valueId) const;
+
+    typedef std::vector<AttrTable::nid_t> AttrNameIds;
+
+    void getTopNameIds_(
+        int topNum,
+        AttrNameIds& topNameIds) const;
+
+    typedef std::vector<AttrTable::vid_t> AttrValueIds;
+    typedef std::map<double, AttrValueIds> ScoreValueMap;
+    typedef std::map<AttrTable::nid_t, ScoreValueMap> NameValueMap;
+
+    void getNameValueMap_(NameValueMap& nameValueMap);
+
+    void generateGroupRep_(
+        const AttrNameIds& topNameIds,
+        NameValueMap& nameValueMap,
+        OntologyRep& groupRep) const;
+
+protected:
     const AttrTable& attrTable_;
 
+    /**
+     * given an attr name, if its attr value count is less than
+     * @c minValueCount_, it would be excluded in final result.
+     */
+    const int minValueCount_;
+
     /** map from name id to doc count */
-    std::vector<int> nameCountTable_;
+    std::vector<int> nameDocCountTable_;
+
+    /** map from name id to value count */
+    std::vector<int> nameValueCountTable_;
 
     /** the number of value ids */
     const std::size_t valueIdNum_;
 
     /** map from value id to doc count */
-    std::vector<int> valueCountTable_;
+    std::vector<int> valueDocCountTable_;
 };
 
 NS_FACETED_END
 
-#endif 
+#endif
