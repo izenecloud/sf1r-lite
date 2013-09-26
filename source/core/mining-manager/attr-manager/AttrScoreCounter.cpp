@@ -5,6 +5,7 @@
 
 namespace
 {
+const int kMinValueCount = 2;
 const double kMinNameScore = 0.1;
 const double kMinValueScore = 0.1;
 }
@@ -14,7 +15,7 @@ NS_FACETED_BEGIN
 AttrScoreCounter::AttrScoreCounter(
     const AttrTable& attrTable,
     const PropValueTable& categoryValueTable)
-    : AttrCounter(attrTable)
+    : AttrCounter(attrTable, kMinValueCount)
     , categoryValueTable_(categoryValueTable)
     , attrTokenizeWrapper_(*AttrTokenizeWrapper::get())
     , nameScoreTable_(attrTable.nameNum())
@@ -59,10 +60,10 @@ void AttrScoreCounter::addDoc(docid_t doc)
         if (nameIdSet.insert(nameId).second)
         {
             nameScoreTable_[nameId] += nameScore;
-            ++nameCountTable_[nameId];
+            ++nameDocCountTable_[nameId];
         }
 
-        ++valueCountTable_[vId];
+        ++valueDocCountTable_[vId];
         valueScoreTable_[vId] += valueScore;
     }
 }

@@ -28,11 +28,15 @@ class AttrScoreQueue : public izenelib::util::PriorityQueue<AttrScore>
 
 NS_FACETED_BEGIN
 
-AttrCounter::AttrCounter(const AttrTable& attrTable)
+AttrCounter::AttrCounter(
+    const AttrTable& attrTable,
+    int minValueCount)
     : attrTable_(attrTable)
-    , nameCountTable_(attrTable.nameNum())
+    , minValueCount_(minValueCount)
+    , nameDocCountTable_(attrTable.nameNum())
+    , nameValueCountTable_(attrTable.nameNum())
     , valueIdNum_(attrTable.valueNum())
-    , valueCountTable_(valueIdNum_)
+    , valueDocCountTable_(valueIdNum_)
 {
 }
 
@@ -47,12 +51,12 @@ void AttrCounter::addDoc(docid_t doc)
         AttrTable::vid_t vId = valueIdList[i];
         if (vId < valueIdNum_)
         {
-            ++valueCountTable_[vId];
+            ++valueDocCountTable_[vId];
 
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
             if (nameIdSet.insert(nameId).second)
             {
-                ++nameCountTable_[nameId];
+                ++nameDocCountTable_[nameId];
             }
         }
     }
@@ -71,47 +75,48 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
         if (vId < valueIdNum_ &&
             attrTable_.valueId2NameId(vId) == nId)
         {
-            ++valueCountTable_[vId];
+            ++valueDocCountTable_[vId];
             findNameId = true;
         }
     }
 
     if (findNameId)
     {
-        ++nameCountTable_[nId];
+        ++nameDocCountTable_[nId];
     }
 }
 
 double AttrCounter::getNameScore_(AttrTable::nid_t nameId) const
 {
-    return nameCountTable_[nameId];
+    return nameDocCountTable_[nameId];
 }
 
 double AttrCounter::getValueScore_(AttrTable::vid_t valueId) const
 {
-    return valueCountTable_[valueId];
+    return valueDocCountTable_[valueId];
 }
 
-void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
+void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep)
 {
-    std::vector<AttrTable::nid_t> topNameIds;
-    getTopNameIds_(topGroupNum, topNameIds);
-
     NameValueMap nameValueMap;
     getNameValueMap_(nameValueMap);
+
+    std::vector<AttrTable::nid_t> topNameIds;
+    getTopNameIds_(topGroupNum, topNameIds);
 
     generateGroupRep_(topNameIds, nameValueMap, groupRep);
 }
 
-void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap) const
+void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap)
 {
-    for (std::size_t valueId = 1; valueId < valueCountTable_.size(); ++valueId)
+    for (std::size_t valueId = 1; valueId < valueDocCountTable_.size(); ++valueId)
     {
         double score = getValueScore_(valueId);
         if (score > 0)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
             nameValueMap[nameId][score].push_back(valueId);
+            ++nameValueCountTable_[nameId];
         }
     }
 }
@@ -122,14 +127,14 @@ void AttrCounter::getTopNameIds_(
 {
     if (topNum == 0)
     {
-        topNum = nameCountTable_.size();
+        topNum = nameDocCountTable_.size();
     }
 
     AttrScoreQueue queue(topNum);
-    for (size_t nameId = 0; nameId < nameCountTable_.size(); ++nameId)
+    for (size_t nameId = 0; nameId < nameDocCountTable_.size(); ++nameId)
     {
         double score = getNameScore_(nameId);
-        if (score > 0)
+        if (score > 0 && nameValueCountTable_[nameId] >= minValueCount_)
         {
             AttrScore attrScore(nameId, score);
             queue.insert(attrScore);
@@ -158,7 +163,7 @@ void AttrCounter::generateGroupRep_(
         itemList.push_back(OntologyRepItem());
         OntologyRepItem& nameItem = itemList.back();
         nameItem.text = attrTable_.nameStr(*nameIt);
-        nameItem.doc_count = nameCountTable_[*nameIt];
+        nameItem.doc_count = nameDocCountTable_[*nameIt];
 
         // attribute values are sort by score in descending order
         const ScoreValueMap& scoreValueMap = nameValueMap[*nameIt];
@@ -180,7 +185,7 @@ void AttrCounter::generateGroupRep_(
                 // store id for quick find while merge attribute values.
                 valueItem.id = vid;
                 valueItem.text = attrTable_.valueStr(vid);
-                valueItem.doc_count = valueCountTable_[vid];
+                valueItem.doc_count = valueDocCountTable_[vid];
             }
         }
     }
