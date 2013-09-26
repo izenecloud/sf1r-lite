@@ -12,6 +12,7 @@
 #include <glog/logging.h>
 #include <fstream>
 #include <math.h>
+#include <algorithm>
 
 using namespace sf1r;
 
@@ -80,7 +81,7 @@ void ZambeziManager::search(
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size = attrvids.size();
+            attr_size = std::min(attrvids.size(), size_t(20));
         }
 
         float score = intScores[i]*pow(attr_size, 0.3);
