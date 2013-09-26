@@ -23,7 +23,7 @@
 namespace
 {
 const std::size_t kZambeziTopKNum = 3e6;
-const std::size_t kAttrTopDocNum = 120;
+const std::size_t kAttrTopDocNum = 200;
 }
 
 using namespace sf1r;
