@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     doc.property("Source") = str_to_propstr("天猫", UString::UTF_8);
     doc.property("Price") = str_to_propstr("106.0", UString::UTF_8);
     processor.Process(doc);
-    check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
+    check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID>","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
 
 
     ScdDocument doc2;
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     odb->insert(2, pid);
     odb->flush();
     processor.Process(doc2);
-    check(doc2,"天猫","154.00","","手机","品牌:三星","");
+    check(doc2,"天猫","154.00","","手机>","品牌:三星","");
    
 
     doc.type=DELETE_SCD;
@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE(b5mo_processor_process)
     processor.Process(doc3);
 //当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile
 
-    check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1","");
+    check(doc3,"当当","15434.00","","男装>夹克>","品牌:brand1","");
     doc.type = INSERT_SCD;
     processor.Process(doc);
     ScdDocument doc4;

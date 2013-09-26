@@ -222,7 +222,8 @@ namespace NQI
                 boost::unordered_map<std::string, std::list<std::string> >::iterator sIt = scs.find(it->first.name_);
                 if ( scs.end() == sIt )
                 {
-                    deleteKeywords(it->second);
+                    if (!(it->second.empty()))
+                        deleteKeywords(it->second);
                     continue;
                 }
                 WMVIterator wmv = it->second.begin();

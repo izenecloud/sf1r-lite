@@ -241,6 +241,8 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         }
         matcher_->GetProduct(spid, product);
     }
+    std::string original_attribute;
+    doc.getString("Attribute", original_attribute);
     doc.eraseProperty("Attribute");
     if(!product.spid.empty())
     {
@@ -317,6 +319,13 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
     }
+    std::string scategory;
+    doc.getString("Category", scategory);
+    if(!scategory.empty()) 
+    {
+        scategory+=">";
+        doc.property("Category") = str_to_propstr(scategory);
+    }
     if(!product.spic.empty() && !title.empty())
     {
         //TODO remove this restrict
@@ -347,6 +356,15 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
+    if(!original_attribute.empty())
+    {
+        std::string nda;
+        doc.getString("DisplayAttribute", nda);
+        if(nda.empty())
+        {
+            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
+        }
+    }
     if(sorter_!=NULL)
     {
         if(old_spid!=spid&&!old_spid.empty())
@@ -359,6 +377,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             sorter_->Append(old_doc, ts_);
         }
         ScdDocument sdoc(doc, type);
+        if(!original_attribute.empty())
+        {
+            sdoc.property("Attribute") = str_to_propstr(original_attribute);
+        }
         sorter_->Append(sdoc, ts_);
     }
     //delete Attribute after write block
@@ -588,7 +610,6 @@ bool B5moProcessor::OMap_(const OriginalMapper& omapper, Document& doc) const
     std::string category;
     if(omapper.Map(source, original_category, category))
     {
-        if(!category.empty()) category+=">";
         doc.property("Category") = str_to_propstr(category);
         return true;
     }

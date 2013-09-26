@@ -348,7 +348,7 @@ bool DocumentManager::getDocumentByCache(
     {
         return true;
     }
-    if ((forceget | !isDeleted(docId) ) && propertyValueTable_->get(docId, document))
+    if ( ( forceget || !isDeleted(docId) ) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         return true;

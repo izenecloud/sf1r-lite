@@ -20,13 +20,19 @@ CommentCacheStorage::CommentCacheStorage(
     , buffer_size_(0)
     , op_type_(CommentCacheStorage::NONE)
 {
+    boost::filesystem::create_directories(dbPath + dirty_key_path);
+    boost::filesystem::create_directories(dbPath + recent_comment_key_path);
+    boost::filesystem::create_directories(dbPath + comment_cache_path);
     if (!dirty_key_db_.open())
     {
+        LOG(ERROR) << "open dirty key db failed. " << dbPath;
         boost::filesystem::remove_all(dbPath + dirty_key_path);
         dirty_key_db_.open();
     }
-    recent_comment_db_.open();
-    boost::filesystem::create_directories(dbPath + comment_cache_path);
+    if(!recent_comment_db_.open())
+    {
+        LOG(ERROR) << "open recent comment db failed. " << dbPath;
+    }
     comment_cache_drum_.reset(new CommentCacheDrumType(dbPath + comment_cache_path, 64, 2048, 16777216, dispatcher_));
 }
 

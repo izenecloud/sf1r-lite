@@ -193,6 +193,7 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , queryIntentManager_(NULL)
+    , queryStatistics_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
     , summarizationManagerTask_(NULL)

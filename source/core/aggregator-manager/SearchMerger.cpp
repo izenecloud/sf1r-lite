@@ -71,6 +71,23 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
+    if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
+        mergeResult.error_ = "empty worker.";
+        return;
+    }
+
+    for(size_t workerId = 0; workerId < workerNum; ++workerId)
+    {
+        if(!workerResults.result(workerId).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(workerId).error_;
+            LOG(ERROR) << "!!! getDistSearchResult error for worker: " << workerId << ", error: " << mergeResult.error_;
+            return;
+        }
+    }
+
     const KeywordSearchResult& result0 = workerResults.result(0);
 
     // only one result
@@ -93,7 +110,6 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
     mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
-    TOP_K_NUM = result0.TOP_K_NUM;
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
@@ -138,17 +154,17 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.attrRep_.merge(0, otherAttrReps);
 
     //size_t endOffset = mergeResult.start_ + mergeResult.count_;
-    size_t topKStart = Utilities::roundDown(mergeResult.start_, TOP_K_NUM);
+    size_t topKStart = Utilities::roundDown(mergeResult.start_, mergeResult.TOP_K_NUM);
     size_t topKCount = 0;
     if (topKStart < totalTopKCount)
         topKCount = totalTopKCount - topKStart;
 
-    topKCount = std::min(TOP_K_NUM, topKCount);
+    topKCount = std::min((size_t)mergeResult.TOP_K_NUM, topKCount);
 
     LOG(INFO) << "SearchMerger topKStart : << " << topKStart
         << ", topKCount: " << topKCount
         << ", totalTopKCount: " << totalTopKCount
-        << ", TOP_K_NUM: " << TOP_K_NUM << endl;
+        << ", TOP_K_NUM: " << mergeResult.TOP_K_NUM << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
@@ -300,6 +316,7 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         if(!workerResults.result(workerId).error_.empty())
         {
             mergeResult.error_ = workerResults.result(workerId).error_;
+            LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
         LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
@@ -388,13 +405,23 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
     LOG(INFO) <<"call mergeMiningResult"<<std::endl;
     if (workerResults.size() == 0)
         return;
+
+    size_t workerNum = workerResults.size();
+    for(size_t i = 0; i < workerNum; ++i)
+    {
+        if(!workerResults.result(i).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(i).error_;
+            LOG(ERROR) << "getMiningResult error for worker: " << i << ", error :" << mergeResult.error_;
+            return;
+        }
+    }
     // note : the QrResult, TgResult, FacetedResult using any single result is enough.
     // the DupResult, SimilarityResult need to be re-design to get the right result.
     
     // OrResult
     mergeResult.relatedQueryList_ = workerResults.result(0).relatedQueryList_;
     mergeResult.rqScore_ = workerResults.result(0).rqScore_;
-    mergeResult.error_ += workerResults.result(0).error_;
     // DupResult and SimilarityResult
     mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size(), 0);
     mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size(), 0);
@@ -465,6 +492,22 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
     LOG(INFO) << "#[SearchMerger::getDocumentsByIds] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
+    if (workerNum == 0)
+    {
+        mergeResult.error_ = "empty worker result.";
+        LOG(ERROR) << "getDocumentsByIds empty worker result. ";
+        return;
+    }
+
+    for(size_t i = 0; i < workerNum; ++i)
+    {
+        if(!workerResults.result(i).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(i).error_;
+            LOG(ERROR) << "getDocumentsByIds error for worker: " << i << ", err:" << mergeResult.error_;
+            return;
+        }
+    }
 
     // only one result
     if (workerNum == 1)

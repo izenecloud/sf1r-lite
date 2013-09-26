@@ -853,19 +853,32 @@ bool  SearchWorker::getResultItem(
         ids[i] = docId;
     }
 
+    typedef std::vector<DisplayProperty>::size_type vec_size_type;
+    vec_size_type indexSummary = 0;
     std::vector<Document> docs;
     bool forceget = (miningManager_&&miningManager_->HasDeletedDocDuringMining())||bundleConfig_->enable_forceget_doc_;
     if(!documentManager_->getDocuments(ids, docs, forceget))
     {
         ///Whenever any document could not be retrieved, return false
         resultItem.error_ = "Error : Cannot get document data";
+        LOG(WARNING) << "get document data failed. doc num: " << ids.size() << ", is forceget:" << forceget;
+        if (ids.size() < 10)
+        {
+            for(size_t i = 0; i < ids.size(); ++i)
+                std::cout << " " << ids[i] << ",";
+        }
+        std::cout << std::endl;
+        for (vec_size_type i = 0; i < actionItem.displayPropertyList_.size(); ++i)
+        {
+            if (actionItem.displayPropertyList_[i].isSummaryOn_)
+                indexSummary++;
+        }
+        resultItem.rawTextOfSummaryInPage_.resize(indexSummary);
         return false;
     }
 
     /// start to get snippet/summary/highlight
-    typedef std::vector<DisplayProperty>::size_type vec_size_type;
     // counter for properties requiring summary, later
-    vec_size_type indexSummary = 0;
     bool ret = true;
     for (vec_size_type i = 0; i < actionItem.displayPropertyList_.size(); ++i)
     {

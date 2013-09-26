@@ -64,6 +64,8 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
         int toSuccess = 0;
         toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
         RK::TokenRecommended queries;
+        if (NULL == miningSearchService_ || NULL == miningSearchService_->GetMiningManager())
+            return;
         RK::queryAbbreviation(queries, keywords, *(miningSearchService_->GetMiningManager()));
         int success = 0;
         bool isLastSuccess = false;

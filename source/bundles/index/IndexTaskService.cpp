@@ -74,7 +74,7 @@ bool IndexTaskService::SendRequestToSharding(uint32_t shardid)
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        indexAggregator_->singleRequest(bundleConfig_->collectionName_,
+        indexAggregator_->singleRequest(bundleConfig_->collectionName_, 0,
             "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret, shardid);
     }
     else
@@ -100,7 +100,7 @@ bool IndexTaskService::HookDistributeRequestForIndex()
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        indexAggregator_->distributeRequestWithoutLocal(bundleConfig_->collectionName_, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
+        indexAggregator_->distributeRequestWithoutLocal(bundleConfig_->collectionName_, 0, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
     }
     else
     {

@@ -45,6 +45,8 @@ static const std::string syncID_totalComment = "TOTAL_COMMENT";
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 static const UString DOCID("DOCID", UString::UTF_8);
 static const std::size_t COMPUTE_COMMENT_NUM = 4;
+static const std::string OFFER_COMMENT_SCD_DIR = "offer_scddir";
+static const std::string syncID_OFFER = "_offer_comment";
 
 bool IsAllOpinionStr(const UString& ustr)
 {
@@ -141,11 +143,13 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , total_scd_path_(scdPath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
+    , scdPath_(scdPath)
     , schema_(schema)
     , document_manager_(document_manager)
     //, index_manager_(index_manager)
     , analyzer_(analyzer)
     , comment_cache_storage_(new CommentCacheStorage(homePath))
+    , offer_comment_cache_storage_(new CommentCacheStorage(homePath + "/offer/"))
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
     , system_resource_path_(sys_res_path)
@@ -169,6 +173,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     izenelib::util::Scheduler::removeJob(cronJobName_);
     delete summarization_storage_;
     delete comment_cache_storage_;
+    delete offer_comment_cache_storage_;
     delete corpus_;
 }
 
@@ -278,6 +283,13 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
         if (title_it == doc.propertyEnd()) continue;
 
+        Document::doc_prop_value_strtype offerkey;
+        Document::property_const_iterator offer_key_it = doc.findProperty(schema_.offerIdPropName);
+        if (offer_key_it != doc.propertyEnd())
+        {
+            offerkey = offer_key_it->second.getPropertyStrValue();
+        }
+
         const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
 
@@ -322,6 +334,11 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
             boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
             comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
                 advantage, disadvantage, score, timestamp);
+            if (!offerkey.empty())
+            {
+                offer_comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(offerkey), i, content,
+                advantage, disadvantage, score, timestamp);
+            }
         }
     }
 }
@@ -344,9 +361,10 @@ bool MultiDocSummarizationSubManager::preProcess(int64_t timestamp)
 
     // store the recent comments in 30 days.
     int64_t ts = timestamp/1000000;
-    ts -= 30*24*60*60;
+    ts -= schema_.recent_days*24*60*60;
 
     comment_cache_storage_->setRecentTime(ts);
+    offer_comment_cache_storage_->setRecentTime(ts);
 
     boost::filesystem::path totalscdPath(total_scd_path_);
     if (!boost::filesystem::exists(totalscdPath))
@@ -370,6 +388,15 @@ bool MultiDocSummarizationSubManager::preProcess(int64_t timestamp)
         const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
+        Document::property_const_iterator offer_kit = doc.findProperty(schema_.offerIdPropName);
+        if (offer_kit != doc.propertyEnd())
+        {
+            const Document::doc_prop_value_strtype& offerkey = offer_kit->second.getPropertyStrValue();
+            if (!offerkey.empty())
+            {
+                offer_comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(offerkey), i);
+            }
+        }
         del_key_set.insert(Utilities::md5ToUint128(key));
     }
 
@@ -425,6 +452,7 @@ bool MultiDocSummarizationSubManager::postProcess()
 
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
+    offer_comment_cache_storage_->Flush(true);
 
     string OpPath = schema_.opinionWorkingPath;
     boost::filesystem::path opPath(OpPath);
@@ -442,8 +470,8 @@ bool MultiDocSummarizationSubManager::postProcess()
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
@@ -581,44 +609,52 @@ bool MultiDocSummarizationSubManager::postProcess()
    
     if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        if (!is_rebuild_)
-        {
-            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-            SynchroData syncData;
-            syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce incre syncData error";
-            }
-        }
-
-        {
-            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId + syncID_totalComment);
-            SynchroData syncTotalData;
-            syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
-            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-
-            if (syncProducer->produce(syncTotalData))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce total syncData error";
-            }
-        }
+        sendCommentSCDs(schema_.opinionSyncId, generated_scds_path.string(), total_scd_path_, is_rebuild_, true);
     }
     total_Opinion_Scd_.close();
     total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";
+
+    ComputeCommentForOffer();
+    return true;
+}
+
+bool MultiDocSummarizationSubManager::sendCommentSCDs(const std::string& syncID, const std::string& scddir,
+    const std::string& total_scd_dir, bool isrebuild, bool send_total)
+{
+    if (!isrebuild)
+    {
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID);
+        SynchroData syncData;
+        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+        syncData.setValue(SynchroData::KEY_DATA_PATH, scddir);
+        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, scddir)))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce incre syncData error";
+        }
+    }
+
+    {
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID + syncID_totalComment);
+        SynchroData syncTotalData;
+        syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
+        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_dir);
+
+        if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, scddir)))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce total syncData error";
+        }
+    }
     return true;
 }
 
@@ -866,7 +902,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #define MAX_SENT_COUNT 1000
 
     ScoreType total_score = 0;
-    uint32_t count = 0;
+    size_t total_count = comment_cache_item.size();
+    uint32_t score_count = 0;
 
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
@@ -876,15 +913,17 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     {
         if (it->second.score)
         {
-            ++count;
+            ++score_count;
             total_score += (it->second).score;
         }
     }
     size_t recent_count = comment_cache_storage_->setRecentComments(key, comment_cache_item);
-    if (count)
+    if (total_count > 0)
     {
         std::vector<std::pair<double, UString> > score_list(1);
-        double avg_score = (double)total_score / (double)count;
+        double avg_score = 0;
+        if (score_count > 0)
+            avg_score = (double)total_score / (double)score_count;
         score_list[0].first = avg_score;
         summarization.updateProperty("avg_score", score_list);
 
@@ -894,7 +933,9 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             doc.property("DOCID") = str_to_propstr(key_str);
             doc.property(schema_.scorePropName) = str_to_propstr(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
             if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
+                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(total_count));
+            if(!schema_.recentCommentCountPropName.empty())
+                doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
             score_scd_writer_->Append(doc);
         }
         if (total_Score_Scd_.good())
@@ -903,7 +944,13 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             total_Score_Scd_ << "<" << schema_.scorePropName << ">" << boost::lexical_cast<std::string>(avg_score) << endl;
             if(!schema_.commentCountPropName.empty())
             {
-                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">" << boost::lexical_cast<std::string>(recent_count) << endl;
+                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(total_count) << endl;
+            }
+            if(!schema_.recentCommentCountPropName.empty())
+            {
+                total_Score_Scd_ << "<" << schema_.recentCommentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(recent_count) << endl;
             }
          }
     }
@@ -1007,6 +1054,115 @@ void MultiDocSummarizationSubManager::SetLastDocid_(uint32_t docid) const
     if (ofs) ofs << docid;
 }
 
+void MultiDocSummarizationSubManager::ComputeCommentForOffer()
+{
+    boost::filesystem::path generated_scds_path(scdPath_ + "/" + OFFER_COMMENT_SCD_DIR);
+    try
+    {
+        boost::filesystem::create_directories(generated_scds_path);
+        offer_comment_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "init scd writer failed. " << e.what();
+        return;
+    }
+    LOG(INFO) << "Begin compute comment for offer.";
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(offer_comment_cache_storage_->dirty_key_db_);
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
+    for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
+    {
+        const KeyType& key = dirtyKeyIt->first;
+
+        CommentCacheItemType comment_cache_item;
+        offer_comment_cache_storage_->Get(key, comment_cache_item);
+        if (comment_cache_item.empty())
+        {
+            continue;
+        }
+
+        std::string key_str;
+        key_str = Utilities::uint128ToUuid(key);
+        size_t total_cnt = comment_cache_item.size();
+        size_t recent_count = offer_comment_cache_storage_->setRecentComments(key, comment_cache_item);
+        if (total_cnt > 0)
+        {
+            if (offer_comment_scd_writer_)
+            {
+                Document doc;
+                doc.property("DOCID") = str_to_propstr(key_str);
+                if(!schema_.commentCountPropName.empty())
+                    doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(total_cnt));
+                if(!schema_.recentCommentCountPropName.empty())
+                    doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
+                offer_comment_scd_writer_->Append(doc);
+            }
+        }
+
+        if (++count % 10000 == 0)
+        {
+            std::cout << "\r === compute offer comment count: " << count << " ===" << std::flush;
+        }
+    }
+
+    LOG(INFO) << "End compute comment for offer.";
+    if (offer_comment_scd_writer_)
+    {
+        offer_comment_scd_writer_->Close();
+        offer_comment_scd_writer_.reset();
+    }
+    offer_comment_cache_storage_->ClearDirtyKey();
+
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        sendCommentSCDs(schema_.opinionSyncId + syncID_OFFER, generated_scds_path.string(), "", false, false);
+    }
+}
+
+void MultiDocSummarizationSubManager::doUpdateRecentCommentAndSendSCD(CommentCacheStorage* storage,
+    boost::shared_ptr<ScdWriter>& scd_writer, const std::string& scd_dir, const std::string& syncID)
+{
+    std::vector<KeyType> update_keys;
+    std::vector<uint32_t> recent_comment_count_list;
+    storage->updateRecentComments(update_keys, recent_comment_count_list);
+    LOG(INFO) << "recent comments update finished: " << update_keys.size();
+    if (!update_keys.empty() && !schema_.recentCommentCountPropName.empty())
+    {
+        if (scd_writer)
+        {
+            LOG(WARNING) << "scd write is currently using. skip generate recent comments SCD.";
+        }
+        else
+        {
+            try
+            {
+                boost::filesystem::create_directories(scd_dir);
+                scd_writer.reset(new ScdWriter(scd_dir, RTYPE_SCD));
+                for (size_t i = 0; i < update_keys.size(); ++i)
+                {
+                    std::string key_str;
+                    key_str = Utilities::uint128ToUuid(update_keys[i]);
+                    Document doc;
+                    doc.property("DOCID") = str_to_propstr(key_str);
+                    doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
+                    scd_writer->Append(doc);
+                }
+                scd_writer->Close();
+                scd_writer.reset();
+
+                if (DistributeRequestHooker::get()->isRunningPrimary())
+                {
+                    sendCommentSCDs(syncID, scd_dir, "", false, false);
+                }
+            }
+            catch(const std::exception& e)
+            {
+                LOG(ERROR) << "failed while update recent comment." << e.what();
+            }
+        }
+    }
+}
+
 void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
 {
     if (cronExpression_.matches_now() || calltype > 0)
@@ -1034,63 +1190,16 @@ void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
         }
 
         int64_t ts = reqlog.cron_time/1000000;
-        ts -= 30*24*60*60;
+        ts -= schema_.recent_days*24*60*60;
         comment_cache_storage_->setRecentTime(ts);
-        std::vector<KeyType> update_keys;
-        std::vector<uint32_t> recent_comment_count_list;
-        comment_cache_storage_->updateRecentComments(update_keys, recent_comment_count_list);
-        LOG(INFO) << "recent comments update finished: " << update_keys.size();
-        if (!update_keys.empty() && !schema_.commentCountPropName.empty())
-        {
-            if (score_scd_writer_)
-            {
-                LOG(WARNING) << "score scd write is currently using. skip generate recent comments SCD.";
-            }
-            else
-            {
-                string OpPath = schema_.opinionWorkingPath;
-                try
-                {
-                    boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
-                    boost::filesystem::create_directories(generated_scds_path);
+        string OpPath = schema_.opinionWorkingPath;
+        boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
+        doUpdateRecentCommentAndSendSCD(comment_cache_storage_, score_scd_writer_,
+            generated_scds_path.string(), schema_.opinionSyncId);
 
-                    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-
-                    for (size_t i = 0; i < update_keys.size(); ++i)
-                    {
-                        std::string key_str;
-                        key_str = Utilities::uint128ToUuid(update_keys[i]);
-                        Document doc;
-                        doc.property("DOCID") = str_to_propstr(key_str);
-                        doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
-                        score_scd_writer_->Append(doc);
-                    }
-                    score_scd_writer_->Close();
-                    score_scd_writer_.reset();
-
-                    if (DistributeRequestHooker::get()->isRunningPrimary())
-                    {
-                        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-                        SynchroData syncData;
-                        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-                        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-                        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-                        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
-                        {
-                            syncProducer->wait();
-                        }
-                        else
-                        {
-                            LOG(WARNING) << "produce incre syncData error";
-                        }
-                    }
-                }
-                catch(const std::exception& e)
-                {
-                    LOG(ERROR) << "failed while update recent comment." << e.what();
-                }
-            }
-        }
+        offer_comment_cache_storage_->setRecentTime(ts);
+        doUpdateRecentCommentAndSendSCD(offer_comment_cache_storage_, offer_comment_scd_writer_,
+            scdPath_ + "/" + OFFER_COMMENT_SCD_DIR, schema_.opinionSyncId + syncID_OFFER);
 
         DISTRIBUTE_WRITE_FINISH(true);
     }

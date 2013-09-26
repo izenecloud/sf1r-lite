@@ -253,12 +253,14 @@
             <xs:sequence>
                 <xs:element name="DocidProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="UuidProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="OfferIdProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="ContentProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="AdvantageProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="DisadvantageProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="TitleProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="ScoreProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="CommentCountProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="RecentCommentCountProperty" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="OpinionWorkingPath" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="OpinionSyncId" minOccurs="0" maxOccurs="1"/>
@@ -320,6 +322,12 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="RecentCommentCountProperty">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="days" type="xs:integer" use="optional" />
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>

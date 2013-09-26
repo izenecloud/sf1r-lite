@@ -29,6 +29,7 @@ SynchroConsumer::SynchroConsumer(
 
 SynchroConsumer::~SynchroConsumer()
 {
+    zookeeper_->disconnect();
 }
 
 /**
@@ -70,6 +71,8 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
     {
         LOG(WARNING) << "SynchroConsumer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         zookeeper_->disconnect();
+
+        boost::unique_lock<boost::mutex> lock(mutex_);
         zookeeper_->connect(true);
         if (zookeeper_->isConnected())
         {

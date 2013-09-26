@@ -633,6 +633,43 @@ public:
     /// @brief filtering options
     std::vector<QueryFiltering::FilteringType> filteringList_;
 
+    void print(std::ostream& out = std::cout) const
+    {
+        stringstream ss;
+        ss << endl;
+        env_.print(out);
+        ss << "collection: " << collectionName_ << std::endl;
+        ss << "DisplayProperty: ";
+        for (size_t i = 0; i < displayPropertyList_.size(); ++i)
+        {
+            displayPropertyList_[i].print(out);
+        }
+        ss << "Internal docid: ";
+        for (size_t i = 0; i < idList_.size(); ++i)
+        {
+            ss << idList_[i] << ", ";
+        }
+        ss << std::endl;
+        ss << "DOCID list: ";
+        for (size_t i = 0; i < docIdList_.size(); ++i)
+        {
+            ss << docIdList_[i] << ",";
+        }
+        ss << std::endl;
+        ss << "PropertyName : " << propertyName_ << std::endl;
+        ss << "Filtering Option : " << endl;
+        for (size_t i = 0; i < filteringList_.size(); i++)
+        {
+            ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
+            ss << "------------------------------------------------" << endl;
+            for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].values_.begin();
+                    iter != filteringList_[i].values_.end(); iter++ )
+                ss << *iter << ", type:" << iter->which() << endl;
+            ss << "------------------------------------------------" << endl;
+        }
+        out << ss.str();
+    }
+
     DATA_IO_LOAD_SAVE(
         GetDocumentsByIdsActionItem,
         & env_ & languageAnalyzerInfo_ & collectionName_ & displayPropertyList_

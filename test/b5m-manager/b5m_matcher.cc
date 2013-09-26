@@ -11,6 +11,7 @@
 #include <b5m-manager/similarity_matcher.h>
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/tuan_processor.h>
+#include <b5m-manager/tour_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
 #include <b5m-manager/b5mp_processor2.h>
@@ -281,6 +282,7 @@ int do_main(int ac, char** av)
         ("similarity-match", "title based similarity matching")
         ("ticket-generate", "do directly ticket matching")
         ("tuan-generate", "do directly tuan matching")
+        ("tour-generate", "do directly tour matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
@@ -1040,6 +1042,19 @@ int do_main(int ac, char** av)
         if(!processor.Generate(scd_path, mdb_instance))
         {
             std::cout<<"tuan generator fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("tour-generate"))
+    {
+        if( scd_path.empty() || mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        TourProcessor processor;
+        if(!processor.Generate(scd_path, mdb_instance))
+        {
+            std::cout<<"tour generator fail"<<std::endl;
             return EXIT_FAILURE;
         }
     }
