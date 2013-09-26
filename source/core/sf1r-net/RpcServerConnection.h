@@ -87,8 +87,7 @@ template <class Method_T, class RequestDataT, class ResponseDataT>
 void RpcServerConnection::syncRequest(const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests();
-    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    session.set_timeout(10);
+    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort, 10);
     respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 
@@ -121,8 +120,7 @@ template <class Method_T, class RequestDataT, class ResponseDataT>
 void RpcServerConnection::syncRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests(ip, port);
-    msgpack::rpc::session session = session_pool_->get_session(ip, port);
-    session.set_timeout(10);
+    msgpack::rpc::session session = session_pool_->get_session(ip, port, 10);
     respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 

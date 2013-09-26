@@ -68,8 +68,7 @@ template <class RequestDataT, class ResponseDataT>
 void LogAnalysisConnection::syncRequest(const LogServerRequest::method_t& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests();
-    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    session.set_timeout(360);
+    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort, 160);
     try
     {
         respData = session.call(method, reqData).template get<ResponseDataT>();
