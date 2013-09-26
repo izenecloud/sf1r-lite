@@ -193,32 +193,31 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
         return false;
     }
 
-    static const bfs::directory_iterator kItrEnd;
-    ScdParser parser(encoding);
-    for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
+    try
     {
-        if (bfs::is_regular_file(itr->status()))
+        static const bfs::directory_iterator kItrEnd;
+        ScdParser parser(encoding);
+        for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
+            if (bfs::is_regular_file(itr->status()))
             {
-                LOG(INFO) << "found a SCD File for rebuild:" << fileName;
-                scd_list.push_back(itr->path().string());
-                //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
-                //        scd_list.back()))
-                //{
-                //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
-                //}
-                //else
-                //{
-                //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
-                //}
-            }
-            else
-            {
-                LOG(WARNING) << "SCD File not valid " << fileName;
+                std::string fileName = itr->path().filename().string();
+                if (parser.checkSCDFormat(fileName))
+                {
+                    LOG(INFO) << "found a SCD File for rebuild:" << fileName;
+                    scd_list.push_back(itr->path().string());
+                }
+                else
+                {
+                    LOG(WARNING) << "SCD File not valid " << fileName;
+                }
             }
         }
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "error while get rebuild scd: " << e.what();
+        return false;
     }
 
     if (scd_list.empty())
@@ -410,9 +409,17 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
                 LOG(INFO) << "rebuild from dfs path : " << rebuild_scd_src;
             }
 
-            if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
-                    rebuild_scd_src, reqlog.scd_list))
+            try
+            {
+                if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
+                        rebuild_scd_src, reqlog.scd_list))
+                    return false;
+            }
+            catch(const std::exception& e)
+            {
+                LOG(ERROR) << "failed to rebuild: " << e.what();
                 return false;
+            }
         }
 
         // move rebuild scd files to rebuild collection master_index.
