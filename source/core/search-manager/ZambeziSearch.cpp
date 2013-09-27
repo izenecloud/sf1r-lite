@@ -1,4 +1,5 @@
 #include "ZambeziSearch.h"
+#include "ZambeziFilter.h"
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "QueryBuilder.h"
@@ -22,7 +23,6 @@
 
 namespace
 {
-const std::size_t kZambeziTopKNum = 3e6;
 const std::size_t kAttrTopDocNum = 200;
 }
 
@@ -54,7 +54,7 @@ bool ZambeziSearch::search(
     std::size_t offset)
 {
     const std::string& query = actionOperation.actionItem_.env_.queryString_;
-    LOG(INFO) << "zambezi search for query: " << query << endl;
+    LOG(INFO) << "zambezi search for query: " << query;
 
     if (query.empty())
         return false;
@@ -62,42 +62,57 @@ bool ZambeziSearch::search(
     std::vector<docid_t> candidates;
     std::vector<float> scores;
 
-    if (!getCandidateDocs_(query, candidates, scores))
-        return false;
-
-    rankTopKDocs_(candidates, scores,
-                  actionOperation, limit, offset,
-                  searchResult);
-
-    return true;
-}
-
-bool ZambeziSearch::getCandidateDocs_( // 300W
-    const std::string& query,
-    std::vector<docid_t>& candidates,
-    std::vector<float>& scores)
-{
     if (!zambeziManager_)
     {
         LOG(WARNING) << "the instance of ZambeziManager is empty";
         return false;
     }
 
-    std::vector<std::string> tokenList;
-    AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
+    faceted::GroupParam& groupParam = actionOperation.actionItem_.groupParam_;
+    const bool originIsAttrGroup = groupParam.isAttrGroup_;
+    groupParam.isAttrGroup_ = false;
 
-    tokenList = attrTokenize->attr_tokenize(query);
-    zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
+    PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<ProductScorer> productScorer(
+        preprocessor_.createProductScorer(actionOperation.actionItem_, propSharedLockSet, NULL));
+
+    boost::shared_ptr<faceted::GroupFilter> groupFilter;
+    if (groupFilterBuilder_)
+    {
+        groupFilter.reset(
+            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+    }
+
+    const std::vector<QueryFiltering::FilteringType>& filterList =
+        actionOperation.actionItem_.filteringList_;
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
+    boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
+
+    if (!filterList.empty())
+    {
+        queryBuilder_.prepare_filter(filterList, filterBitmap);
+        filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
+        filterBitVector->importFromEWAH(*filterBitmap);
+    }
+
+    AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
+    std::vector<std::string> tokenList;
+    attrTokenize->attr_tokenize(query).swap(tokenList);
+
+    ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
+    boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
+
+    zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
 
     if (candidates.empty())
     {
-        tokenList = attrTokenize->attr_subtokenize(tokenList);
-        zambeziManager_->search(tokenList, kZambeziTopKNum, candidates, scores);
+        attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
+        zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
     }
 
     if (candidates.empty())
     {
-        LOG(INFO) << "empty search result for query: " << query << endl;
+        LOG(INFO) << "empty search result for query: " << query;
         return false;
     }
 
@@ -107,22 +122,7 @@ bool ZambeziSearch::getCandidateDocs_( // 300W
         return false;
     }
 
-    return true;
-}
-
-void ZambeziSearch::rankTopKDocs_(
-    const std::vector<docid_t>& candidates,
-    const std::vector<float>& scores,
-    const SearchKeywordOperation& actionOperation,
-    std::size_t limit,
-    std::size_t offset,
-    KeywordSearchResult& searchResult)
-{
     izenelib::util::ClockTimer timer;
-
-    PropSharedLockSet propSharedLockSet;
-    boost::scoped_ptr<ProductScorer> productScorer(
-        preprocessor_.createProductScorer(actionOperation.actionItem_, propSharedLockSet, NULL));
 
     boost::shared_ptr<Sorter> sorter;
     CustomRankerPtr customRanker;
@@ -130,7 +130,7 @@ void ZambeziSearch::rankTopKDocs_(
                                             sorter,
                                             customRanker);
 
-    boost::scoped_ptr<HitQueue> scoreItemQueue;// size 4w;
+    boost::scoped_ptr<HitQueue> scoreItemQueue;
     const std::size_t heapSize = limit + offset;
 
     if (sorter)
@@ -145,29 +145,6 @@ void ZambeziSearch::rankTopKDocs_(
     }
 
     // reset attr to false
-    faceted::GroupParam& groupParam = actionOperation.actionItem_.groupParam_;
-    const bool originIsAttrGroup = groupParam.isAttrGroup_;
-    groupParam.isAttrGroup_ = false;
-
-    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-    if (groupFilterBuilder_)
-    {
-        groupFilter.reset(
-            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
-    }
-
-    const std::vector<QueryFiltering::FilteringType>& filterList =
-        actionOperation.actionItem_.filteringList_;
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
-    boost::scoped_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
-
-    if (!filterList.empty())
-    {
-        queryBuilder_.prepare_filter(filterList, filterBitmap);
-        filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
-        filterBitVector->importFromEWAH(*filterBitmap);
-    }
-
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
 
@@ -183,13 +160,6 @@ void ZambeziSearch::rankTopKDocs_(
 
             float score = scores[i] + categoryScore;
 
-            if (documentManager_.isDeleted(docId, false) ||
-                (filterBitVector && !filterBitVector->test(docId)) ||
-                (groupFilter && !groupFilter->test(docId)))
-            {
-                continue;
-            }
-
             ScoreDoc scoreItem(docId, score);
             if (customRanker)
             {
@@ -201,7 +171,7 @@ void ZambeziSearch::rankTopKDocs_(
         }
     }
 
-    searchResult.totalCount_ = totalCount; //100w
+    searchResult.totalCount_ = totalCount;
 
     std::size_t topKCount = 0;
     if (offset < scoreItemQueue->size())
@@ -272,6 +242,7 @@ void ZambeziSearch::rankTopKDocs_(
 
     LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
               << ", total count: " << totalCount
-              << ", costs :" << timer.elapsed() << " seconds"
-              << std::endl;
+              << ", costs :" << timer.elapsed() << " seconds";
+
+    return true;
 }

@@ -58,6 +58,7 @@ MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 
 void ZambeziManager::search(
     const std::vector<std::string>& tokens,
+    const boost::function<bool(uint32_t)>& filter,
     std::size_t limit,
     std::vector<docid_t>& docids,
     std::vector<float>& scores)
@@ -65,9 +66,9 @@ void ZambeziManager::search(
     izenelib::util::ClockTimer timer;
 
     std::vector<uint32_t> intScores;
-    indexer_.retrieval(kAlgorithm, tokens, limit, docids, intScores);
+    indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, intScores);
     faceted::AttrTable* attTable = NULL;
-    
+
     if (attrManager_)
     {
         attTable = &(attrManager_->getAttrTable());
@@ -75,7 +76,7 @@ void ZambeziManager::search(
     }
     float maxScore = 1;
     uint32_t attr_size = 1;
-    for (unsigned int i = 0; i < docids.size(); ++i)
+    for (uint32_t i = 0; i < docids.size(); ++i)
     {
         if (attTable)
         {
@@ -95,12 +96,11 @@ void ZambeziManager::search(
         attTable->unlockShared();
 
 
-    for (unsigned int i = 0; i < scores.size(); ++i)
+    for (uint32_t i = 0; i < scores.size(); ++i)
     {
         scores[i] /= maxScore;
-    }   
+    }
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
-              << ", costs :" << timer.elapsed() << " seconds"
-              << std::endl;
+              << ", costs :" << timer.elapsed() << " seconds";
 }

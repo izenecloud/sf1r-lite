@@ -21,7 +21,6 @@ ZambeziMiningTask::ZambeziMiningTask(
     {
         ofs_debug_.open((config_.indexFilePath + ".debug").c_str(), ios::app);
     }
-    
 }
 
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
@@ -60,7 +59,7 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     if (config_.isDebug)
     {
         ofs_debug_ << docID << '\t' ;
-        for (unsigned int i = 0; i < tokenList.size(); ++i)
+        for (uint32_t i = 0; i < tokenList.size(); ++i)
         {
             ofs_debug_ << tokenList[i] << " " << scoreList[i] << " ; ";
         }

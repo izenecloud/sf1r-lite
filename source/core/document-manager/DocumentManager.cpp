@@ -210,7 +210,7 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId, bool use_lock)
+bool DocumentManager::isDeleted(docid_t docId, bool use_lock) const
 {
     boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
     if (use_lock)
@@ -313,7 +313,7 @@ bool DocumentManager::getPropertyValue(
 bool DocumentManager::getDocument(docid_t docId, Document& document, bool forceget)
 {
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
-    return (forceget || !isDeleted(docId) ) && propertyValueTable_->get(docId, document);
+    return (forceget || !isDeleted(docId)) && propertyValueTable_->get(docId, document);
 }
 
 void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& document)
@@ -348,7 +348,7 @@ bool DocumentManager::getDocumentByCache(
     {
         return true;
     }
-    if ( ( forceget || !isDeleted(docId) ) && propertyValueTable_->get(docId, document))
+    if ((forceget || !isDeleted(docId)) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         return true;

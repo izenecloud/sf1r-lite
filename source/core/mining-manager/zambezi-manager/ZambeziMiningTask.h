@@ -39,7 +39,7 @@ private:
     izenelib::ir::Zambezi::NewInvertedIndex& indexer_;
 
     docid_t startDocId_;
-    
+
     std::ofstream ofs_debug_;
 };
 
