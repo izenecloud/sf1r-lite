@@ -136,7 +136,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId, bool use_lock = true);
+    bool isDeleted(docid_t docId, bool use_lock = true) const;
 
     /**
      * @brief gets one document by id
@@ -291,7 +291,7 @@ public:
     }
 
     boost::shared_mutex& getMutex()
-    { 
+    {
         return delfilter_mutex_;
     }
 
@@ -389,7 +389,7 @@ private:
     /// @brief The delete flag filter
     DelFilterType delfilter_;
 
-    boost::shared_mutex delfilter_mutex_;
+    mutable boost::shared_mutex delfilter_mutex_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;

@@ -73,7 +73,7 @@ ZooKeeperManager::createClient(
     if (ret && NULL != eventHandler)
     {
         ret->registerEventHandler(eventHandler);
-        registerMonitorEventHandler(eventHandler);
+        //registerMonitorEventHandler(eventHandler);
     }
 
     return ret;
@@ -94,7 +94,7 @@ void ZooKeeperManager::monitorLoop()
             if (!isInitDone_)
                 initZooKeeperNameSpace();
 
-            postMonitorEvent();
+            //postMonitorEvent();
         }
         catch (std::exception& e)
         {
@@ -103,17 +103,17 @@ void ZooKeeperManager::monitorLoop()
     }
 }
 
-void ZooKeeperManager::postMonitorEvent()
-{
-    std::vector<ZooKeeperEventHandler*>::iterator it;
-    for (it = clientKeeperList_.begin(); it != clientKeeperList_.end(); it++)
-    {
-        if (*it)
-        {
-            (*it)->onMonitor();
-        }
-    }
-}
+//void ZooKeeperManager::postMonitorEvent()
+//{
+//    std::vector<ZooKeeperEventHandler*>::iterator it;
+//    for (it = clientKeeperList_.begin(); it != clientKeeperList_.end(); it++)
+//    {
+//        if (*it)
+//        {
+//            (*it)->onMonitor();
+//        }
+//    }
+//}
 
 bool ZooKeeperManager::initZooKeeperNameSpace()
 {

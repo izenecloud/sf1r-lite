@@ -36,6 +36,7 @@ public:
 
     void search(
         const std::vector<std::string>& tokens,
+        const boost::function<bool(uint32_t)>& filter,
         std::size_t limit,
         std::vector<docid_t>& docids,
         std::vector<float>& scores);
