@@ -20,7 +20,7 @@ namespace sf1r
 class HitQueue
 {
 public:
-    virtual ~HitQueue() = 0;
+    virtual ~HitQueue() {}
     virtual bool insert(ScoreDoc doc) = 0;
     virtual ScoreDoc pop() = 0;
     virtual ScoreDoc top() = 0;
@@ -104,7 +104,7 @@ class PropertySortedHitQueue : public HitQueue
     protected:
         bool lessThan(const ScoreDoc& o1, const ScoreDoc& o2) const
         {
-            return pSorter_->lessThan(o1,o2);
+            return pSorter_->lessThan(o1, o2);
         }
     private:
         boost::shared_ptr<Sorter> pSorter_;
@@ -146,7 +146,7 @@ public:
     {
         return queue_.size();
     }
-    void clear() { }
+    void clear() {}
 
 private:
     Queue_ queue_;

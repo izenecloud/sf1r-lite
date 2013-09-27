@@ -23,6 +23,7 @@
 
 namespace
 {
+const uint32_t kZambeziTopKNum = 1e6;
 const std::size_t kAttrTopDocNum = 200;
 }
 
@@ -102,12 +103,12 @@ bool ZambeziSearch::search(
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
 
-    zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
+    zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
 
     if (candidates.empty())
     {
         attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
-        zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
+        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
     }
 
     if (candidates.empty())
@@ -146,19 +147,13 @@ bool ZambeziSearch::search(
 
     // reset attr to false
     const std::size_t candNum = candidates.size();
-    std::size_t totalCount = 0;
 
     {
         boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
         for (size_t i = 0; i < candNum; ++i)
         {
             docid_t docId = candidates[i];
-
-            int categoryScore = 0;
-            if (productScorer)
-               categoryScore = productScorer->score(docId);
-
-            float score = scores[i] + categoryScore;
+            float score = scores[i] + (productScorer ? productScorer->score(docId) : .0f);
 
             ScoreDoc scoreItem(docId, score);
             if (customRanker)
@@ -166,12 +161,10 @@ bool ZambeziSearch::search(
                 scoreItem.custom_score = customRanker->evaluate(docId);
             }
             scoreItemQueue->insert(scoreItem);
-
-            ++totalCount;
         }
     }
 
-    searchResult.totalCount_ = totalCount;
+    searchResult.totalCount_ = candNum;
 
     std::size_t topKCount = 0;
     if (offset < scoreItemQueue->size())
@@ -179,7 +172,7 @@ bool ZambeziSearch::search(
         topKCount = scoreItemQueue->size() - offset;
     }
 
-    std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
+    std::vector<uint32_t>& docIdList = searchResult.topKDocs_;
     std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
     std::vector<float>& customScoreList = searchResult.topKCustomRankScoreList_;
 
@@ -241,7 +234,6 @@ bool ZambeziSearch::search(
     }
 
     LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
-              << ", total count: " << totalCount
               << ", costs :" << timer.elapsed() << " seconds";
 
     return true;
