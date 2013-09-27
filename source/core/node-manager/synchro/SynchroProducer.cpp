@@ -23,6 +23,8 @@ SynchroProducer::SynchroProducer(
 , syncID_(syncID)
 , syncZkNode_(ZooKeeperNamespace::getSynchroPath() + "/" + syncID)
 , isSynchronizing_(false)
+, stopping_(false)
+, reconnectting_(false)
 {
     if (zookeeper_)
         zookeeper_->registerEventHandler(this);
@@ -35,6 +37,16 @@ SynchroProducer::SynchroProducer(
 SynchroProducer::~SynchroProducer()
 {
     zookeeper_->deleteZNode(syncZkNode_, true);
+    {
+        boost::unique_lock<boost::mutex> lock(produce_mutex_);
+        while(reconnectting_)
+        {
+            LOG(INFO) << "wait reconnect finish while stop.";
+            cond_.timed_wait(lock, boost::posix_time::seconds(1));
+        }
+        stopping_ = true;
+    }
+    zookeeper_->disconnect();
 }
 
 /**
@@ -166,10 +178,18 @@ void SynchroProducer::process(ZooKeeperEvent& zkEvent)
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
         LOG(WARNING) << "SynchroProducer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        {
+            boost::unique_lock<boost::mutex> lock(produce_mutex_);
+            if (stopping_)
+                return;
+            reconnectting_ = true;
+        }
         zookeeper_->disconnect();
-        boost::lock_guard<boost::mutex> lock(produce_mutex_);
         zookeeper_->connect(true);
         endSynchroning("Reconnect after connection lost.");
+
+        boost::lock_guard<boost::mutex> lock(produce_mutex_);
+        reconnectting_ = false;
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {

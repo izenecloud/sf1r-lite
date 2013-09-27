@@ -121,6 +121,10 @@ private:
 
     boost::mutex produce_mutex_;
     boost::mutex consumers_mutex_;
+    boost::condition_variable cond_;
+    bool stopping_;
+    bool reconnectting_;
+
 };
 
 typedef boost::shared_ptr<SynchroProducer> SynchroProducerPtr;
