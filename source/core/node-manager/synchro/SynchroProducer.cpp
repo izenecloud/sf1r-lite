@@ -142,11 +142,17 @@ bool SynchroProducer::wait(int timeout)
     }
 
     // wait synchronizing to finish
-    while (isSynchronizing_ && zookeeper_->isConnected())
+    while (isSynchronizing_ )
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, finished - total :" <<
             consumedCount_ << " - " << consumersMap_.size() << ",sleeping for 1 second ...";
         //boost::this_thread::sleep(boost::posix_time::seconds(1));
+        if (!zookeeper_->isConnected())
+        {
+            LOG(ERROR) << "zookeeper is lost while waiting .";
+            endSynchroning("Connection lost.");
+            break;
+        }
         ::sleep(1);
     }
 
@@ -156,13 +162,19 @@ bool SynchroProducer::wait(int timeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-    boost::lock_guard<boost::mutex> lock(produce_mutex_);
-    DLOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
+    LOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
         LOG(WARNING) << "SynchroProducer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         zookeeper_->disconnect();
+        boost::lock_guard<boost::mutex> lock(produce_mutex_);
         zookeeper_->connect(true);
+        endSynchroning("Reconnect after connection lost.");
+    }
+    else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
+    {
+        watchConsumers();
+        checkConsumers();
     }
 }
 
@@ -506,8 +518,8 @@ void SynchroProducer::init()
 
 void SynchroProducer::endSynchroning(const std::string& info)
 {
-    // Synchronizing finished
-    isSynchronizing_ = false;
     zookeeper_->deleteZNode(syncZkNode_, true);
     LOG(INFO) << SYNCHRO_PRODUCER << " synchronizing finished - "<< info;
+    // Synchronizing finished
+    isSynchronizing_ = false;
 }
