@@ -226,7 +226,7 @@ bool QueryCorrectionSubmanager::getRefinedToken_(
     }
     if (enableEK_)
     {
-        if (ekmgr_->getRefinedQuery(token, result))
+        if (ekmgr_ && ekmgr_->getRefinedQuery(token, result))
         {
             if (result.length() > 0)
             {

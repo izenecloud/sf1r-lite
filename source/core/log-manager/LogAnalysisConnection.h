@@ -51,7 +51,7 @@ void LogAnalysisConnection::asynRequest(const LogServerRequest::method_t& method
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
     session.notify(method, reqData);
     need_flush_ = true;
-    if (++count == 10000)
+    if (++count >= 10000)
     {
         flushRequests();
         count = 0;
@@ -68,8 +68,7 @@ template <class RequestDataT, class ResponseDataT>
 void LogAnalysisConnection::syncRequest(const LogServerRequest::method_t& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests();
-    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    session.set_timeout(360);
+    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort, 160);
     try
     {
         respData = session.call(method, reqData).template get<ResponseDataT>();

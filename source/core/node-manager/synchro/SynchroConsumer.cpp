@@ -47,6 +47,16 @@ void SynchroConsumer::watchProducer(
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
 
+    if (zookeeper_ && !zookeeper_->isConnected())
+    {
+        zookeeper_->connect(true);
+
+        if (zookeeper_->isConnected())
+        {
+            resetWatch();
+        }
+    }
+
     callback_on_produced_ = callback_on_produced;
     collectionName_ = collectionName;
 
@@ -65,12 +75,16 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
     {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
+        else
+            resetWatch();
     }
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
         LOG(WARNING) << "SynchroConsumer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         zookeeper_->disconnect();
+
+        boost::unique_lock<boost::mutex> lock(mutex_);
         zookeeper_->connect(true);
         if (zookeeper_->isConnected())
         {
@@ -92,6 +106,7 @@ void SynchroConsumer::onNodeDeleted(const std::string& path)
         boost::unique_lock<boost::mutex> lock(mutex_);
         LOG(INFO) << "producer deleted, stopping consuming." << path;
         consumerStatus_ = CONSUMER_STATUS_WATCHING;
+        resetWatch();
     }
 }
 
@@ -116,26 +131,26 @@ void SynchroConsumer::onDataChanged(const std::string& path)
     }
 }
 
-void SynchroConsumer::onMonitor()
-{
-    DLOG(INFO) << SYNCHRO_CONSUMER << " on monitor";
-    
-    // Ensure connection status with ZooKeeper onTimer
-    if (zookeeper_ && !zookeeper_->isConnected())
-    {
-        zookeeper_->connect(true);
-
-        if (zookeeper_->isConnected())
-        {
-            resetWatch();
-        }
-    }
-    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
-    {
-        resetWatch();
-    }
-}
-
+//void SynchroConsumer::onMonitor()
+//{
+//    DLOG(INFO) << SYNCHRO_CONSUMER << " on monitor";
+//    
+//    // Ensure connection status with ZooKeeper onTimer
+//    if (zookeeper_ && !zookeeper_->isConnected())
+//    {
+//        zookeeper_->connect(true);
+//
+//        if (zookeeper_->isConnected())
+//        {
+//            resetWatch();
+//        }
+//    }
+//    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+//    {
+//        resetWatch();
+//    }
+//}
+//
 /// private
 
 void SynchroConsumer::doWatchProducer()
@@ -147,6 +162,7 @@ void SynchroConsumer::doWatchProducer()
         LOG(INFO) << SYNCHRO_CONSUMER << " watching for producer ...";
 
         if (consumerStatus_ == CONSUMER_STATUS_CONSUMING) {
+            resetWatch();
             return;
         }
         else {
