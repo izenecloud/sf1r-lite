@@ -60,7 +60,7 @@ public:
 
     virtual void onNodeDeleted(const std::string& path);
 
-    virtual void onMonitor();
+    //virtual void onMonitor();
 
 private:
     void doWatchProducer();
