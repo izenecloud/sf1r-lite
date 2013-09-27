@@ -245,8 +245,8 @@ ProductMatcher::ProductMatcher()
  type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$"),
  book_category_("书籍/杂志/报纸"),
  use_psm_(true), psm_(NULL)
-//, brand_manager_(new BrandManager)
-, brand_manager_(NULL)
+, brand_manager_(new BrandManager)
+//, brand_manager_(NULL)
 , offer_prices_finish_(false)
 {
 }
@@ -2409,6 +2409,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     if(ProcessBook(doc, pbook))
     {
         result_products.resize(1, pbook);
+        stat1_+=1
         return true;
     }
     if(trie_.empty()) return false;
@@ -2443,6 +2444,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
             Product p;
             p.spid = spid;
             result_products.resize(1, p);
+            stat2_+=1;
             return true;
         }
     }

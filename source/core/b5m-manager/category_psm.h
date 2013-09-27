@@ -371,6 +371,10 @@ namespace sf1r {
                         {
                             std::cout<<"\tLARGE GROUP "<<group.items.size()<<std::endl;
                         }
+                        for(uint32_t j=0;j<group.brands.size();j++)
+                        {
+                            std::cout<<"\t\t[Brand]"<<group.brands[j]<<std::endl;
+                        }
                         for(uint32_t j=0;j<group.items.size();j++)
                         {
                             const BufferItem& item = group.items[j];

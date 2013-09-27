@@ -192,9 +192,9 @@ bool IndexSearchService::getSearchResult(
         }
     }
 
-    cout << "Total count: " << resultItem.totalCount_ << endl;
-    cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
-    cout << "Page Count: " << resultItem.count_ << endl;
+    LOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
+    LOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
+    LOG(INFO) << "Page Count: " << resultItem.count_ << endl;
     LOG(INFO) << "Search Finished " << endl;
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );

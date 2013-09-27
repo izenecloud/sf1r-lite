@@ -264,12 +264,14 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         }
         matcher_->GetProduct(spid, product);
     }
+    std::string original_attribute;
+    doc.getString("Attribute", original_attribute);
     if(attr_!=NULL)
     {
     }
     else
     {
-        doc.eraseProperty("Attribute");
+        //doc.eraseProperty("Attribute");
     }
     if(!product.spid.empty())
     {
@@ -375,6 +377,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     else
     {
+        if(attr_==NULL&&!original_attribute.empty())
+        {
+            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
+        }
         spid = sdocid;
     }
     if(!product.stitle.empty() && !title.empty())
@@ -431,6 +437,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             sorter_->Append(old_doc, ts_);
         }
         ScdDocument sdoc(doc, type);
+        if(!original_attribute.empty())
+        {
+            sdoc.property("Attribute") = str_to_propstr(original_attribute);
+        }
         sorter_->Append(sdoc, ts_);
     }
     //delete Attribute after write block
@@ -590,6 +600,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         omapper_ = NULL;
     }
     LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<std::endl;
+    LOG(INFO)<<"PMSTAT "<<matcher_->stat1_<<","<<matcher_->stat2_<<std::endl;
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())

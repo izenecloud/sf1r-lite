@@ -463,7 +463,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
                 req_commondata.reqtype == Req_Index ||
                 req_commondata.reqtype == Req_Callback)
             {
-                LOG(INFO) << "ignore replaying log type : " << req_commondata.reqtype;
+                //LOG(INFO) << "ignore replaying log type : " << req_commondata.reqtype;
                 if (!is_primary)
                     break;
                 continue;
@@ -507,7 +507,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             std::string replay_json;
             izenelib::driver::JsonWriter writer;
             writer.write(request.get(), replay_json);
-            LOG(INFO) << "replaying for request id : " << rethead.inc_id;
+            //LOG(INFO) << "replaying for request id : " << rethead.inc_id;
             CommonReqData new_common = req_commondata;
             new_common.req_json_data = replay_json;
             ReqLogMgr::replaceCommonReqData(req_commondata, new_common, req_packed_data);

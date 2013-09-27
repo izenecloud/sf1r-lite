@@ -20,6 +20,7 @@ struct QueryIdentity
         , start(0)
         , distActionType(0)
         , isRandomRank(false)
+        , isSynonym(false)
     {
     }
 

@@ -844,6 +844,13 @@ bool  SearchWorker::getResultItem(
     {
         ///Whenever any document could not be retrieved, return false
         resultItem.error_ = "Error : Cannot get document data";
+        LOG(WARNING) << "get document data failed. doc num: " << ids.size();
+        if (ids.size() < 10)
+        {
+            for(size_t i = 0; i < ids.size(); ++i)
+                std::cout << " " << ids[i] << ",";
+        }
+        std::cout << std::endl;
         return false;
     }
 

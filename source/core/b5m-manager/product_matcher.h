@@ -8,6 +8,7 @@
 #include "category_psm.h"
 #include "brand_manager.h"
 #include <boost/regex.hpp>
+#include <boost/atomic.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/algorithm/string.hpp>
@@ -1076,6 +1077,9 @@ namespace sf1r {
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;
+    public:
+        boost::atomic<uint32_t> stat1_;
+        boost::atomic<uint32_t> stat2_;
 
     };
 

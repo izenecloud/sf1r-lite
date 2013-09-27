@@ -37,6 +37,7 @@ void BrandManager::LoadBrandErrorFile(const std::string& file)
     while(getline(ifs, line))
     {
         boost::algorithm::trim(line);
+        if(line.empty()) continue;
         if(boost::algorithm::starts_with(line, "^"))
         {
             error_regexps_.push_back(boost::regex(line));
