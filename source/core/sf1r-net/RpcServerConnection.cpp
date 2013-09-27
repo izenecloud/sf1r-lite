@@ -54,10 +54,7 @@ bool RpcServerConnection::testServer(const std::string& ip, uint16_t port)
 {
     try
     {
-        msgpack::rpc::session session = session_pool_->get_session(ip, port);
-
-        session.set_timeout(10);
-
+        msgpack::rpc::session session = session_pool_->get_session(ip, port, 10);
         bool ret = session.call(
                         "test",
                         true

@@ -70,7 +70,7 @@ void RpcServerConnection::asynRequest(const Method_T& method, const RequestDataT
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
     session.notify(method, reqData);
     need_flush_ = true;
-    if (++count == 10000)
+    if (++count >= 10000)
     {
         flushRequests();
         count = 0;
@@ -87,8 +87,7 @@ template <class Method_T, class RequestDataT, class ResponseDataT>
 void RpcServerConnection::syncRequest(const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests();
-    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    session.set_timeout(10);
+    msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort, 10);
     respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 
@@ -104,7 +103,7 @@ void RpcServerConnection::asynRequest(const std::string& ip, uint16_t port, cons
     static unsigned int count = 0;
     msgpack::rpc::session session = session_pool_->get_session(ip, port);
     session.notify(method, reqData);
-    if (++count == 10000)
+    if (++count >= 10000)
     {
         flushRequests(ip, port);
         count = 0;
@@ -121,8 +120,7 @@ template <class Method_T, class RequestDataT, class ResponseDataT>
 void RpcServerConnection::syncRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData)
 {
     flushRequests(ip, port);
-    msgpack::rpc::session session = session_pool_->get_session(ip, port);
-    session.set_timeout(10);
+    msgpack::rpc::session session = session_pool_->get_session(ip, port, 10);
     respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 
