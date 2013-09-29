@@ -212,11 +212,18 @@ bool DocumentManager::updatePartialDocument(const Document& document)
 
 bool DocumentManager::isDeleted(docid_t docId, bool use_lock) const
 {
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
     if (use_lock)
     {
+        boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
         lock.lock();
+        if (docId == 0 || docId > delfilter_.size())
+        {
+            return false;
+        }
+
+        return delfilter_.test(docId - 1);
     }
+
     if (docId == 0 || docId > delfilter_.size())
     {
         return false;

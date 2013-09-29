@@ -41,6 +41,11 @@ public:
         std::vector<docid_t>& docids,
         std::vector<float>& scores);
 
+    void NormalizeScore(
+        std::vector<docid_t>& docids,
+        std::vector<float>& scores,
+        std::vector<float>& productScores);
+
 private:
     const ZambeziConfig& config_;
 

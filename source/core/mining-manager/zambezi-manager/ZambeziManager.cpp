@@ -67,6 +67,20 @@ void ZambeziManager::search(
 
     std::vector<uint32_t> intScores;
     indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, intScores);
+    for (unsigned int i = 0; i < intScores.size(); ++i)
+    {
+        scores.push_back(intScores[i]);
+    }
+
+    LOG(INFO) << "zambezi returns docid num: " << docids.size()
+              << ", costs :" << timer.elapsed() << " seconds";
+}
+
+void ZambeziManager::NormalizeScore(
+    std::vector<docid_t>& docids,
+    std::vector<float>& scores,
+    std::vector<float>& productScores)
+{
     faceted::AttrTable* attTable = NULL;
 
     if (attrManager_)
@@ -76,6 +90,7 @@ void ZambeziManager::search(
     }
     float maxScore = 1;
     uint32_t attr_size = 1;
+
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
         if (attTable)
@@ -85,22 +100,16 @@ void ZambeziManager::search(
             attr_size = std::min(attrvids.size(), size_t(20));
         }
 
-        float score = intScores[i]*pow(attr_size, 0.3);
-        if (score > maxScore)
-            maxScore = score;
-
-        scores.push_back(score);
+        scores[i] = scores[i]*pow(attr_size, 0.3);
+        if (scores[i] > maxScore)
+            maxScore =  scores[i];
     }
 
     if (attTable)
         attTable->unlockShared();
 
-
-    for (uint32_t i = 0; i < scores.size(); ++i)
+    for (unsigned int i = 0; i < scores.size(); ++i)
     {
-        scores[i] /= maxScore;
+        scores[i] = int(scores[i]/maxScore *100) + productScores[i];
     }
-
-    LOG(INFO) << "zambezi returns docid num: " << docids.size()
-              << ", costs :" << timer.elapsed() << " seconds";
 }

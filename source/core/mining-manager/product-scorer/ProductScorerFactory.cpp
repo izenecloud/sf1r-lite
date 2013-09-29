@@ -115,6 +115,12 @@ void ProductScorerFactory::createZambeziModeScorer_(
     {
         scoreSum.addScorer(scorer);
     }
+
+    scorer = createPopularityScorer_(config_.scores[POPULARITY_SCORE]);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
 }
 
 void ProductScorerFactory::createFuzzyModeScorer_(

@@ -24,6 +24,7 @@
 namespace
 {
 const std::size_t kAttrTopDocNum = 200;
+const std::size_t kZambeziTopKNum = 2e6;
 }
 
 using namespace sf1r;
@@ -102,12 +103,15 @@ bool ZambeziSearch::search(
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
 
-    zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
-
-    if (candidates.empty())
     {
-        attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
-        zambeziManager_->search(tokenList, filter_func, limit + offset, candidates, scores);
+        boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
+        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum + offset, candidates, scores);
+
+        if (candidates.empty())
+        {
+            attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
+            zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum + offset, candidates, scores);
+        }
     }
 
     if (candidates.empty())
@@ -144,35 +148,49 @@ bool ZambeziSearch::search(
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
     }
 
-    // reset attr to false
+    // reset relevance score
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
 
+    for (size_t i = 0; i < candNum; ++i)
     {
-        boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
-        for (size_t i = 0; i < candNum; ++i)
+        docid_t docId = candidates[i];
+        ScoreDoc scoreItem(docId, scores[i]);
+        if (customRanker)
         {
-            docid_t docId = candidates[i];
-
-            int categoryScore = 0;
-            if (productScorer)
-               categoryScore = productScorer->score(docId);
-
-            float score = scores[i] + categoryScore;
-
-            ScoreDoc scoreItem(docId, score);
-            if (customRanker)
-            {
-                scoreItem.custom_score = customRanker->evaluate(docId);
-            }
-            scoreItemQueue->insert(scoreItem);
-
-            ++totalCount;
+            scoreItem.custom_score = customRanker->evaluate(docId);
         }
+        scoreItemQueue->insert(scoreItem);
+
+        ++totalCount;
     }
+    /// ret score, add product score;
+    std::vector<docid_t> topDocids;
+    std::vector<float> topRelevanceScores;
+    std::vector<float> topProductScores;
+    
+    unsigned int scoreSize = scoreItemQueue->size();
+    for (int i = scoreSize -1; i >= 0; --i)
+    {
+        const ScoreDoc& scoreItem = scoreItemQueue->pop();
+        topDocids.push_back(scoreItem.docId);
+        float productScore = 0;
+        if (productScorer)
+               productScore = productScorer->score(scoreItem.docId);
+        topProductScores.push_back(productScore);
+        topRelevanceScores.push_back(scoreItem.score);
+    }
+    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores);
+
+    for (int i = 0; i < topRelevanceScores.size(); ++i)
+    {
+        ScoreDoc scoreItem(topDocids[i], topRelevanceScores[i]);
+        scoreItemQueue->insert(scoreItem); 
+    }
+    /// end
+
 
     searchResult.totalCount_ = totalCount;
-
     std::size_t topKCount = 0;
     if (offset < scoreItemQueue->size())
     {
