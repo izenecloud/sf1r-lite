@@ -189,10 +189,9 @@ bool ZambeziSearch::search(
     }
     /// end
 
-
     searchResult.totalCount_ = totalCount;
     std::size_t topKCount = 0;
-    if (offset < scoreItemQueue->size())
+    if (offset < scoreItemQueue->size())// if bigger is zero;
     {
         topKCount = scoreItemQueue->size() - offset;
     }
@@ -259,7 +258,6 @@ bool ZambeziSearch::search(
     }
 
     LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
-              << ", total count: " << totalCount
               << ", costs :" << timer.elapsed() << " seconds";
 
     return true;
