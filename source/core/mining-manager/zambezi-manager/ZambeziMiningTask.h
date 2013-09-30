@@ -19,9 +19,9 @@ class ZambeziMiningTask : public MiningTask
 {
 public:
     ZambeziMiningTask(
-        const ZambeziConfig& config,
-        DocumentManager& documentManager,
-        izenelib::ir::Zambezi::NewInvertedIndex& indexer);
+            const ZambeziConfig& config,
+            DocumentManager& documentManager,
+            izenelib::ir::Zambezi::NewInvertedIndex& indexer);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -39,8 +39,6 @@ private:
     izenelib::ir::Zambezi::NewInvertedIndex& indexer_;
 
     docid_t startDocId_;
-
-    std::ofstream ofs_debug_;
 };
 
 } // namespace sf1r

@@ -61,7 +61,7 @@ bool ZambeziSearch::search(
         return false;
 
     std::vector<docid_t> candidates;
-    std::vector<float> scores;
+    std::vector<uint32_t> scores;
 
     if (!zambeziManager_)
     {
@@ -105,12 +105,12 @@ bool ZambeziSearch::search(
 
     {
         boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
-        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum + offset, candidates, scores);
+        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
 
         if (candidates.empty())
         {
             attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
-            zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum + offset, candidates, scores);
+            zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
         }
     }
 
@@ -168,9 +168,9 @@ bool ZambeziSearch::search(
     std::vector<docid_t> topDocids;
     std::vector<float> topRelevanceScores;
     std::vector<float> topProductScores;
-    
+
     unsigned int scoreSize = scoreItemQueue->size();
-    for (int i = scoreSize -1; i >= 0; --i)
+    for (int i = scoreSize - 1; i >= 0; --i)
     {
         const ScoreDoc& scoreItem = scoreItemQueue->pop();
         topDocids.push_back(scoreItem.docId);
@@ -182,10 +182,10 @@ bool ZambeziSearch::search(
     }
     zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores);
 
-    for (int i = 0; i < topRelevanceScores.size(); ++i)
+    for (size_t i = 0; i < topRelevanceScores.size(); ++i)
     {
         ScoreDoc scoreItem(topDocids[i], topRelevanceScores[i]);
-        scoreItemQueue->insert(scoreItem); 
+        scoreItemQueue->insert(scoreItem);
     }
     /// end
 

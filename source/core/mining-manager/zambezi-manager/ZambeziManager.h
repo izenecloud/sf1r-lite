@@ -39,7 +39,7 @@ public:
         const boost::function<bool(uint32_t)>& filter,
         uint32_t limit,
         std::vector<docid_t>& docids,
-        std::vector<float>& scores);
+        std::vector<uint32_t>& scores);
 
     void NormalizeScore(
         std::vector<docid_t>& docids,

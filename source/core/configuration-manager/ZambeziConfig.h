@@ -14,13 +14,17 @@ class ZambeziConfig
 {
 public:
     bool isEnable;
+    bool reverse;
 
-    bool isDebug;
+    uint32_t poolSize;
+    uint32_t poolCount;
 
     std::string indexFilePath;
 
-    ZambeziConfig() : isEnable(false) 
-                    , isDebug(false)
+    ZambeziConfig() : isEnable(false)
+                    , reverse(false)
+                    , poolSize(0)
+                    , poolCount(0)
     {}
 
 private:
@@ -30,7 +34,9 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & isEnable;
-        ar & isDebug;
+        ar & reverse;
+        ar & poolSize;
+        ar & poolCount;
         ar & indexFilePath;
     }
 };

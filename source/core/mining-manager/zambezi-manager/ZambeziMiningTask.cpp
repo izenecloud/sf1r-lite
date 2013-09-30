@@ -9,18 +9,14 @@
 using namespace sf1r;
 
 ZambeziMiningTask::ZambeziMiningTask(
-    const ZambeziConfig& config,
-    DocumentManager& documentManager,
-    izenelib::ir::Zambezi::NewInvertedIndex& indexer)
+        const ZambeziConfig& config,
+        DocumentManager& documentManager,
+        izenelib::ir::Zambezi::NewInvertedIndex& indexer)
     : config_(config)
     , documentManager_(documentManager)
     , indexer_(indexer)
     , startDocId_(0)
 {
-    if (config_.isDebug)
-    {
-        ofs_debug_.open((config_.indexFilePath + ".debug").c_str(), ios::app);
-    }
 }
 
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
@@ -63,16 +59,6 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     {
         tokenList.push_back(it->first);
         scoreList.push_back(uint32_t(it->second));
-    }
-
-    if (config_.isDebug)
-    {
-        ofs_debug_ << docID << '\t' ;
-        for (uint32_t i = 0; i < tokenList.size(); ++i)
-        {
-            ofs_debug_ << tokenList[i] << " " << scoreList[i] << " ; ";
-        }
-        ofs_debug_ << std::endl;
     }
 
     indexer_.insertDoc(docID, tokenList, scoreList);
