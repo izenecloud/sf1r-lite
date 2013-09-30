@@ -640,6 +640,8 @@ bool MultiDocSummarizationSubManager::sendCommentSCDs(const std::string& syncID,
     }
 
     {
+        if (total_scd_dir.empty())
+            return true;
         SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID + syncID_totalComment);
         SynchroData syncTotalData;
         syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);

@@ -20,6 +20,8 @@ SynchroConsumer::SynchroConsumer(
 , syncID_(syncID)
 , syncZkNode_(ZooKeeperNamespace::getSynchroPath() + "/" + syncID)
 , consumerStatus_(CONSUMER_STATUS_INIT)
+, stopping_(false)
+, reconnectting_(false)
 {
     if (zookeeper_)
         zookeeper_->registerEventHandler(this);
@@ -29,7 +31,18 @@ SynchroConsumer::SynchroConsumer(
 
 SynchroConsumer::~SynchroConsumer()
 {
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        while(reconnectting_)
+        {
+            LOG(INFO) << "waiting reconnectting finish while stop";
+            cond_.timed_wait(lock, boost::posix_time::seconds(1));
+        }
+        stopping_ = true;
+    }
+    LOG(INFO) << "closing...";
     zookeeper_->disconnect();
+    LOG(INFO) << "closed...";
 }
 
 /**
@@ -47,6 +60,16 @@ void SynchroConsumer::watchProducer(
 {
     consumerStatus_ = CONSUMER_STATUS_WATCHING;
 
+    if (zookeeper_ && !zookeeper_->isConnected())
+    {
+        zookeeper_->connect(true);
+
+        if (zookeeper_->isConnected())
+        {
+            resetWatch();
+        }
+    }
+
     callback_on_produced_ = callback_on_produced;
     collectionName_ = collectionName;
 
@@ -59,27 +82,38 @@ void SynchroConsumer::watchProducer(
 /*virtual*/
 void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
 {
-    DLOG(INFO) << SYNCHRO_CONSUMER << " process event: " << zkEvent.toString();
+    LOG(INFO) << SYNCHRO_CONSUMER << " process event: " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
             doWatchProducer();
+        else
+            resetWatch();
     }
-
-    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
         LOG(WARNING) << "SynchroConsumer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        {
+            boost::unique_lock<boost::mutex> lock(mutex_);
+            if (stopping_)
+                return;
+            reconnectting_ = true;
+        }
         zookeeper_->disconnect();
+
+        LOG(WARNING) << "begin reconnect...";
         zookeeper_->connect(true);
+        LOG(WARNING) << "node reconnected.";
         if (zookeeper_->isConnected())
         {
             LOG(WARNING) << "SynchroConsumer node reset watch";
             resetWatch();
         }
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        reconnectting_ = false;
     }
-
-    if (zkEvent.path_ == producerZkNode_)
+    else if (zkEvent.path_ == producerZkNode_)
     {
         resetWatch();
     }
@@ -92,6 +126,7 @@ void SynchroConsumer::onNodeDeleted(const std::string& path)
         boost::unique_lock<boost::mutex> lock(mutex_);
         LOG(INFO) << "producer deleted, stopping consuming." << path;
         consumerStatus_ = CONSUMER_STATUS_WATCHING;
+        resetWatch();
     }
 }
 
@@ -116,26 +151,26 @@ void SynchroConsumer::onDataChanged(const std::string& path)
     }
 }
 
-void SynchroConsumer::onMonitor()
-{
-    DLOG(INFO) << SYNCHRO_CONSUMER << " on monitor";
-    
-    // Ensure connection status with ZooKeeper onTimer
-    if (zookeeper_ && !zookeeper_->isConnected())
-    {
-        zookeeper_->connect(true);
-
-        if (zookeeper_->isConnected())
-        {
-            resetWatch();
-        }
-    }
-    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
-    {
-        resetWatch();
-    }
-}
-
+//void SynchroConsumer::onMonitor()
+//{
+//    DLOG(INFO) << SYNCHRO_CONSUMER << " on monitor";
+//    
+//    // Ensure connection status with ZooKeeper onTimer
+//    if (zookeeper_ && !zookeeper_->isConnected())
+//    {
+//        zookeeper_->connect(true);
+//
+//        if (zookeeper_->isConnected())
+//        {
+//            resetWatch();
+//        }
+//    }
+//    else if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+//    {
+//        resetWatch();
+//    }
+//}
+//
 /// private
 
 void SynchroConsumer::doWatchProducer()
@@ -147,6 +182,7 @@ void SynchroConsumer::doWatchProducer()
         LOG(INFO) << SYNCHRO_CONSUMER << " watching for producer ...";
 
         if (consumerStatus_ == CONSUMER_STATUS_CONSUMING) {
+            resetWatch();
             return;
         }
         else {

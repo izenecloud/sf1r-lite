@@ -67,10 +67,21 @@ public:
      * Register monitor event handler
      * @param evtHandler
      */
-    void registerMonitorEventHandler(ZooKeeperEventHandler* evtHandler)
-    {
-        clientKeeperList_.push_back(evtHandler);
-    }
+    //void registerMonitorEventHandler(ZooKeeperEventHandler* evtHandler)
+    //{
+    //    clientKeeperList_.push_back(evtHandler);
+    //}
+    //void unregMonitorEventHandler(ZooKeeperEventHandler* evtHandler)
+    //{
+    //    for (size_t i = 0; i < clientKeeperList_.size(); ++i)
+    //    {
+    //        if (clientKeeperList_[i] == evtHandler)
+    //        {
+    //            clientKeeperList_.erase(i);
+    //            break;
+    //        }
+    //    }
+    //}
 
     /**
      * Initialize zookeeper znode namespace for coordination tasks
@@ -87,8 +98,6 @@ private:
      * Auto monitoring is used to check connection status and recover.
      */
     void monitorLoop();
-
-    void postMonitorEvent();
 
 private:
     ZooKeeperConfig zkConfig_;

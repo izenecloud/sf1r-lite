@@ -54,6 +54,7 @@ private:
     boost::shared_ptr<SearchWorker> searchWorker_;
 
     boost::scoped_ptr<SearchCache> searchCache_; // for Master Node
+    boost::atomic<uint32_t> ro_index_;
 
     friend class SearchWorkerController;
     friend class IndexBundleActivator;

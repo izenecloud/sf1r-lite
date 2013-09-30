@@ -60,7 +60,7 @@ public:
 
     virtual void onNodeDeleted(const std::string& path);
 
-    virtual void onMonitor();
+    //virtual void onMonitor();
 
 private:
     void doWatchProducer();
@@ -81,11 +81,14 @@ private:
     ConsumerStatusType consumerStatus_;
 
     boost::mutex mutex_;
+    boost::condition_variable cond_;
     std::string consumerNodePath_;
 
     callback_on_produced_t callback_on_produced_;
 
     std::string collectionName_;
+    bool stopping_;
+    bool reconnectting_;
 };
 
 typedef boost::shared_ptr<SynchroConsumer> SynchroConsumerPtr;
