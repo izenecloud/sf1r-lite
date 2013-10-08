@@ -115,7 +115,7 @@ void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap)
         if (score > 0)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
-            nameValueMap[nameId][score].push_back(valueId);
+            nameValueMap[nameId].insert(ScoreValueMap::value_type(score, valueId));
             ++nameValueCountTable_[nameId];
         }
     }
@@ -159,34 +159,32 @@ void AttrCounter::generateGroupRep_(
     for (std::vector<AttrTable::nid_t>::const_iterator nameIt = topNameIds.begin();
          nameIt != topNameIds.end(); ++nameIt)
     {
+        const AttrTable::nid_t nameId = *nameIt;
+
         // attribute name as root node
         itemList.push_back(OntologyRepItem());
         OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = attrTable_.nameStr(*nameIt);
-        nameItem.doc_count = nameDocCountTable_[*nameIt];
+        nameItem.text = attrTable_.nameStr(nameId);
+        nameItem.doc_count = nameDocCountTable_[nameId];
+        nameItem.score = getNameScore_(nameId);
 
-        // attribute values are sort by score in descending order
-        const ScoreValueMap& scoreValueMap = nameValueMap[*nameIt];
+        // attribute values are sorted by score in descending order
+        const ScoreValueMap& scoreValueMap = nameValueMap[nameId];
         for (ScoreValueMap::const_reverse_iterator mapIt = scoreValueMap.rbegin();
              mapIt != scoreValueMap.rend(); ++mapIt)
         {
-            const AttrValueIds& valueIds = mapIt->second;
+            const double valueScore = mapIt->first;
+            const AttrTable::vid_t valueId = mapIt->second;
 
-            for (AttrValueIds::const_iterator idIt = valueIds.begin();
-                 idIt != valueIds.end(); ++idIt)
-            {
-                AttrTable::vid_t vid = *idIt;
-                itemList.push_back(OntologyRepItem());
-                OntologyRepItem& valueItem = itemList.back();
+            itemList.push_back(OntologyRepItem());
+            OntologyRepItem& valueItem = itemList.back();
 
-                // attribute values are appended as level 1
-                valueItem.level = 1;
-
-                // store id for quick find while merge attribute values.
-                valueItem.id = vid;
-                valueItem.text = attrTable_.valueStr(vid);
-                valueItem.doc_count = valueDocCountTable_[vid];
-            }
+            // attribute values are appended as level 1
+            valueItem.level = 1;
+            valueItem.id = valueId;
+            valueItem.text = attrTable_.valueStr(valueId);
+            valueItem.doc_count = valueDocCountTable_[valueId];
+            valueItem.score = valueScore;
         }
     }
 }

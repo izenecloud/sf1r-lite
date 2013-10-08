@@ -42,8 +42,7 @@ protected:
         int topNum,
         AttrNameIds& topNameIds) const;
 
-    typedef std::vector<AttrTable::vid_t> AttrValueIds;
-    typedef std::map<double, AttrValueIds> ScoreValueMap;
+    typedef std::multimap<double, AttrTable::vid_t> ScoreValueMap;
     typedef std::map<AttrTable::nid_t, ScoreValueMap> NameValueMap;
 
     void getNameValueMap_(NameValueMap& nameValueMap);

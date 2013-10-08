@@ -22,12 +22,12 @@ NS_FACETED_BEGIN
 class OntologyRepItem {
 public:
     OntologyRepItem()
-    :level(0), id(0), doc_count(0)
+        :level(0), id(0), doc_count(0), score(0)
     {
     }
 
     OntologyRepItem(uint8_t plevel, const CategoryNameType& ptext, CategoryIdType pid, uint32_t pdoc_count)
-    :level(plevel), text(ptext), id(pid), doc_count(pdoc_count)
+        :level(plevel), text(ptext), id(pid), doc_count(pdoc_count), score(0)
     {
     }
 
@@ -35,21 +35,23 @@ public:
     CategoryNameType text;
     CategoryIdType id;
     uint32_t doc_count;
+    double score;
     
     bool operator==(const OntologyRepItem& item) const
     {
       return level==item.level && text==item.text && id==item.id &&
-             doc_count==item.doc_count;
+             doc_count==item.doc_count &&
+             score == item.score;
     }
     
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        ar & level & text & id & doc_count;
+        ar & level & text & id & doc_count & score;
     }
 
-    MSGPACK_DEFINE(level,text,id,doc_count);
+    MSGPACK_DEFINE(level,text,id,doc_count,score);
 };
 NS_FACETED_END
 #endif /* SF1R_ONTOLOGY_REP_ITEM_H_ */
