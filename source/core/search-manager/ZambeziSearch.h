@@ -9,9 +9,8 @@
 
 #include "SearchBase.h"
 #include <common/inttypes.h>
-#include <mining-manager/product-scorer/ProductScorer.h>
+#include <mining-manager/group-manager/GroupParam.h>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <string>
 #include <vector>
 
@@ -21,10 +20,12 @@ class DocumentManager;
 class SearchManagerPreProcessor;
 class QueryBuilder;
 class ZambeziManager;
+class PropSharedLockSet;
 
 namespace faceted
 {
 class GroupFilterBuilder;
+class PropValueTable;
 }
 
 class ZambeziSearch : public SearchBase
@@ -45,6 +46,12 @@ public:
         std::size_t offset);
 
 private:
+    void getTopLabels_(
+        const std::vector<unsigned int>& docIdList,
+        PropSharedLockSet& propSharedLockSet,
+        faceted::GroupParam::GroupLabelMap& topLabelMap);
+
+private:
     DocumentManager& documentManager_;
 
     SearchManagerPreProcessor& preprocessor_;
@@ -55,7 +62,7 @@ private:
 
     ZambeziManager* zambeziManager_;
 
-    boost::scoped_ptr<ProductScorer> productScorer_;
+    const faceted::PropValueTable* categoryValueTable_;
 };
 
 } // namespace sf1r

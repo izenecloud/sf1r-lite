@@ -15,6 +15,8 @@
 #include <mining-manager/zambezi-manager/ZambeziManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/product-scorer/ProductScorer.h>
+#include <mining-manager/util/convert_ustr.h>
 #include <ir/index_manager/utility/BitVector.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
@@ -25,6 +27,10 @@ namespace
 {
 const std::size_t kAttrTopDocNum = 200;
 const std::size_t kZambeziTopKNum = 2e6;
+
+const std::string kTopLabelPropName = "Category";
+const size_t kTopLabelDocNum = 1000;
+const size_t kTopLabelCateNum = 4;
 }
 
 using namespace sf1r;
@@ -38,6 +44,7 @@ ZambeziSearch::ZambeziSearch(
     , queryBuilder_(queryBuilder)
     , groupFilterBuilder_(NULL)
     , zambeziManager_(NULL)
+    , categoryValueTable_(NULL)
 {
 }
 
@@ -46,6 +53,7 @@ void ZambeziSearch::setMiningManager(
 {
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
     zambeziManager_ = miningManager->getZambeziManager();
+    categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
 }
 
 bool ZambeziSearch::search(
@@ -221,6 +229,10 @@ bool ZambeziSearch::search(
 
     if (groupFilter)
     {
+        getTopLabels_(docIdList,
+                      propSharedLockSet,
+                      searchResult.autoSelectGroupLabels_);
+
         sf1r::faceted::OntologyRep tempAttrRep;
         groupFilter->getGroupRep(searchResult.groupRep_, tempAttrRep);
     }
@@ -261,4 +273,45 @@ bool ZambeziSearch::search(
               << ", costs :" << timer.elapsed() << " seconds";
 
     return true;
+}
+
+void ZambeziSearch::getTopLabels_(
+    const std::vector<unsigned int>& docIdList,
+    PropSharedLockSet& propSharedLockSet,
+    faceted::GroupParam::GroupLabelMap& topLabelMap)
+{
+    if (!categoryValueTable_)
+        return;
+
+    propSharedLockSet.insertSharedLock(categoryValueTable_);
+
+    std::vector<faceted::PropValueTable::pvid_t> topCateIds;
+    const std::size_t topNum = std::min(docIdList.size(), kTopLabelDocNum);
+    for (std::size_t i = 0; i < topNum; ++i)
+    {
+        if (topCateIds.size() >= kTopLabelCateNum)
+            break;
+
+        category_id_t catId =
+            categoryValueTable_->getFirstValueId(docIdList[i]);
+
+        if (catId != 0 &&
+            std::find(topCateIds.begin(), topCateIds.end(), catId) == topCateIds.end())
+        {
+            topCateIds.push_back(catId);
+        }
+    }
+
+    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[kTopLabelPropName];
+    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt =
+             topCateIds.begin(); idIt != topCateIds.end(); ++idIt)
+    {
+        std::vector<izenelib::util::UString> ustrPath;
+        categoryValueTable_->propValuePath(*idIt, ustrPath, false);
+
+        std::vector<std::string> path;
+        convert_to_str_vector(ustrPath, path);
+
+        topLabels.push_back(path);
+    }
 }
