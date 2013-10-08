@@ -55,10 +55,6 @@ ProductBundleActivator::~ProductBundleActivator()
     {
         delete price_trend_;
     }
-    if (scd_receiver_)
-    {
-        delete scd_receiver_;
-    }
 }
 
 void ProductBundleActivator::start( IBundleContext::ConstPtr context )
@@ -104,6 +100,10 @@ void ProductBundleActivator::stop( IBundleContext::ConstPtr context )
         delete taskService_;
         taskServiceReg_ = 0;
         taskService_ = 0;
+    }
+    if (scd_receiver_)
+    {
+        delete scd_receiver_;
     }
 }
 

@@ -447,10 +447,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             sorter_->Append(old_doc, ts_);
         }
         ScdDocument sdoc(doc, type);
-        if(!original_attribute.empty())
-        {
-            sdoc.property("Attribute") = str_to_propstr(original_attribute);
-        }
+        //if(!original_attribute.empty())
+        //{
+            //sdoc.property("Attribute") = str_to_propstr(original_attribute);
+        //}
         sorter_->Append(sdoc, ts_);
     }
     //delete Attribute after write block
