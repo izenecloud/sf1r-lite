@@ -7,8 +7,9 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 #include <ir/Zambezi/NewInvertedIndex.hpp>
- #include <common/PropSharedLockSet.h>
+#include <common/PropSharedLockSet.h>
 #include <string>
 #include <vector>
 
@@ -29,7 +30,8 @@ class ZambeziManager
 {
 public:
     ZambeziManager(const ZambeziConfig& config
-                , faceted::AttrManager* attrManager);
+                , faceted::AttrManager* attrManager
+                , NumericPropertyTableBuilder* numericTableBuilder);
 
     bool open();
 
@@ -54,6 +56,8 @@ private:
     faceted::AttrManager* attrManager_;
 
     izenelib::ir::Zambezi::NewInvertedIndex indexer_;
+
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r

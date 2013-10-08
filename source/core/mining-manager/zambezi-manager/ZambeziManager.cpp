@@ -22,10 +22,13 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
 
-ZambeziManager::ZambeziManager(const ZambeziConfig& config, faceted::AttrManager* attrManager)
+ZambeziManager::ZambeziManager(const ZambeziConfig& config, 
+                            faceted::AttrManager* attrManager,
+                            NumericPropertyTableBuilder* numericTableBuilder)
     : config_(config)
     , attrManager_(attrManager)
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
+    , numericTableBuilder_(numericTableBuilder)
 {
 }
 
@@ -85,18 +88,27 @@ void ZambeziManager::NormalizeScore(
     float maxScore = 1;
     uint32_t attr_size = 1;
 
+    std::string propName = "itemcount";
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable =
+        numericTableBuilder_->createPropertyTable(propName);
+
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size = std::min(attrvids.size(), size_t(20));
+            attr_size = std::min(attrvids.size(), size_t(10));
         }
+
+        int32_t itemcount = 1;
+        numericTable->getInt32Value(docids[i], itemcount);
+        attr_size += std::min(itemcount, 10);
 
         scores[i] = scores[i] * pow(attr_size, 0.3);
         if (scores[i] > maxScore)
-            maxScore =  scores[i];
+            maxScore = scores[i];
     }
 
     for (unsigned int i = 0; i < scores.size(); ++i)

@@ -3019,7 +3019,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 
     const bfs::path filePath(zambeziDir / "index.bin");
     zambeziConfig.indexFilePath = filePath.string();
-    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_);
+    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_, numericTableBuilder_);
 
     if (!zambeziManager_->open())
     {
