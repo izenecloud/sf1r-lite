@@ -180,7 +180,7 @@ bool ZambeziSearch::search(
         topProductScores.push_back(productScore);
         topRelevanceScores.push_back(scoreItem.score);
     }
-    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores);
+    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores, propSharedLockSet);
 
     for (size_t i = 0; i < topRelevanceScores.size(); ++i)
     {

@@ -72,14 +72,15 @@ void ZambeziManager::search(
 void ZambeziManager::NormalizeScore(
     std::vector<docid_t>& docids,
     std::vector<float>& scores,
-    std::vector<float>& productScores)
+    std::vector<float>& productScores,
+    PropSharedLockSet &sharedLockSet)
 {
     faceted::AttrTable* attTable = NULL;
 
     if (attrManager_)
     {
         attTable = &(attrManager_->getAttrTable());
-        attTable->lockShared();
+        sharedLockSet.insertSharedLock(attTable);
     }
     float maxScore = 1;
     uint32_t attr_size = 1;
@@ -97,9 +98,6 @@ void ZambeziManager::NormalizeScore(
         if (scores[i] > maxScore)
             maxScore =  scores[i];
     }
-
-    if (attTable)
-        attTable->unlockShared();
 
     for (unsigned int i = 0; i < scores.size(); ++i)
     {

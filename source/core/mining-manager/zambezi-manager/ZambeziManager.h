@@ -8,6 +8,7 @@
 
 #include <common/inttypes.h>
 #include <ir/Zambezi/NewInvertedIndex.hpp>
+ #include <common/PropSharedLockSet.h>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,8 @@ public:
     void NormalizeScore(
         std::vector<docid_t>& docids,
         std::vector<float>& scores,
-        std::vector<float>& productScores);
+        std::vector<float>& productScores,
+        PropSharedLockSet &sharedLockSet);
 
 private:
     const ZambeziConfig& config_;

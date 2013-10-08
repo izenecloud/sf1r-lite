@@ -33,13 +33,13 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     {
         std::string propValue;
         doc.getProperty(*i, propValue);
-        if (*i == "OriginalCategory")
+        if (*i == "Attribute")
         {
             std::string brand;
             doc.getProperty("Brand", brand);
             if (!brand.empty())
             {
-                propValue += ("/" + brand);
+                propValue += (",brand:" + brand);
             }
         }
         propValueList.push_back(propValue);
