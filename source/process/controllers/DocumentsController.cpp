@@ -172,14 +172,17 @@ bool DocumentsController::checkCollectionService(std::string& error)
  *     - @b sub_labels (@c Array): Array of sub labels. It has the same
  *       structure of the top @b labels field.
  * - @b attr (@c Array): Every item represents the group result for one attribute.
- *   They are sorted by @b document_count decreasingly.
+ *   They are sorted by @b score decreasingly.
  *   - @b attr_name (@c String): Attribute name.
  *   - @b document_count (@c Uint): Number of result documents which has value on
  *     this attribute.
+ *   - @b score (@c Double): Score of the attribute name.
  *   - @b labels (@c Array): Group labels. Every item is an object representing
- *     a label for an attribute value. The item has following fields.
+ *     a label for an attribute value. The item has following fields. They are
+ *     sorted by @b score decreasingly.
  *     - @b label (@c String): Name of this label, it represents an attribute value.
  *     - @b document_count (@c Uint): Number of result documents in this label.
+ *     - @b score (@c Double): Score of the attribute value.
  * - @b top_group_label (@c Array): Every item represents the top group labels
  *   for one property.@n
  *   - @b group_property (@c String): Property name.
