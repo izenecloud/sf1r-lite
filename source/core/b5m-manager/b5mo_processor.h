@@ -54,6 +54,7 @@ namespace sf1r {
         ilplib::knlp::AttributeNormalize* attr_;
         boost::atomic<uint32_t> stat1_;
         boost::atomic<uint32_t> stat2_;
+        boost::atomic<uint32_t> stat3_;
     };
 
 }

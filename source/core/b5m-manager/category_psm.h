@@ -185,26 +185,26 @@ namespace sf1r {
             std::string ncategory;
             if(!CategoryMatch(scategory, ncategory))
             {
-                if(attr_!=NULL)
-                {
-                    if(pid.empty())
-                    {
-                        std::string stitle;
-                        std::string sattr;
-                        doc.getString("Title", stitle);
-                        doc.getString("Attribute", sattr);
-                        std::string attrnc = attrn_->attr_normalize(sattr, scategory, false);
-                        std::string ap = attr_->cluster_detect(stitle, scategory, attrnc);
-                        if(!ap.empty())
-                        {
-                            std::string apid = B5MHelper::GetPidByUrl(ap);
-                            boost::unique_lock<boost::mutex> lock(mutex_);
-                            //std::cerr<<"attr match "<<stitle<<","<<ap<<std::endl;
-                            //std::cerr<<"attr normalize "<<sattr<<","<<attrnc<<std::endl;
-                            attr_vector_.push_back(apid);
-                        }
-                    }
-                }
+                //if(attr_!=NULL)
+                //{
+                //    if(pid.empty())
+                //    {
+                //        std::string stitle;
+                //        std::string sattr;
+                //        doc.getString("Title", stitle);
+                //        doc.getString("Attribute", sattr);
+                //        std::string attrnc = attrn_->attr_normalize(sattr, scategory, false);
+                //        std::string ap = attr_->cluster_detect(stitle, scategory, attrnc);
+                //        if(!ap.empty())
+                //        {
+                //            std::string apid = B5MHelper::GetPidByUrl(ap);
+                //            boost::unique_lock<boost::mutex> lock(mutex_);
+                //            //std::cerr<<"attr match "<<stitle<<","<<ap<<std::endl;
+                //            //std::cerr<<"attr normalize "<<sattr<<","<<attrnc<<std::endl;
+                //            attr_vector_.push_back(apid);
+                //        }
+                //    }
+                //}
                 return false;
             }
             stat_.first++;
@@ -282,24 +282,35 @@ namespace sf1r {
             std::string ncategory;
             if(!CategoryMatch(scategory, ncategory)) 
             {
-                if(!attr_set_.empty())
+                //if(!attr_set_.empty())
+                //{
+                //    std::string stitle;
+                //    std::string sattr;
+                //    doc.getString("Title", stitle);
+                //    doc.getString("Attribute", sattr);
+                //    std::string ap = attr_->cluster_detect(stitle, scategory, sattr);
+                //    if(!ap.empty())
+                //    {
+                //        //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
+                //        std::string apid = B5MHelper::GetPidByUrl(ap);
+                //        if(attr_set_.find(apid)!=attr_set_.end())
+                //        {
+                //            pid = apid;
+                //            //std::cerr<<"attr find pid "<<pid<<std::endl;
+                //            return true;
+                //        }
+                //    }
+                //}
+                std::string stitle;
+                std::string sattr;
+                doc.getString("Title", stitle);
+                doc.getString("Attribute", sattr);
+                std::string ap = attr_->cluster_detect(stitle, scategory, sattr);
+                if(!ap.empty())
                 {
-                    std::string stitle;
-                    std::string sattr;
-                    doc.getString("Title", stitle);
-                    doc.getString("Attribute", sattr);
-                    std::string ap = attr_->cluster_detect(stitle, scategory, sattr);
-                    if(!ap.empty())
-                    {
-                        //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
-                        std::string apid = B5MHelper::GetPidByUrl(ap);
-                        if(attr_set_.find(apid)!=attr_set_.end())
-                        {
-                            pid = apid;
-                            //std::cerr<<"attr find pid "<<pid<<std::endl;
-                            return true;
-                        }
-                    }
+                    //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
+                    pid = B5MHelper::GetPidByUrl(ap);
+                    return true;
                 }
                 return false;
             }

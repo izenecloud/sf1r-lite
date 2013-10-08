@@ -217,29 +217,43 @@ void B5moSorter::OBag_(PItem& pitem)
         std::sort(docs.begin(), docs.end(), OCompare_);
         std::vector<ScdDocument> prev_odocs;
         std::vector<ScdDocument> odocs;
+        std::vector<Value> ovalues;
+        std::vector<Value> pre_ovalues;
         for(uint32_t i=0;i<docs.size();i++)
         {
             const Value& v = docs[i];
-            //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
-            const ScdDocument& doc = v.doc;
-            ODocMerge_(odocs, doc);
+            ODocMerge_(ovalues, v);
             if(v.ts<ts_)
             {
-                ODocMerge_(prev_odocs, doc);
+                ODocMerge_(pre_ovalues, v);
             }
+            //LOG(INFO)<<"doc "<<v.spid<<","<<v.ts<<","<<v.doc.type<<","<<v.doc.property("DOCID")<<std::endl;
+            //const ScdDocument& doc = v.doc;
+            //ODocMerge_(odocs, doc);
+            //if(v.ts<ts_)
+            //{
+            //    ODocMerge_(prev_odocs, doc);
+            //}
         }
-        pitem.odocs.clear();
-        for(uint32_t i=0;i<odocs.size();i++)
+        pitem.odocs = ovalues;
+        for(uint32_t i=0;i<ovalues.size();i++)
         {
-            if(odocs[i].type!=DELETE_SCD)
-            {
-                Value v;
-                v.doc = odocs[i];
-                v.ts = ts_;
-                pitem.odocs.push_back(v);
-                //WriteValueSafe_(mirror_ofs_, odocs[i], ts_);
-            }
+            odocs.push_back(ovalues[i].doc);
         }
+        for(uint32_t i=0;i<pre_ovalues.size();i++)
+        {
+            prev_odocs.push_back(pre_ovalues[i].doc);
+        }
+        //for(uint32_t i=0;i<odocs.size();i++)
+        //{
+        //    if(odocs[i].type!=DELETE_SCD)
+        //    {
+        //        Value v;
+        //        v.doc = odocs[i];
+        //        v.ts = ts_;
+        //        pitem.odocs.push_back(v);
+        //    }
+        //}
         ScdDocument& pdoc = pitem.pdoc;
         pgenerator_.Gen(odocs, pdoc, spu_only_);
         if(pdoc.type==NOT_SCD)
@@ -285,6 +299,7 @@ void B5moSorter::OBag_(PItem& pitem)
         std::string spid;
         doc.getString("uuid", spid);
         if(spid.empty()) continue;
+        if(doc.type!=UPDATE_SCD) continue;
         Json::Value json_value;
         JsonDocument::ToJson(doc, json_value);
         //for(Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
@@ -332,20 +347,32 @@ void B5moSorter::WritePItem_(PItem& pitem)
                     mirror_ofs_<<pitem.odocs[i].text<<std::endl;
                 }
             }
-            if(pitem.pdoc.type!=NOT_SCD)
+            uint32_t odoc_count=0;
+            uint32_t odoc_precount=0;
+            for(uint32_t i=0;i<pitem.odocs.size();i++)
             {
-                pwriter_->Append(pitem.pdoc);
+                Value& value = pitem.odocs[i];
+                ScdDocument& odoc = value.doc;
+                odoc_precount++;
+                if(odoc.type!=UPDATE_SCD) continue;
+                odoc_count++;
+                if(value.ts<ts_) continue;
+                //odoc.property("itemcount") = (int64_t)1;
+                //odoc.eraseProperty("uuid");
+                pwriter_->Append(odoc);
             }
-            if(pitem.odocs.size()>1)
+            if(odoc_count>1)
             {
-                for(uint32_t i=0;i<pitem.odocs.size();i++)
+                if(pitem.pdoc.type!=NOT_SCD)
                 {
-                    ScdDocument& odoc = pitem.odocs[i].doc;
-                    odoc.type = UPDATE_SCD;
-                    odoc.property("itemcount") = (int64_t)1;
-                    odoc.eraseProperty("uuid");
-                    pwriter_->Append(odoc);
+                    pwriter_->Append(pitem.pdoc);
                 }
+            }
+            else if(odoc_precount>1)
+            {
+                pitem.pdoc.type = DELETE_SCD;
+                pitem.pdoc.clearExceptDOCID();
+                pwriter_->Append(pitem.pdoc);
             }
             last_pitemid_ = pitem.id+1;
             break;
@@ -364,6 +391,22 @@ void B5moSorter::ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& do
         if(vec.back().property("DOCID")==doc.property("DOCID"))
         {
             vec.back().merge(doc);
+        }
+        else
+        {
+            vec.push_back(doc);
+        }
+    }
+}
+void B5moSorter::ODocMerge_(std::vector<Value>& vec, const Value& doc)
+{
+    if(vec.empty()) vec.push_back(doc);
+    else
+    {
+        if(vec.back().doc.property("DOCID")==doc.doc.property("DOCID"))
+        {
+            vec.back().doc.merge(doc.doc);
+            vec.back().ts = doc.ts;
         }
         else
         {

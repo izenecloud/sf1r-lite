@@ -151,9 +151,11 @@ public:
         pprocessor.Generate();
         std::vector<ScdDocument> odocs;
         GetAllDocs(B5MHelper::GetB5moPath(mdb_instance), odocs);
+        std::cerr<<"start to do batch test on b5mo"<<std::endl;
         DocBatchTest(odocs, item.odocs);
         std::vector<ScdDocument> pdocs;
         GetAllDocs(B5MHelper::GetB5mpPath(mdb_instance), pdocs);
+        std::cerr<<"start to do batch test on b5mp"<<std::endl;
         DocBatchTest(pdocs, item.pdocs);
 
 
@@ -547,21 +549,22 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         GenODoc(UPDATE_SCD,"666", "BOOKF","DD"
             , "","", B5MHelper::GetPidByIsbn("999")));
 
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机>",1));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "TITLE2","JD"
-            , "大家电>平板电视>",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
+        //    , "手机数码>手机>",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "TITLE2","JD"
+        //    , "大家电>平板电视>",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|BOOK11","DD,PUB"
             ,"",2));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("103"), "BOOK2","DD"
-            ,"",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("103"), "BOOK2","DD"
+        //    ,"",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "BOOKA|BOOKB|BOOKC|BOOKD|BOOKE|BOOKF","PUB,京东商城,卓越亚马逊,DD"
             ,"",6));
+        item.pdocs.insert(item.pdocs.end(), item.odocs.begin(), item.odocs.end());
         tester.Test(item);
     }
     {
@@ -578,10 +581,16 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
             , "手机数码>手机配件>","", "aaa"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
+            , "手机数码>手机配件>","", "aaa"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE2","JD"
             , "家电>大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
+            , "家电>大家电>平板电视>","", "bbb"));
+        item.pdocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
@@ -590,19 +599,25 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "化妆品>","", "eee"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+            , "化妆品>","", "eee"));
 
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "",""
+        //    , "手机数码>手机配件>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "TITLE3",""
+        //    , "家电>大家电>平板电视>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|","DD"
+        //    ,"",1));
         item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "",""
-            , "手机数码>手机配件>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "TITLE3",""
-            , "家电>大家电>平板电视>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|","DD"
-            ,"",1));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
-            ,"化妆品>",1));
+        GenPDoc(DELETE_SCD,B5MHelper::GetPidByIsbn("101"), "",""
+            ,"",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+        //    ,"化妆品>",1));
         tester.Test(item);
     }
     {
@@ -622,26 +637,35 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
             , "","", "aaa"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
+            , "","", "aaa"));
         item.odocs.push_back(
+        GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
+            , "家电>大家电>电视>","", "bbb"));
+        item.pdocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "","", B5MHelper::GetPidByIsbn("110")));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+            , "","", B5MHelper::GetPidByIsbn("110")));
 
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "TITLE01",""
-            , "",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "",""
-            , "家电>大家电>电视>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("110")
-            , "BOOK12","PUB"
-            ,"",1));
-        item.pdocs.push_back(
-        GenPDoc(DELETE_SCD,"eee", "",""
-            ,"",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "TITLE01",""
+        //    , "",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "",""
+        //    , "家电>大家电>电视>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("110")
+        //    , "BOOK12","PUB"
+        //    ,"",1));
+        //item.pdocs.push_back(
+        //GenPDoc(DELETE_SCD,"eee", "",""
+        //    ,"",0));
         tester.Test(item);
     }
 }

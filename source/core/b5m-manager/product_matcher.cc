@@ -1757,18 +1757,9 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd, int thread_num)
     nfeature_vectors_.resize(category_list_.size(), NFeatureVector(all_keywords_.size(), 0.0));
     fv_count_.resize(category_list_.size(), 0);
     oca_.resize(all_keywords_.size(), std::vector<uint32_t>(category_list_.size(), 0));
-    //for(uint32_t i=0;i<psms_.size();i++)
-    //{
-        //B5MHelper::PrepareEmptyDir(ppath);
-        //psms_[i]->Open(ppath);
-    //}
     ScdDocProcessor processor(boost::bind(&ProductMatcher::OfferProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
-    //for(uint32_t i=0;i<psms_.size();i++)
-    //{
-        //psms_[i]->Flush(psm_result_);
-    //}
     feature_vectors_.resize(category_list_.size());
     for(uint32_t i=0;i<nfeature_vectors_.size();i++)
     {
@@ -2408,8 +2399,8 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
+        pbook.type = 2;
         result_products.resize(1, pbook);
-        stat1_+=1
         return true;
     }
     if(trie_.empty()) return false;
@@ -2432,6 +2423,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
     Compute2_(doc, term_list, keyword_vector, limit, result_products);
+    if(!result_products.empty()) result_products.front().type = 1;
     if((result_products.empty()||result_products.front().spid.empty())&&use_psm&&psm_!=NULL)
     {
         std::string spid;
@@ -2443,8 +2435,9 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         {
             Product p;
             p.spid = spid;
+            p.type = 3;
+            result_products.clear();
             result_products.resize(1, p);
-            stat2_+=1;
             return true;
         }
     }

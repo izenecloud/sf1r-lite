@@ -665,7 +665,7 @@ namespace sf1r {
         struct Product
         {
             Product()
-            : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0)
+            : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0), type(0)
             {
             }
             uint32_t id;
@@ -689,6 +689,7 @@ namespace sf1r {
             double tweight;
             SimObject title_obj;
             double score;
+            int type;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -1077,9 +1078,6 @@ namespace sf1r {
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;
-    public:
-        boost::atomic<uint32_t> stat1_;
-        boost::atomic<uint32_t> stat2_;
 
     };
 

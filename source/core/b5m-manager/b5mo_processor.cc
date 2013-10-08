@@ -25,7 +25,7 @@ B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
 :odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 ,attr_(matcher->GetAttributeNormalize())
 //,attr_(NULL)
-, stat1_(0), stat2_(0)
+, stat1_(0), stat2_(0), stat3_(0)
 {
 }
 
@@ -275,7 +275,9 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(!product.spid.empty())
     {
-        stat1_+=1;
+        if(product.type==1) stat1_+=1;
+        else if(product.type==2) stat2_+=1;
+        else if(product.type==3) stat3_+=1;
         //has SPU matched
         spid = product.spid;
         if(!title.empty()) 
@@ -385,7 +387,6 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(!product.stitle.empty() && !title.empty())
     {
-        stat2_+=1;
         doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
     }
     std::string scategory;
@@ -608,8 +609,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         delete omapper_;
         omapper_ = NULL;
     }
-    LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<std::endl;
-    LOG(INFO)<<"PMSTAT "<<matcher_->stat1_<<","<<matcher_->stat2_<<std::endl;
+    LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<","<<stat3_<<std::endl;
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())
