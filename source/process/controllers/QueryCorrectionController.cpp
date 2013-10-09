@@ -5,7 +5,7 @@
 #include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/recommendation/CorrectionEngineWrapper.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
 
 #include <util/ustring/UString.h>
 
