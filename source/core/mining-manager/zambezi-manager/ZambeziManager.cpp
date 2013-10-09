@@ -92,7 +92,10 @@ void ZambeziManager::NormalizeScore(
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
-
+    
+    if (numericTable)
+        sharedLockSet.insertSharedLock(numericTable.get());
+    
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
         if (attTable)
@@ -101,10 +104,12 @@ void ZambeziManager::NormalizeScore(
             attTable->getValueIdList(docids[i], attrvids);
             attr_size = std::min(attrvids.size(), size_t(10));
         }
-
-        int32_t itemcount = 1;
-        numericTable->getInt32Value(docids[i], itemcount);
-        attr_size += std::min(itemcount, 10);
+        if (numericTable)
+        {
+            int32_t itemcount = 1;
+            numericTable->getInt32Value(docids[i], itemcount, false);
+            attr_size += std::min(itemcount, 50);
+        }
 
         scores[i] = scores[i] * pow(attr_size, 0.3);
         if (scores[i] > maxScore)
@@ -113,6 +118,6 @@ void ZambeziManager::NormalizeScore(
 
     for (unsigned int i = 0; i < scores.size(); ++i)
     {
-        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
+        scores[i] = int(scores[i] / maxScore * 10) + productScores[i];
     }
 }
