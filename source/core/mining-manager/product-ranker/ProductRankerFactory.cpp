@@ -115,7 +115,11 @@ void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
 
 void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    if (!offerItemCountTable_ || isDiverseInPage)
+    SearchingMode::SearchingModeType searchMode = ranker.getParam().searchMode_;
+
+    if (!offerItemCountTable_ ||
+        isDiverseInPage ||
+        searchMode == SearchingMode::ZAMBEZI)
         return;
 
    ranker.addEvaluator(new OfferItemCountEvaluator(offerItemCountTable_));
