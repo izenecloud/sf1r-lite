@@ -80,6 +80,10 @@ FILE(GLOB mining_SRC
   "mining-manager/suffix-match-manager/*.cpp"
   "mining-manager/query-intent/*.cpp"
   "mining-manager/query-abbreviation/*.cpp"
+  "mining-manager/query-recommendation/*.cpp"
+  "mining-manager/query-recommendation/pinyin/*.cpp"
+  "mining-manager/query-recommendation/parser/*.cpp"
+  "mining-manager/query-recommendation/tokenize/*.cpp"
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
 )

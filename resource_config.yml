@@ -16,6 +16,7 @@ sub_modules:
     - wikigraph
     - dict
     - query-intent
+    - query_correction
 push_sub_modules:
     - ise
     - kpe
@@ -24,4 +25,4 @@ push_sub_modules:
     - opinion
     - qa
     - dict
-    - query-intent
+    - query_correction
