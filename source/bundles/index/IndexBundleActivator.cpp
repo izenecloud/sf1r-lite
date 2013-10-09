@@ -552,7 +552,8 @@ IndexBundleActivator::createSearchWorker_()
 boost::shared_ptr<SearchAggregator>
 IndexBundleActivator::createSearchAggregator_(bool readonly)
 {
-    searchMerger_.reset(new SearchMerger());
+    if (!searchMerger_)
+        searchMerger_.reset(new SearchMerger());
 
     std::auto_ptr<SearchMergerProxy> mergerProxy(new SearchMergerProxy(searchMerger_.get()));
     searchMerger_->bindCallProxy(*mergerProxy);
