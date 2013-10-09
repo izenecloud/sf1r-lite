@@ -18,6 +18,8 @@ using namespace sf1r;
 
 namespace
 {
+/** in zambezi mode, under the same relevance score, run merchant diversity */
+const score_t kZambeziCategoryScoreWeight = 1;
 
 score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 {
@@ -79,22 +81,28 @@ bool ProductRankerFactory::isDiverseInPage_(const ProductRankParam& param) const
 
 void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    score_t minWeight = 0;
+    SearchingMode::SearchingModeType searchMode = ranker.getParam().searchMode_;
+    score_t weight = 0;
 
-    if (isDiverseInPage)
+    if (searchMode == SearchingMode::ZAMBEZI)
     {
-        minWeight = config_.scores[CUSTOM_SCORE].weight;
+        weight = kZambeziCategoryScoreWeight;
+        isDiverseInPage = false;
     }
-    else if (ranker.getParam().searchMode_ == SearchingMode::SUFFIX_MATCH)
+    else if (isDiverseInPage)
     {
-        minWeight = CategoryClassifyScorer::kMinClassifyScore;
+        weight = config_.scores[CUSTOM_SCORE].weight;
+    }
+    else if (searchMode == SearchingMode::SUFFIX_MATCH)
+    {
+        weight = CategoryClassifyScorer::kMinClassifyScore;
     }
     else
     {
-        minWeight = minCustomCategoryWeight(config_);
+        weight = minCustomCategoryWeight(config_);
     }
 
-    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isDiverseInPage));
+    ranker.addEvaluator(new CategoryScoreEvaluator(weight, isDiverseInPage));
 }
 
 void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
