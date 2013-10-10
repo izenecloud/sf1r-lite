@@ -308,7 +308,7 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
             if (uresult.isChineseChar(i))
                 resultChinese += uresult[i];
         }
-        if (selfChinese == resultChinese)
+        if ((resultChinese.length() > 0) && (selfChinese == resultChinese))
             return false;
 
         results = max.getString();
