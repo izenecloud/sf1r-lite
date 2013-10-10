@@ -63,7 +63,7 @@
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
           <Sia triggerqa="n" enable_parallel_searching="n" enable_forceget_doc="n" doccachenum="20000" searchcachenum="1000" refreshsearchcache="n" refreshcacheinterval="3600"
-               filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32"
+               filtercachenum="1000" mastersearchcachenum="1000" topknum="100000" knntopknum="30" knndist="32"
                sortcacheupdateinterval="1800" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n"
                unigramsearchmode="n" multilanggranularity="field"/>
 

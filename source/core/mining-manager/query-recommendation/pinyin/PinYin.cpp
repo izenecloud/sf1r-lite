@@ -3,6 +3,8 @@
 #include <string.h>
 #include <iostream>
 
+#include "../CorrectionEngineWrapper.h"
+
 namespace sf1r
 {
 namespace Recommend
@@ -105,7 +107,7 @@ private:
 
 PinYinConverter* getPinYinConverter()
 {
-    static QueryCorrection* qc = new QueryCorrection("/home/kevinlin/codebase/sf1r-engine/package/resource/speller-support/cn/");
+    static QueryCorrection* qc = new QueryCorrection(CorrectionEngineWrapper::system_resource_path_ + "/query_correction/" + "/cn/");
     static PinYinConverter converter = boost::bind(&QueryCorrection::GetPinyin, qc, _1, _2);
     return &converter;
 }

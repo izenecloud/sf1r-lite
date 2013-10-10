@@ -70,7 +70,11 @@ public:
     void appendPropIdList(const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
-    void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
+
+    void propValueStr(
+        pvid_t pvId,
+        izenelib::util::UString& ustr,
+        bool isLock = true) const;
 
     /**
      * Insert property value id.

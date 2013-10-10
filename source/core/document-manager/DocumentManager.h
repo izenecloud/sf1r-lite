@@ -136,7 +136,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId);
+    bool isDeleted(docid_t docId, bool use_lock = true) const;
 
     /**
      * @brief gets one document by id
@@ -290,6 +290,11 @@ public:
         return RtypeDocidPros_.size() > 0;
     }
 
+    boost::shared_mutex& getMutex()
+    {
+        return delfilter_mutex_;
+    }
+
     std::set<string> RtypeDocidPros_;
     std::vector<uint32_t> last_delete_docid_;
 
@@ -384,7 +389,7 @@ private:
     /// @brief The delete flag filter
     DelFilterType delfilter_;
 
-    boost::shared_mutex delfilter_mutex_;
+    mutable boost::shared_mutex delfilter_mutex_;
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
@@ -425,7 +430,8 @@ private:
     static const std::string PROPERTY_LENGTH_FILE;
     static const std::string PROPERTY_BLOCK_SUFFIX;
     static unsigned int CACHE_SIZE;
-friend class IndexWorker;
+
+    friend class IndexWorker;
 };
 
 } // end - namespace sf1r

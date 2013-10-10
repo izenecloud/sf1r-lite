@@ -22,7 +22,7 @@
 #include <node-manager/DistributeFileSys.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/recommendation/CorrectionEngineWrapper.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <common/OnSignal.h>

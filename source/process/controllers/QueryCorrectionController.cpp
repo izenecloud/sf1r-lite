@@ -5,7 +5,7 @@
 #include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/recommendation/CorrectionEngineWrapper.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
 
 #include <util/ustring/UString.h>
 
@@ -90,6 +90,9 @@ void QueryCorrectionController::index()
     double factor = 0.0;
     if (CorrectionEngineWrapper::getInstance().correct(queryString, refinedQueryString, factor))
         response()[Keys::refined_query] = refinedQueryString;
+    else
+        response()[Keys::refined_query] = "";
+        
 }
 
 } // namespace sf1r

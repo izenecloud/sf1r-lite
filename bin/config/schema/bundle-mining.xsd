@@ -4,7 +4,7 @@
     <xs:include schemaLocation="common.xsd"/>
 
     <xs:complexType name="DocumentMiningParaType">
-        <xs:attribute name="cron" type="xs:string" use="optional" />
+        <xs:attribute name="cron" type="xs:string" use="optional"/>
         <xs:attribute name="docnumlimit" use="optional">
             <xs:simpleType>
                 <xs:restriction base="xs:integer">
@@ -74,14 +74,14 @@
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="AutofillParaType">
-        <xs:attribute name="cron" type="xs:string" use="required" />
-        <xs:attribute name="enableUpdateHitnum" type="YesNoType" use="optional" />
+        <xs:attribute name="cron" type="xs:string" use="required"/>
+        <xs:attribute name="enableUpdateHitnum" type="YesNoType" use="optional"/>
     </xs:complexType>
     <xs:complexType name="FuzzyIndexMergeParaType">
-        <xs:attribute name="cron" type="xs:string" use="required" />
+        <xs:attribute name="cron" type="xs:string" use="required"/>
     </xs:complexType>
     <xs:complexType name="RecommendParaType">
-        <xs:attribute name="cron" type="xs:string" use="required" />
+        <xs:attribute name="cron" type="xs:string" use="required"/>
         <xs:attribute name="recommendnum" use="required">
             <xs:simpleType>
                 <xs:restriction base="xs:integer">
@@ -140,7 +140,7 @@
         <xs:attribute name="fromDb" type="YesNoType" use="optional"/>
     </xs:complexType>
     <xs:complexType name="ProductRankingParaType">
-        <xs:attribute name="cron" type="xs:string" use="required" />
+        <xs:attribute name="cron" type="xs:string" use="required"/>
     </xs:complexType>
     <xs:complexType name="MiningTaskParaType">
         <xs:attribute name="threadnum" use="optional">
@@ -173,6 +173,7 @@
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
                             <xs:element ref="ProductMatcher" minOccurs="0"/>
                             <xs:element ref="QueryIntent" minOccurs="0"/>
+                            <xs:element ref="Zambezi" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -235,7 +236,7 @@
     </xs:element>
     <xs:element name="AutoFill">
         <xs:complexType>
-            <xs:attribute name="days" type="xs:positiveInteger" use="optional" />
+            <xs:attribute name="days" type="xs:positiveInteger" use="optional"/>
         </xs:complexType>
     </xs:element>
 
@@ -267,7 +268,7 @@
         <xs:attribute name="syncflagonly" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
-    
+
     <xs:element name="SuffixMatch">
         <xs:complexType>
             <xs:sequence>
@@ -279,7 +280,7 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
-    
+
     <xs:element name="QueryIntent">
         <xs:complexType>
             <xs:sequence>
@@ -288,50 +289,57 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="Zambezi">
+        <xs:complexType>
+            <xs:attribute name="reverse" type="YesNoType" use="optional"/>
+            <xs:attribute name="poolSize" type="xs:integer" use="optional"/>
+            <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="TokenizeDictionary">
         <xs:complexType>
-            <xs:attribute name="path" type="xs:string" use="required" />
+            <xs:attribute name="path" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="Incremental">
         <xs:complexType>
-            <xs:attribute name="enable" type="YesNoType" use="required" />
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="GroupCounterTopK">
         <xs:complexType>
-            <xs:attribute name="num" type="xs:integer" use="required" />
+            <xs:attribute name="num" type="xs:integer" use="required"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="FilterProperty">
         <xs:complexType>
-            <xs:attribute name="name" type="xs:string" use="required" />
-            <xs:attribute name="filtertype" type="xs:string" use="required" />
-            <xs:attribute name="searchable" type="YesNoType" use="optional" />
-            <xs:attribute name="amplifier" type="xs:integer" use="optional" />
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="filtertype" type="xs:string" use="required"/>
+            <xs:attribute name="searchable" type="YesNoType" use="optional"/>
+            <xs:attribute name="amplifier" type="xs:integer" use="optional"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="RecentCommentCountProperty">
         <xs:complexType>
-            <xs:attribute name="name" type="xs:string" use="required" />
-            <xs:attribute name="days" type="xs:integer" use="optional" />
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="days" type="xs:integer" use="optional"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>
-            <xs:attribute name="path" type="xs:string" use="required" />
+            <xs:attribute name="path" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="OpinionSyncId">
         <xs:complexType>
-            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="name" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 
@@ -411,7 +419,7 @@
 
     <xs:element name="ProductMatcher">
         <xs:complexType>
-            <xs:attribute name="mode" type="xs:string" use="optional" />
+            <xs:attribute name="mode" type="xs:string" use="optional"/>
         </xs:complexType>
     </xs:element>
 

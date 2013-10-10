@@ -380,6 +380,7 @@ void DocumentsRenderer::renderAttr(
             Value& newLabel = attrResult();
             newLabel[Keys::attr_name] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
+            newLabel[Keys::score] = item.score;
             parent = &newLabel[Keys::labels];
         }
         // attribute value
@@ -389,6 +390,7 @@ void DocumentsRenderer::renderAttr(
             Value& newLabel = (*parent)();
             newLabel[Keys::label] = tmpstr;
             newLabel[Keys::document_count] = item.doc_count;
+            newLabel[Keys::score] = item.score;
         }
     }
 }
