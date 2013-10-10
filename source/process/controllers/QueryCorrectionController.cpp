@@ -90,6 +90,9 @@ void QueryCorrectionController::index()
     double factor = 0.0;
     if (CorrectionEngineWrapper::getInstance().correct(queryString, refinedQueryString, factor))
         response()[Keys::refined_query] = refinedQueryString;
+    else
+        response()[Keys::refined_query] = "";
+        
 }
 
 } // namespace sf1r
