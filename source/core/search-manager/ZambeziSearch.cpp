@@ -26,7 +26,7 @@
 namespace
 {
 const std::size_t kAttrTopDocNum = 200;
-const std::size_t kZambeziTopKNum = 2e6;
+const std::size_t kZambeziTopKNum = 1e6;
 
 const std::string kTopLabelPropName = "Category";
 const size_t kTopLabelDocNum = 1000;
