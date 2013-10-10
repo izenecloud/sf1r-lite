@@ -144,6 +144,20 @@ bool Filter::isFilter(const std::string& userQuery) const
 
 void Filter::clear()
 {
+    if (NULL != bf_)
+    {
+        delete bf_;
+        bf_ = NULL;
+    }
+    bf_ = new BloomFilter(10240, 1e-8, 1024);
+    
+    std::string path = workdir_;
+    path += "/";
+    path += uuid;
+
+    std::ofstream out;
+    out.open(path.c_str(), std::ofstream::out | std::ofstream::trunc);
+    out.close();
 }
 
 void Filter::flush() const

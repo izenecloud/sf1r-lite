@@ -61,6 +61,11 @@ CorrectionEngine:: ~CorrectionEngine()
         delete filter_;
         filter_ = NULL;
     }
+    if (NULL != parsers_)
+    {
+        delete parsers_;
+        parsers_ = NULL;
+    }
 }
     
 void CorrectionEngine::evaluate(const std::string& path) const
@@ -294,6 +299,51 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     const double selfFreq = self.freq();
     const double maxFreq = max.getFreq();
     //std::cout<<self.freq()<<" : "<<max.getFreq()<<"\n";
+    
+    //for Kevin Hu
+    /*bool selfHasChinese = false;
+    for (std::size_t i = 0; i < uself.length(); i++)
+    {
+        if (uself.isChineseChar(i))
+        {
+            selfHasChinese = true;
+            break;
+        }
+    }
+    if (!selfHasChinese)
+    {
+        const std::string& maxString = max.getString();
+        izenelib::util::UString umax(maxString, izenelib::util::UString::UTF_8);
+        bool maxHasChinese = false;
+        for (std::size_t i = 0; i < umax.length(); i++)
+        {
+            if (umax.isChineseChar(i))
+            {
+                maxHasChinese = true;
+                break;
+            }
+        }
+        if (!maxHasChinese)
+        {
+            if (str.size() < maxString.size())
+            {
+                std::size_t i = 0;
+                for (; i < maxString.size(); i++)
+                {
+                    if (isspace(maxString[i]))
+                        continue;
+                    if (std::string::npos == str.find(maxString[i]))
+                        break;
+                }
+                if (i == maxString.size())
+                {
+                    results = maxString;
+                    return true;
+                }
+            }
+        }
+    }*/
+
     if ((2.4 * selfFreq < maxFreq) &&(maxFreq - selfFreq> 1e6))
     {
         izenelib::util::UString uresult(max.getString(), izenelib::util::UString::UTF_8);
