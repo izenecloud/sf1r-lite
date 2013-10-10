@@ -15,8 +15,12 @@ SearchManager::SearchManager(
     , fuzzySearchRanker_(preprocessor_)
     , queryBuilder_(searchFactory.createQueryBuilder(
                         preprocessor_.getSchemaMap()))
-    , searchBase_(searchFactory.createSearchBase(
-                      preprocessor_, *queryBuilder_))
+    , normalSearch_(searchFactory.createSearchBase(
+                        SearchingMode::DefaultSearchingMode,
+                        preprocessor_, *queryBuilder_))
+    , zambeziSearch_(searchFactory.createSearchBase(
+                         SearchingMode::ZAMBEZI,
+                         preprocessor_, *queryBuilder_))
 {
 }
 
@@ -35,7 +39,7 @@ void SearchManager::setMiningManager(
 
     preprocessor_.setNumericTableBuilder(
         miningManager->GetNumericTableBuilder());
-    
+
     preprocessor_.setRTypeStringPropTableBuilder(
         miningManager->GetRTypeStringPropTableBuilder());
 
@@ -51,5 +55,7 @@ void SearchManager::setMiningManager(
     fuzzySearchRanker_.setCustomRankManager(
         miningManager->GetCustomRankManager());
 
-    searchBase_->setMiningManager(miningManager);
+    normalSearch_->setMiningManager(miningManager);
+
+    zambeziSearch_->setMiningManager(miningManager);
 }

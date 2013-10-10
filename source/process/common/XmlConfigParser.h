@@ -372,6 +372,12 @@ public:
         return (dir / "dict" / "term_category").string();
     }
 
+    std::string getAttrTokenDictDir() const
+    {
+        boost::filesystem::path dir(resource_dir_);
+        return (dir / "dict" / "attr_tokenize").string();
+    }
+
     const std::string& getLogConnString() const
     {
         return log_conn_str_;
@@ -805,6 +811,13 @@ private:
     void parseScoreAttr(
         const ticpp::Element* scoreNode,
         ProductScoreConfig& scoreConfig) const;
+
+    /// @brief Parse <MiningBundle> <Schema> <Zambezi>
+    /// @param rankNode Pointer to the Element <Zambezi>
+    /// @param collectionMeta the config instance to update
+    void parseZambeziNode(
+        const ticpp::Element* zambeziNode,
+        CollectionMeta& collectionMeta) const;
 
     /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode     Pointer to the Element

@@ -101,7 +101,7 @@ bool DocumentManager::flush()
     {
         it->second->flush();
     }
-    
+
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
             it != numericPropertyTables_.end(); ++it)
     {
@@ -210,27 +210,34 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId)
+bool DocumentManager::isDeleted(docid_t docId, bool use_lock) const
 {
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
+    if (use_lock)
+    {
+        boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
+        lock.lock();
+        if (docId == 0 || docId > delfilter_.size())
+        {
+            return false;
+        }
+
+        return delfilter_.test(docId - 1);
+    }
+
     if (docId == 0 || docId > delfilter_.size())
     {
         return false;
     }
 
-    return delfilter_[docId - 1];
+    return delfilter_.test(docId - 1);
 }
 
 bool DocumentManager::removeDocument(docid_t docId)
 {
     if (docId < 1) return false;
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if (delfilter_.size() < docId)
-    {
-        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
-        if (delfilter_.size() < docId)
-            delfilter_.resize(docId);
-    }
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
+        delfilter_.resize(docId);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
@@ -313,7 +320,7 @@ bool DocumentManager::getPropertyValue(
 bool DocumentManager::getDocument(docid_t docId, Document& document, bool forceget)
 {
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
-    return (forceget || !isDeleted(docId) ) && propertyValueTable_->get(docId, document);
+    return (forceget || !isDeleted(docId)) && propertyValueTable_->get(docId, document);
 }
 
 void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& document)
@@ -348,7 +355,7 @@ bool DocumentManager::getDocumentByCache(
     {
         return true;
     }
-    if ( ( forceget || !isDeleted(docId) ) && propertyValueTable_->get(docId, document))
+    if ((forceget || !isDeleted(docId)) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         return true;
@@ -543,7 +550,7 @@ bool DocumentManager::getRawTextOfDocuments(
         Document::doc_prop_value_strtype rawText; // raw text
         izenelib::util::UString rawUText; // raw text
         Document::doc_prop_value_strtype result; // output variable to store return value
-        izenelib::util::UString resultU; 
+        izenelib::util::UString resultU;
 
         bool ret = false;
         for (unsigned int listId = 0; listId != docListSize; ++listId)

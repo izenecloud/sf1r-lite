@@ -9,7 +9,7 @@
 #define SF1R_SEARCH_FACTORY_H
 
 #include "QueryBuilder.h"
-
+#include "../query-manager/SearchingEnumerator.h"
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
@@ -34,6 +34,7 @@ public:
         const QueryBuilder::schema_map& schemaMap) const;
 
     SearchBase* createSearchBase(
+        SearchingMode::SearchingModeType mode,
         SearchManagerPreProcessor& preprocessor,
         QueryBuilder& queryBuilder) const;
 

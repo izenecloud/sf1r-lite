@@ -59,6 +59,9 @@
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
+#include "zambezi-manager/ZambeziManager.h"
+
+#include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
 #include "query-abbreviation/QueryStatistics.h"
@@ -88,6 +91,7 @@
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/KNlpDictMonitor.h>
+#include <la-manager/AttrTokenizeWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -197,6 +201,7 @@ MiningManager::MiningManager(
     , incrementalManager_(NULL)
     , product_categorizer_(NULL)
     , kvManager_(NULL)
+    , zambeziManager_(NULL)
     , miningTaskBuilder_(NULL)
     , multiThreadMiningTaskBuilder_(NULL)
     , hasDeletedDocDuringMining_(false)
@@ -232,6 +237,7 @@ MiningManager::~MiningManager()
     if (incrementalManager_) delete incrementalManager_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
+    if (zambeziManager_) delete zambeziManager_;
     if (queryStatistics_) delete queryStatistics_;
 
     close();
@@ -319,7 +325,8 @@ bool MiningManager::open()
         if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
             mining_schema_.group_enable ||
             mining_schema_.attr_enable ||
-            mining_schema_.product_ranking_config.isEnable)
+            mining_schema_.product_ranking_config.isEnable ||
+            mining_schema_.zambezi_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
             multiThreadMiningTaskBuilder_ = new MultiThreadMiningTaskBuilder(
@@ -735,6 +742,13 @@ bool MiningManager::open()
             LOG(ERROR) << "kv manager open fail";
             delete kvManager_;
             kvManager_ = NULL;
+        }
+        
+        /** zambezi */
+        if (!initZambeziManager_(mining_schema_.zambezi_config))
+        {
+            LOG(ERROR) << "init ZambeziManager fail";
+            return false;
         }
 
         /** product rank */
@@ -2986,6 +3000,36 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
                                                      offerItemCountTable,
                                                      diversityValueTable,
                                                      merchantScoreManager_);
+    return true;
+}
+
+bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
+{
+    if (!zambeziConfig.isEnable)
+        return true;
+
+    if (!AttrTokenizeWrapper::get()->loadDictFiles(system_resource_path_ + "/dict/attr_tokenize"))
+        return false;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path zambeziDir(parentDir / "zambezi");
+    bfs::create_directories(zambeziDir);
+
+    if (zambeziManager_) delete zambeziManager_;
+
+    const bfs::path filePath(zambeziDir / "index.bin");
+    zambeziConfig.indexFilePath = filePath.string();
+    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_, numericTableBuilder_);
+
+    if (!zambeziManager_->open())
+    {
+        LOG(ERROR) << "open " << filePath << " failed";
+        return false;
+    }
+
+    miningTaskBuilder_->addTask(
+        zambeziManager_->createMiningTask(*document_manager_));
+
     return true;
 }
 
