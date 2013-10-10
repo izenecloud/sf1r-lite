@@ -18,6 +18,11 @@ Filter::Filter(const std::string& workdir)
 {
     bf_ = new BloomFilter(10240, 1e-8, 1024);
     
+    if (!boost::filesystem::exists(workdir_))
+    {
+        boost::filesystem::create_directory(workdir_);
+    }
+    
     std::string path = workdir_;
     path += "/";
     path += uuid;

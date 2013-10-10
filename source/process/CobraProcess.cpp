@@ -167,6 +167,7 @@ void CobraProcess::initQuery()
     }
     //QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
     CorrectionEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
+    CorrectionEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
     CorrectionEngineWrapper::getInstance();
     //QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
     //QueryCorrectionSubmanager::getInstance();

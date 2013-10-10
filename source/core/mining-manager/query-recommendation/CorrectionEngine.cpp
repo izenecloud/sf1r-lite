@@ -24,6 +24,11 @@ CorrectionEngine::CorrectionEngine(const std::string& workdir)
     , timestamp_(0)
     , workdir_(workdir)
 {
+    if (!boost::filesystem::exists(workdir_))
+    {
+        boost::filesystem::create_directory(workdir_);
+    }
+    
     pinyin_ = new PinyinTable(workdir_);
     prefix_ = new PrefixTable(workdir_);
     filter_ = new Filter(workdir_ + "/filter/");
