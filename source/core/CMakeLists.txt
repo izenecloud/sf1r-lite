@@ -73,10 +73,10 @@ FILE(GLOB mining_SRC
   "mining-manager/product-scorer/*.cpp"
   "mining-manager/product-score-manager/*.cpp"
   "mining-manager/product-ranker/*.cpp"
-  "mining-manager/product-classifier/*.cpp"  
+  "mining-manager/product-classifier/*.cpp"
   "mining-manager/custom-rank-manager/*.cpp"
   "mining-manager/tdt-submanager/*.cpp"
-  "mining-manager/tdt-submanager/wavelet-tree/*.cpp"  
+  "mining-manager/tdt-submanager/wavelet-tree/*.cpp"
   "mining-manager/suffix-match-manager/*.cpp"
   "mining-manager/query-intent/*.cpp"
   "mining-manager/query-abbreviation/*.cpp"
@@ -87,6 +87,7 @@ FILE(GLOB mining_SRC
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
   "mining-manager/zambezi-manager/*.cpp"
+  "mining-manager/ad-index-manager/*.cpp"
 )
 
 ADD_DEFINITIONS("-fno-strict-aliasing")
