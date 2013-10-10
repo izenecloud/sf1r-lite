@@ -25,8 +25,8 @@ public:
     bool test(uint32_t docId) const
     {
         return !documentManager_.isDeleted(docId, false) &&
-            (!groupFilter_ || groupFilter_->test(docId)) &&
-            (!filterBitVector_ || filterBitVector_->test(docId));
+            (!filterBitVector_ || filterBitVector_->test(docId)) &&
+            (!groupFilter_ || groupFilter_->test(docId));
     }
 
 private:
