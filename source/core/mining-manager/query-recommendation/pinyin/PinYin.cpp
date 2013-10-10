@@ -107,8 +107,8 @@ private:
 
 PinYinConverter* getPinYinConverter()
 {
-    static QueryCorrection* qc = new QueryCorrection(CorrectionEngineWrapper::system_resource_path_ + "/query_correction/" + "/cn/");
-    static PinYinConverter converter = boost::bind(&QueryCorrection::GetPinyin, qc, _1, _2);
+    static QueryCorrection qc(CorrectionEngineWrapper::system_resource_path_ + "/query_correction/" + "/cn/");
+    static PinYinConverter converter = boost::bind(&QueryCorrection::GetPinyin, &qc, _1, _2);
     return &converter;
 }
 }

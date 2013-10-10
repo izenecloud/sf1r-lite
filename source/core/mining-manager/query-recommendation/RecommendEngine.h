@@ -46,6 +46,7 @@ public:
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(RecommendEngine);
     void processQuery(const std::string& userQuery, const std::string& category, const uint32_t freq);
 private:
     Tokenize::Tokenizer* tokenizer_;

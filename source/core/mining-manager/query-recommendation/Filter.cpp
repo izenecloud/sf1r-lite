@@ -13,7 +13,8 @@ static std::string uuid = ".Filter";
 static std::string timestamp = ".FilterTimestamp";
 
 Filter::Filter(const std::string& workdir)
-    : timestamp_(0)
+    : bf_(NULL) 
+    , timestamp_(0)
     , workdir_(workdir)
 {
     bf_ = new BloomFilter(10240, 1e-8, 1024);

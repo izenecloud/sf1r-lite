@@ -39,6 +39,8 @@ public:
     void flush() const;
     void clear();
 private:
+    DISALLOW_COPY_AND_ASSIGN(CorrectionEngine);
+
     void processQuery(const std::string& userQuery, const uint32_t freq);
 
 private:
