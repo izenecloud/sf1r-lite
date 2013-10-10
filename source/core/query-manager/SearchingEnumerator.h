@@ -21,6 +21,7 @@ struct SearchingMode
         VERBOSE,
         KNN,
         SUFFIX_MATCH,
+        ZAMBEZI,
         NotUseSearchingMode
     }; //end - enum SearchingModeType
 

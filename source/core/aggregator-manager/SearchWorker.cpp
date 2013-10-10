@@ -511,15 +511,26 @@ bool SearchWorker::getSearchResult_(
 
         break;
 
+    case SearchingMode::ZAMBEZI:
+        if (!searchManager_->zambeziSearch_->search(actionOperation,
+                                                    resultItem,
+                                                    search_limit,
+                                                    topKStart))
+        {
+            return true;
+        }
+
+        break;
+
     default:
         unsigned int QueryPruneTimes = 2;
         bool isUsePrune = false;
         //isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
         bool is_getResult = true;
-        if (!searchManager_->searchBase_->search(actionOperation,
-                                                 resultItem,
-                                                 search_limit,
-                                                 topKStart) || resultItem.totalCount_ == 0)
+        if (!searchManager_->normalSearch_->search(actionOperation,
+                                                   resultItem,
+                                                   search_limit,
+                                                   topKStart) || resultItem.totalCount_ == 0)
         {
             cout<<"resultItem.totalCount_:"<<resultItem.totalCount_<<endl;
             if (time(NULL) - start_search > 5)
@@ -576,10 +587,10 @@ bool SearchWorker::getSearchResult_(
                     return true;
                 }
                 QueryPruneTimes--;
-                is_getResult =  searchManager_->searchBase_->search(actionOperation,
-                                                         resultItem,
-                                                         search_limit,
-                                                         topKStart);
+                is_getResult =  searchManager_->normalSearch_->search(actionOperation,
+                                                                      resultItem,
+                                                                      search_limit,
+                                                                      topKStart);
                 rawQuery = newQuery;
             } while(isUsePrune && QueryPruneTimes > 0 && (!is_getResult || resultItem.totalCount_ == 0));
         }
@@ -713,9 +724,13 @@ bool SearchWorker::buildQuery(
         KeywordSearchResult& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
-            || actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+    SearchingMode::SearchingModeType mode = actionOperation.actionItem_.searchingMode_.mode_;
+    if (mode == SearchingMode::KNN ||
+        mode == SearchingMode::SUFFIX_MATCH ||
+        mode == SearchingMode::ZAMBEZI)
+    {
         return true;
+    }
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
     CREATE_PROFILER ( analyzeQuery, "IndexSearchService", "processGetSearchResults: analyze query");

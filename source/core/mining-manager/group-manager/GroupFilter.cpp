@@ -8,8 +8,10 @@
 #include "../faceted-submanager/ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
+#include "../attr-manager/AttrScoreCounter.h"
 #include "../attr-manager/AttrLabel.h"
 #include <common/PropSharedLockSet.h>
+#include <query-manager/SearchingEnumerator.h>
 #include <util/ClockTimer.h>
 
 #include <glog/logging.h>
@@ -106,13 +108,23 @@ bool GroupFilter::initGroup(
 
 bool GroupFilter::initAttr(
     const AttrTable& attrTable,
+    const PropValueTable* categoryTable,
     PropSharedLockSet& sharedLockSet)
 {
     sharedLockSet.insertSharedLock(&attrTable);
 
     if (groupParam_.isAttrGroup_)
     {
-        attrCounter_ = new AttrCounter(attrTable);
+        if (groupParam_.searchMode_ == SearchingMode::ZAMBEZI &&
+            categoryTable != NULL)
+        {
+            sharedLockSet.insertSharedLock(categoryTable);
+            attrCounter_ = new AttrScoreCounter(attrTable, *categoryTable);
+        }
+        else
+        {
+            attrCounter_ = new AttrCounter(attrTable);
+        }
     }
 
     const GroupParam::AttrLabelMap& labels = groupParam_.attrLabels_;

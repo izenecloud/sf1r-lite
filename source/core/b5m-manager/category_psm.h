@@ -119,7 +119,7 @@ namespace sf1r {
             {
                 std::string p = path+"/result";
                 std::map<BufferKey, std::vector<Group> > rmap;
-                izenelib::am::ssf::Util<>::Load(p, rmap);
+                izenelib::am::ssf::Util<uint64_t>::Load(p, rmap);
                 result_.insert(rmap.begin(), rmap.end());
                 p = path+"/brands";
                 izenelib::am::ssf::Util<>::Load(p, brand_set_);
@@ -342,7 +342,7 @@ namespace sf1r {
             B5MHelper::PrepareEmptyDir(path);
             std::string pa = path+"/result";
             std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
-            izenelib::am::ssf::Util<>::Save(pa, rmap);
+            izenelib::am::ssf::Util<uint64_t>::Save(pa, rmap);
             pa = path+"/brands";
             izenelib::am::ssf::Util<>::Save(pa, brand_set_);
             //dd_->RunDdAnalysis();

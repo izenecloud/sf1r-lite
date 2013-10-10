@@ -46,6 +46,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   cassandra
   sf1r
   NUMA
+  zambezi
   )
 
 FIND_PACKAGE(ilplib REQUIRED)
