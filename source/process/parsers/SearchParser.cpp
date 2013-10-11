@@ -98,6 +98,7 @@ using driver::Keys;
  *   based fuzzy queries are enabled for this query. If it is set as false, it means
  *   the search results only contain the longest suffix of query.
  *   If this is omitted, @b and searching mode is used as the default value.
+ *   - @b zambezi search in the zambezi index (an in-memory inverted index).
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.
  * - @b analyzer (@c Object): Keywords analyzer options
@@ -369,6 +370,10 @@ bool SearchParser::parse(const Value& search)
             {
                 searchingModeInfo_.useQueryPrune_ = false;
             }
+        }
+        else if (mode == "zambezi")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::ZAMBEZI;
         }
         else
         {

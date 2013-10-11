@@ -6,67 +6,33 @@
 
 namespace
 {
-/** attribute name id, and its doc count */
-typedef std::pair<sf1r::faceted::AttrTable::nid_t, int> AttrFreq;
+/** attribute name id, and its score */
+typedef std::pair<sf1r::faceted::AttrTable::nid_t, double> AttrScore;
 
-class AttrFreqQueue : public izenelib::util::PriorityQueue<AttrFreq>
+class AttrScoreQueue : public izenelib::util::PriorityQueue<AttrScore>
 {
     public:
-        AttrFreqQueue(size_t size)
+        AttrScoreQueue(size_t size)
         {
             this->initialize(size);
         }
 
     protected:
-        bool lessThan(const AttrFreq& p1, const AttrFreq& p2) const
+        bool lessThan(const AttrScore& p1, const AttrScore& p2) const
         {
             return (p1.second < p2.second);
         }
 };
 
-/**
- * get attribute name ids with top freq.
- * @param nameCountTable map from name id to doc count
- * @param topNum limit the size of @p topNameIds, zero for not limit size
- * @param topNameIds store the top attribute name ids
- */
-void getTopNameIds(
-    const std::vector<int>& nameCountTable,
-    int topNum,
-    std::vector<sf1r::faceted::AttrTable::nid_t>& topNameIds
-)
-{
-    if (topNum == 0)
-    {
-        topNum = nameCountTable.size();
-    }
-
-    AttrFreqQueue queue(topNum);
-    for (size_t nameId = 0; nameId < nameCountTable.size(); ++nameId)
-    {
-        if (nameCountTable[nameId])
-        {
-            queue.insert(AttrFreq(nameId, nameCountTable[nameId]));
-        }
-    }
-
-    topNameIds.resize(queue.size());
-    for (std::vector<sf1r::faceted::AttrTable::nid_t>::reverse_iterator rit = topNameIds.rbegin();
-        rit != topNameIds.rend(); ++rit)
-    {
-        *rit = queue.pop().first;
-    }
-}
-
 }
 
 NS_FACETED_BEGIN
 
-AttrCounter::AttrCounter(const AttrTable& attrTable)
+AttrCounter::AttrCounter(
+    const AttrTable& attrTable,
+    int minValueCount)
     : attrTable_(attrTable)
-    , nameCountTable_(attrTable.nameNum())
-    , valueIdNum_(attrTable.valueNum())
-    , valueCountTable_(valueIdNum_)
+    , minValueCount_(minValueCount)
 {
 }
 
@@ -79,15 +45,12 @@ void AttrCounter::addDoc(docid_t doc)
     for (std::size_t i = 0; i < valueIdList.size(); ++i)
     {
         AttrTable::vid_t vId = valueIdList[i];
-        if (vId < valueIdNum_)
-        {
-            ++valueCountTable_[vId];
+        ++valueDocCountTable_[vId];
 
-            AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
-            if (nameIdSet.insert(nameId).second)
-            {
-                ++nameCountTable_[nameId];
-            }
+        AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
+        if (nameIdSet.insert(nameId).second)
+        {
+            ++nameDocCountTable_[nameId];
         }
     }
 }
@@ -102,60 +65,125 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
     {
         AttrTable::vid_t vId = valueIdList[i];
 
-        if (vId < valueIdNum_ &&
-            attrTable_.valueId2NameId(vId) == nId)
+        if (attrTable_.valueId2NameId(vId) == nId)
         {
-            ++valueCountTable_[vId];
+            ++valueDocCountTable_[vId];
             findNameId = true;
         }
     }
 
     if (findNameId)
     {
-        ++nameCountTable_[nId];
+        ++nameDocCountTable_[nId];
     }
 }
 
-void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
+double AttrCounter::getNameScore_(AttrTable::nid_t nameId)
 {
-    typedef std::map<AttrTable::vid_t, int> ValueCountMap;
-    typedef std::map<AttrTable::nid_t, ValueCountMap> NameCountMap;
-    NameCountMap nameCountMap;
-    for (std::size_t valueId = 1; valueId < valueCountTable_.size(); ++valueId)
+    return nameDocCountTable_[nameId];
+}
+
+double AttrCounter::getValueScore_(AttrTable::vid_t valueId)
+{
+    return valueDocCountTable_[valueId];
+}
+
+void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep)
+{
+    NameValueMap nameValueMap;
+    getNameValueMap_(nameValueMap);
+
+    std::vector<AttrTable::nid_t> topNameIds;
+    getTopNameIds_(topGroupNum, topNameIds);
+
+    generateGroupRep_(topNameIds, nameValueMap, groupRep);
+}
+
+void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap)
+{
+    for (ValueDocCountTable::const_iterator it = valueDocCountTable_.begin();
+         it != valueDocCountTable_.end(); ++it)
     {
-        int count = valueCountTable_[valueId];
-        if (count)
+        AttrTable::vid_t valueId = it->first;
+        double score = getValueScore_(valueId);
+
+        if (score > 0)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
-            nameCountMap[nameId][valueId] = count;
+            nameValueMap[nameId].insert(ScoreValueMap::value_type(score, valueId));
+            ++nameValueCountTable_[nameId];
+        }
+    }
+}
+
+void AttrCounter::getTopNameIds_(
+    int topNum,
+    std::vector<AttrTable::nid_t>& topNameIds)
+{
+    if (topNum == 0)
+    {
+        topNum = nameValueCountTable_.size();
+    }
+
+    AttrScoreQueue queue(topNum);
+    for (NameValueCountTable::const_iterator it = nameValueCountTable_.begin();
+         it != nameValueCountTable_.end(); ++it)
+    {
+        AttrTable::nid_t nameId = it->first;
+        int valueCount = it->second;
+        double score = getNameScore_(nameId);
+
+        if (score > 0 && valueCount >= minValueCount_)
+        {
+            AttrScore attrScore(nameId, score);
+            queue.insert(attrScore);
         }
     }
 
-    std::vector<AttrTable::nid_t> topNameIds;
-    getTopNameIds(nameCountTable_, topGroupNum, topNameIds);
-
-    std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
-    for (std::vector<AttrTable::nid_t>::const_iterator nameIt = topNameIds.begin();
-        nameIt != topNameIds.end(); ++nameIt)
+    topNameIds.resize(queue.size());
+    for (std::vector<sf1r::faceted::AttrTable::nid_t>::reverse_iterator rit = topNameIds.rbegin();
+        rit != topNameIds.rend(); ++rit)
     {
+        *rit = queue.pop().first;
+    }
+}
+
+void AttrCounter::generateGroupRep_(
+    const AttrNameIds& topNameIds,
+    NameValueMap& nameValueMap,
+    OntologyRep& groupRep)
+{
+    std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
+
+    for (std::vector<AttrTable::nid_t>::const_iterator nameIt = topNameIds.begin();
+         nameIt != topNameIds.end(); ++nameIt)
+    {
+        const AttrTable::nid_t nameId = *nameIt;
+
         // attribute name as root node
         itemList.push_back(OntologyRepItem());
         OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = attrTable_.nameStr(*nameIt);
-        nameItem.doc_count = nameCountTable_[*nameIt];
+        nameItem.text = attrTable_.nameStr(nameId);
+        nameItem.doc_count = nameDocCountTable_[nameId];
+        nameItem.score = getNameScore_(nameId);
 
-        // attribute values are appended as level 1
-        const ValueCountMap& valueCountMap = nameCountMap[*nameIt];
-        for (ValueCountMap::const_iterator mapIt = valueCountMap.begin();
-            mapIt != valueCountMap.end(); ++mapIt)
+        // attribute values are sorted by score in descending order
+        const ScoreValueMap& scoreValueMap = nameValueMap[nameId];
+        for (ScoreValueMap::const_reverse_iterator mapIt = scoreValueMap.rbegin();
+             mapIt != scoreValueMap.rend(); ++mapIt)
         {
+            const double valueScore = mapIt->first;
+            const AttrTable::vid_t valueId = mapIt->second;
+
             itemList.push_back(OntologyRepItem());
             OntologyRepItem& valueItem = itemList.back();
+
+            // attribute values are appended as level 1
             valueItem.level = 1;
-            // store id for quick find while merge attribute values.
-            valueItem.id = mapIt->first;
-            valueItem.text = attrTable_.valueStr(mapIt->first);
-            valueItem.doc_count = mapIt->second;
+            valueItem.id = valueId;
+            valueItem.text = attrTable_.valueStr(valueId);
+            valueItem.doc_count = valueDocCountTable_[valueId];
+            valueItem.score = valueScore;
         }
     }
 }

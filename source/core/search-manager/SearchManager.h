@@ -36,7 +36,9 @@ public:
 
     boost::scoped_ptr<QueryBuilder> queryBuilder_;
 
-    boost::scoped_ptr<SearchBase> searchBase_;
+    boost::scoped_ptr<SearchBase> normalSearch_;
+
+    boost::scoped_ptr<SearchBase> zambeziSearch_;
 };
 
 } // end - namespace sf1r

@@ -10,10 +10,10 @@ std::string CorrectionEngineWrapper::system_working_path_;
 CorrectionEngineWrapper::CorrectionEngineWrapper()
     : engine_(NULL)
 {
-    engine_ = new Recommend::CorrectionEngine(system_resource_path_ + "/query_correction/");
+    engine_ = new Recommend::CorrectionEngine(system_working_path_ + "/query_correction/");
     engine_->setPinYinConverter(Recommend::getPinYinConverter());
-    if (engine_->isNeedBuild())
-        engine_->buildEngine();
+    if (engine_->isNeedBuild(system_resource_path_ + "/query_correction/"))
+        engine_->buildEngine(system_resource_path_ + "/query_correction/");
 }
 
 CorrectionEngineWrapper:: ~CorrectionEngineWrapper()

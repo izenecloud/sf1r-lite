@@ -32,6 +32,7 @@ public:
     void flush();
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(IndexEngine);
     void open_();
     void close_();
 private:

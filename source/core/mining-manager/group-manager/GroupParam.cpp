@@ -1,6 +1,7 @@
 #include "GroupParam.h"
 #include "DateStrParser.h"
 #include <configuration-manager/MiningSchema.h>
+#include <query-manager/SearchingEnumerator.h>
 
 namespace
 {
@@ -153,6 +154,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
 GroupParam::GroupParam()
     : isAttrGroup_(false)
     , attrGroupNum_(0)
+    , searchMode_(SearchingMode::DefaultSearchingMode)
 {
 }
 
@@ -305,7 +307,8 @@ bool operator==(const GroupParam& a, const GroupParam& b)
            a.boostGroupLabels_ == b.boostGroupLabels_ &&
            a.isAttrGroup_ == b.isAttrGroup_ &&
            a.attrGroupNum_ == b.attrGroupNum_ &&
-           a.attrLabels_ == b.attrLabels_;
+           a.attrLabels_ == b.attrLabels_ &&
+           a.searchMode_ == b.searchMode_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
@@ -349,6 +352,8 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
         }
         out << std::endl;
     }
+
+    out << "searchMode_: " << groupParam.searchMode_ << std::endl;
 
     return out;
 }

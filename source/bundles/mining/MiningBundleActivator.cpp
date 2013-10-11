@@ -1,10 +1,6 @@
 #include "MiningBundleActivator.h"
 
-#include <common/SFLogger.h>
 #include <bundles/index/IndexSearchService.h>
-
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <aggregator-manager/SearchWorker.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>

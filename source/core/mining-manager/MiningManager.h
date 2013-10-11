@@ -118,6 +118,7 @@ class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
 class QueryIntentManager;
+class ZambeziManager;
 class QueryStatistics;
 
 namespace sim
@@ -517,11 +518,16 @@ public:
         return queryIntentManager_;
     }
 
+    ZambeziManager* getZambeziManager()
+    {
+        return zambeziManager_;
+    }
+
     QueryStatistics* getQueryStatistics()
     {
         return queryStatistics_;
     }
-    
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -625,6 +631,8 @@ private:
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
+
+    bool initZambeziManager_(ZambeziConfig& zambeziConfig);
 
     const std::string& getOfferItemCountPropName_() const;
 
@@ -774,6 +782,9 @@ private:
     /** KV */
     std::string kv_path_;
     KVSubManager* kvManager_;
+
+    /** Zambezi */
+    ZambeziManager* zambeziManager_;
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
