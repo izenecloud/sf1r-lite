@@ -576,8 +576,10 @@ private:
      *@param topDocIdList The top docs from the search result.
      *@param queryList The recommended queries as the result.
      */
+    //bool getRecommendQuery_(const izenelib::util::UString& queryStr,
+    //                        QueryRecommendRep & recommendRep);
     bool getRecommendQuery_(const izenelib::util::UString& queryStr,
-                            QueryRecommendRep & recommendRep);
+                            std::deque<izenelib::util::UString >& recommendQueries);
 
     bool isMiningProperty_(const std::string& name);
 

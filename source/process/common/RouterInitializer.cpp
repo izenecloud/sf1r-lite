@@ -22,6 +22,7 @@
 #include "controllers/LogAnalysisController.h"
 #include "controllers/FacetedController.h"
 #include "controllers/QueryCorrectionController.h"
+#include "controllers/QueryRecommendController.h"
 #include "controllers/TopicController.h"
 #include "controllers/RecommendController.h"
 #include "controllers/ServiceController.h"
@@ -72,6 +73,27 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
         router.map(
             controllerName,
             "index",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+    
+    {
+        QueryRecommendController query_recommend;
+        const std::string controllerName("query_recommend");
+        typedef ::izenelib::driver::ActionHandler<QueryRecommendController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                query_recommend,
+                &QueryRecommendController::recommend
+            )
+        );
+
+        router.map(
+            controllerName,
+            "recommend",
             indexHandler.get()
         );
         indexHandler.release();
