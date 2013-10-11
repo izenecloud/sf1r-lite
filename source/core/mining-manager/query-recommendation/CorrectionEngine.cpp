@@ -171,7 +171,13 @@ void CorrectionEngine::buildEngine(const std::string& path)
 void CorrectionEngine::processQuery(const std::string& str, const uint32_t freq)
 {
     std::string userQuery = str;
-    ilplib::knlp::Normalize::normalize(userQuery);
+    try
+    {
+        ilplib::knlp::Normalize::normalize(userQuery);
+    }
+    catch(...)
+    {
+    }
     
     std::vector<std::string> pinyin;
     // to do!!
@@ -214,7 +220,13 @@ void CorrectionEngine::flush() const
 bool CorrectionEngine::correct(const std::string& str, std::string& results, double& freq) const
 {
     std::string userQuery = str;
-    ilplib::knlp::Normalize::normalize(userQuery);
+    try
+    {
+        ilplib::knlp::Normalize::normalize(userQuery);
+    }
+    catch(...)
+    {
+    }
     izenelib::util::UString uself(userQuery, izenelib::util::UString::UTF_8);
     if (uself.length() <= 1)
         return false;
