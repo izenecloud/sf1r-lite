@@ -18,8 +18,6 @@ AttrScoreCounter::AttrScoreCounter(
     : AttrCounter(attrTable, kMinValueCount)
     , categoryValueTable_(categoryValueTable)
     , attrTokenizeWrapper_(*AttrTokenizeWrapper::get())
-    , nameScoreTable_(attrTable.nameNum())
-    , valueScoreTable_(valueIdNum_)
 {
 }
 
@@ -35,9 +33,6 @@ void AttrScoreCounter::addDoc(docid_t doc)
     for (std::size_t i = 0; i < valueIdList.size(); ++i)
     {
         AttrTable::vid_t vId = valueIdList[i];
-
-        if (vId >= valueIdNum_)
-            continue;
 
         AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
         std::string nameStr;
@@ -68,12 +63,12 @@ void AttrScoreCounter::addDoc(docid_t doc)
     }
 }
 
-double AttrScoreCounter::getNameScore_(AttrTable::nid_t nameId) const
+double AttrScoreCounter::getNameScore_(AttrTable::nid_t nameId)
 {
     return nameScoreTable_[nameId];
 }
 
-double AttrScoreCounter::getValueScore_(AttrTable::vid_t valueId) const
+double AttrScoreCounter::getValueScore_(AttrTable::vid_t valueId)
 {
     return valueScoreTable_[valueId];
 }

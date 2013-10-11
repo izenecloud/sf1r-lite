@@ -33,10 +33,6 @@ AttrCounter::AttrCounter(
     int minValueCount)
     : attrTable_(attrTable)
     , minValueCount_(minValueCount)
-    , nameDocCountTable_(attrTable.nameNum())
-    , nameValueCountTable_(attrTable.nameNum())
-    , valueIdNum_(attrTable.valueNum())
-    , valueDocCountTable_(valueIdNum_)
 {
 }
 
@@ -49,15 +45,12 @@ void AttrCounter::addDoc(docid_t doc)
     for (std::size_t i = 0; i < valueIdList.size(); ++i)
     {
         AttrTable::vid_t vId = valueIdList[i];
-        if (vId < valueIdNum_)
-        {
-            ++valueDocCountTable_[vId];
+        ++valueDocCountTable_[vId];
 
-            AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
-            if (nameIdSet.insert(nameId).second)
-            {
-                ++nameDocCountTable_[nameId];
-            }
+        AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
+        if (nameIdSet.insert(nameId).second)
+        {
+            ++nameDocCountTable_[nameId];
         }
     }
 }
@@ -72,8 +65,7 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
     {
         AttrTable::vid_t vId = valueIdList[i];
 
-        if (vId < valueIdNum_ &&
-            attrTable_.valueId2NameId(vId) == nId)
+        if (attrTable_.valueId2NameId(vId) == nId)
         {
             ++valueDocCountTable_[vId];
             findNameId = true;
@@ -86,12 +78,12 @@ void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
     }
 }
 
-double AttrCounter::getNameScore_(AttrTable::nid_t nameId) const
+double AttrCounter::getNameScore_(AttrTable::nid_t nameId)
 {
     return nameDocCountTable_[nameId];
 }
 
-double AttrCounter::getValueScore_(AttrTable::vid_t valueId) const
+double AttrCounter::getValueScore_(AttrTable::vid_t valueId)
 {
     return valueDocCountTable_[valueId];
 }
@@ -109,9 +101,12 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep)
 
 void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap)
 {
-    for (std::size_t valueId = 1; valueId < valueDocCountTable_.size(); ++valueId)
+    for (ValueDocCountTable::const_iterator it = valueDocCountTable_.begin();
+         it != valueDocCountTable_.end(); ++it)
     {
+        AttrTable::vid_t valueId = it->first;
         double score = getValueScore_(valueId);
+
         if (score > 0)
         {
             AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
@@ -123,18 +118,22 @@ void AttrCounter::getNameValueMap_(NameValueMap& nameValueMap)
 
 void AttrCounter::getTopNameIds_(
     int topNum,
-    std::vector<AttrTable::nid_t>& topNameIds) const
+    std::vector<AttrTable::nid_t>& topNameIds)
 {
     if (topNum == 0)
     {
-        topNum = nameDocCountTable_.size();
+        topNum = nameValueCountTable_.size();
     }
 
     AttrScoreQueue queue(topNum);
-    for (size_t nameId = 0; nameId < nameDocCountTable_.size(); ++nameId)
+    for (NameValueCountTable::const_iterator it = nameValueCountTable_.begin();
+         it != nameValueCountTable_.end(); ++it)
     {
+        AttrTable::nid_t nameId = it->first;
+        int valueCount = it->second;
         double score = getNameScore_(nameId);
-        if (score > 0 && nameValueCountTable_[nameId] >= minValueCount_)
+
+        if (score > 0 && valueCount >= minValueCount_)
         {
             AttrScore attrScore(nameId, score);
             queue.insert(attrScore);
@@ -152,7 +151,7 @@ void AttrCounter::getTopNameIds_(
 void AttrCounter::generateGroupRep_(
     const AttrNameIds& topNameIds,
     NameValueMap& nameValueMap,
-    OntologyRep& groupRep) const
+    OntologyRep& groupRep)
 {
     std::list<sf1r::faceted::OntologyRepItem>& itemList = groupRep.item_list;
 

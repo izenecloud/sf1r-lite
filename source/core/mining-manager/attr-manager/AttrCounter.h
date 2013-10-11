@@ -13,6 +13,7 @@
 #include "../faceted-submanager/ontology_rep.h"
 
 #include <vector>
+#include <map>
 
 NS_FACETED_BEGIN
 
@@ -32,15 +33,15 @@ public:
     void getGroupRep(int topGroupNum, OntologyRep& groupRep);
 
 protected:
-    virtual double getNameScore_(AttrTable::nid_t nameId) const;
+    virtual double getNameScore_(AttrTable::nid_t nameId);
 
-    virtual double getValueScore_(AttrTable::vid_t valueId) const;
+    virtual double getValueScore_(AttrTable::vid_t valueId);
 
     typedef std::vector<AttrTable::nid_t> AttrNameIds;
 
     void getTopNameIds_(
         int topNum,
-        AttrNameIds& topNameIds) const;
+        AttrNameIds& topNameIds);
 
     typedef std::multimap<double, AttrTable::vid_t> ScoreValueMap;
     typedef std::map<AttrTable::nid_t, ScoreValueMap> NameValueMap;
@@ -50,7 +51,7 @@ protected:
     void generateGroupRep_(
         const AttrNameIds& topNameIds,
         NameValueMap& nameValueMap,
-        OntologyRep& groupRep) const;
+        OntologyRep& groupRep);
 
 protected:
     const AttrTable& attrTable_;
@@ -62,16 +63,15 @@ protected:
     const int minValueCount_;
 
     /** map from name id to doc count */
-    std::vector<int> nameDocCountTable_;
+    std::map<AttrTable::nid_t, int> nameDocCountTable_;
 
     /** map from name id to value count */
-    std::vector<int> nameValueCountTable_;
-
-    /** the number of value ids */
-    const std::size_t valueIdNum_;
+    typedef std::map<AttrTable::nid_t, int> NameValueCountTable;
+    NameValueCountTable nameValueCountTable_;
 
     /** map from value id to doc count */
-    std::vector<int> valueDocCountTable_;
+    typedef std::map<AttrTable::vid_t, int> ValueDocCountTable;
+    ValueDocCountTable valueDocCountTable_;
 };
 
 NS_FACETED_END

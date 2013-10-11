@@ -27,9 +27,9 @@ public:
     virtual void addDoc(docid_t doc);
 
 protected:
-    virtual double getNameScore_(AttrTable::nid_t nameId) const;
+    virtual double getNameScore_(AttrTable::nid_t nameId);
 
-    virtual double getValueScore_(AttrTable::vid_t valueId) const;
+    virtual double getValueScore_(AttrTable::vid_t valueId);
 
 private:
     void nameStr_(AttrTable::nid_t nameId, std::string& nameStr) const;
@@ -44,10 +44,10 @@ private:
     AttrTokenizeWrapper& attrTokenizeWrapper_;
 
     /** map from name id to score */
-    std::vector<double> nameScoreTable_;
+    std::map<AttrTable::nid_t, double> nameScoreTable_;
 
     /** map from value id to score */
-    std::vector<double> valueScoreTable_;
+    std::map<AttrTable::vid_t, double> valueScoreTable_;
 };
 
 NS_FACETED_END
