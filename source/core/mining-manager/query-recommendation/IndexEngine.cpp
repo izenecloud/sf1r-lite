@@ -9,54 +9,16 @@ namespace sf1r
 namespace Recommend
 {
 
-//static std::string uuid = ".Determiner";
 IndexEngine::IndexEngine(const std::string& dir)
     : db_(NULL)
     , idManager_(NULL)
-    , bf_(NULL)
-    , tokenizer_(NULL)
     , dir_(dir)
 {
     open_();
-    
-    bf_ = new BloomFilter(32, 1e-8, 32);
-    //std::string path = dir_;
-    //path += "/";
-    //path += uuid;
-
-    //if(boost::filesystem::exists(path))
-    //{
-    //    std::ifstream in;
-    //    in.open(path.c_str(), std::ifstream::in);
-    //    bf_->load(in);
-    //}
-    //else
-    {
-        bf_->Insert("新款");
-        bf_->Insert("正品");
-        bf_->Insert("包邮");
-        bf_->Insert("秒杀");
-        bf_->Insert("清仓");
-        bf_->Insert("特级");
-        bf_->Insert("加厚");
-        bf_->Insert("特大");
-        bf_->Insert("男");
-        bf_->Insert("男式");
-        bf_->Insert("女");
-        bf_->Insert("女式");
-        bf_->Insert("2011");
-        bf_->Insert("2012");
-        bf_->Insert("2013");
-    }
 }
 
 IndexEngine::~IndexEngine()
 {
-    if (NULL != bf_)
-    {
-        delete bf_;
-        bf_ = NULL;
-    }
     close_();
 }
 
@@ -94,28 +56,17 @@ void IndexEngine::close_()
     }
 }
 
-void IndexEngine::clear()
-{
-
-}
-
 void IndexEngine::flush()
 {
     static uint32_t docId = 1;
     static StringUtil::HashFunc generator;
-   
-    if (tokenizer_ == NULL)
-        return;
-
-    boost::unordered_map<std::string, uint32_t>::iterator it =  userQueries_.begin();
+    
+    boost::unordered_map<std::string, std::pair<uint32_t, Tokenize::TermVector> >::iterator it =  userQueries_.begin();
     for (; it != userQueries_.end(); it++)
     {
-        Tokenize::TermVector tv;
-        (*tokenizer_)(it->first, tv);
-
         MIRDocument doc;
-        Tokenize::TermVector::iterator it_tokens = tv.begin();
-        for (; it_tokens != tv.end(); it_tokens++)
+        Tokenize::TermVector::iterator it_tokens = it->second.second.begin();
+        for (; it_tokens != it->second.second.end(); it_tokens++)
         {
             izenelib::ir::irdb::IRTerm term;
             term.termId_ = generator(it_tokens->term());
@@ -125,10 +76,10 @@ void IndexEngine::flush()
         }
         
         uint16_t count = 0;
-        if (it->second > std::numeric_limits<uint16_t>::max())
+        if (it->second.first > std::numeric_limits<uint16_t>::max())
             count = std::numeric_limits<uint16_t>::max();
         else
-            count = it->second;
+            count = it->second.first;
         doc.setData<0>((uint8_t)count);
         doc.setData<1>((uint8_t)(count>>8));
         db_->addDocument(docId, doc);
@@ -147,80 +98,25 @@ void IndexEngine::flush()
     {
         idManager_->Flush();
     }
-    
-    /*std::string path = dir_;
-    path += "/";
-    path += uuid;
-    
-    std::ofstream out;
-    out.open(path.c_str(), std::ofstream::out | std::ofstream::trunc);
-    bf_->save(out);*/
 }
 
-void IndexEngine::insert(const std::string& userQuery, uint32_t count)
+void IndexEngine::insert(Tokenize::TermVector& tv, const std::string& str, uint32_t count)
 {
-    /*std::string nstr = "";
-    for (std::size_t i = 0; i < str.size(); i++)
-    {
-        if (!isspace(str[i])
-            nstr += str[i];
-    }*/
 
-    boost::unordered_map<std::string, uint32_t>::iterator it =  userQueries_.find(userQuery);
+    boost::unordered_map<std::string, std::pair<uint32_t, Tokenize::TermVector> >::iterator it =  userQueries_.find(str);
     if (userQueries_.end() == it)
     {
-        userQueries_.insert(std::make_pair(userQuery, count));
+        userQueries_.insert(std::make_pair(str, std::make_pair(count, tv)));
     }
     else
     {
-        it->second += count;
+        it->second.first += count;
     }
 }
 
-void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equaler) const
+void IndexEngine::search(Tokenize::TermVector& tv, FreqStringVector& strs)
 {
     static StringUtil::HashFunc generator;
-   
-    if (tokenizer_ == NULL)
-        return;
-    
-    /*std::string query = userQuery;
-
-    Tokenize::TermVector tv;
-    izenelib::util::UString uQuery(query, izenelib::util::UString::UTF_8);
-    static izenelib::util::UString MAN("男", izenelib::util::UString::UTF_8);
-    static izenelib::util::UString WOMAN("女", izenelib::util::UString::UTF_8);
-    izenelib::util::UString uq;
-    for (std::size_t i = 0; i < uQuery.length(); i++)
-    {
-        {
-            if (MAN[0] == uQuery[i] || WOMAN[0] == uQuery[i])
-            {
-                izenelib::util::UString uTerm;
-                uTerm += uQuery[i];
-                Tokenize::Term item(uTerm, 0.0);
-                tv.push_back(item);
-            }
-            else
-            {
-                uq += uQuery[i];
-            }
-        }
-    }
-    if (uq.length() > 1)
-    {
-        query.clear();
-        uq.convertString(query, izenelib::util::UString::UTF_8);
-    }
-    else
-    {
-        tv.clear();
-    }
-    
-    (*tokenizer_)(query, tv);*/
-    Tokenize::TermVector tv;
-    (*tokenizer_)(userQuery, tv);
-    
     Tokenize::TermVector::iterator it = tv.begin();
     izenelib::am::rde_hash<uint32_t, uint32_t> posMap;
     uint32_t *pos = NULL;
@@ -231,6 +127,7 @@ void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate,
     {
         const std::string term = it->term();
         termid_t termId= generator(term);
+        
         try
         {
             std::deque<docid_t> docIdList;
@@ -250,8 +147,6 @@ void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate,
                     
                     if (NULL == (pos = posMap.find(docIdList[ii])))
                     {
-                        if ((bf_->Get(term)) && (tv.size() > 1))
-                            continue;
                         posMap.insert(docIdList[ii], seq.size());
                         seq.push_back(std::make_pair(docIdList[ii], count));
                     }
@@ -269,58 +164,19 @@ void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate,
         }
     }
     std::sort(seq.begin(), seq.end(), greater_than());
-
-    boost::unordered_map<std::string, std::size_t> pFreq;
-    boost::unordered_map<std::string, std::size_t> pCate;
-    uint32_t n = 0;
     for (std::size_t i = 0; i < seq.size(); i++)
     {
         izenelib::util::UString ustr;
         idManager_->GetStringById(seq[i].first, ustr);
         std::string str;
         ustr.convertString(str, izenelib::util::UString::UTF_8);
-        
-        if (StringUtil::isNeedRemove(str, userQuery))
-            continue;
-        
-        std::string rstr; // string removed space
-        StringUtil::removeSpace(str, rstr);
-        std::string srstr(rstr); // sorted removed space string
-        std::sort(srstr.begin(), srstr.end());
-        
-        if((*equaler)(userQuery, str))
-        {
-            boost::unordered_map<std::string, std::size_t>::iterator pit = pCate.find(srstr);
-            if (pCate.end() == pit)
-            {
-                pCate.insert(std::make_pair(srstr, byCate.size()));
-                FreqString item(rstr, seq[i].second);
-                byCate.push_back(item);
-                if (++n >= N)
-                    break;
-            }
-            else
-            {
-                byCate[pit->second].setFreq(byCate[pit->second].getFreq() + seq[i].second);
-            }
-        }
-        else 
-        {
-            if (byFreq.size() > N)
-                continue;
-            boost::unordered_map<std::string, std::size_t>::iterator pit = pFreq.find(srstr);
-            if (pFreq.end() == pit)
-            {
-                pFreq.insert(std::make_pair(srstr, byFreq.size()));
-                FreqString item(rstr, seq[i].second);
-                byFreq.push_back(item);
-            }
-            else
-            {
-                byFreq[pit->second].setFreq(byFreq[pit->second].getFreq() + seq[i].second);
-            }
-        }
+                     
+        FreqString item(str, seq[i].second);
+        strs.push_back(item);
     }
+    //std::sort(strs.begin(), strs.end());
+    //std::reverse(strs.begin(), strs.end());
+    //StringUtil::removeDuplicate(strs);
 }
 
 }

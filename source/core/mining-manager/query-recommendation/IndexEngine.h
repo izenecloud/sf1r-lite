@@ -1,8 +1,6 @@
 #ifndef INDEXE_ENGINE_H
 #define INDEXE_ENGINE_H
 
-#include <util/DynamicBloomFilter.h>
-
 #include <mining-manager/concept-id-manager.h>
 #include <ir/ir_database/IRDatabase.hpp>
 #include <am/sequence_file/SequenceFile.hpp>
@@ -11,8 +9,6 @@
 
 #include "tokenize/Tokenizer.h"
 #include "StringUtil.h"
-
-#include "UserQueryCateTable.h"
 
 namespace sf1r
 {
@@ -25,36 +21,25 @@ class IndexEngine
     typedef boost::mpl::vector<izenelib::am::SequenceFile<uint8_t>, izenelib::am::SequenceFile<uint8_t> > IR_DB_TYPES;
     typedef izenelib::ir::irdb::IRDatabase<IR_DATA_TYPES, IR_DB_TYPES> MIRDatabase;
     typedef izenelib::ir::irdb::IRDocument<IR_DATA_TYPES> MIRDocument;
-    typedef izenelib::util::DynamicBloomFilter<std::string> BloomFilter;
 
 public:
     IndexEngine(const std::string& dir);
     ~IndexEngine();
 
 public:
-    void insert(const std::string& userQuery, uint32_t count);
-    void search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equler) const;
-
+    void insert(Tokenize::TermVector& tv, const std::string& str, uint32_t count);
+    void search(Tokenize::TermVector& tv, FreqStringVector& strs);
     void flush();
-    void clear();
-    
-    void setTokenizer(Tokenize::Tokenizer* tokenizer)
-    {
-        tokenizer_ = tokenizer;
-    }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(IndexEngine);
     void open_();
     void close_();
 private:
-    boost::unordered_map<std::string, uint32_t> userQueries_;
+    boost::unordered_map<std::string, std::pair<uint32_t, Tokenize::TermVector> > userQueries_;
     MIRDatabase* db_;
     sf1r::ConceptIDManager* idManager_;
-    BloomFilter* bf_;
-    Tokenize::Tokenizer* tokenizer_;
     const std::string dir_;
-    
-    DISALLOW_COPY_AND_ASSIGN(IndexEngine);
 };
 
 }

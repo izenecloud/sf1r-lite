@@ -138,10 +138,6 @@ void tuneByEditDistance(FreqStringVector& vector, const std::string& str);
 FreqString max(FreqStringVector& v);
 
 bool isEnglish(const std::string& userQuery);
-
-bool isNeedRemove(const std::string& lv, const std::string& rv);
-
-void removeSpace(const std::string& src, std::string& tar);
 }
 }
 }

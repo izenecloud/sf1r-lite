@@ -37,7 +37,7 @@ private:
 typedef std::vector<Term> TermVector;
 typedef boost::function<void(const std::string&, TermVector&)> Tokenizer;
 
-Tokenizer* getTokenizer_();
+Tokenizer* getTokenizer();
 }
 }
 }

@@ -15,7 +15,6 @@
 #include "query-recommend-submanager/QueryRecommendSubmanager.h"
 #include "query-recommend-submanager/RecommendManager.h"
 #include "query-recommend-submanager/QueryRecommendRep.h"
-#include "query-recommendation/RecommendEngineWrapper.h"
 
 #include "taxonomy-generation-submanager/TaxonomyGenerationSubManager.h"
 #include "taxonomy-generation-submanager/label_similarity.h"
@@ -1395,19 +1394,16 @@ bool MiningManager::getSimilarImageDocIdList(
 //
 // }
 
-//bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
-//                                       QueryRecommendRep & recommendRep)
 bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
-                                       std::deque<izenelib::util::UString >& recommendQueries)
+                                       QueryRecommendRep & recommendRep)
 {
     //struct timeval tv_start;
     //struct timeval tv_end;
     //gettimeofday(&tv_start, NULL);
-    //qrManager_->getRecommendQuery(queryStr, miningConfig_.recommend_param.recommend_num, recommendRep);
+    qrManager_->getRecommendQuery(queryStr, miningConfig_.recommend_param.recommend_num, recommendRep);
     //gettimeofday(&tv_end, NULL);
     //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
     //std::cout << "QR all cost " << timespend << " seconds." << std::endl;
-    RecommendEngineWrapper::getInstance().recommend(queryStr, miningConfig_.recommend_param.recommend_num, recommendQueries);
     return true;
 }
 
@@ -1713,19 +1709,14 @@ bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
     miaInput.relatedQueryList_.clear();
     miaInput.rqScore_.clear();
     bool ret = false;
-    //QueryRecommendRep recommendRep;
-    //ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
-    //                         miaInput.encodingType_), recommendRep);
-    //LOG(INFO) << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
-    //miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
-    //miaInput.rqScore_ = recommendRep.scores_;
-    
-    std::deque<izenelib::util::UString > recommendQueries;
+    QueryRecommendRep recommendRep;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
-                             miaInput.encodingType_), recommendQueries);
-    miaInput.relatedQueryList_ = recommendQueries;
+                             miaInput.encodingType_), recommendRep);
+    LOG(INFO) << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
+    miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
+    miaInput.rqScore_ = recommendRep.scores_;
 
-    /*if (!ret)
+    if (!ret)
     {
         std::string msg = "error at getting related queries";
         if (recommendRep.error_.length() > 0)
@@ -1733,7 +1724,7 @@ bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
             msg = recommendRep.error_;
         }
         miaInput.error_ += "[QR: "+msg+"]";
-    }*/
+    }
 
     return ret;
 }

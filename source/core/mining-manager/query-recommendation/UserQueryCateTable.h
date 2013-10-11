@@ -3,39 +3,14 @@
 
 #include <boost/unordered_map.hpp>
 #include <queue>
-#include <boost/function.hpp>
 
 namespace sf1r
 {
 namespace Recommend
 {
 
-
-typedef boost::function<bool(const std::string&, const std::string&)> CateEqualer;
-
 class UserQueryCateTable
 {
-typedef std::pair<std::string, uint32_t> CateT;
-typedef std::vector<CateT> CateV;
-public:
-    UserQueryCateTable(const std::string& workdir);
-    ~UserQueryCateTable();
-
-public:
-    void insert(const std::string& userQuery, const std::string cate, uint32_t freq);
-    void search(const std::string& userQuery, std::vector<std::pair<std::string, uint32_t> >& results) const;
-    bool cateEqual(const std::string& lv, const std::string& rv) const;
-    
-    void flush() const;
-    void clear();
-
-    friend std::ostream& operator<<(std::ostream& out, const UserQueryCateTable& tc);
-    friend std::istream& operator>>(std::istream& in,  UserQueryCateTable& tc);
-
-private:
-    boost::unordered_map<std::string, CateV> table_;
-    std::string workdir_;
-/*
 public:
     class UserQuery
     {
@@ -80,7 +55,6 @@ private:
     boost::unordered_map<std::string, TopNQueue> topNUserQuery_;
     std::string workdir_;
     static std::size_t N;
-*/
 };
 
 }

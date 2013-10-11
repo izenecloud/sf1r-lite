@@ -23,7 +23,6 @@
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
-#include <mining-manager/query-recommendation/RecommendEngineWrapper.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <common/OnSignal.h>
@@ -170,9 +169,6 @@ void CobraProcess::initQuery()
     CorrectionEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
     CorrectionEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
     CorrectionEngineWrapper::getInstance();
-    RecommendEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
-    RecommendEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
-    RecommendEngineWrapper::getInstance();
     //QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
     //QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();

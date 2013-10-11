@@ -140,50 +140,10 @@ void removeItem(FreqStringVector& strs, const std::string& str)
 {
     for (std::size_t i = 0; i < strs.size(); i++)
     {
-        std::string pstr= strs[i].getString();
-        bool remove = true;
-        for (std::size_t ii = 0; ii < pstr.size(); ii++)
-        {
-            if (isspace(pstr[ii]))
-                continue;
-            if (std::string::npos == str.find(pstr[ii]))
-            {
-                remove = false;
-                break;
-            }
-        }
-        if (remove)
+        if (str == strs[i].getString())
             strs[i].remove();
-        //if (str == strs[i].getString())
-        //    strs[i].remove();
     }
     resize(strs);
-}
-
-bool isNeedRemove(const std::string& lv, const std::string& rv)
-{
-    bool remove = true;
-    for (std::size_t i = 0; i < lv.size(); i++)
-    {
-        if (isspace(lv[i]))
-            continue;
-        if (std::string::npos == rv.find(lv[i]))
-        {
-            remove = false;
-            break;
-        }
-    }
-    if (std::string::npos != lv.find("男"))
-    {
-        if (std::string::npos != rv.find("女"))
-            return true;
-    }
-    if (std::string::npos != lv.find("女"))
-    {
-        if (std::string::npos != rv.find("男"))
-            return true;
-    }
-    return remove;
 }
 
 void resize(FreqStringVector& strs)
@@ -362,15 +322,6 @@ bool isEnglish(const std::string& userQuery)
         }
     }
     return ret;
-}
-
-void removeSpace(const std::string& src, std::string& tar)
-{
-    for (std::size_t i = 0; i < src.size(); i++)
-    {
-        if (!isspace(src[i]))
-            tar += src[i];
-    }
 }
 
 }

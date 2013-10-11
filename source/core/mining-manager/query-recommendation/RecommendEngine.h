@@ -1,8 +1,10 @@
 #ifndef RECOMMEND_ENGINE_H
 #define RECOMMEND_ENGINE_H
 
+#include "tokenize/Tokenizer.h"
 #include "parser/Parser.h"
 #include "parser/ParserFactory.h"
+#include "TermCateTable.h"
 #include "UserQueryCateTable.h"
 #include "IndexEngine.h"
 #include <string>
@@ -19,29 +21,40 @@ public:
 
 public:
     void buildEngine(const std::string& path = "");
-    bool isNeedBuild(const std::string& path = "") const;
     void recommend(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const;
     void evaluate(const std::string& path = "") const;
-    
-    void flush() const;
-    void clear();
+
 
     void setTokenizer(Tokenize::Tokenizer* tokenizer)
     {
-        indexer_->setTokenizer(tokenizer);
+        tokenizer_ = tokenizer;
+    }
+
+    const Tokenize::Tokenizer* tokenizer() const
+    {
+        return tokenizer_;
+    }
+
+    void setWorkDirectory(const std::string& dir)
+    {
+        workdir_ = dir;
+    }
+
+    const std::string& workDirectory() const
+    {
+        return workdir_;
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(RecommendEngine);
     void processQuery(const std::string& userQuery, const std::string& category, const uint32_t freq);
-    void recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const;
 private:
+    Tokenize::Tokenizer* tokenizer_;
     ParserFactory* parsers_;
+    TermCateTable* tcTable_;
     UserQueryCateTable* uqcTable_;
     IndexEngine* indexer_;
-    std::time_t timestamp_;
     std::string workdir_;
-    
-    DISALLOW_COPY_AND_ASSIGN(RecommendEngine);
 };
 }
 }
