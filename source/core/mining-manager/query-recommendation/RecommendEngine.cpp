@@ -291,7 +291,7 @@ bool RecommendEngine::isNeedBuild(const std::string& path) const
         if(boost::filesystem::is_regular_file(p))
         {
             //std::cout<<p<<"\n";
-            if (!parsers_->isValid(p))
+            if (!TaobaoParser::isValid(p))
                 continue;
             std::time_t mt = boost::filesystem::last_write_time(it->path());
             if (mt > timestamp_)
@@ -320,7 +320,7 @@ void RecommendEngine::buildEngine(const std::string& path)
         if(boost::filesystem::is_regular_file(p))
         {
             //std::cout<<p<<"\n";
-            if (!parsers_->isValid(p))
+            if (!TaobaoParser::isValid(p))
                 continue;
             Parser* parser = parsers_->load(p);
             Parser::iterator it = parser->begin();
