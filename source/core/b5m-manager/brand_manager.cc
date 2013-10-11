@@ -15,6 +15,7 @@ BrandManager::~BrandManager()
 bool BrandManager::Load(const std::string& path)
 {
     if(!boost::filesystem::exists(path)) return false;
+    LOG(INFO)<<"loading brand manager at "<<path<<std::endl;
     izenelib::am::ssf::Util<>::Load(path, map_);
     return true;
 }
@@ -55,7 +56,7 @@ void BrandManager::Insert(const std::string& category, const std::string& title,
     std::string lbrand = boost::algorithm::to_lower_copy(brand);
     if(IsErrorBrand(lbrand)) 
     {
-        std::cerr<<"find error brand "<<lbrand<<std::endl;
+        //std::cerr<<"find error brand "<<lbrand<<std::endl;
         return;
     }
     boost::unique_lock<boost::mutex> lock(mutex_);

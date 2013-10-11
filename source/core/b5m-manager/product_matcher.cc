@@ -421,7 +421,7 @@ bool ProductMatcher::Open(const std::string& kpath)
         }
         catch(std::exception& ex)
         {
-            LOG(ERROR)<<"product matcher open failed"<<std::endl;
+            LOG(ERROR)<<"product matcher open failed : "<<ex.what()<<std::endl;
             return false;
         }
         is_open_ = true;

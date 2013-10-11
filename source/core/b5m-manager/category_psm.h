@@ -110,9 +110,13 @@ namespace sf1r {
             error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
             error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
             error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
+            LOG(INFO)<<"loading garbage"<<std::endl;
             gp_ = new ilplib::knlp::GarbagePattern(knowledge+"/garbage.pat");
+            LOG(INFO)<<"loading detector"<<std::endl;
             attr_ = new ilplib::knlp::ClusterDetector(knowledge+"/product_name.dict", knowledge+"/att.syn", gp_);
+            LOG(INFO)<<"loading normalize"<<std::endl;
             attrn_ = new ilplib::knlp::AttributeNormalize(knowledge+"/att.syn");
+            LOG(INFO)<<"category psm init finish"<<std::endl;
         }
         ~CategoryPsm()
         {
@@ -135,7 +139,7 @@ namespace sf1r {
             {
                 std::string p = path+"/result";
                 std::map<BufferKey, std::vector<Group> > rmap;
-                izenelib::am::ssf::Util<>::Load(p, rmap);
+                izenelib::am::ssf::Util<uint64_t>::Load(p, rmap);
                 result_.insert(rmap.begin(), rmap.end());
                 LOG(INFO)<<"psm result size "<<result_.size()<<std::endl;
                 p = path+"/brands";
@@ -362,7 +366,7 @@ namespace sf1r {
                 {
                     LOG(INFO)<<"Processing clustering "<<p<<std::endl;
                 }
-                //continue;
+                continue;
                 ResultMap::const_iterator rit = result_.find(it->first);
                 if(rit!=result_.end())
                 {
@@ -458,7 +462,7 @@ namespace sf1r {
             B5MHelper::PrepareEmptyDir(path);
             std::string pa = path+"/result";
             std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
-            izenelib::am::ssf::Util<>::Save(pa, rmap);
+            izenelib::am::ssf::Util<uint64_t>::Save(pa, rmap);
             pa = path+"/brands";
             izenelib::am::ssf::Util<>::Save(pa, brand_set_);
             std::set<std::string> attr_stdset(attr_set_.begin(), attr_set_.end());
@@ -691,6 +695,15 @@ namespace sf1r {
                 GroupCentroid_(groups[i]);
             }
             std::stable_sort(groups.begin(), groups.end());
+            //for(uint32_t i=0;i<groups.size();i++)
+            //{
+            //    Group& g = groups[i];
+            //    g.brands.clear();
+            //    for(uint32_t j=0;j<g.items.size();j++)
+            //    {
+            //        g.items[j].brands.clear();
+            //    }
+            //}
             result_.insert(std::make_pair(key, groups));
             //result_[key] = groups;
         }
