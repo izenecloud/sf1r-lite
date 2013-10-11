@@ -34,9 +34,13 @@ ZambeziManager::ZambeziManager(const ZambeziConfig& config,
 
 bool ZambeziManager::open()
 {
-    std::ifstream ifs(config_.indexFilePath.c_str(), std::ios_base::binary);
+    const std::string& path = config_.indexFilePath;
+    std::ifstream ifs(path.c_str(), std::ios_base::binary);
+
     if (! ifs)
         return true;
+
+    LOG(INFO) << "loading zambezi index path: " << path;
 
     try
     {
@@ -45,9 +49,12 @@ bool ZambeziManager::open()
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception in read file: " << e.what()
-                   << ", path: " << config_.indexFilePath;
+                   << ", path: " << path;
         return false;
     }
+
+    LOG(INFO) << "finished loading zambezi index, total doc num: "
+              << indexer_.totalDocNum();
 
     return true;
 }
