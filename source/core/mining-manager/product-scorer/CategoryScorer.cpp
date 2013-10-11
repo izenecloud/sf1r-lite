@@ -16,7 +16,7 @@ CategoryScorer::CategoryScorer(
              rit = topLabels.rbegin(); rit != topLabels.rend(); ++rit)
     {
         categoryScores_[*rit] = score;
-        ++score;
+        //++score;
     }
 }
 
