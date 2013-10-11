@@ -100,6 +100,7 @@ void CorrectionEngine::evaluate(const std::string& path) const
                 if (correct(it->userQuery(), result, freq))
                     out<<it->userQuery()<<"\t"<<result<<"\t"<<freq<<"\n";
             }
+            delete parser;
             out.close();
         }
     }
@@ -160,6 +161,7 @@ void CorrectionEngine::buildEngine(const std::string& path)
                 //std::cout<<it->userQuery()<<" : "<<it->freq()<<"\n";
                 processQuery(it->userQuery(), it->freq());
             }
+            delete parser;
         }
     }
     
