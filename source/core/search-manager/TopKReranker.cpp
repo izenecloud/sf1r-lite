@@ -45,7 +45,8 @@ bool TopKReranker::rerank(
         productRanker->rank();
 
         LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
-                  << ", product rerank costs: " << timer.elapsed()
+                  << ", rerank doc num: " << rankParam.docNum_
+                  << ", rerank costs: " << timer.elapsed()
                   << " seconds";
 
         return true;
