@@ -814,6 +814,7 @@ namespace sf1r {
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
         bool GetKeyword(const UString& text, KeywordTag& tag);
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
+        void GetKeywords(const UString& text, KeywordVector& keywords);
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_ca, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_brand, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >&res_model);
         void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > >& res);
         void ExtractKeywords(const UString& text, KeywordVector& keywords);
