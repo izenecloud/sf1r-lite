@@ -46,7 +46,7 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
 
 void B5moProcessor::Process(ScdDocument& doc)
 {
-    SCD_TYPE type = doc.type;
+    SCD_TYPE& type = doc.type;
     static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;
     //reset type
@@ -115,6 +115,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     std::string old_spid;
     if(type==RTYPE_SCD)
     {
+        boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
             doc.property("uuid") = str_to_propstr(spid);
@@ -155,27 +156,6 @@ void B5moProcessor::Process(ScdDocument& doc)
     {
         changed_match_.erase(oid);
     }
-    //if(sorter_!=NULL)
-    //{
-        //if(type!=DELETE_SCD)
-        //{
-            //ScdDocument sdoc(doc, type);
-            //sorter_->Append(sdoc, ts_);
-            //if(old_spid!=spid&&!old_spid.empty())
-            //{
-                //ScdDocument old_doc;
-                //old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
-                //old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
-                //old_doc.type=DELETE_SCD;
-                //sorter_->Append(old_doc, last_ts_);
-            //}
-        //}
-        //else
-        //{
-            //ScdDocument sdoc(doc, DELETE_SCD);
-            //sorter_->Append(sdoc, ts_);
-        //}
-    //}
 }
 void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
 {

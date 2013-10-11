@@ -5,6 +5,7 @@
 #include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
 
 #include <util/ustring/UString.h>
 
@@ -68,7 +69,7 @@ void QueryCorrectionController::index()
 {
     std::string queryString = asString(request()[Keys::keywords]);
 
-    UString queryUString(queryString, UString::UTF_8);
+    /*UString queryUString(queryString, UString::UTF_8);
     UString refinedQueryUString;
 
     if (collectionName_.empty())
@@ -84,8 +85,14 @@ void QueryCorrectionController::index()
 
     std::string refinedQueryString;
     refinedQueryUString.convertString(refinedQueryString,
-                                     izenelib::util::UString::UTF_8);
-    response()[Keys::refined_query] = refinedQueryString;
+                                     izenelib::util::UString::UTF_8);*/
+    std::string refinedQueryString;
+    double factor = 0.0;
+    if (CorrectionEngineWrapper::getInstance().correct(queryString, refinedQueryString, factor))
+        response()[Keys::refined_query] = refinedQueryString;
+    else
+        response()[Keys::refined_query] = "";
+        
 }
 
 } // namespace sf1r

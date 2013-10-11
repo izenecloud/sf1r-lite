@@ -97,6 +97,8 @@ struct GroupParam
     /** selected attribute labels */
     AttrLabelMap attrLabels_;
 
+    int searchMode_;
+
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
@@ -104,11 +106,13 @@ struct GroupParam
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_
-                      &isAttrGroup_&attrGroupNum_&attrLabels_);
+                      &isAttrGroup_&attrGroupNum_&attrLabels_
+                      &searchMode_);
 
     MSGPACK_DEFINE(groupProps_, groupLabels_,
                    autoSelectLimits_, boostGroupLabels_,
-                   isAttrGroup_, attrGroupNum_, attrLabels_);
+                   isAttrGroup_, attrGroupNum_, attrLabels_,
+                   searchMode_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -120,6 +124,7 @@ struct GroupParam
         ar & isAttrGroup_;
         ar & attrGroupNum_;
         ar & attrLabels_;
+        ar & searchMode_;
     }
 
 private:

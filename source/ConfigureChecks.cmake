@@ -47,6 +47,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   sf1r
   NUMA
   re2
+  zambezi
   )
 
 FIND_PACKAGE(ilplib REQUIRED)

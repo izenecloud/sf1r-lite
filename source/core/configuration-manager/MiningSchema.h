@@ -8,7 +8,7 @@
 #include "SummarizeConfig.h"
 #include "SuffixMatchConfig.h"
 #include "QueryIntentConfig.h"
-
+#include "ZambeziConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -108,6 +108,8 @@ public:
 
     bool query_intent_enable;
     QueryIntentConfig query_intent_config;
+
+    ZambeziConfig zambezi_config;
 };
 
 } // namespace

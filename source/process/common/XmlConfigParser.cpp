@@ -1194,7 +1194,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get("Sia/refreshsearchcache", indexBundleConfig.refreshSearchCache_);
-    params.Get<time_t>("Sia/refreshcacheinterval", indexBundleConfig.refreshCacheInterval_);	
+    params.Get<time_t>("Sia/refreshcacheinterval", indexBundleConfig.refreshCacheInterval_);
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
@@ -1720,7 +1720,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.summarization_schema.isSyncSCDOnly= true;
         else
             mining_schema.summarization_schema.isSyncSCDOnly= false;
-    
+
         {
             Iterator<Element> it("DocidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -2091,7 +2091,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
             mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
             mining_schema.suffixmatch_schema.suffix_match_enable = true;
-            
+
             PropertyConfig property;
             property.setName(property_name);
             IndexBundleSchema::iterator sp = collectionMeta.indexBundleConfig_->indexSchema_.find(property);
@@ -2244,14 +2244,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         std::sort(mining_schema.suffixmatch_schema.date_filter_properties.begin(), mining_schema.suffixmatch_schema.date_filter_properties.end());
         std::sort(mining_schema.suffixmatch_schema.num_filter_properties.begin(), mining_schema.suffixmatch_schema.num_filter_properties.end());
     }
-    
+
     task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
     if (task_node)
     {
         mining_schema.product_matcher_enable = true;
         getAttribute(task_node, "mode", mining_schema.product_categorizer_mode, false);
     }
-    
+
     task_node = getUniqChildElement(mining_schema_node, "QueryIntent", false);
     mining_schema.query_intent_enable = false;
     if (task_node)
@@ -2267,7 +2267,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             getAttribute(cate_node, "type", type);
             getAttribute(cate_node, "operator", op);
             getAttribute_IntType(cate_node, "operands", operands);
-    
+
             IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
             PropertyConfig p;
             p.setName(prop_name);
@@ -2319,6 +2319,27 @@ NEXT:
             mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op, operands);
         }
     }
+
+    task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
+    parseZambeziNode(task_node, collectionMeta);
+}
+
+void CollectionConfig::parseZambeziNode(
+    const ticpp::Element* zambeziNode,
+    CollectionMeta& collectionMeta) const
+{
+    if (!zambeziNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+
+    getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
+    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
+    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
+    zambeziConfig.isEnable = true;
 }
 
 void CollectionConfig::parseProductRankingNode(

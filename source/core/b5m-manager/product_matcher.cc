@@ -2844,6 +2844,12 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
     }
 
 }
+void ProductMatcher::GetKeywords(const UString& text, KeywordVector& keywords)
+{
+    ATermList term_list;
+    Analyze_(text, term_list);
+    GetKeywords(term_list, keywords, false);
+}
 
 void ProductMatcher::ExtractKeywords(const UString& text, KeywordVector& keywords)
 {
