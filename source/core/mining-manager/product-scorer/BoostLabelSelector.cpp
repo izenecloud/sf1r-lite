@@ -57,7 +57,7 @@ bool BoostLabelSelector::convertZambeziLabelIds_(
     std::size_t limit,
     std::vector<category_id_t>& boostLabels)
 {
-    const std::string& query = scoreParam.query_;
+    const std::string& query = scoreParam.rawQuery_;
     std::vector<char*>** cateinfo = AttrTokenizeWrapper::get()->get_TermCategory(query);
 
     if (cateinfo)

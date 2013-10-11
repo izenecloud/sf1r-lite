@@ -13,10 +13,16 @@ static std::string uuid = ".Filter";
 static std::string timestamp = ".FilterTimestamp";
 
 Filter::Filter(const std::string& workdir)
-    : timestamp_(0)
+    : bf_(NULL) 
+    , timestamp_(0)
     , workdir_(workdir)
 {
     bf_ = new BloomFilter(10240, 1e-8, 1024);
+    
+    if (!boost::filesystem::exists(workdir_))
+    {
+        boost::filesystem::create_directory(workdir_);
+    }
     
     std::string path = workdir_;
     path += "/";
@@ -139,6 +145,20 @@ bool Filter::isFilter(const std::string& userQuery) const
 
 void Filter::clear()
 {
+    if (NULL != bf_)
+    {
+        delete bf_;
+        bf_ = NULL;
+    }
+    bf_ = new BloomFilter(10240, 1e-8, 1024);
+    
+    std::string path = workdir_;
+    path += "/";
+    path += uuid;
+
+    std::ofstream out;
+    out.open(path.c_str(), std::ofstream::out | std::ofstream::trunc);
+    out.close();
 }
 
 void Filter::flush() const

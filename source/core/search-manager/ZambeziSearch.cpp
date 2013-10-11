@@ -240,6 +240,8 @@ bool ZambeziSearch::search(
     // get attr results for top docs
     if (originIsAttrGroup && groupFilterBuilder_)
     {
+        izenelib::util::ClockTimer attrTimer;
+
         faceted::GroupParam attrGroupParam;
         attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
         attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
@@ -259,6 +261,8 @@ bool ZambeziSearch::search(
             faceted::GroupRep tempGroupRep;
             attrGroupFilter->getGroupRep(tempGroupRep, searchResult.attrRep_);
         }
+
+        LOG(INFO) << "attrGroupFilter costs :" << attrTimer.elapsed() << " seconds";
     }
 
     if (sorter)

@@ -28,6 +28,7 @@ public:
 
 private:
     void buildFromFile(const std::string& f);
+    DISALLOW_COPY_AND_ASSIGN(Filter);
 
 private:
     BloomFilter* bf_;
