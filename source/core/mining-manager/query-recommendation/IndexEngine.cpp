@@ -164,7 +164,7 @@ void IndexEngine::flush()
         idManager_->Flush();
     }
     
-    //userQueries_.clear();
+    userQueries_.clear();
 
     /*std::string path = dir_;
     path += "/";

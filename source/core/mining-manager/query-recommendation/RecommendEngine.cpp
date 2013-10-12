@@ -6,6 +6,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include <stdlib.h>
 
@@ -107,8 +108,17 @@ void RecommendEngine::evaluate(const std::string& path) const
     }
 }
 
-void RecommendEngine::recommend(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const
+void RecommendEngine::recommend(const std::string& str, const uint32_t N, std::vector<std::string>& results) const
 {
+    std::string userQuery = str;
+    try
+    {
+        ilplib::knlp::Normalize::normalize(userQuery);
+    }
+    catch(...)
+    {
+    }
+    
     recommend_(userQuery, N, results);
     if (results.size() < N)
     {
@@ -323,6 +333,8 @@ void RecommendEngine::buildEngine(const std::string& path)
             if (!TaobaoParser::isValid(p))
                 continue;
             Parser* parser = parsers_->load(p);
+            if (NULL == parser)
+                continue;
             Parser::iterator it = parser->begin();
             for (; it != parser->end(); ++it)
             {
@@ -338,7 +350,7 @@ void RecommendEngine::buildEngine(const std::string& path)
                 }*/
                 processQuery(nUserQuery, it->category(), it->freq());
             }
-            delete parser;
+            parsers_->destory(parser);
         }
     }
 

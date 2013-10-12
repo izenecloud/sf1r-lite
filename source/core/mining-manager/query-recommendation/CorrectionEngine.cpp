@@ -100,7 +100,7 @@ void CorrectionEngine::evaluate(const std::string& path) const
                 if (correct(it->userQuery(), result, freq))
                     out<<it->userQuery()<<"\t"<<result<<"\t"<<freq<<"\n";
             }
-            delete parser;
+            parsers_->destory(parser);
             out.close();
         }
     }
@@ -155,13 +155,15 @@ void CorrectionEngine::buildEngine(const std::string& path)
             if (!parsers_->isValid(p))
                 continue;
             Parser* parser = parsers_->load(p);
+            if (NULL == parser)
+                continue;
             Parser::iterator it = parser->begin();
             for (; it != parser->end(); ++it)
             {
                 //std::cout<<it->userQuery()<<" : "<<it->freq()<<"\n";
                 processQuery(it->userQuery(), it->freq());
             }
-            delete parser;
+            parsers_->destory(parser);
         }
     }
     
