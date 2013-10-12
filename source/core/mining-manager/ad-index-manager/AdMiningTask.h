@@ -6,7 +6,7 @@
 #define SF1_AD_MINING_TASK_H_
 
 #include "../MiningTask.h"
-#include <ir/be_index/DNFInvIndex.hpp>
+#include <ir/be_index/InvIndex.hpp>
 
 #include <boost/shared_ptr.hpp>
 
@@ -21,7 +21,7 @@ public:
             const std::string& path,
             boost::shared_ptr<DocumentManager> dm);
     ~AdMiningTask();
-    typedef izenelib::ir::be::DNFInvIndex AdIndexType;
+    typedef izenelib::ir::be_index::DNFInvIndex AdIndexType;
     bool buildDocument(docid_t docID, const Document& doc);
     bool preProcess(int64_t timestamp);
     bool postProcess();
