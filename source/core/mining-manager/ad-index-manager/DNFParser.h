@@ -6,10 +6,9 @@
 
 #include "AdMiningTask.h"
 
-using namespace izenelib::ir::be;
-
 namespace sf1r
 {
+using izenelib::ir::be_index::DNF;
 class DNFParser
 {
 public:
