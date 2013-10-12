@@ -1,11 +1,220 @@
 #include "UserQueryCateTable.h"
 #include <fstream>
+#include <boost/filesystem.hpp>
 namespace sf1r
 {
 namespace Recommend
 {
 
-std::size_t UserQueryCateTable::N = 32;
+static std::string uuid = ".UserQueryCateTable";
+
+UserQueryCateTable::UserQueryCateTable(const std::string& workdir)
+    : workdir_(workdir)
+{
+    if (!boost::filesystem::exists(workdir_))
+    {
+        boost::filesystem::create_directory(workdir_);
+    }
+    
+    std::string path = workdir_;
+    path += "/";
+    path += uuid;
+
+    if(!boost::filesystem::exists(path))
+        return;
+    std::ifstream in;
+    in.open(path.c_str(), std::ifstream::in);
+    table_.clear();
+    in>>*this;
+}
+
+UserQueryCateTable:: ~UserQueryCateTable()
+{
+}
+    
+void UserQueryCateTable::insert(const std::string& userQuery, const std::string cate, uint32_t freq)
+{
+    boost::unordered_map<std::string, CateV>::iterator it = table_.find(userQuery);
+    if (table_.end() == it)
+    {
+        CateV cates;
+        cates.push_back(std::make_pair(cate, freq));
+        table_.insert(std::make_pair(userQuery, cates));
+    }
+    else
+    {
+        CateV& cates = it->second;
+        std::size_t i = 0;
+        for (; i < cates.size(); i++)
+        {
+            if (cate == cates[i].first)
+            {
+                cates[i].second += freq;
+                break;
+            }
+        }
+        if (i == cates.size())
+        {
+            cates.push_back(std::make_pair(cate, freq));
+        }
+    }
+}
+
+void UserQueryCateTable::search(const std::string& userQuery, std::vector<std::pair<std::string, uint32_t> >& results) const
+{
+    boost::unordered_map<std::string, CateV>::const_iterator it = table_.find(userQuery);
+    if (table_.end() == it)
+        return;
+    results = it->second;
+}
+    
+bool UserQueryCateTable::cateEqual(const std::string& lv, const std::string& rv) const
+{
+    boost::unordered_map<std::string, CateV>::const_iterator it = table_.find(lv);
+    if (table_.end() == it)
+        return false;
+    const CateV& lCates = it->second;
+    
+    //CateT maxLv;
+    //uint32_t max = 0;
+    boost::unordered_map<std::string, uint32_t> cateMap;
+    uint32_t threshold = 500;
+    for (std::size_t i = 0; i < lCates.size(); i++)
+    {
+        //if (lCates[i].second > max)
+        //{
+        //    max = lCates[i].second;
+        //    maxLv = lCates[i];
+        //}
+        if (lCates[i].second > threshold)
+            cateMap[lCates[i].first] = lCates[i].second;
+    }
+
+    /*const std::string sLCate = maxLv.first;
+    uint8_t n = 0;
+    std::string strL;
+    for (std::size_t i = 0; i < sLCate.size(); i++)
+    {
+        if (sLCate[i] == '>')
+        {
+            if (++n > 2)
+                break;
+        }
+        strL += sLCate[i];
+    }*/
+
+    it = table_.find(rv);
+    if (table_.end() == it)
+        return false;
+    const CateV& rCates = it->second;
+    
+    //CateT maxRv;
+    //max = 0;
+    for (std::size_t i = 0; i < rCates.size(); i++)
+    {
+        if (cateMap.find(rCates[i].first) != cateMap.end())
+            return true;
+    //    if (rCates[i].second > max)
+    //    {
+    //        max = rCates[i].second;
+    //        maxRv = rCates[i];
+    //    }
+    }
+    return false;
+    
+    /*
+    const std::string sRCate = maxLv.first;
+    n = 0;
+    std::string strR;
+    for (std::size_t i = 0; i < sRCate.size(); i++)
+    {
+        if (sRCate[i] == '>')
+        {
+            if (++n > 2)
+                break;
+        }
+        strR += sRCate[i];
+    }
+    
+    return strL == strR;
+    */
+}
+
+    
+void UserQueryCateTable::flush() const
+{
+    std::string path = workdir_;
+    path += "/";
+    path += uuid;
+
+    std::ofstream out;
+    out.open(path.c_str(), std::ofstream::out | std::ofstream::trunc);
+    out<<*this;
+}
+
+void UserQueryCateTable::clear()
+{
+    table_.clear();
+}
+
+std::ostream& operator<<(std::ostream& out, const UserQueryCateTable& table)
+{
+    boost::unordered_map<std::string, UserQueryCateTable::CateV>::const_iterator it = table.table_.begin();
+    for (; it != table.table_.end(); it++)
+    {
+        out<<it->first<<"\t";
+        const UserQueryCateTable::CateV& cates = it->second;
+        for (std::size_t i = 0; i < cates.size(); i++)
+        {
+            out<<cates[i].first<<":"<<cates[i].second<<";";
+        }
+        out<<"\n";
+    }
+    return out;
+}
+
+std::istream& operator>>(std::istream& in,  UserQueryCateTable& table)
+{
+    int maxLine = 10240;
+    char cLine[maxLine];
+    memset(cLine, 0, maxLine);
+
+    while(in.getline(cLine, maxLine))
+    {
+        std::string sLine(cLine);
+        memset(cLine, 0, maxLine);
+        //std::cout<<sLine<<"\n"; 
+        std::size_t pos = sLine.find("\t");
+        
+        if (std::string::npos == pos)
+            continue;
+        
+        if (0 == pos)
+            continue;
+
+        std::string userQuery = sLine.substr(0, pos);
+        pos += 1;
+
+        UserQueryCateTable::CateV cates;
+        while (true)
+        {
+            std::size_t found = sLine.find(";", pos);
+            if (std::string::npos == found)
+                break;
+            std::string cLine = sLine.substr(pos, found - pos); // one cate
+            pos = found + 1;
+
+            std::size_t seq = cLine.find(":");
+            if (std::string::npos == seq)
+                continue;
+
+            cates.push_back(std::make_pair(cLine.substr(0, seq), atof(cLine.substr(seq+1).c_str())));
+        }
+        table.table_.insert(std::make_pair(userQuery, cates));
+    }
+    return in;
+}
+/*std::size_t UserQueryCateTable::N = 32;
 static std::string uuid = ".UserQueryCateTable";
 
 UserQueryCateTable::UserQueryCateTable(const std::string& workdir)
@@ -130,7 +339,7 @@ std::istream& operator>>(std::istream& in,  UserQueryCateTable& uqc)
 bool operator<(const UserQueryCateTable::UserQuery& lv, const UserQueryCateTable::UserQuery& rv)
 {
     return lv.freq() < rv.freq();
-}
+}*/
 
 }
 }

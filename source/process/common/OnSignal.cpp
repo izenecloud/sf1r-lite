@@ -97,7 +97,6 @@ void setupDefaultSignalHandlers()
     sigaddset(&maskset, SIGHUP);
     sigaddset(&maskset, SIGTERM);
     sigaddset(&maskset, SIGQUIT);
-    sigaddset(&maskset, SIGPIPE);
     int ret;
     ret = pthread_sigmask(SIG_BLOCK, &maskset, NULL);
     if (ret != 0)
