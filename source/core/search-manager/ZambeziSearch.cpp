@@ -318,4 +318,6 @@ void ZambeziSearch::getTopLabels_(
 
         topLabels.push_back(path);
     }
+
+    LOG(INFO) << "top label num: "<< topLabels.size();
 }

@@ -164,7 +164,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     LOG(INFO) << "SearchMerger topKStart : << " << topKStart
         << ", topKCount: " << topKCount
         << ", totalTopKCount: " << totalTopKCount
-        << ", TOP_K_NUM: " << mergeResult.TOP_K_NUM << endl;
+        << ", TOP_K_NUM: " << mergeResult.TOP_K_NUM
+        << ", top label num: " << mergeResult.autoSelectGroupLabels_["Category"].size() << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
