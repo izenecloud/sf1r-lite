@@ -29,13 +29,22 @@ public:
     CategoryScorer(
         const ProductScoreConfig& config,
         const faceted::PropValueTable& categoryValueTable,
-        const std::vector<category_id_t>& topLabels);
+        const std::vector<category_id_t>& topLabels,
+        bool hasPriority = true);
 
     virtual score_t score(docid_t docId);
 
 private:
     const faceted::PropValueTable& categoryValueTable_;
     const faceted::PropValueTable::ParentIdTable& parentIdTable_;
+
+    /**
+     * Whether there is priority among the top labels.
+     * For example, for three top labels,
+     * if true, their category scores would be [3, 2, 1],
+     * otherwise, they would be [1, 1, 1].
+     */
+    const bool hasPriority_;
 
     typedef std::map<category_id_t, score_t> CategoryScores;
     CategoryScores categoryScores_;
