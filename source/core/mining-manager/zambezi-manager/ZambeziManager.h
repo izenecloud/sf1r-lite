@@ -29,9 +29,10 @@ class ZambeziConfig;
 class ZambeziManager
 {
 public:
-    ZambeziManager(const ZambeziConfig& config
-                , faceted::AttrManager* attrManager
-                , NumericPropertyTableBuilder* numericTableBuilder);
+    ZambeziManager(
+            const ZambeziConfig& config,
+            faceted::AttrManager* attrManager,
+            NumericPropertyTableBuilder* numericTableBuilder);
 
     bool open();
 

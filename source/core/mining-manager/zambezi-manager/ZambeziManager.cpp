@@ -22,9 +22,10 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
 
-ZambeziManager::ZambeziManager(const ZambeziConfig& config, 
-                            faceted::AttrManager* attrManager,
-                            NumericPropertyTableBuilder* numericTableBuilder)
+ZambeziManager::ZambeziManager(
+        const ZambeziConfig& config,
+        faceted::AttrManager* attrManager,
+        NumericPropertyTableBuilder* numericTableBuilder)
     : config_(config)
     , attrManager_(attrManager)
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
@@ -93,18 +94,18 @@ void ZambeziManager::NormalizeScore(
         sharedLockSet.insertSharedLock(attTable);
     }
     float maxScore = 1;
-    uint32_t attr_size = 1;
 
     std::string propName = "itemcount";
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
-    
+
     if (numericTable)
         sharedLockSet.insertSharedLock(numericTable.get());
-    
+
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
+        uint32_t attr_size = 1;
         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;
