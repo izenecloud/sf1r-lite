@@ -91,7 +91,18 @@ bool ProductScdReceiver::getTotalComment(const std::string& scd_source_dir)
             return false;
         }
     }
-    return true;
+    if (!DistributeFileSys::get()->isEnabled())
+    {
+        mine_source_dir.clear();
+        LOG(INFO) << "Do not send index for the DFS is disabled.";
+        return true;
+    }
+    if (callback_type_ == "rebuild")
+    {
+        LOG(INFO) << "Do not send index for the callback type is rebuild.";
+        return true;
+    }
+    return pushIndexRequest(mine_source_dir);
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
