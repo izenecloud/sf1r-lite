@@ -212,9 +212,12 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     if (!labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
         return NULL;
 
+    const bool hasPriority = scoreParam.searchMode_ != SearchingMode::ZAMBEZI;
+
     return new CategoryScorer(scoreConfig,
-                              *categoryValueTable_,//
-                              boostLabels);
+                              *categoryValueTable_,
+                              boostLabels,
+                              hasPriority);
 }
 
 ProductScorer* ProductScorerFactory::createTitleRelevanceScorer_(

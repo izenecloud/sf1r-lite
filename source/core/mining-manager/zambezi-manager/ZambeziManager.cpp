@@ -22,9 +22,10 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
 
-ZambeziManager::ZambeziManager(const ZambeziConfig& config, 
-                            faceted::AttrManager* attrManager,
-                            NumericPropertyTableBuilder* numericTableBuilder)
+ZambeziManager::ZambeziManager(
+        const ZambeziConfig& config,
+        faceted::AttrManager* attrManager,
+        NumericPropertyTableBuilder* numericTableBuilder)
     : config_(config)
     , attrManager_(attrManager)
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
@@ -34,9 +35,13 @@ ZambeziManager::ZambeziManager(const ZambeziConfig& config,
 
 bool ZambeziManager::open()
 {
-    std::ifstream ifs(config_.indexFilePath.c_str(), std::ios_base::binary);
+    const std::string& path = config_.indexFilePath;
+    std::ifstream ifs(path.c_str(), std::ios_base::binary);
+
     if (! ifs)
         return true;
+
+    LOG(INFO) << "loading zambezi index path: " << path;
 
     try
     {
@@ -45,9 +50,12 @@ bool ZambeziManager::open()
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception in read file: " << e.what()
-                   << ", path: " << config_.indexFilePath;
+                   << ", path: " << path;
         return false;
     }
+
+    LOG(INFO) << "finished loading zambezi index, total doc num: "
+              << indexer_.totalDocNum();
 
     return true;
 }
@@ -86,18 +94,18 @@ void ZambeziManager::NormalizeScore(
         sharedLockSet.insertSharedLock(attTable);
     }
     float maxScore = 1;
-    uint32_t attr_size = 1;
 
     std::string propName = "itemcount";
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
-    
+
     if (numericTable)
         sharedLockSet.insertSharedLock(numericTable.get());
-    
+
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
+        uint32_t attr_size = 1;
         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;

@@ -11,6 +11,7 @@
 #include <common/inttypes.h>
 #include <query-manager/SearchingEnumerator.h>
 #include <vector>
+#include <algorithm>
 
 namespace sf1r
 {
@@ -29,6 +30,8 @@ struct ProductRankParam
 
     SearchingMode::SearchingModeType searchMode_;
 
+    static const std::size_t kMaxDocNum = 4000;
+
     ProductRankParam(
         std::vector<docid_t>& docIds,
         std::vector<score_t>& topKScores,
@@ -37,16 +40,11 @@ struct ProductRankParam
         SearchingMode::SearchingModeType searchMode)
         : docIds_(docIds)
         , topKScores_(topKScores)
-        , docNum_(docIds.size())
+        , docNum_(std::min(kMaxDocNum, docIds.size()))
         , isRandomRank_(isRandomRank)
         , query_(query)
         , searchMode_(searchMode)
     {}
-
-    bool isValid() const
-    {
-        return docNum_ == topKScores_.size();
-    }
 };
 
 } // namespace sf1r

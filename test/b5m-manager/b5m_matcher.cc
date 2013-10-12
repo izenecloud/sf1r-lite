@@ -1,4 +1,5 @@
 #include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 #include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_mapper.h>
 #include <b5m-manager/category_scd_spliter.h>
@@ -671,6 +672,26 @@ int do_main(int ac, char** av)
         //}
         if(!matcher.Index(knowledge_dir, scd_path, mode, thread_num))
         {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("product-discover")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        //ProductMatcher::Clear(knowledge_dir, mode);
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        ProductDiscover pd(&matcher);
+        if(!pd.Process(scd_path, output))
+        {
+            LOG(ERROR)<<"discover process failed"<<std::endl;
             return EXIT_FAILURE;
         }
     } 
