@@ -48,7 +48,9 @@ public:
         return;
     }
 private:
-   ilplib::knlp::Fmm* tokenizer_; 
+    DISALLOW_COPY_AND_ASSIGN(PTokenizer);
+
+    ilplib::knlp::Fmm* tokenizer_; 
 };
 
 Tokenizer* getTokenizer_()
