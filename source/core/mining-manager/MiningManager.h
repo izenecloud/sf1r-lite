@@ -393,7 +393,7 @@ public:
             UString& analyzedQuery,
             std::string& pruneQuery,
             DistKeywordSearchInfo& distSearchInfo,
-            faceted::GroupParam::GroupLabelMap& topLabelMap);
+            faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
@@ -576,8 +576,10 @@ private:
      *@param topDocIdList The top docs from the search result.
      *@param queryList The recommended queries as the result.
      */
+    //bool getRecommendQuery_(const izenelib::util::UString& queryStr,
+    //                        QueryRecommendRep & recommendRep);
     bool getRecommendQuery_(const izenelib::util::UString& queryStr,
-                            QueryRecommendRep & recommendRep);
+                            std::deque<izenelib::util::UString >& recommendQueries);
 
     bool isMiningProperty_(const std::string& name);
 
@@ -623,7 +625,7 @@ private:
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
         const std::string& topPropName,
-        faceted::GroupParam::GroupLabelMap& topLabelMap);
+        faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
     bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);

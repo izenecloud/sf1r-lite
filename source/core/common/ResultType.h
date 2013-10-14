@@ -399,7 +399,7 @@ public:
     sf1r::faceted::OntologyRep attrRep_;
 
     // auto selected top group labels
-    sf1r::faceted::GroupParam::GroupLabelMap autoSelectGroupLabels_;
+    sf1r::faceted::GroupParam::GroupLabelScoreMap autoSelectGroupLabels_;
 
     /// A list of related query string.
     std::deque<izenelib::util::UString> relatedQueryList_;

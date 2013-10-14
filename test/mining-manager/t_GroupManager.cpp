@@ -60,6 +60,7 @@ BOOST_FIXTURE_TEST_CASE(rebuildGroupData, sf1r::GroupManagerTestFixture)
 BOOST_AUTO_TEST_CASE(mergeGroupRep)
 {
     sf1r::GroupManagerTestFixture::checkGroupRepMerge();
+    sf1r::GroupManagerTestFixture::checkScoreGroupLabelMerge();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 

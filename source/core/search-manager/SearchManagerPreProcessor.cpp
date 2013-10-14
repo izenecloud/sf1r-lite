@@ -41,7 +41,20 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
-    if (!sortPropertyList.empty())
+
+    if (sortPropertyList.empty())
+        return;
+
+    if (sortPropertyList.size() == 1)
+    {
+        std::string name = sortPropertyList[0].first;
+        boost::to_lower(name);
+
+        bool isDescend = !sortPropertyList[0].second;
+        if (name == RANK_PROPERTY && isDescend)
+            return;
+    }
+
     {
         std::vector<std::pair<std::string, bool> >::iterator iter = sortPropertyList.begin();
         for (; iter != sortPropertyList.end(); ++iter)

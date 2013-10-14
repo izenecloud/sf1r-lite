@@ -5,10 +5,12 @@ using namespace sf1r;
 CategoryScorer::CategoryScorer(
     const ProductScoreConfig& config,
     const faceted::PropValueTable& categoryValueTable,
-    const std::vector<category_id_t>& topLabels)
+    const std::vector<category_id_t>& topLabels,
+    bool hasPriority)
     : ProductScorer(config)
     , categoryValueTable_(categoryValueTable)
     , parentIdTable_(categoryValueTable.parentIdTable())
+    , hasPriority_(hasPriority)
 {
     score_t score = 1;
 
@@ -16,7 +18,11 @@ CategoryScorer::CategoryScorer(
              rit = topLabels.rbegin(); rit != topLabels.rend(); ++rit)
     {
         categoryScores_[*rit] = score;
-        ++score;
+
+        if (hasPriority_)
+        {
+            ++score;
+        }
     }
 }
 

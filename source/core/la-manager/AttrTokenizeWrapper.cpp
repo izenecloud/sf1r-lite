@@ -54,22 +54,29 @@ bool AttrTokenizeWrapper::loadDictFiles(const std::string& dictDir)
     return true;
 }
 
-std::vector<std::pair<std::string, double> >
-    AttrTokenizeWrapper::attr_tokenize_index(const std::string& title, const std::string& attr, 
-                    const std::string& cate, const std::string& ocate,
-                    const std::string& source)
+void AttrTokenizeWrapper::attr_tokenize_index(
+    const std::string& title, 
+    const std::string& attr, 
+    const std::string& cate, 
+    const std::string& ocate,
+    const std::string& source,
+    std::vector<std::pair<std::string, double> >& tokenScoreList)
 {
-    return attr_tokenizer_->tokenize(title, attr, cate, ocate, source);
+    attr_tokenizer_->tokenize(title, attr, cate, ocate, source, tokenScoreList);
 }
 
-std::vector<std::string> AttrTokenizeWrapper::attr_tokenize(const std::string& Q)
+void AttrTokenizeWrapper::attr_tokenize(
+    const std::string& Q, 
+    std::vector<std::string>& tokenList)
 {
-    return attr_tokenizer_->tokenize(Q);
+    attr_tokenizer_->tokenize(Q, tokenList);
 }
 
-std::vector<std::string> AttrTokenizeWrapper::attr_subtokenize(const std::vector<std::string>& tks)
+void AttrTokenizeWrapper::attr_subtokenize(
+    const std::vector<std::string>& tks,
+    std::vector<std::string>& tokenList)
 {
-    return attr_tokenizer_->subtokenize(tks);
+    attr_tokenizer_->subtokenize(tks, tokenList);
 }
 
 double AttrTokenizeWrapper::att_name_weight(

@@ -11,7 +11,7 @@ using namespace sf1r;
 ZambeziMiningTask::ZambeziMiningTask(
         const ZambeziConfig& config,
         DocumentManager& documentManager,
-        izenelib::ir::Zambezi::NewInvertedIndex& indexer)
+        izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer)
     : config_(config)
     , documentManager_(documentManager)
     , indexer_(indexer)
@@ -46,11 +46,12 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
     }
 
     std::vector<std::pair<std::string, double> > tokenScoreList;
-    tokenScoreList = AttrTokenizeWrapper::get()->attr_tokenize_index(propValueList[0]
+    AttrTokenizeWrapper::get()->attr_tokenize_index(propValueList[0]
                                                                 , propValueList[1]
                                                                 , propValueList[2]
                                                                 , propValueList[3]
-                                                                , propValueList[4]);
+                                                                , propValueList[4]
+                                                                , tokenScoreList);
     std::vector<std::string> tokenList;
     std::vector<uint32_t> scoreList;
 

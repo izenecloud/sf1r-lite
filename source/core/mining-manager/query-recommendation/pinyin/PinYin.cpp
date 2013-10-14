@@ -102,6 +102,7 @@ public:
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(QueryCorrection);	
     idmlib::qc::CnQueryCorrection* cmgr_;
 };
 

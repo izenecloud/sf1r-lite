@@ -37,12 +37,6 @@ void ProductRanker::addEvaluator(ProductScoreEvaluator* evaluator)
 
 void ProductRanker::rank()
 {
-    if (!rankParam_.isValid())
-    {
-        LOG(ERROR) << "invalid parameter for product ranking";
-        return;
-    }
-
     loadScore_();
 
     sortScore_();
