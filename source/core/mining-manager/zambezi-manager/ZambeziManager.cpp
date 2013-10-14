@@ -119,9 +119,10 @@ void ZambeziManager::NormalizeScore(
             attTable->getValueIdList(docids[i], attrvids);
             attr_size = std::min(attrvids.size(), size_t(10));
         }
+
+        int32_t itemcount = 1;
         if (numericTable)
         {
-            int32_t itemcount = 1;
             numericTable->getInt32Value(docids[i], itemcount, false);
             attr_size += std::min(itemcount, 50);
         }
@@ -130,7 +131,11 @@ void ZambeziManager::NormalizeScore(
         {
             int32_t commentcount = 1;
             numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            attr_size += std::min(commentcount, 100);
+            if (itemcount != 0)
+                attr_size += std::min(commentcount/itemcount, 100);
+            else
+                attr_size += std::min(commentcount, 100);
+
         }
 
         scores[i] = scores[i] * pow(attr_size, 0.3);
