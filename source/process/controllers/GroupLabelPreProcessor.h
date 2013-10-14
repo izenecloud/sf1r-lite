@@ -28,7 +28,7 @@ public:
 private:
     void pushTopLabels_(
         faceted::GroupParam::GroupLabelMap& totalLabels,
-        faceted::GroupParam::GroupLabelMap& autoSelectLabels,
+        faceted::GroupParam::GroupLabelScoreMap& autoSelectLabels,
         const std::string& query,
         const std::string& propName,
         int limit);

@@ -69,8 +69,10 @@ struct GroupParam
     typedef std::vector<std::string> GroupPath;
     /** a list of group paths for one property */
     typedef std::vector<GroupPath> GroupPathVec;
+    typedef std::vector<std::pair<GroupPath, double> > GroupPathScoreVec;
     /** map from property name to group paths */
     typedef std::map<std::string, GroupPathVec> GroupLabelMap;
+    typedef std::map<std::string, GroupPathScoreVec> GroupLabelScoreMap;
     /** a pair of property name and group path */
     typedef GroupLabelMap::value_type GroupLabelParam;
     /** selected group labels */
@@ -103,6 +105,7 @@ struct GroupParam
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
     bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
+    static void mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from, size_t topNum);
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_
@@ -140,6 +143,8 @@ bool operator==(const GroupParam& a, const GroupParam& b);
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
 std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& groupLabelMap);
 std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathVec& groupPathVec);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelScoreMap& groupLabelMap);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathScoreVec& groupPathVec);
 
 NS_FACETED_END
 

@@ -2269,7 +2269,7 @@ bool MiningManager::GetSuffixMatch(
         UString& analyzedQuery,
         std::string& pruneQueryString_,
         DistKeywordSearchInfo& distSearchInfo,
-        faceted::GroupParam::GroupLabelMap& topLabelMap)
+        faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2491,7 +2491,7 @@ void MiningManager::getGroupAttrRep_(
     faceted::GroupRep& groupRep,
     sf1r::faceted::OntologyRep& attrRep,
     const std::string& topPropName,
-    faceted::GroupParam::GroupLabelMap& topLabelMap)
+    faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
 {
     if (!groupFilterBuilder_ || (!groupManager_ && !attrManager_))
         return;
@@ -2532,10 +2532,16 @@ void MiningManager::getGroupAttrRep_(
         return;
     }
 
-    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[topPropName];
-    if (topLabels.empty())
+    faceted::GroupParam::GroupPathScoreVec& topScoreLabels = topLabelMap[topPropName];
+    faceted::GroupParam::GroupPathVec topLabels;
+    if (topScoreLabels.empty())
     {
         propValuePaths_(topPropName, topCateIds, topLabels, false);
+        topScoreLabels.resize(topLabels.size());
+        for(size_t i = 0; i < topLabels.size(); ++i)
+        {
+            topScoreLabels[i] = std::make_pair(topLabels[i], 0);
+        }
     }
 
     // get all group results

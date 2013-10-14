@@ -11,6 +11,8 @@
 #include <algorithm> // min
 #include <vector>
 
+#define TOP_LABEL_NUM 4
+
 namespace sf1r
 {
 
@@ -110,6 +112,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
     mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
+
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
@@ -138,7 +141,10 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         {
             rangeHigh = wResult.propertyRange_.highValue_;
         }
+
         mergeResult.groupRep_.merge(wResult.groupRep_);
+        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_, TOP_LABEL_NUM);
+
         std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
         for(; cit != wResult.counterResults_.end(); ++cit)
         {

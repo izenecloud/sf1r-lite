@@ -229,7 +229,7 @@ bool ZambeziSearch::search(
 
     if (groupFilter)
     {
-        getTopLabels_(docIdList,
+        getTopLabels_(docIdList, rankScoreList,
                       propSharedLockSet,
                       searchResult.autoSelectGroupLabels_);
 
@@ -281,15 +281,17 @@ bool ZambeziSearch::search(
 
 void ZambeziSearch::getTopLabels_(
     const std::vector<unsigned int>& docIdList,
+    const std::vector<float>& rankScoreList,
     PropSharedLockSet& propSharedLockSet,
-    faceted::GroupParam::GroupLabelMap& topLabelMap)
+    faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
 {
     if (!categoryValueTable_)
         return;
 
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
-    std::vector<faceted::PropValueTable::pvid_t> topCateIds;
+    typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
+    TopCatIdsT topCateIds;
     const std::size_t topNum = std::min(docIdList.size(), kTopLabelDocNum);
     for (std::size_t i = 0; i < topNum; ++i)
     {
@@ -299,23 +301,34 @@ void ZambeziSearch::getTopLabels_(
         category_id_t catId =
             categoryValueTable_->getFirstValueId(docIdList[i]);
 
-        if (catId != 0 &&
-            std::find(topCateIds.begin(), topCateIds.end(), catId) == topCateIds.end())
+        if (catId != 0)
         {
-            topCateIds.push_back(catId);
+            bool is_exist = false;
+            for(TopCatIdsT::const_iterator cit = topCateIds.begin(); cit != topCateIds.end(); ++cit)
+            {
+                if (cit->first == catId)
+                {
+                    is_exist = true;
+                    break;
+                }
+            }
+            if (!is_exist)
+            {
+                topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+            }
         }
     }
 
-    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[kTopLabelPropName];
-    for (std::vector<faceted::PropValueTable::pvid_t>::const_iterator idIt =
+    faceted::GroupParam::GroupPathScoreVec& topLabels = topLabelMap[kTopLabelPropName];
+    for (TopCatIdsT::const_iterator idIt =
              topCateIds.begin(); idIt != topCateIds.end(); ++idIt)
     {
         std::vector<izenelib::util::UString> ustrPath;
-        categoryValueTable_->propValuePath(*idIt, ustrPath, false);
+        categoryValueTable_->propValuePath(idIt->first, ustrPath, false);
 
         std::vector<std::string> path;
         convert_to_str_vector(ustrPath, path);
 
-        topLabels.push_back(path);
+        topLabels.push_back(std::make_pair(path, idIt->second));
     }
 }
