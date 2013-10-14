@@ -32,6 +32,15 @@ public:
         }
         return NULL;
     }
+
+    void destory(Parser* parser)
+    {
+        if (NULL != parser)
+        {
+            delete parser;
+            parser = NULL;
+        }
+    }
 };
 }
 }

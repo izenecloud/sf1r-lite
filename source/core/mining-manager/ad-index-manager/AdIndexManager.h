@@ -9,6 +9,7 @@
 
 namespace sf1r
 {
+
 class MiningTask;
 class DocumentManager;
 
@@ -18,17 +19,25 @@ public:
     AdIndexManager(
             const std::string& path,
             boost::shared_ptr<DocumentManager> dm);
+
     ~AdIndexManager();
+
     bool buildMiningTask();
+
     inline AdMiningTask* getMiningTask()
     {
         return adMiningTask_;
     }
-    void search(const std::vector<std::pair<std::string, std::string> >& info,
-            boost::unordered_set<std::string>& docids);
+
+    bool search(const std::vector<std::pair<std::string, std::string> >& info,
+            std::vector<docid_t>& docids);
+
 private:
+
     std::string indexPath_;
+
     boost::shared_ptr<DocumentManager> documentManager_;
+
     AdMiningTask* adMiningTask_;
 };
 

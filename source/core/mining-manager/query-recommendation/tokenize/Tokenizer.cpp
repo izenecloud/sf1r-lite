@@ -7,6 +7,7 @@
 #include <util/ustring/UString.h>
 
 #include <knlp/fmm.h>
+#include "../RecommendEngineWrapper.h"
 
 namespace sf1r
 {
@@ -47,13 +48,15 @@ public:
         return;
     }
 private:
-   ilplib::knlp::Fmm* tokenizer_; 
+    DISALLOW_COPY_AND_ASSIGN(PTokenizer);
+
+    ilplib::knlp::Fmm* tokenizer_; 
 };
 
-Tokenizer* getTokenizer()
+Tokenizer* getTokenizer_()
 {
-    static PTokenizer* pt = new PTokenizer("/home/kevinlin/codebase/sf1r-engine/package/resource/dict/term_category/");
-    static Tokenizer tokenizer = boost::bind(&PTokenizer::tokenize, pt, _1, _2);
+    static PTokenizer pt(RecommendEngineWrapper::system_resource_path_ + "/dict/term_category/");
+    static Tokenizer tokenizer = boost::bind(&PTokenizer::tokenize, &pt, _1, _2);
     return &tokenizer;
 }
 

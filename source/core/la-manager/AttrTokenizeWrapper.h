@@ -37,14 +37,21 @@ public:
     /**
      * Attribute Tokenize
      */
-    std::vector<std::pair<std::string, double> >
-        attr_tokenize_index(const std::string& title, const std::string& attr, 
-                    const std::string& cate, const std::string& ocate,
-                    const std::string& source);
+    void attr_tokenize_index(
+        const std::string& title, 
+        const std::string& attr, 
+        const std::string& cate, 
+        const std::string& ocate,
+        const std::string& source,
+        std::vector<std::pair<std::string, double> >& tokenScoreList);
 
-    std::vector<std::string> attr_tokenize(const std::string& Q);
+    void attr_tokenize(
+        const std::string& Q,
+        std::vector<std::string>& tokenList);
 
-    std::vector<std::string> attr_subtokenize(const std::vector<std::string>& tks);
+    void attr_subtokenize(
+        const std::vector<std::string>& tks,
+        std::vector<std::string>& tokenList);
 
     double att_name_weight(
         const std::string& attr_name,

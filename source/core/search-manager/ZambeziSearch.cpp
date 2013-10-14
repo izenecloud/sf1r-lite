@@ -106,7 +106,7 @@ bool ZambeziSearch::search(
 
     AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
     std::vector<std::string> tokenList;
-    attrTokenize->attr_tokenize(query).swap(tokenList);
+    attrTokenize->attr_tokenize(query,tokenList);
 
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
@@ -117,8 +117,9 @@ bool ZambeziSearch::search(
 
         if (candidates.empty())
         {
-            attrTokenize->attr_subtokenize(tokenList).swap(tokenList);
-            zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
+            std::vector<std::string> subTokenList;			
+            attrTokenize->attr_subtokenize(tokenList, subTokenList);
+            zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, candidates, scores);
         }
     }
 
@@ -331,4 +332,6 @@ void ZambeziSearch::getTopLabels_(
 
         topLabels.push_back(std::make_pair(path, idIt->second));
     }
+
+    LOG(INFO) << "top label num: "<< topLabels.size();
 }
