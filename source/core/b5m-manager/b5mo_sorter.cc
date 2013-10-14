@@ -357,7 +357,7 @@ void B5moSorter::WritePItem_(PItem& pitem)
                 if(odoc.type!=UPDATE_SCD) continue;
                 odoc_count++;
                 if(value.ts<ts_) continue;
-                //odoc.property("itemcount") = (int64_t)1;
+                odoc.property("itemcount") = (int64_t)1;
                 //odoc.eraseProperty("uuid");
                 pwriter_->Append(odoc);
             }

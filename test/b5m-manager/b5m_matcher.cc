@@ -272,6 +272,7 @@ int do_main(int ac, char** av)
         ("attribute-index", "build attribute index")
         ("product-train", "do product training")
         ("product-train-post", "do product post training")
+        ("product-discover", "do product discover")
         ("product-match", "do product matching test")
         ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
@@ -712,7 +713,7 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         ProductDiscover pd(&matcher);
-        if(!pd.Process(scd_path, output))
+        if(!pd.Process(scd_path, output, thread_num))
         {
             LOG(ERROR)<<"discover process failed"<<std::endl;
             return EXIT_FAILURE;

@@ -1310,25 +1310,26 @@ bool ProductMatcher::IndexPost(const std::string& scd_path, int thread_num)
             offer_prices_finish_ = true;
         }
     }
-
+    std::string psm_path = path_+"/psm_result";
+    if(offer_prices_finish_&&boost::filesystem::exists(psm_path))
+    {
+        LOG(INFO)<<"index post already finished, return"<<std::endl;
+        return true;
+    }
     std::string offer_scd = scd_path+"/OFFER.SCD";
     if(!boost::filesystem::exists(offer_scd))
     {
         return false;
     }
-    if(use_psm_)
-    {
-        psm_ = new CategoryPsm(path_);
-        std::string ppath = path_+"/psm";
-        psm_->Open(ppath);
-    }
+    psm_ = new CategoryPsm(path_);
     ScdDocProcessor processor(boost::bind(&ProductMatcher::PostProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
     if(psm_!=NULL) 
     {
-        std::string path = path_+"/psm_result";
-        psm_->Flush(path);
+        psm_->Flush(psm_path);
+        delete psm_;
+        psm_ = NULL;
     }
     if(!offer_prices_finish_)
     {
