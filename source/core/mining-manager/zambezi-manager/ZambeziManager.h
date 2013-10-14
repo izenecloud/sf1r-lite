@@ -8,7 +8,7 @@
 
 #include <common/inttypes.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
-#include <ir/Zambezi/NewInvertedIndex.hpp>
+#include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
 #include <string>
 #include <vector>
@@ -56,7 +56,7 @@ private:
 
     faceted::AttrManager* attrManager_;
 
-    izenelib::ir::Zambezi::NewInvertedIndex indexer_;
+    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
 };

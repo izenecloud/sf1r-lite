@@ -11,7 +11,7 @@ using namespace sf1r;
 ZambeziMiningTask::ZambeziMiningTask(
         const ZambeziConfig& config,
         DocumentManager& documentManager,
-        izenelib::ir::Zambezi::NewInvertedIndex& indexer)
+        izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer)
     : config_(config)
     , documentManager_(documentManager)
     , indexer_(indexer)

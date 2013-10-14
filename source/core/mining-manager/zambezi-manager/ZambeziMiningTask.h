@@ -7,7 +7,7 @@
 #define SF1R_ZAMBEZI_MINING_TASK_H
 
 #include "../MiningTask.h"
-#include <ir/Zambezi/NewInvertedIndex.hpp>
+#include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <string>
 
 namespace sf1r
@@ -21,7 +21,7 @@ public:
     ZambeziMiningTask(
             const ZambeziConfig& config,
             DocumentManager& documentManager,
-            izenelib::ir::Zambezi::NewInvertedIndex& indexer);
+            izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer);
 
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
@@ -36,7 +36,7 @@ private:
 
     DocumentManager& documentManager_;
 
-    izenelib::ir::Zambezi::NewInvertedIndex& indexer_;
+    izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer_;
 
     docid_t startDocId_;
 };
