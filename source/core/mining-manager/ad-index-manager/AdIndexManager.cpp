@@ -9,7 +9,7 @@ namespace sf1r
 
 AdIndexManager::AdIndexManager(
         const std::string& path,
-        boost::shared_ptr<DocumentManager> dm)
+        boost::shared_ptr<DocumentManager>& dm)
     :indexPath_(path), documentManager_(dm)
 {
 }

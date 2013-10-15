@@ -360,7 +360,8 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
         }
     }*/
 
-    if ((2.4 * selfFreq < maxFreq) &&(maxFreq - selfFreq> 1e6))
+    //if ((2.4 * selfFreq < maxFreq) &&(maxFreq - selfFreq> 1e6))
+    if (2.4 * selfFreq < maxFreq) 
     {
         izenelib::util::UString uresult(max.getString(), izenelib::util::UString::UTF_8);
         if (uresult.length() <= 1)
