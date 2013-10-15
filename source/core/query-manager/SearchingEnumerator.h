@@ -22,6 +22,7 @@ struct SearchingMode
         KNN,
         SUFFIX_MATCH,
         ZAMBEZI,
+        AD_INDEX,
         NotUseSearchingMode
     }; //end - enum SearchingModeType
 
