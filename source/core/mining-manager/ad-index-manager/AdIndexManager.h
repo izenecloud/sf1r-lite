@@ -18,7 +18,7 @@ class AdIndexManager
 public:
     AdIndexManager(
             const std::string& path,
-            boost::shared_ptr<DocumentManager> dm);
+            boost::shared_ptr<DocumentManager>& dm);
 
     ~AdIndexManager();
 
@@ -36,7 +36,7 @@ private:
 
     std::string indexPath_;
 
-    boost::shared_ptr<DocumentManager> documentManager_;
+    boost::shared_ptr<DocumentManager>& documentManager_;
 
     AdMiningTask* adMiningTask_;
 };
