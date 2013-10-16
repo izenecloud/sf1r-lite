@@ -549,6 +549,11 @@ public:
     std::map<std::string, std::string> paramPropertyValueMap_;
 
     ///
+    /// @brief Information that are used to retrieve ads
+    ///
+    std::vector<std::pair<std::string, std::string> > adSearchPropertyValue_;
+
+    ///
     /// @brief custom ranking information(2)
     /// Avoid a second parsing by passing a reference to CustomRanker object.
     /// TODO, abandon this, serialization needed for remoted call

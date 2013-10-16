@@ -352,7 +352,7 @@ bool DocumentsSearchHandler::doGet(
 
 bool DocumentsSearchHandler::parse()
 {
-    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager(); 
+    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager();
     if (queryIntentManager)
         queryIntentManager->queryIntent(request_, response_);
 
@@ -468,6 +468,10 @@ bool DocumentsSearchHandler::parse()
     swap(
         actionItem_.counterList_,
         searchParser.mutableCounterList()
+    );
+    swap(
+        actionItem_.adSearchPropertyValue_,
+        searchParser.adSearch()
     );
     actionItem_.languageAnalyzerInfo_ = searchParser.analyzerInfo();
     actionItem_.rankingType_ = searchParser.rankingModel();
@@ -655,7 +659,7 @@ bool DocumentsSearchHandler::doSearch(
         std::string convertBuffer;
         searchResult.analyzedQuery_.convertString(
                 convertBuffer, izenelib::util::UString::UTF_8
-        );		
+        );
         response_[Keys::analyzer_result] = convertBuffer;
     }
 
