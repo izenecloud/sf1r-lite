@@ -3,113 +3,173 @@
 #include <string.h>
 #include <iostream>
 
+
 #include "../CorrectionEngineWrapper.h"
 
 namespace sf1r
 {
 namespace Recommend
 {
-/*static unsigned int nWord(const std::string& str)
+namespace PinYin
 {
-    const char* pos = str.c_str();
-    const char* end = pos + str.size();
-    unsigned int n = 0;
-    for(; pos < end; pos++)
-    {
-        if (*pos == ',')
-            n++;
-    }
-    n++;
-    return n;
-}*/
-class QueryCorrection
+
+QueryCorrection::QueryCorrection(const std::string dir)
+    : cmgr_ (NULL)
 {
-public:
-    QueryCorrection(const std::string dir)
-    {
-        idmlib::qc::CnQueryCorrection::res_dir_ = dir;
-        cmgr_ = new idmlib::qc::CnQueryCorrection(dir);
-        cmgr_->Load();
-    }
+    idmlib::qc::CnQueryCorrection::res_dir_ = dir;
+    cmgr_ = new idmlib::qc::CnQueryCorrection(dir);
+    cmgr_->Load();
+}
 
-    ~QueryCorrection()
-    {
-        delete cmgr_;
-    }
-public:
-    void GetPinyin(const std::string& str, std::vector<std::string>& results)
-    {
-        // deal with blank, character, number.
-        //std::list<std::vector<std::string> > pinyins;
-        /*const char* pos = str.c_str();
-        const char* end = pos + str.size();
-        std::string chars = "";
-        std::string chinese = "";
-        for(; pos < end; pos++)
-        {
-            if (isalpha(*pos) || isdigit(*pos))
-            {
-                chars += *pos;
-            }
-            else if((!isblank(*pos)) && (!isspace(*pos)))
-            {
-                chinese += *pos;
-            }
-        }
-        if (chinese.empty())
-        {
-            if (!chars.empty())
-                results.push_back(chars);
-            return;
-        }*/
-        izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
-        cmgr_->GetPinyin2(ustr, results);
-
-        /*std::vector<std::string> pinyin;
-        cmgr_->GetPinyin2(ustr, pinyin);
-        for (std::size_t i = 0; i < pinyin.size(); i++)
-        {
-            std::cout<<pinyin[i]<<"\n";
-        }
-        if (pinyin.empty())
-        {
-            if (!chars.empty())
-                results.push_back(chars);
-            return;
-        }
-        else if (ustr.length() != nWord(pinyin[0]))
-        {
-            std::cout<<pinyin[0]<<"\n";
-            std::cout<<ustr.length()<<" : "<<nWord(pinyin[0])<<"\n";
-            results.clear();
-            return;
-        }
-
-        chars += ",";
-        for (std::size_t i = 0; i < pinyin.size(); i++)
-        {
-            if ("," == chars)
-                results.push_back(pinyin[i]);
-            else
-                results.push_back(chars + pinyin[i]);
-        }*/
-
-        //std::list<std::vector<std::string> >::iterator it = pinyins.begin();
-        //for (; it != pinyins.end(); it++)
-        //{
-        //}
-        
-    }
-
-private:
-    idmlib::qc::CnQueryCorrection* cmgr_;
-};
-
-PinYinConverter* getPinYinConverter()
+QueryCorrection::~QueryCorrection()
+{
+    delete cmgr_;
+}
+    
+QueryCorrection& QueryCorrection::getInstance()
 {
     static QueryCorrection qc(CorrectionEngineWrapper::system_resource_path_ + "/query_correction/" + "/cn/");
-    static PinYinConverter converter = boost::bind(&QueryCorrection::GetPinyin, &qc, _1, _2);
-    return &converter;
+    return qc;
+}
+
+bool QueryCorrection::getPinyin(const std::string& str, std::vector<std::string>& results) const
+{
+    bool ret = true;
+    izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
+    cmgr_->GetPinyin2(ustr, results);
+    if (!results.empty())
+        ret = (str != results[0]);
+    return ret;
+}
+    
+bool QueryCorrection::getApproximatePinyin(const std::string& str, std::vector<std::string>& results) const
+{
+    izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
+    izenelib::util::UString nonChineseWord;
+    //izenelib::util::UString chinese;
+    bool isStrPinYin = true;
+    for (std::size_t i = 0; i < ustr.length(); i++)
+    {
+        if (ustr.isChineseChar(i))
+        {
+            isStrPinYin &= false;
+            if (nonChineseWord.length() > 0)
+            {
+                std::string pinyin;
+                nonChineseWord.convertString(pinyin, izenelib::util::UString::UTF_8);
+                approximate(pinyin, results);
+                nonChineseWord.clear();
+            }
+            
+            izenelib::util::UString uchar;
+            uchar += ustr[i];
+            std::vector<std::string> charList;
+            cmgr_->GetPinyin(uchar, charList);
+            if (charList.empty())
+                continue;
+            
+            if (results.empty())
+            {
+                for (std::size_t i = 0; i < charList.size(); i++)
+                {
+                    results.push_back(charList[i]);
+                }
+            }
+            else
+            {
+                std::size_t size = results.size();
+                for (std::size_t i = 0; i < size; i++)
+                {
+                    for (std::size_t ii = 1; ii < charList.size(); ii++)
+                    {
+                        results.push_back(results[i] + charList[ii]);
+                    }
+                    results[i] += charList[0];
+                }
+            }
+
+        }
+        else
+        {
+            if (ustr.isSpaceChar(i))
+            {
+                std::string pinyin;
+                nonChineseWord.convertString(pinyin, izenelib::util::UString::UTF_8);
+                isStrPinYin &= approximate(pinyin, results);
+                nonChineseWord.clear();
+
+                for (std::size_t i = 0; i < results.size(); i++)
+                {
+                    results[i] += " ";
+                }
+            }
+            else
+                nonChineseWord += ustr[i];
+        }
+    }
+    if (nonChineseWord.length() > 0)
+    {
+        std::string pinyin;
+        nonChineseWord.convertString(pinyin, izenelib::util::UString::UTF_8);
+        isStrPinYin &= approximate(pinyin, results);
+        nonChineseWord.clear();
+    }
+    return isStrPinYin;
+}
+
+bool QueryCorrection::approximate(const std::string& pinyin, std::vector<std::string>& results) const
+{
+    std::vector<std::string> charList;
+    cmgr_->FuzzySegmentRaw(pinyin, charList);
+    if (!charList.empty())
+    { 
+        for (std::size_t i = 0; i < charList.size(); i++)
+        {
+            std::string normalized = "";
+            for (std::size_t ii = 0; ii < charList[i].size(); ii++)
+            {
+                if (',' != charList[i][ii])
+                    normalized += charList[i][ii];
+            }
+            charList[i] = normalized;
+        }
+
+        if (results.empty())
+        {
+            for (std::size_t i = 0; i < charList.size(); i++)
+            {
+                results.push_back(charList[i]);
+            }
+        }
+        else
+        {
+            std::size_t size = results.size();
+            for (std::size_t i = 0; i < size; i++)
+            {
+                for (std::size_t ii = 1; ii < charList.size(); ii++)
+                {
+                    results.push_back(results[i] + charList[ii]);
+                }
+                results[i] += charList[0];
+            }
+        }
+        return true;
+    }
+    else
+    {
+        std::size_t size = results.size();
+        if (results.empty())
+        {
+            results.push_back(pinyin);
+        }
+        for (std::size_t i = 0; i < size; i++)
+        {
+            results[i] += pinyin;
+        }
+        return false;
+    }
+}
+
 }
 }
 }

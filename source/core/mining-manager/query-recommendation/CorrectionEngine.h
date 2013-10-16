@@ -28,6 +28,17 @@ public:
     {
         pyConverter_ = pyConverter;
     }
+    
+    const PinYinConverter* pinYinApproximator() const
+    {
+        return pyApproximator_;
+    }
+
+    void setPinYinApproximator(PinYinConverter* pyConverter)
+    {
+        pyApproximator_ = pyConverter;
+    }
+
 
     bool correct(const std::string& userQuery, std::string& results, double& freq ) const;
 
@@ -49,6 +60,7 @@ private:
     Filter*      filter_; 
     ParserFactory* parsers_;
     PinYinConverter* pyConverter_;
+    PinYinConverter* pyApproximator_;
     time_t timestamp_;
     std::string workdir_;
 };

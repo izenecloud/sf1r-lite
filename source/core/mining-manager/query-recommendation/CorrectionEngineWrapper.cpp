@@ -11,7 +11,8 @@ CorrectionEngineWrapper::CorrectionEngineWrapper()
     : engine_(NULL)
 {
     engine_ = new Recommend::CorrectionEngine(system_working_path_ + "/query_correction/");
-    engine_->setPinYinConverter(Recommend::getPinYinConverter());
+    engine_->setPinYinConverter(Recommend::PinYin::QueryCorrection::getInstance().getPinYinConverter());
+    engine_->setPinYinApproximator(Recommend::PinYin::QueryCorrection::getInstance().getPinYinApproximator());
     if (engine_->isNeedBuild(system_resource_path_ + "/query_correction/"))
         engine_->buildEngine(system_resource_path_ + "/query_correction/");
 }
@@ -33,6 +34,11 @@ CorrectionEngineWrapper& CorrectionEngineWrapper::getInstance()
 
 bool CorrectionEngineWrapper::correct(const std::string& userQuery, std::string& results, double& freq ) const
 {
+    if ("evaluate" == userQuery)
+    {
+        engine_->evaluate(system_resource_path_ + "/query_correction/evaluate/");
+    }
+    
     if (NULL != engine_)
         return engine_->correct(userQuery, results, freq);
     return false;
