@@ -382,6 +382,8 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
         }
         if ((resultChinese.length() > 0) && (selfChinese == resultChinese))
             return false;
+        if (max.getString().size() < self.userQuery().size())
+            return false;
 
         results = max.getString();
         freq = maxFreq / selfFreq;
