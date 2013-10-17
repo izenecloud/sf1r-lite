@@ -62,6 +62,8 @@
 
 #include "zambezi-manager/ZambeziManager.h"
 
+#include "ad-index-manager/AdIndexManager.h"
+
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
@@ -203,6 +205,7 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , zambeziManager_(NULL)
+    , adIndexManager_(NULL)
     , miningTaskBuilder_(NULL)
     , multiThreadMiningTaskBuilder_(NULL)
     , hasDeletedDocDuringMining_(false)
@@ -239,6 +242,7 @@ MiningManager::~MiningManager()
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
+    if (adIndexManager_) delete adIndexManager_;
     if (queryStatistics_) delete queryStatistics_;
 
     close();
@@ -257,7 +261,7 @@ void MiningManager::close()
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
     handler->deleteCollection(collectionName_);
-    
+
 }
 
 bool MiningManager::open()
@@ -327,7 +331,8 @@ bool MiningManager::open()
             mining_schema_.group_enable ||
             mining_schema_.attr_enable ||
             mining_schema_.product_ranking_config.isEnable ||
-            mining_schema_.zambezi_config.isEnable)
+            mining_schema_.zambezi_config.isEnable ||
+            mining_schema_.ad_index_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
             multiThreadMiningTaskBuilder_ = new MultiThreadMiningTaskBuilder(
@@ -653,7 +658,7 @@ bool MiningManager::open()
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-                
+
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
                     if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
@@ -709,7 +714,7 @@ bool MiningManager::open()
                     {
                         std::string path = system_resource_path_ + "/dict/product/synonym.txt";
                         StartSynonym_(matcher, path);
-                        startSynonym_ = 1;                    
+                        startSynonym_ = 1;
                     }
             }
             product_categorizer_->SetProductMatcher(matcher);
@@ -744,7 +749,7 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
-        
+
         /** zambezi */
         if (!initZambeziManager_(mining_schema_.zambezi_config))
         {
@@ -752,6 +757,11 @@ bool MiningManager::open()
             return false;
         }
 
+        if(!initAdIndexManager_(mining_schema_.ad_index_config))
+        {
+            LOG(ERROR) << "init AdIndexManager fail"<<endl;
+            return false;
+        }
         /** product rank */
         const ProductRankingConfig& rankConfig =
             mining_schema_.product_ranking_config;
@@ -766,7 +776,7 @@ bool MiningManager::open()
 
         /** query statistics */
         queryStatistics_ = new QueryStatistics(this, collectionName_);
-        
+
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -835,10 +845,10 @@ void MiningManager::StartSynonym_(ProductMatcher* matcher, const std::string& pa
 
 void MiningManager::UpdateSynonym_(ProductMatcher* matcher, const std::string& path)
 {
-    if (!boost::filesystem::exists(path)) 
+    if (!boost::filesystem::exists(path))
         return;
     long curModifiedTime = la::getFileLastModifiedTime(path);
-    if (curModifiedTime == lastModifiedTime_ || !matcher) 
+    if (curModifiedTime == lastModifiedTime_ || !matcher)
         return;
     lastModifiedTime_ = curModifiedTime;
     matcher->UpdateSynonym(path);
@@ -897,7 +907,7 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask(int64_t timestamp)
 {
-   
+
     if (multiThreadMiningTaskBuilder_)
     {
         multiThreadMiningTaskBuilder_->buildCollection(timestamp);
@@ -1719,7 +1729,7 @@ bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
     //LOG(INFO) << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
     //miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
     //miaInput.rqScore_ = recommendRep.scores_;
-    
+
     std::deque<izenelib::util::UString > recommendQueries;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
                              miaInput.encodingType_), recommendQueries);
@@ -2278,7 +2288,7 @@ bool MiningManager::GetSuffixMatch(
         UString& analyzedQuery,
         std::string& pruneQueryString_,
         DistKeywordSearchInfo& distSearchInfo,
-        faceted::GroupParam::GroupLabelMap& topLabelMap)
+        faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2324,7 +2334,7 @@ bool MiningManager::GetSuffixMatch(
         {
             LOG (ERROR) <<"The query is too long...";
         }
-        
+
         const bool isLongQuery = QueryNormalizer::get()->isLongQuery(pattern);
         boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
         if (isLongQuery)
@@ -2333,13 +2343,13 @@ bool MiningManager::GetSuffixMatch(
             pattern = knlpWrapper->cleanGarbage(pattern);
 
         LOG(INFO) << "clear stop word for long query: " << pattern;
-        
+
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         double rank_boundary;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
-        
+
         double queryScore = 0;
         suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
         actionOperation.actionItem_.queryScore_ = queryScore;
@@ -2369,7 +2379,7 @@ bool MiningManager::GetSuffixMatch(
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
         bool isOrSearch = false;
-        
+
         if (isLongQuery)
         {
             useSynonym = false;
@@ -2386,7 +2396,7 @@ bool MiningManager::GetSuffixMatch(
         LOG(INFO) << "use compare: " << isCompare;
         if (isAndSearch)
         {
-            LOG(INFO) << "for short query, try AND search first"; 
+            LOG(INFO) << "for short query, try AND search first";
             std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
             std::list<std::pair<UString, double> > short_query_minor_tokens;
 
@@ -2500,7 +2510,7 @@ void MiningManager::getGroupAttrRep_(
     faceted::GroupRep& groupRep,
     sf1r::faceted::OntologyRep& attrRep,
     const std::string& topPropName,
-    faceted::GroupParam::GroupLabelMap& topLabelMap)
+    faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
 {
     if (!groupFilterBuilder_ || (!groupManager_ && !attrManager_))
         return;
@@ -2541,10 +2551,16 @@ void MiningManager::getGroupAttrRep_(
         return;
     }
 
-    faceted::GroupParam::GroupPathVec& topLabels = topLabelMap[topPropName];
-    if (topLabels.empty())
+    faceted::GroupParam::GroupPathScoreVec& topScoreLabels = topLabelMap[topPropName];
+    faceted::GroupParam::GroupPathVec topLabels;
+    if (topScoreLabels.empty())
     {
         propValuePaths_(topPropName, topCateIds, topLabels, false);
+        topScoreLabels.resize(topLabels.size());
+        for(size_t i = 0; i < topLabels.size(); ++i)
+        {
+            topScoreLabels[i] = std::make_pair(topLabels[i], 0);
+        }
     }
 
     // get all group results
@@ -2851,7 +2867,7 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
         return true;
 
     if (titleScoreList_) delete titleScoreList_;
-    
+
     const bfs::path parentDir(collectionDataPath_);
     const bfs::path TitleScorerDir(parentDir / "title_scorer");
     bfs::create_directories(TitleScorerDir);
@@ -2866,8 +2882,8 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
         return false;
     }
     LOG (INFO) << "USE Title Score ,....";
-    MiningTask* miningTask_score =  new TitleScoreMiningTask(document_manager_, 
-                                            suffixMatchManager_->getProductTokenizer(), 
+    MiningTask* miningTask_score =  new TitleScoreMiningTask(document_manager_,
+                                            suffixMatchManager_->getProductTokenizer(),
                                             titleScoreList_);
     multiThreadMiningTaskBuilder_->addTask(miningTask_score);
 
@@ -3039,6 +3055,28 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
     miningTaskBuilder_->addTask(
         zambeziManager_->createMiningTask(*document_manager_));
 
+    return true;
+}
+
+bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
+{
+    if (!adIndexConfig.isEnable)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path adIndexDir(parentDir / "adindex");
+    bfs::create_directories(adIndexDir);
+
+    if (adIndexManager_) delete adIndexManager_;
+
+    const bfs::path filePath(adIndexDir / "index.bin");
+    adIndexConfig.indexFilePath = filePath.string();
+
+    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath, document_manager_);
+    adIndexManager_->buildMiningTask();
+
+    miningTaskBuilder_->addTask(
+            adIndexManager_->getMiningTask());
     return true;
 }
 

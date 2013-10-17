@@ -48,8 +48,9 @@ public:
 private:
     void getTopLabels_(
         const std::vector<unsigned int>& docIdList,
+        const std::vector<float>& rankScoreList,
         PropSharedLockSet& propSharedLockSet,
-        faceted::GroupParam::GroupLabelMap& topLabelMap);
+        faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
 
 private:
     DocumentManager& documentManager_;

@@ -152,13 +152,13 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
                 {
                     addIndexHook_(refIndexTaskService_);
                 }
-                if (config_->mode_ == "o")
-                {
-                    std::string offer_syncid = config_->productId_ + "_offer_comment";
-                    LOG(INFO)<<"Scd Reciever init with offer syncid : "<< offer_syncid << std::endl;
-                    scd_receiver_ = new ProductScdReceiver(offer_syncid, config_->collectionName_, config_->callback_);
-                    scd_receiver_->Set(refIndexTaskService_);
-                }
+                //if (config_->mode_ == "o")
+                //{
+                //    std::string offer_syncid = config_->productId_ + "_offer_comment";
+                //    LOG(INFO)<<"Scd Reciever init with offer syncid : "<< offer_syncid << std::endl;
+                //    scd_receiver_ = new ProductScdReceiver(offer_syncid, config_->collectionName_, config_->callback_);
+                //    scd_receiver_->Set(refIndexTaskService_);
+                //}
             }
             else if(config_->mode_=="a")//in a
             {

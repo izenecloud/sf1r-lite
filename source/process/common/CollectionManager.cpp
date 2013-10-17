@@ -66,6 +66,43 @@ CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::s
     return mutex;
 }
 
+bool CollectionManager::checkConfig(const string& collectionName,
+    const std::string& configFileName, bool check_exist)
+{
+    try
+    {
+        if (check_exist)
+        {
+            ScopedWriteLock lock(*getCollectionMutex(collectionName));
+            if (findHandler(collectionName) != NULL)
+                return false;
+        }
+        std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
+        boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
+        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
+        boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
+        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
+
+        CollectionMeta collectionMeta;
+        collectionMeta.indexBundleConfig_ = indexBundleConfig;
+        collectionMeta.productBundleConfig_ = productBundleConfig;
+        collectionMeta.miningBundleConfig_ = miningBundleConfig;
+        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
+
+        if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
+        {
+            LOG(WARNING) << "error in parsing " + configFileName;
+            return false;
+        }
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "check config error: " << e.what();
+        return false;
+    }
+    return true;
+}
+
 bool CollectionManager::startCollection(const string& collectionName,
     const std::string& configFileName, bool fixBasePath, bool checkdata)
 {

@@ -909,6 +909,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             return;
         }
         LOG(INFO) << "I am starting as primary worker.";
+        nodeState_ = NODE_STATE_ELECTING;
     }
     else
     {
@@ -937,16 +938,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     if (nodeState_ == NODE_STATE_RECOVER_FINISHING)
         return;
     stopping_ = false;
-    nodeState_ = NODE_STATE_RECOVER_FINISHING;
 
-    if (cb_on_recover_wait_primary_ && sf1rTopology_.curNode_.worker_.enabled_)
-    {
-        mutex_.unlock();
-        cb_on_recover_wait_primary_();
-        mutex_.lock();
-    }
-
-    nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         if (!zookeeper_->isConnected())
@@ -969,15 +961,32 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
+    std::string old_primary_path = curr_primary_path_;
+
+    nodeState_ = NODE_STATE_RECOVER_FINISHING;
+    if (cb_on_recover_wait_primary_ && sf1rTopology_.curNode_.worker_.enabled_)
+    {
+        mutex_.unlock();
+        cb_on_recover_wait_primary_();
+        mutex_.lock();
+    }
+
     updateCurrentPrimary();
     if (curr_primary_path_ == self_primary_path_)
     {
         LOG(INFO) << "I enter as primary success." << self_primary_path_;
+        nodeState_ = NODE_STATE_ELECTING;
         // sleep to wait secondary node.
         sleep(10);
     }
     else
     {
+        if (old_primary_path != curr_primary_path_)
+        {
+            LOG(INFO) << "primary changed while enter cluster after recover.";
+            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
+            return;
+        }
         nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
     }
 
@@ -999,7 +1008,11 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
-    nodeState_ = NODE_STATE_STARTED;
+    if (curr_primary_path_ == self_primary_path_)
+        nodeState_ = NODE_STATE_ELECTING;
+    else
+        nodeState_ = NODE_STATE_STARTED;
+
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     if (curr_primary_path_ == self_primary_path_ && masterStarted_)
     {
@@ -1479,13 +1492,17 @@ bool NodeManagerBase::isNeedReEnterCluster()
             LOG(WARNING) << "need re-enter cluster for I lost primary." << old_primary << " vs " << curr_primary_path_;
             return true;
         }
-        if (nodeState_ != NODE_STATE_STARTED && nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
-            return true;
 
         if (curr_primary_path_ == self_primary_path_)
         {
             LOG(WARNING) << "I became the new primary." << old_primary << " vs " << curr_primary_path_;
+            resetWriteState(true);
             nodeState_ = NODE_STATE_ELECTING;
+        }
+        else if (nodeState_ != NODE_STATE_STARTED && nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+        {
+            LOG(WARNING) << "need re-enter cluster for the primary electing during write." << nodeState_;
+            return true;
         }
     }
 

@@ -22,9 +22,10 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
     izenelib::ir::Zambezi::SVS;
 }
 
-ZambeziManager::ZambeziManager(const ZambeziConfig& config, 
-                            faceted::AttrManager* attrManager,
-                            NumericPropertyTableBuilder* numericTableBuilder)
+ZambeziManager::ZambeziManager(
+        const ZambeziConfig& config,
+        faceted::AttrManager* attrManager,
+        NumericPropertyTableBuilder* numericTableBuilder)
     : config_(config)
     , attrManager_(attrManager)
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
@@ -93,29 +94,48 @@ void ZambeziManager::NormalizeScore(
         sharedLockSet.insertSharedLock(attTable);
     }
     float maxScore = 1;
-    uint32_t attr_size = 1;
 
     std::string propName = "itemcount";
+    std::string propName_comment = "CommentCount";
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
-    
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
+        numericTableBuilder_->createPropertyTable(propName_comment);
+
     if (numericTable)
         sharedLockSet.insertSharedLock(numericTable.get());
-    
+
+    if (numericTable_comment)
+        sharedLockSet.insertSharedLock(numericTable_comment.get());
+
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
+        uint32_t attr_size = 1;
         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
             attr_size = std::min(attrvids.size(), size_t(10));
         }
+
+        int32_t itemcount = 1;
         if (numericTable)
         {
-            int32_t itemcount = 1;
             numericTable->getInt32Value(docids[i], itemcount, false);
             attr_size += std::min(itemcount, 50);
+        }
+
+        if (numericTable_comment)
+        {
+            int32_t commentcount = 1;
+            numericTable_comment->getInt32Value(docids[i], commentcount, false);
+            if (itemcount != 0)
+                attr_size += std::min(commentcount/itemcount, 100);
+            else
+                attr_size += std::min(commentcount, 100);
+
         }
 
         scores[i] = scores[i] * pow(attr_size, 0.3);
@@ -125,6 +145,6 @@ void ZambeziManager::NormalizeScore(
 
     for (unsigned int i = 0; i < scores.size(); ++i)
     {
-        scores[i] = int(scores[i] / maxScore * 10) + productScores[i];
+        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
     }
 }

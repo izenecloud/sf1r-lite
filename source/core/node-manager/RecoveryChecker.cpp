@@ -1235,7 +1235,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
         ++cit;
     }
 
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, check_level_, errinfo);
+    //DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, check_level_, errinfo);
     if (!errinfo.empty())
     {
         setRollbackFlag(0);
