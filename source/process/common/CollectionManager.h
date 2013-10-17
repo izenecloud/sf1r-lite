@@ -46,6 +46,9 @@ public:
 
     MutexType* getCollectionMutex(const std::string& collection);
 
+    bool checkConfig(const string& collectionName,
+        const std::string& configFileName, bool check_exist = true);
+
     bool startCollection(
             const std::string& collectionName,
             const std::string& configFileName,
