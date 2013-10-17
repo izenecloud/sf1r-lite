@@ -376,6 +376,10 @@ bool SearchParser::parse(const Value& search)
         {
             searchingModeInfo_.mode_ = SearchingMode::ZAMBEZI;
         }
+        else if (mode == "ad_index")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::AD_INDEX;
+        }
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
