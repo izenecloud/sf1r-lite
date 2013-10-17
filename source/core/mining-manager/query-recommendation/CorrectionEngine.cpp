@@ -169,7 +169,7 @@ static double factorForPrefix(const std::string& self, const std::string& userQu
     if ((i < selfL) && (uself.isDigitChar(i)))
         s /= 150;
     if (selfL >= ustrL)
-        s /= 32;
+        s /= 1024;
 
     std::size_t nself = 0;
     for (i = 0; i < selfL; i++)
@@ -209,6 +209,9 @@ CorrectionEngine::CorrectionEngine(const std::string& workdir)
     prefix_ = new PrefixTable(workdir_);
     filter_ = new Filter(workdir_ + "/filter/");
     parsers_ = new ParserFactory();
+    
+    UQCateEngine::workdir = workdir_;
+    UQCateEngine::getInstance().lock((void*)this);
     
     std::string path = workdir_;
     path += "/";
@@ -254,6 +257,8 @@ void CorrectionEngine::evaluate(const std::string& path) const
     else
         resource = path;
     
+    std::ofstream out;
+    out.open("errors", std::ofstream::out | std::ofstream::trunc);
     boost::filesystem::directory_iterator end;
     for(boost::filesystem::directory_iterator it(resource) ; it != end ; ++it)
     {
@@ -270,14 +275,16 @@ void CorrectionEngine::evaluate(const std::string& path) const
                 std::string result;
                 double freq = 0.0;
                 correct(it->userQuery(), result, freq);
-                evaluator->isCorrect(result);
+                evaluator->isCorrect(out, result);
             }
             EvaluatorFactory::destory(evaluator);
         }
     }
+    out.close();
     std::string stream;
     Evaluator::toString(stream);
     std::cout<<stream<<"\n";
+    Evaluator::clear();
 }
 
 bool CorrectionEngine::isNeedBuild(const std::string& path) const
@@ -335,7 +342,7 @@ void CorrectionEngine::buildEngine(const std::string& path)
             for (; it != parser->end(); ++it)
             {
                 //std::cout<<it->userQuery()<<" : "<<it->freq()<<"\n";
-                processQuery(it->userQuery(), it->freq());
+                processQuery(it->userQuery(), it->category(), it->freq());
             }
             parsers_->destory(parser);
         }
@@ -346,7 +353,7 @@ void CorrectionEngine::buildEngine(const std::string& path)
     flush();
 }
 
-void CorrectionEngine::processQuery(const std::string& str, const uint32_t freq)
+void CorrectionEngine::processQuery(const std::string& str, const std::string& category, const uint32_t freq)
 {
     std::string userQuery = str;
     try
@@ -368,6 +375,7 @@ void CorrectionEngine::processQuery(const std::string& str, const uint32_t freq)
     }
     
     prefix_->insert(userQuery, freq);
+    UQCateEngine::getInstance().insert(str, category, freq);
 }
 
 void CorrectionEngine::clear()
@@ -375,6 +383,7 @@ void CorrectionEngine::clear()
     pinyin_->clear();
     prefix_->clear();
     filter_->clear();
+    UQCateEngine::getInstance().clear();
 }
 
 void CorrectionEngine::flush() const
@@ -382,6 +391,7 @@ void CorrectionEngine::flush() const
     pinyin_->flush();
     prefix_->flush();
     filter_->flush();
+    UQCateEngine::getInstance().flush();
     
     std::string path = workdir_;
     path += "/";
@@ -409,7 +419,6 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
 
     if (filter_->isFilter(userQuery))
     {
-        //std::cout<<"in filter.\n";
         return false;
     }
     std::vector<std::string> pinyin;
@@ -430,26 +439,24 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
         UserQueryList uqList;
         pinyin_->search(pinyin[i], uqList);
         accurate[pinyin[i]] = true;
-//        std::cout<<pinyin[i]<<"\t-------------\n";
+//std::cout<<pinyin[i]<<"\t-------------\n";
         UserQueryList::iterator it = uqList.begin();
         for (; it != uqList.end(); it++)
         {
             if (it->userQuery() != self.userQuery())
             {
+                if (!UQCateEngine::getInstance().cateEqual(self.userQuery(), it->userQuery(), 10))
+                    continue;
                 double s = factorForPinYin(self.userQuery(), it->userQuery());
-        //        std::cout<<it->userQuery()<<" : "<<it->freq()<<" : "<<s<<"\n";
+//std::cout<<it->userQuery()<<" : "<<it->freq()<<" : "<<s<<"\n";
                 candidates.push_back(FreqString(it->userQuery(), it->freq() * factor * s));
             }
-            //std::cout<<it->userQuery()<<" ";
         }
-        //std::cout<<"\n";
     }
    
     // from approximate pinyin
     pinyin.clear();
     bool isUserQueryPinYin = false;
-    //std::string xx = isUserQueryHasChinese? "chinese" : "no chinese";
-    //std::cout<<xx<<"\n";
     if ((NULL != pyApproximator_) && (candidates.empty() || (!isUserQueryHasChinese)))
     {
         isUserQueryPinYin = (*pyApproximator_)(userQuery, pinyin);
@@ -460,14 +467,16 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
             if (accurate.end() != accurate.find(pinyin[i]))
                 continue;
             pinyin_->search(pinyin[i], uqList);
-      //      std::cout<<pinyin[i]<<"\t-------------\n";
+//std::cout<<pinyin[i]<<"\t-------------\n";
             UserQueryList::iterator it = uqList.begin();
             for (; it != uqList.end(); it++)
             {
                 if (it->userQuery() != self.userQuery())
                 {
+                    if (!UQCateEngine::getInstance().cateEqual(self.userQuery(), it->userQuery(), 100))
+                        continue;
                     double s = factorForPinYin(self.userQuery(), it->userQuery());
-    //            std::cout<<it->userQuery()<<" : "<<it->freq()<<" : "<<s<<"\n";
+//std::cout<<it->userQuery()<<" : "<<it->freq()<<" : "<<s<<"\n";
                     candidates.push_back(FreqString(it->userQuery(), it->freq() * factor * s));
                 }
             }
@@ -481,7 +490,7 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     UserQueryList uqList;
     prefix_->search(userQuery, uqList);
     UserQueryList::iterator it = uqList.begin();
-  //  std::cout<<"PREFIX::\t-----------\n";
+//std::cout<<"PREFIX::\t-----------\n";
     for (; it != uqList.end(); it++)
     {
         if (it->userQuery() == self.userQuery())
@@ -490,11 +499,16 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
         }
         else
         {
+            if (!UQCateEngine::getInstance().cateEqual(self.userQuery(), it->userQuery(), 100))
+                continue;
             double s = factorForPrefix(self.userQuery(), it->userQuery());
-     //       std::cout<<it->userQuery()<<" : "<<s<<"\n";
+//std::cout<<it->userQuery()<<" : "<<s<<"\n";
             candidates.push_back(FreqString(it->userQuery(), it->freq() * factor * s));
         }
     }
+    
+    if (candidates.empty())
+        return false;
 
     factor = 1000;
     double s = isUserQueryPinYin ? 0.1 : 1;
@@ -508,9 +522,8 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     const double selfFreq = self.freq();
     const double maxFreq = max.getFreq();
     
-   // std::cout<<self.freq()<<"\t:\t"<<max.getFreq()<<"\n";
-   // std::cout<<self.userQuery()<<"\t:\t"<<max.getString()<<"\n";
-    //if ((2.4 * selfFreq < maxFreq) &&(maxFreq - selfFreq> 1e6))
+    std::cout<<self.freq()<<"\t:\t"<<max.getFreq()<<"\n";
+    std::cout<<self.userQuery()<<"\t:\t"<<max.getString()<<"\n";
     if (2.4 * selfFreq < maxFreq)
     {
         results = max.getString();

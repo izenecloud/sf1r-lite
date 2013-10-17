@@ -64,8 +64,9 @@ public:
     virtual const iterator& begin();
     virtual const iterator& end() const;
 
-    bool isCorrect(const std::string& result);
+    bool isCorrect(std::ostream& out, const std::string& result);
     static void toString(std::string& result);
+    static void clear();
 
 private:
     Evaluator::iterator it_;

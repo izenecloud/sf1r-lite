@@ -3,7 +3,7 @@
 
 #include "parser/Parser.h"
 #include "parser/ParserFactory.h"
-#include "UserQueryCateTable.h"
+#include "UQCateEngine.h"
 #include "IndexEngine.h"
 #include <string>
 
@@ -36,7 +36,6 @@ private:
     void recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const;
 private:
     ParserFactory* parsers_;
-    UserQueryCateTable* uqcTable_;
     IndexEngine* indexer_;
     std::time_t timestamp_;
     std::string workdir_;

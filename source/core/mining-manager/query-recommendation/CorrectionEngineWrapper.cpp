@@ -34,10 +34,10 @@ CorrectionEngineWrapper& CorrectionEngineWrapper::getInstance()
 
 bool CorrectionEngineWrapper::correct(const std::string& userQuery, std::string& results, double& freq ) const
 {
-    if ("evaluate" == userQuery)
-    {
-        engine_->evaluate(system_resource_path_ + "/query_correction/evaluate/");
-    }
+    //if ("evaluate" == userQuery)
+    //{
+    //    engine_->evaluate(system_resource_path_ + "/query_correction/evaluate/");
+    //}
     
     if (NULL != engine_)
         return engine_->correct(userQuery, results, freq);

@@ -14,7 +14,7 @@ uint32_t Evaluator::nNeedRight_ = 0;
 uint32_t Evaluator::nNotNeed_ = 0;
 uint32_t Evaluator::nNotNeedRight_ = 0;
 
-bool Evaluator::isCorrect(const std::string& result)
+bool Evaluator::isCorrect(std::ostream& out, const std::string& result)
 {
     if ("" != result)
         nCorrect_++;
@@ -27,7 +27,7 @@ bool Evaluator::isCorrect(const std::string& result)
         }
         else
         {
-            std::cout<<it_->userQuery()<<" => "<<result<<"\n";
+            out<<it_->userQuery()<<" => "<<result<<"\n";
             return false;
         }
     }
@@ -40,7 +40,7 @@ bool Evaluator::isCorrect(const std::string& result)
         }
         else
         {
-            std::cout<<it_->userQuery()<<" => "<<result<<"\n";
+            out<<it_->userQuery()<<" => "<<result<<"\n";
             return false;
         }
     }
@@ -79,6 +79,15 @@ void Evaluator::toString(std::string& result)
     snprintf(tmp, 16, "%f", 1 - (double) nNotNeedRight_ / nNotNeed_);
     result += tmp;
     result += "\n";
+}
+
+void Evaluator::clear()
+{
+    nCorrect_ = 0;
+    nNeed_ = 0;
+    nNeedRight_ = 0;
+    nNotNeed_ = 0;
+    nNotNeedRight_ = 0;
 }
 
 const Evaluator::iterator& Evaluator::begin()

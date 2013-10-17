@@ -8,6 +8,7 @@
 #include "parser/ParserFactory.h"
 #include "pinyin/PinYin.h"
 #include "Filter.h"
+#include "UQCateEngine.h"
 
 namespace sf1r
 {
@@ -52,7 +53,7 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(CorrectionEngine);
 
-    void processQuery(const std::string& userQuery, const uint32_t freq);
+    void processQuery(const std::string& userQuery, const std::string& category, const uint32_t freq);
 
 private:
     PinyinTable* pinyin_;
