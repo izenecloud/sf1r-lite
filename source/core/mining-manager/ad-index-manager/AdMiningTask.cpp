@@ -24,7 +24,25 @@ bool AdMiningTask::buildDocument(docid_t docID, const Document& doc)
     std::string sDnf;
     doc.getProperty("DNF", sDnf);
     DNF dnf;
-    sf1r::DNFParser::parseDNF(sDnf, dnf);
+    if (!sf1r::DNFParser::parseDNF(sDnf, dnf))
+        return false;
+    std::string w,h,t;
+    doc.getProperty("Width", w);
+    doc.getProperty("Height", h);
+    doc.getProperty("CreativeType", t);
+    Assignment a1,a2,a3;
+    a1.belongsTo = true;
+    a2.belongsTo = true;
+    a3.belongsTo = true;
+    a1.attribute = "Width";
+    a2.attribute = "Height";
+    a3.attribute = "CreativeType";
+    a1.values.push_back(w);
+    a2.values.push_back(h);
+    a3.values.push_back(t);
+    dnf.conjunctions[0].assignments.push_back(a1);
+    dnf.conjunctions[0].assignments.push_back(a2);
+    dnf.conjunctions[0].assignments.push_back(a3);
     adIndex_->addDNF(docID, dnf);
     return true;
 }
