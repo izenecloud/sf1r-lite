@@ -6,6 +6,7 @@
 #define SF1_AD_INDEX_MANAGER_H_
 
 #include "AdMiningTask.h"
+#include <boost/lexical_cast.hpp>
 
 namespace sf1r
 {
@@ -30,7 +31,10 @@ public:
     }
 
     bool search(const std::vector<std::pair<std::string, std::string> >& info,
-            std::vector<docid_t>& docids);
+            std::vector<docid_t>& docids,
+            std::vector<float>& topKRankScoreList,
+            std::size_t& totalCount
+            );
 
 private:
 

@@ -27,17 +27,39 @@ bool AdIndexManager::buildMiningTask()
 }
 
 bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string> >& info,
-        std::vector<docid_t>& docids)
+        std::vector<docid_t>& docids,
+        std::vector<float>& topKScoreRankList,
+        std::size_t& totalCount)
 {
     boost::unordered_set<uint32_t> dnfIDs;
 
     adMiningTask_->retrieve(info, dnfIDs);
 
+    Document doc;
     for(boost::unordered_set<uint32_t>::iterator it = dnfIDs.begin();
             it != dnfIDs.end(); it++ )
     {
-        docids.push_back(*it);
+        if(documentManager_->getDocument(*it, doc) && !documentManager_->isDeleted(*it))
+        {
+            docids.push_back(*it);
+            std::string price;
+            std::string bidMode;
+            doc.getProperty("Price", price);
+            doc.getProperty("BidMode", bidMode);
+            if(bidMode == "CPM")
+            {
+                topKScoreRankList.push_back(boost::lexical_cast<float>(price));
+            }
+            else if(bidMode == "CPC")
+            {
+                //TODO
+                // calculate CTR
+                // calcutate eCPM
+                topKScoreRankList.push_back(boost::lexical_cast<float>(price));
+            }
+        }
     }
+    totalCount = docids.size();
     return true;
 }
 

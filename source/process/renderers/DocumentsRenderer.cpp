@@ -150,15 +150,11 @@ void DocumentsRenderer::renderDocuments(
     std::vector<sf1r::wdocid_t> topKWDocs;
     searchResult.getTopKWDocs(topKWDocs);
 
-    std::size_t scoreListSize = searchResult.topKRankScoreList_.size();
-
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {
         Value& newResource = resources();
         newResource[Keys::_id] = topKWDocs[indexInTopK];
-
-        if (indexInTopK < scoreListSize)
-            newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
+        newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
 
         if (searchResult.topKCustomRankScoreList_.size()
                 == searchResult.topKDocs_.size())
