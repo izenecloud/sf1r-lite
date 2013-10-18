@@ -47,11 +47,11 @@ public:
 
     void attr_tokenize(
         const std::string& Q,
-        std::vector<std::string>& tokenList);
+        std::vector<std::pair<std::string, int> >& tokenList);
 
     void attr_subtokenize(
-        const std::vector<std::string>& tks,
-        std::vector<std::string>& tokenList);
+        const std::vector<std::pair<std::string, int> >& tks,
+        std::vector<std::pair<std::string, int> >& tokenList);
 
     double att_name_weight(
         const std::string& attr_name,
