@@ -17,6 +17,7 @@
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <mining-manager/util/convert_ustr.h>
+#include <b5m-manager/product_matcher.h>
 #include <ir/index_manager/utility/BitVector.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
@@ -31,6 +32,8 @@ const std::size_t kZambeziTopKNum = 1e6;
 const std::string kTopLabelPropName = "Category";
 const size_t kTopLabelDocNum = 1000;
 const size_t kTopLabelCateNum = 4;
+
+const izenelib::util::UString::CharT kUCharSpace = ' ';
 }
 
 using namespace sf1r;
@@ -107,6 +110,7 @@ bool ZambeziSearch::search(
     AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
     std::vector<std::string> tokenList;
     attrTokenize->attr_tokenize(query,tokenList);
+    getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
@@ -334,4 +338,35 @@ void ZambeziSearch::getTopLabels_(
     }
 
     LOG(INFO) << "top label num: "<< topLabels.size();
+}
+
+void ZambeziSearch::getAnalyzedQuery_(
+    const std::string& rawQuery,
+    izenelib::util::UString& analyzedQuery)
+{
+    ProductMatcher* matcher = ProductMatcherInstance::get();
+
+    if (!matcher->IsOpen())
+        return;
+
+    typedef std::pair<izenelib::util::UString, double> TokenScore;
+    typedef std::list<TokenScore> TokenScoreList;
+    TokenScoreList majorTokens;
+    TokenScoreList minorTokens;
+    std::list<izenelib::util::UString> leftTokens;
+    izenelib::util::UString queryUStr(rawQuery, izenelib::util::UString::UTF_8);
+
+    matcher->GetSearchKeywords(queryUStr, majorTokens, minorTokens, leftTokens);
+
+    for (TokenScoreList::const_iterator it = majorTokens.begin();
+         it != majorTokens.end(); ++it)
+    {
+        const izenelib::util::UString& token = it->first;
+
+        if (queryUStr.find(token) == izenelib::util::UString::npos)
+            continue;
+
+        analyzedQuery.append(token);
+        analyzedQuery.push_back(kUCharSpace);
+    }
 }
