@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <time.h>
+#include <knlp/normalize.h>
 
 namespace sf1r
 {
@@ -51,16 +52,23 @@ Filter::~Filter()
     }
 }
 
-bool Filter::isNeedBuild() const
+bool Filter::isNeedBuild(const std::string& path) const
 {
+    std::string resource;
+    if (!boost::filesystem::exists(path))
+        resource = workdir_;
+    else if(!boost::filesystem::is_directory(path))
+        resource = workdir_;
+    else
+        resource = path;
     try
     {
-        if (!boost::filesystem::exists(workdir_))
+        if (!boost::filesystem::exists(resource))
             return false;
-        else if(boost::filesystem::is_directory(workdir_))
+        else if(boost::filesystem::is_directory(resource))
         {
             boost::filesystem::directory_iterator end;
-            for(boost::filesystem::directory_iterator it(workdir_) ; it != end ; ++it)
+            for(boost::filesystem::directory_iterator it(resource) ; it != end ; ++it)
             {
                 const std::string p = it->path().string();
                 if(boost::filesystem::is_regular_file(p))
@@ -82,16 +90,24 @@ bool Filter::isNeedBuild() const
     return false;
 }
 
-void Filter::buildFilter()
+void Filter::buildFilter(const std::string& path)
 {
+    std::string resource;
+    if (!boost::filesystem::exists(path))
+        resource = workdir_;
+    else if(!boost::filesystem::is_directory(path))
+        resource = workdir_;
+    else
+        resource = path;
+    
     try
     {
-        if (!boost::filesystem::exists(workdir_))
-            return;
-        else if(boost::filesystem::is_directory(workdir_))
+        if (!boost::filesystem::exists(resource))
+            return ;
+        else if(boost::filesystem::is_directory(resource))
         {
             boost::filesystem::directory_iterator end;
-            for(boost::filesystem::directory_iterator it(workdir_) ; it != end ; ++it)
+            for(boost::filesystem::directory_iterator it(resource) ; it != end ; ++it)
             {
                 const std::string p = it->path().string();
                 if(boost::filesystem::is_regular_file(p))
@@ -128,10 +144,18 @@ void Filter::buildFromFile(const std::string& f)
         std::string sLine(cLine);
         memset(cLine, 0, maxLine);
 
-        boost::to_lower(sLine);
+        //boost::to_lower(sLine);
         boost::trim(sLine);
+        std::string userQuery = sLine;
+        try
+        {
+            ilplib::knlp::Normalize::normalize(userQuery);
+        }
+        catch(...)
+        {
+        }
         //std::cout<<sLine<<"\n";
-        bf_->Insert(sLine);
+        bf_->Insert(userQuery);
     }
 }
 
