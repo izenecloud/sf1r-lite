@@ -33,7 +33,7 @@ public:
 
 private:
     void processQuery(const std::string& userQuery, const std::string& category, const uint32_t freq);
-    void recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const;
+    void recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results, const std::string& original) const;
 private:
     ParserFactory* parsers_;
     IndexEngine* indexer_;

@@ -115,7 +115,7 @@ void RecommendEngine::recommend(const std::string& str, const uint32_t N, std::v
     {
     }
     
-    recommend_(userQuery, N, results);
+    recommend_(userQuery, N, results, userQuery);
     if (results.size() < N)
     {
         static izenelib::util::UString U_SPACE(" ", izenelib::util::UString::UTF_8);
@@ -131,17 +131,17 @@ void RecommendEngine::recommend(const std::string& str, const uint32_t N, std::v
         }
         std::string inSpace; 
         uInSpace.convertString(inSpace, izenelib::util::UString::UTF_8);
-        recommend_(inSpace, N - results.size(), results);
+        recommend_(inSpace, N - results.size(), results, userQuery);
     }
 }
 
-void RecommendEngine::recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const
+void RecommendEngine::recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results, const std::string& original) const
 {
     static CateEqualer equaler = boost::bind(&UQCateEngine::cateEqual, &(UQCateEngine::getInstance()), _1, _2, 500);
     
     FreqStringVector byCate;
     FreqStringVector byFreq;
-    indexer_->search(userQuery, byCate, byFreq, N, &equaler);
+    indexer_->search(userQuery, byCate, byFreq, N, &equaler, original);
    
     StringUtil::tuneByEditDistance(byCate, userQuery);
     StringUtil::tuneByEditDistance(byFreq, userQuery);
