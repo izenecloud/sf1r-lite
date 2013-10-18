@@ -522,8 +522,8 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     const double selfFreq = self.freq();
     const double maxFreq = max.getFreq();
     
-std::cout<<self.freq()<<"\t:\t"<<max.getFreq()<<"\n";
-std::cout<<self.userQuery()<<"\t:\t"<<max.getString()<<"\n";
+//std::cout<<self.freq()<<"\t:\t"<<max.getFreq()<<"\n";
+//std::cout<<self.userQuery()<<"\t:\t"<<max.getString()<<"\n";
     if (2.4 * selfFreq < maxFreq)
     {
         results = max.getString();
