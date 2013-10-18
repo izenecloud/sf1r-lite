@@ -25,7 +25,7 @@ public:
             in_.close();
         if (NULL != cLine_)
         {
-            delete cLine_;
+            delete[] cLine_;
             cLine_ = NULL;
         }
         if (NULL != query_)
