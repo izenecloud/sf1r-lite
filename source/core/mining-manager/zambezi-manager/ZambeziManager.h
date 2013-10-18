@@ -56,7 +56,7 @@ private:
 
     faceted::AttrManager* attrManager_;
 
-    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
+    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_; // vector : indexer_ list;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
 };

@@ -1,3 +1,4 @@
+
 #include "AttrTokenizeWrapper.h"
 #include <knlp/attr_tokenize.h>
 #include <knlp/dictionary.h>
@@ -67,7 +68,7 @@ void AttrTokenizeWrapper::attr_tokenize_index(
 
 void AttrTokenizeWrapper::attr_tokenize(
     const std::string& Q, 
-    std::vector<std::string>& tokenList)
+    std::vector<std::pair<std::string, int> >& tokenList)
 {
     attr_tokenizer_->tokenize(Q, tokenList);
 }

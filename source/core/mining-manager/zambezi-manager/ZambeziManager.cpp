@@ -66,7 +66,7 @@ MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 }
 
 void ZambeziManager::search(
-    const std::vector<std::string>& tokens,
+    const std::vector<std::pairt<std::string, int> >& tokens,
     const boost::function<bool(uint32_t)>& filter,
     uint32_t limit,
     std::vector<docid_t>& docids,

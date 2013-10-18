@@ -32,6 +32,8 @@ public:
     virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
+    bool isAttrTokenIndex_;
+    
     const ZambeziConfig& config_;
 
     DocumentManager& documentManager_;

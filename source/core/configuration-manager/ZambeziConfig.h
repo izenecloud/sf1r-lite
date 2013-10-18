@@ -21,6 +21,10 @@ public:
 
     std::string indexFilePath;
 
+    std::vector<std::string> properties;
+
+    std::string tokenName;
+
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
                     , poolSize(0)

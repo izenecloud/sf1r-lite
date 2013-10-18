@@ -12,14 +12,35 @@ ZambeziMiningTask::ZambeziMiningTask(
         const ZambeziConfig& config,
         DocumentManager& documentManager,
         izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer)
-    : config_(config)
+    : isAttrTokenIndex_(false)
+    , config_(config)
     , documentManager_(documentManager)
-    , indexer_(indexer)
+    , indexer_(indexer) // vector<index> indexerList;
     , startDocId_(0)
 {
+    if (config.indexFilePath == "attr_token")
+        isAttrTokenIndex_ = true;
 }
 
-bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
+bool ZambeziMiningTask::buildTokenize(); // need or not ....
+{
+    if (!isAttrTokenIndex_ )
+    {
+        // build new tokenize ...
+    }
+}
+
+bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc) 
+{
+    if (!isAttrTokenIndex_ )
+    {
+        // build new tokenize ...
+    }
+    else
+        buildDocument_forAttr(docID, doc);
+}
+
+bool ZambeziMiningTask::buildDocument_forAttr(docid_t docID, const Document& doc) // this is just form Attr_tokenize
 {
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
@@ -47,11 +68,11 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
 
     std::vector<std::pair<std::string, double> > tokenScoreList;
     AttrTokenizeWrapper::get()->attr_tokenize_index(propValueList[0]
-                                                                , propValueList[1]
-                                                                , propValueList[2]
-                                                                , propValueList[3]
-                                                                , propValueList[4]
-                                                                , tokenScoreList);
+                                                    , propValueList[1]
+                                                    , propValueList[2]
+                                                    , propValueList[3]
+                                                    , propValueList[4]
+                                                    , tokenScoreList);
     std::vector<std::string> tokenList;
     std::vector<uint32_t> scoreList;
 
@@ -62,7 +83,8 @@ bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc)
         scoreList.push_back(uint32_t(it->second));
     }
 
-    indexer_.insertDoc(docID, tokenList, scoreList);
+    indexer_.insertDoc(docID, tokenList, scoreList); //
+    // indexerList[0].insertDoc(docID, tokenList, scoreList);
     return true;
 }
 
@@ -81,7 +103,7 @@ bool ZambeziMiningTask::preProcess(int64_t timestamp)
 bool ZambeziMiningTask::postProcess()
 {
     indexer_.flush();
-
+    
     std::ofstream ofs(config_.indexFilePath.c_str(), std::ios_base::binary);
     if (! ofs)
     {

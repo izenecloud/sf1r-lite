@@ -21,6 +21,9 @@ class SearchManagerPreProcessor;
 class QueryBuilder;
 class ZambeziManager;
 class PropSharedLockSet;
+class ProductScorer;
+class HitQueue;
+class ScoreDoc;
 
 namespace faceted
 {
@@ -46,12 +49,17 @@ public:
         std::size_t offset);
 
 private:
+    void normalizeTopDocs_(
+        const boost::scoped_ptr<ProductScorer>& productScorer, 
+        boost::scoped_ptr<HitQueue>& scoreItemQueue,
+        std::vector<ScoreDoc>& resultList, 
+        PropSharedLockSet &sharedLockSet);
+
     void getTopLabels_(
         const std::vector<unsigned int>& docIdList,
         const std::vector<float>& rankScoreList,
         PropSharedLockSet& propSharedLockSet,
         faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
-
 private:
     DocumentManager& documentManager_;
 
