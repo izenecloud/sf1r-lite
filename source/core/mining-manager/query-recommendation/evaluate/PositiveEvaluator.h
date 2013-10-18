@@ -47,7 +47,7 @@ public:
     {
         if (NULL != cLine_)
         {
-            delete cLine_;
+            delete[] cLine_;
             cLine_ = NULL;
         }
         if (NULL != item_)
