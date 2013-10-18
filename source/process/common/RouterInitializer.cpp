@@ -79,6 +79,28 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
     }
     
     {
+        QueryCorrectionController query_correction;
+        const std::string controllerName("query_correction");
+        typedef ::izenelib::driver::ActionHandler<QueryCorrectionController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr indexHandler(
+            new handler_type(
+                query_correction,
+                &QueryCorrectionController::evaluate
+            )
+        );
+
+        router.map(
+            controllerName,
+            "evaluate",
+            indexHandler.get()
+        );
+        indexHandler.release();
+    }
+    
+    
+    {
         QueryRecommendController query_recommend;
         const std::string controllerName("query_recommend");
         typedef ::izenelib::driver::ActionHandler<QueryRecommendController> handler_type;

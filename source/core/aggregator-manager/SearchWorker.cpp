@@ -523,7 +523,11 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::AD_INDEX:
-        if (!miningManager_->getAdIndexManager()->search(actionOperation.actionItem_.adSearchPropertyValue_, resultItem.topKDocs_))
+        if (!miningManager_->getAdIndexManager()->search(
+                    actionOperation.actionItem_.adSearchPropertyValue_,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.totalCount_))
         {
             return true;
         }
