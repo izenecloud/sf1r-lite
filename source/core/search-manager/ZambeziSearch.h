@@ -10,6 +10,7 @@
 #include "SearchBase.h"
 #include <common/inttypes.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
@@ -51,6 +52,10 @@ private:
         const std::vector<float>& rankScoreList,
         PropSharedLockSet& propSharedLockSet,
         faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
+
+    void getAnalyzedQuery_(
+        const std::string& rawQuery,
+        izenelib::util::UString& analyzedQuery);
 
 private:
     DocumentManager& documentManager_;

@@ -95,4 +95,27 @@ void QueryCorrectionController::index()
         
 }
 
+/*
+ * @brief Evaluate QueryCorrection Unit Internal
+ */
+void QueryCorrectionController::evaluate()
+{
+    std::string sResult = "";
+    CorrectionEngineWrapper::getInstance().evaluate(sResult);
+    std::size_t pos = 0;
+    izenelib::driver::Value& v = response()["Evaluate Result"];
+    while (true)
+    {
+        std::size_t found = sResult.find('\n', pos);
+        if (std::string::npos == found)
+            break;
+        std::string sItem = sResult.substr(pos, found - pos);
+        pos = found + 1;
+
+        std::size_t seq = sItem.find(":");
+        if (std::string::npos == seq)
+            continue;
+        v[sItem.substr(0, seq)] = sItem.substr(seq+2);
+    }
+}
 } // namespace sf1r

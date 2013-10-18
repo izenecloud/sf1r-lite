@@ -247,7 +247,7 @@ CorrectionEngine:: ~CorrectionEngine()
     }
 }
     
-void CorrectionEngine::evaluate(const std::string& path) const
+void CorrectionEngine::evaluate(const std::string& path, std::string& sResult) const
 {
     std::string resource;
     if (!boost::filesystem::exists(path))
@@ -281,9 +281,7 @@ void CorrectionEngine::evaluate(const std::string& path) const
         }
     }
     out.close();
-    std::string stream;
-    Evaluator::toString(stream);
-    std::cout<<stream<<"\n";
+    Evaluator::toString(sResult);
     Evaluator::clear();
 }
 

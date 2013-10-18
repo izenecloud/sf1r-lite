@@ -46,7 +46,7 @@ public:
     void buildEngine(const std::string& path = "");
     bool isNeedBuild(const std::string& path = "") const;
 
-    void evaluate(const std::string& path = "") const;
+    void evaluate(const std::string& path, std::string& sResult) const;
     
     void flush() const;
     void clear();
