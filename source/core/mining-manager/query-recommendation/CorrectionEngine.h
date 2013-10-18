@@ -8,6 +8,7 @@
 #include "parser/ParserFactory.h"
 #include "pinyin/PinYin.h"
 #include "Filter.h"
+#include "UQCateEngine.h"
 
 namespace sf1r
 {
@@ -28,6 +29,17 @@ public:
     {
         pyConverter_ = pyConverter;
     }
+    
+    const PinYinConverter* pinYinApproximator() const
+    {
+        return pyApproximator_;
+    }
+
+    void setPinYinApproximator(PinYinConverter* pyConverter)
+    {
+        pyApproximator_ = pyConverter;
+    }
+
 
     bool correct(const std::string& userQuery, std::string& results, double& freq ) const;
 
@@ -41,7 +53,7 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(CorrectionEngine);
 
-    void processQuery(const std::string& userQuery, const uint32_t freq);
+    void processQuery(const std::string& userQuery, const std::string& category, const uint32_t freq);
 
 private:
     PinyinTable* pinyin_;
@@ -49,6 +61,7 @@ private:
     Filter*      filter_; 
     ParserFactory* parsers_;
     PinYinConverter* pyConverter_;
+    PinYinConverter* pyApproximator_;
     time_t timestamp_;
     std::string workdir_;
 };

@@ -19,7 +19,6 @@ static std::string timestamp = ".RecommendEngineTimestamp";
 
 RecommendEngine::RecommendEngine(const std::string& dir)
     : parsers_(NULL)
-    , uqcTable_(NULL)
     , indexer_(NULL)
     , timestamp_(0)
     , workdir_(dir)
@@ -30,8 +29,10 @@ RecommendEngine::RecommendEngine(const std::string& dir)
     }
     
     parsers_ = new ParserFactory();
-    uqcTable_ = new UserQueryCateTable(workdir_);
     indexer_ = new IndexEngine(workdir_);
+    
+    UQCateEngine::workdir = workdir_;
+    UQCateEngine::getInstance().lock(this);
     
     std::string path = workdir_;
     path += "/";
@@ -50,11 +51,6 @@ RecommendEngine::~RecommendEngine()
     {
         delete parsers_;
         parsers_ = NULL;
-    }
-    if (NULL != uqcTable_)
-    {
-        delete uqcTable_;
-        uqcTable_ = NULL;
     }
     if (NULL != indexer_)
     {
@@ -141,7 +137,7 @@ void RecommendEngine::recommend(const std::string& str, const uint32_t N, std::v
 
 void RecommendEngine::recommend_(const std::string& userQuery, const uint32_t N, std::vector<std::string>& results) const
 {
-    static CateEqualer equaler = boost::bind(&UserQueryCateTable::cateEqual, uqcTable_, _1, _2);
+    static CateEqualer equaler = boost::bind(&UQCateEngine::cateEqual, &(UQCateEngine::getInstance()), _1, _2, 500);
     
     FreqStringVector byCate;
     FreqStringVector byFreq;
@@ -193,81 +189,13 @@ void RecommendEngine::recommend_(const std::string& userQuery, const uint32_t N,
         if (n >= N)
             break;
     }
-
-    /*FreqStringVector uqByFreq;
-    for (std::size_t i = 0; i < candidates.size(); i++)
-    {
-        if (StringUtil::isNeedRemove(candidates[i].getString(), nUserQuery))
-            continue;
-        uqByFreq.push_back(candidates[i]);
-        if (uqByFreq.size() >= N)
-            break;
-    }
-
-    //StringUtil::removeItem(uqByFreq, nUserQuery);
-    StringUtil::tuneByEditDistance(uqByFreq, nUserQuery);
-    for (std::size_t i = 0; (i < uqByFreq.size()) && (i < N); i++)
-    {
-        results.push_back(uqByFreq[i].getString());
-    }
-    uqByFreq.clear();*/
-    // todo category information.
-    /*
-    TermCateTable::CateIdList cateIds; // category list for userQuery
-    Tokenize::TermVector::iterator it = tv.begin();
-    for (; it != tv.end(); ++it)
-    {
-        TermCateTable::CateIdList ids;
-        tcTable_->category(it->term(), ids);
-        //std::cout<<ids;
-        cateIds += ids;
-        //std::cout<<cateIds;
-    }
-    
-    cateIds.sort();
-    cateIds.reverse();
-    TermCateTable::CateIdList::iterator id_it = cateIds.begin();
-    for (; id_it != cateIds.end(); id_it++)
-    {
-        std::cout<<tcTable_->cateIdToCate(id_it->first)<<":"<<id_it->second<<";";
-    }
-    std::cout<<"\n";
-
-    FreqStringVector uqByCate;
-    uint32_t n = 0;
-    for (id_it = cateIds.begin(); id_it != cateIds.end(); id_it++)
-    {
-        UserQueryCateTable::UserQueryList userQuery;
-        uqcTable_->topNUserQuery(tcTable_->cateIdToCate(id_it->first), N / 2, userQuery);
-        UserQueryCateTable::UserQueryList::iterator uq_it = userQuery.begin();
-        std::cout<<tcTable_->cateIdToCate(id_it->first)<<":";
-        for(; uq_it != userQuery.end(); uq_it++)
-        {
-            std::cout<<uq_it->userQuery()<<" ";
-            uqByCate.push_back(FreqString(uq_it->userQuery(), uq_it->freq()));
-            if (++n >= 2 *N)
-                break;
-        }
-        std::cout<<"\n";
-        if ( n>= 2*N)
-            break;
-    }
-    StringUtil::removeDuplicate(uqByCate);
-    std::sort(uqByCate.begin(), uqByCate.end());
-    
-    StringUtil::tuneByEditDistance(uqByCate, userQuery);
-    for (std::size_t i = 0; i < uqByCate.size(); i++)
-    {
-        results.push_back(uqByCate[i].getString());
-    }
-    */ 
 }
 
 void RecommendEngine::flush() const
 {
     indexer_->flush();
     //tcTable_->flush();
-    uqcTable_->flush();
+    UQCateEngine::getInstance().flush();
     
     std::string path = workdir_;
     path += "/";
@@ -282,6 +210,7 @@ void RecommendEngine::flush() const
 void RecommendEngine::clear()
 {
     indexer_->clear();
+    UQCateEngine::getInstance().clear();
 }
 
 bool RecommendEngine::isNeedBuild(const std::string& path) const
@@ -371,7 +300,7 @@ void RecommendEngine::processQuery(const std::string& userQuery, const std::stri
     //}
     //std::cout<<" : "<<category<<" : "<<freq<<"\n";
 
-    uqcTable_->insert(userQuery, category, freq);
+    UQCateEngine::getInstance().insert(userQuery, category, freq);
     indexer_->insert(userQuery, freq);
 }
 

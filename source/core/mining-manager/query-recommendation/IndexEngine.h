@@ -12,7 +12,7 @@
 #include "tokenize/Tokenizer.h"
 #include "StringUtil.h"
 
-#include "UserQueryCateTable.h"
+#include "UQCateEngine.h"
 
 namespace sf1r
 {
