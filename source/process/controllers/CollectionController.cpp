@@ -147,6 +147,12 @@ void CollectionController::start_collection()
 #endif
     configFile += slash + collection + ".xml";
 
+    if (!CollectionManager::get()->checkConfig(collection, configFile))
+    {
+        response().addError("collection config is invalid.");
+        return;
+    }
+
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
@@ -343,13 +349,6 @@ void CollectionController::update_collection_conf()
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
-    if(!CollectionManager::get()->stopCollection(collection, false))
-    {
-        LOG(ERROR) << "failed to stop collection while update config." << collection;
-        response().addError("failed to stop collection while update config.");
-        return;
-    }
-
     std::string configFile = SF1Config::get()->getHomeDirectory();
     std::string slash("");
 #ifdef WIN32
@@ -358,6 +357,18 @@ void CollectionController::update_collection_conf()
         slash = "/";
 #endif
     configFile += slash + collection + ".xml";
+    if (!CollectionManager::get()->checkConfig(collection, configFile, false))
+    {
+        response().addError("collection config is invalid.");
+        return;
+    }
+
+    if(!CollectionManager::get()->stopCollection(collection, false))
+    {
+        LOG(ERROR) << "failed to stop collection while update config." << collection;
+        response().addError("failed to stop collection while update config.");
+        return;
+    }
 
     UpdateConfigReqLog reqlog;
     do {

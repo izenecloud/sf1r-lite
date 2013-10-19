@@ -28,7 +28,7 @@ namespace sf1r
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
-    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_, 
+    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_,
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
@@ -301,7 +301,7 @@ void SearchWorker::visitDoc(const uint32_t& docId, bool& result)
     //{
     //    // for rpc call from master, we can not decide whether the caller is from
     //    // local or remote master, so we assume all caller is remote.
-    //    // In order to make sure the hook is cleared, we need return true to 
+    //    // In order to make sure the hook is cleared, we need return true to
     //    // tell caller that we will take the charge to clear any hooked on this request.
     //    DistributeRequestHooker::get()->processLocalFinished(result);
     //    result = true;
@@ -415,7 +415,7 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR) 
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
         assembleDisjunction(keywords, newQuery);
@@ -459,7 +459,7 @@ bool SearchWorker::getSearchResult_(
     // to be retrieved in one node is set to TOP_K_NUM.
     if (isDistributedSearch)
     {
-        // distributed search need get more topk since 
+        // distributed search need get more topk since
         // each worker can only start topk from 0.
         search_limit += actionOperation.actionItem_.pageInfo_.start_;
     }
@@ -522,6 +522,17 @@ bool SearchWorker::getSearchResult_(
 
         break;
 
+    case SearchingMode::AD_INDEX:
+        if (!miningManager_->getAdIndexManager()->search(
+                    actionOperation.actionItem_.adSearchPropertyValue_,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.totalCount_))
+        {
+            return true;
+        }
+        break;
+
     default:
         unsigned int QueryPruneTimes = 2;
         bool isUsePrune = false;
@@ -540,14 +551,14 @@ bool SearchWorker::getSearchResult_(
             }
 
             /// muti thread ....
-            /// * star search 
+            /// * star search
             const bool isFilterQuery =
             actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
             if (isFilterQuery)
                 return true;
 
-            /// query frune 
+            /// query frune
             QueryPruneBase* queryPrunePtr = NULL;
             QueryPruneType qrType;
 
@@ -819,7 +830,7 @@ bool  SearchWorker::getResultItem(
 
     //queryTerms is begin segmented after analyze_()
     bool isRequireHighlight = false;
-    for(std::vector<DisplayProperty>::const_iterator it = actionItem.displayPropertyList_.begin(); 
+    for(std::vector<DisplayProperty>::const_iterator it = actionItem.displayPropertyList_.begin();
         it != actionItem.displayPropertyList_.end(); ++it)
     {
         if(it->isHighlightOn_ ||it->isSnippetOn_)

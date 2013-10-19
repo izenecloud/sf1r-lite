@@ -42,7 +42,7 @@ void renderPropertyList(
 
         const PropertyValue::PropertyValueStrType& snippetText =
             docResults.snippetTextOfDocumentInPage_[p][column];
-            
+
         if (propertyList[p].isSplitPropertyValue_)
         {
             splitRenderer.renderPropValue(

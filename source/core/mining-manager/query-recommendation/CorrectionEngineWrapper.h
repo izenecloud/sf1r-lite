@@ -14,6 +14,7 @@ public:
 
 public:
     bool correct(const std::string& userQuery, std::string& results, double& freq ) const;
+    void evaluate(std::string& stream) const;
 public:
     static std::string system_resource_path_;
     static std::string system_working_path_;

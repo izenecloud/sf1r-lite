@@ -44,6 +44,7 @@ bool DNFParser::parseDNF(const std::string& str, DNF& dnf)
             else
             {
                 LOG(INFO)<<"Unknown DNF formart"<<endl;
+                return false;
             }
         }
     }

@@ -106,6 +106,15 @@ void DocumentsSearchHandler::search()
         {
             searchResult.TOP_K_NUM = indexSearchService_->getBundleConfig()->kNNTopKNum_;
         }
+        else if (actionItem_.searchingMode_.mode_ == SearchingMode::AD_INDEX)
+        {
+            std::vector<std::pair<std::string, std::string> >::iterator it;
+            for(it = actionItem_.adSearchPropertyValue_.begin();
+                    it != actionItem_.adSearchPropertyValue_.end(); it++ )
+            {
+                actionItem_.env_.queryString_ += (it->first + it->second);
+            }
+        }
         renderer_.setTopKNum(searchResult.TOP_K_NUM);
 
         int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem_));
@@ -352,7 +361,7 @@ bool DocumentsSearchHandler::doGet(
 
 bool DocumentsSearchHandler::parse()
 {
-    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager(); 
+    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager();
     if (queryIntentManager)
         queryIntentManager->queryIntent(request_, response_);
 
@@ -468,6 +477,10 @@ bool DocumentsSearchHandler::parse()
     swap(
         actionItem_.counterList_,
         searchParser.mutableCounterList()
+    );
+    swap(
+        actionItem_.adSearchPropertyValue_,
+        searchParser.adSearch()
     );
     actionItem_.languageAnalyzerInfo_ = searchParser.analyzerInfo();
     actionItem_.rankingType_ = searchParser.rankingModel();
@@ -655,7 +668,7 @@ bool DocumentsSearchHandler::doSearch(
         std::string convertBuffer;
         searchResult.analyzedQuery_.convertString(
                 convertBuffer, izenelib::util::UString::UTF_8
-        );		
+        );
         response_[Keys::analyzer_result] = convertBuffer;
     }
 

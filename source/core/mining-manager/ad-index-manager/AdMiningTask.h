@@ -23,7 +23,7 @@ class AdMiningTask : public MiningTask
 public:
     AdMiningTask(
             const std::string& path,
-            boost::shared_ptr<DocumentManager> dm);
+            boost::shared_ptr<DocumentManager>& dm);
 
     ~AdMiningTask();
 
@@ -55,7 +55,7 @@ private:
 
     std::string indexPath_;
 
-    boost::shared_ptr<DocumentManager> documentManager_;
+    boost::shared_ptr<DocumentManager>& documentManager_;
 
     boost::shared_ptr<AdIndexType> adIndex_;
 
