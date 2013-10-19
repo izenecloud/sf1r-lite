@@ -23,6 +23,7 @@ namespace sf1r {
         {
             std::string spid;
             ScdDocument doc;
+            ScdDocument diff_doc;
             //Document doc;
             //bool is_update;//else delete
             std::string ts;
@@ -63,6 +64,7 @@ namespace sf1r {
             }
             uint32_t id;
             std::vector<Value> odocs;
+            std::vector<ScdDocument> diff_odocs;
             ScdDocument pdoc;
         };
         B5moSorter(const std::string& m, uint32_t mcount=100000);

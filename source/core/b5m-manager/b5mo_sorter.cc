@@ -244,6 +244,33 @@ void B5moSorter::OBag_(PItem& pitem)
         {
             prev_odocs.push_back(pre_ovalues[i].doc);
         }
+        {
+            std::size_t i=0,j=0;
+            for(std::size_t i=0;i<ovalues.size();i++)
+            {
+                Value& v = ovalues[i];
+                v.diff_doc = v.doc;
+                if(v.doc.type!=UPDATE_SCD) continue;
+                for(;j<prev_odocs.size();j++)
+                {
+                    ScdDocument& last = v.doc;
+                    const ScdDocument& jdoc = prev_odocs[j];
+                    std::string last_docid;
+                    std::string last_jdocid;
+                    last.getString("DOCID", last_docid);
+                    jdoc.getString("DOCID", last_jdocid);
+                    if(last_docid<last_jdocid)
+                    {
+                        break;
+                    }
+                    else if(last_docid==last_jdocid)
+                    {
+                        v.diff_doc.diff(jdoc);
+                        break;
+                    }
+                }
+            }
+        }
         //for(uint32_t i=0;i<odocs.size();i++)
         //{
         //    if(odocs[i].type!=DELETE_SCD)
@@ -352,7 +379,7 @@ void B5moSorter::WritePItem_(PItem& pitem)
             for(uint32_t i=0;i<pitem.odocs.size();i++)
             {
                 Value& value = pitem.odocs[i];
-                ScdDocument& odoc = value.doc;
+                ScdDocument& odoc = value.diff_doc;
                 odoc_precount++;
                 if(odoc.type!=UPDATE_SCD) continue;
                 odoc_count++;
@@ -360,6 +387,17 @@ void B5moSorter::WritePItem_(PItem& pitem)
                 odoc.property("itemcount") = (int64_t)1;
                 //odoc.eraseProperty("uuid");
                 pwriter_->Append(odoc);
+            }
+            for(uint32_t i=0;i<pitem.odocs.size();i++)
+            {
+                Value& value = pitem.odocs[i];
+                if(value.ts<ts_) continue;
+                ScdDocument& odoc = value.diff_doc;
+                if(odoc.type==DELETE_SCD)
+                {
+                    odoc.clearExceptDOCID();
+                    pwriter_->Append(odoc);
+                }
             }
             if(odoc_count>1)
             {

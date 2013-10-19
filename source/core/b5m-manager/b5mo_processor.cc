@@ -453,6 +453,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             LOG(ERROR)<<"odb open fail"<<std::endl;
             return false;
         }
+        LOG(INFO)<<"odb open successfully"<<std::endl;
     }
     namespace bfs = boost::filesystem;
     std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
