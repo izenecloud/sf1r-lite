@@ -519,6 +519,9 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     FreqString max = StringUtil::max(candidates);
     const double selfFreq = self.freq();
     const double maxFreq = max.getFreq();
+    izenelib::util::UString umax(max.getString(), izenelib::util::UString::UTF_8);
+    if (umax.length() <= 1)
+        return false;
     
 //std::cout<<self.freq()<<"\t:\t"<<max.getFreq()<<"\n";
 //std::cout<<self.userQuery()<<"\t:\t"<<max.getString()<<"\n";
