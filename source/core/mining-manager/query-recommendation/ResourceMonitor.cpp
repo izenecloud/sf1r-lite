@@ -127,10 +127,6 @@ void ResourceMonitor::monitorLoop_()
         while (i < length)
         {
             struct inotify_event *event = (struct inotify_event*)&buffer[i];
-            if (IN_IGNORED & event->mask)
-            {
-                return;
-            }
             if (mask_ & event->mask)
             {
                 falseAlarm = false;

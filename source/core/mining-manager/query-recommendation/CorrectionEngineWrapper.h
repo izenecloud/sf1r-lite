@@ -2,7 +2,7 @@
 #define CORRECTION_ENGINE_WRAPPER_H
 
 #include "CorrectionEngine.h"
-#include "ResourceMonitor.h"
+//#include "ResourceMonitor.h"
 
 namespace sf1r
 {
@@ -23,8 +23,8 @@ public:
 
 private:
     Recommend::CorrectionEngine* engine_;
-    ResourceMonitor* monitor_;
-    boost::shared_mutex mtx_;
+    //ResourceMonitor* monitor_;
+    //boost::shared_mutex mtx_;
 };
 }
 
