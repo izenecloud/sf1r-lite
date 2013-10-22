@@ -195,7 +195,7 @@ void IndexEngine::insert(const std::string& userQuery, uint32_t count)
     }
 }
 
-void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equaler) const
+void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equaler, const std::string& original) const
 {
     static StringUtil::HashFunc generator;
    
@@ -298,7 +298,7 @@ void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate,
         std::string str;
         ustr.convertString(str, izenelib::util::UString::UTF_8);
         
-        if (StringUtil::isNeedRemove(str, userQuery))
+        if (StringUtil::isNeedRemove(str, original))
             continue;
         
         std::string rstr; // string removed space
@@ -306,7 +306,7 @@ void IndexEngine::search(const std::string& userQuery, FreqStringVector& byCate,
         std::string srstr(rstr); // sorted removed space string
         std::sort(srstr.begin(), srstr.end());
         
-        if((*equaler)(userQuery, str))
+        if((*equaler)(original, str))
         {
             boost::unordered_map<std::string, std::size_t>::iterator pit = pCate.find(srstr);
             if (pCate.end() == pit)

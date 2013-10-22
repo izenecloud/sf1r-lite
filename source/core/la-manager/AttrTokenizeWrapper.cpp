@@ -67,14 +67,14 @@ void AttrTokenizeWrapper::attr_tokenize_index(
 
 void AttrTokenizeWrapper::attr_tokenize(
     const std::string& Q, 
-    std::vector<std::string>& tokenList)
+    std::vector<std::pair<std::string, int> >& tokenList)
 {
     attr_tokenizer_->tokenize(Q, tokenList);
 }
 
 void AttrTokenizeWrapper::attr_subtokenize(
-    const std::vector<std::string>& tks,
-    std::vector<std::string>& tokenList)
+        const std::vector<std::pair<std::string, int> >& tks,
+        std::vector<std::pair<std::string, int> >& tokenList)
 {
     attr_tokenizer_->subtokenize(tks, tokenList);
 }
