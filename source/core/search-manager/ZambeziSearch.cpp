@@ -258,7 +258,7 @@ bool ZambeziSearch::search(
         customScoreList.resize(topKCount);
     }
 
-    for (int i = resultList.size() - topKCount; i < resultList.size(); ++i)
+    for (unsigned int i = resultList.size() - topKCount; i < resultList.size(); ++i)
     {
         const ScoreDoc& scoreItem =  resultList[i];//need to ASC
         docIdList[i] = scoreItem.docId;

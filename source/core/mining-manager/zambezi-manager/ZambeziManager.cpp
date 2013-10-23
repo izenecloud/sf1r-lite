@@ -31,6 +31,38 @@ ZambeziManager::ZambeziManager(
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
     , numericTableBuilder_(numericTableBuilder)
 {
+    void init();
+}
+
+bool ZambeziManager::open_1()
+{
+    const std::string& basePath = config_.indexFilePath;
+
+    for (std::vector<std::string>::iterator i = propertyList_.begin(); i != propertyList_.end(); ++i)
+    {
+        std::string path = basePath + "_" + *i; // index.bin_Title
+        std::ifstream ifs(path.c_str(), std::ios_base::binary);
+
+        if (! ifs)
+            return false;// orignal return true;
+
+        LOG(INFO) << "loading zambezi index for propery: " << *i << ", path" << path;
+
+        try
+        {
+            property_index_map_[*i].load(ifs);
+        }
+        catch (const std::exception& e)
+        {
+            LOG(ERROR) << "exception in read file: " << e.what()
+                   << ", path: " << path;
+            return false;
+        }
+    }
+
+    LOG(INFO) << "Finished loading zambezi index";
+
+    return true;
 }
 
 bool ZambeziManager::open()
@@ -63,6 +95,48 @@ bool ZambeziManager::open()
 MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 {
     return new ZambeziMiningTask(config_, documentManager, indexer_);
+}
+
+void ZambeziManager::search(
+    const std::vector<std::pair<std::string, int> >& tokens,
+    const boost::function<bool(uint32_t)>& filter,
+    uint32_t limit,
+    const std::vector<std::string>& propertyList,
+    std::vector<docid_t>& docids,
+    std::vector<uint32_t>& scores)
+{
+    izenelib::util::ClockTimer timer;
+    if (propertyList.size() == 1)
+    {    
+        property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
+        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+                  << ", costs :" << timer.elapsed() << " seconds";
+        return;
+    }
+
+    std::vector<std::vector<docid_t> > docidsList;
+    docidsList.resize(propertyList.size());
+    std::vector<std::vector<uint32_t> > scoresList;
+    scoresList.resize(propertyList.size());
+
+    for (unsigned int i = 0; i < propertyList.size(); ++i)
+    {
+        property_index_map_[propertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
+    }
+
+    merge_(docidsList, scoresList, docids, scores);
+
+    LOG(INFO) << "zambezi returns docid num: " << docids.size()
+              << ", costs :" << timer.elapsed() << " seconds";
+}
+
+void ZambeziManager::merge_(
+        const std::vector<std::vector<docid_t> >& docidsList,
+        const std::vector<std::vector<uint32_t> >& scoresList,
+        std::vector<docid_t>& docids,
+        std::vector<uint32_t>& scores)
+{
+
 }
 
 void ZambeziManager::search(

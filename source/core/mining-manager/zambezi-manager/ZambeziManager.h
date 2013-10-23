@@ -26,6 +26,8 @@ class DocumentManager;
 class MiningTask;
 class ZambeziConfig;
 
+typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
+
 class ZambeziManager
 {
 public:
@@ -34,7 +36,11 @@ public:
             faceted::AttrManager* attrManager,
             NumericPropertyTableBuilder* numericTableBuilder);
 
+    void init();
+
     bool open();
+
+    bool open_1();
 
     MiningTask* createMiningTask(DocumentManager& documentManager);
 
@@ -45,6 +51,15 @@ public:
         std::vector<docid_t>& docids,
         std::vector<uint32_t>& scores);
 
+    void search(
+        const std::vector<std::pair<std::string, int> >& tokens,
+        const boost::function<bool(uint32_t)>& filter,
+        uint32_t limit,
+        const std::vector<std::string>& propertyList,
+        std::vector<docid_t>& docids,
+        std::vector<uint32_t>& scores);
+
+
     void NormalizeScore(
         std::vector<docid_t>& docids,
         std::vector<float>& scores,
@@ -52,11 +67,22 @@ public:
         PropSharedLockSet &sharedLockSet);
 
 private:
+    void merge_(
+        const std::vector<std::vector<docid_t> >& docidsList,
+        const std::vector<std::vector<uint32_t> >& scoresList,
+        std::vector<docid_t>& docids,
+        std::vector<uint32_t>& scores);
+
+private:
     const ZambeziConfig& config_;
 
     faceted::AttrManager* attrManager_;
 
-    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_; // vector : indexer_ list;
+    std::vector<std::string> propertyList_;
+
+    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
+
+    std::map<std::string, AttrIndex> property_index_map_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
 };

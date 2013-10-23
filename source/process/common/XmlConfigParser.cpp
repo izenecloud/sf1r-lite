@@ -2340,6 +2340,24 @@ void CollectionConfig::parseAdIndexNode(
     miningSchema.ad_index_config.isEnable = true;
 }
 
+/*void CollectionConfig::parseZambeziNode(
+    const ticpp::Element* zambeziNode,
+    CollectionMeta& collectionMeta) const
+{
+    if (!zambeziNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+
+    getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
+    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
+    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
+    zambeziConfig.isEnable = true;
+}*/
+
 void CollectionConfig::parseZambeziNode(
     const ticpp::Element* zambeziNode,
     CollectionMeta& collectionMeta) const
@@ -2356,6 +2374,105 @@ void CollectionConfig::parseZambeziNode(
     getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
     getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
     zambeziConfig.isEnable = true;
+
+    Iterator<Element> property("IndexProperty");
+    for (property = property.begin(zambeziNode); property != property.end(); property++)
+    {
+        try
+        {
+            zambeziProperty zProperty;
+            // name
+            string propertyName;
+            getAttribute(property.Get(), "name", propertyName);
+            zProperty.name = propertyName;
+
+            // weight
+            float propertyWeight;
+            if (getAttribute_FloatType(property.Get(), "weight", propertyWeight, false))
+                zProperty.weight = propertyWeight;
+
+            // poolSize
+            uint32_t poolsize;
+            if (getAttribute(property.Get(), "poolSize", poolsize, false))
+                zProperty.poolSize = poolsize;
+            else
+                zProperty.poolSize = zambeziConfig.poolSize;
+
+            zambeziConfig.properties.push_back(zProperty);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
+    //// for virtual Property
+    Iterator<Element> virtualproperty("VirtualProperty");
+    for (virtualproperty = virtualproperty.begin(zambeziNode); virtualproperty != virtualproperty.end(); virtualproperty++)
+    {
+        try
+        {
+            // name
+            zambeziVirtualProperty vProperty;
+            getAttribute(virtualproperty.Get(), "name", vProperty.name);
+
+            // path
+            getAttribute(virtualproperty.Get(), "dict_path", vProperty.tokenPath, false);
+
+            // weight
+            //getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
+            float propertyWeight;
+            if (getAttribute_FloatType(virtualproperty.Get(), "weight", propertyWeight, false))
+                vProperty.weight = propertyWeight;
+
+            // poolsize
+            uint32_t poolSize;
+            if (getAttribute(zambeziNode, "poolSize", poolSize, 1 << 28))
+                vProperty.poolSize = poolSize;
+            else
+                vProperty.poolSize = zambeziConfig.poolSize;
+
+            // isAttrToken
+            bool isAttrToken;
+            if (getAttribute(virtualproperty.Get(), "isAttrToken", isAttrToken, false))
+                vProperty.isAttrToken = isAttrToken;
+
+            // SubProperty
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                string subPropName;
+                getAttribute(subproperty.Get(), "name", subPropName);
+                vProperty.subProperties.push_back(subPropName);
+            }
+
+            zambeziConfig.virtualPropeties.push_back(vProperty);
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
+    std::string DictionaryPath;
+    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", true);
+    if (subNode)
+    {
+        std::string DictionaryPath;
+        getAttribute(subNode, "path", DictionaryPath);
+        for (std::vector<zambeziProperty>::iterator i = zambeziConfig.properties.begin(); i != zambeziConfig.properties.end(); ++i)
+        {
+            std::cout << "DictionaryPath" << DictionaryPath <<std::endl;
+            i->tokenPath = DictionaryPath;
+        }
+    }
+    else
+    {
+        throw XmlConfigParserException("[TokenizeDictionary] used in ZambeziConfig is missing.");
+    }
+
+
+    zambeziConfig.display();
 }
 
 void CollectionConfig::parseProductRankingNode(
