@@ -1,5 +1,4 @@
 #include "ZambeziManager.h"
-#include "ZambeziMiningTask.h"
 
 #include "../group-manager/PropValueTable.h" // pvid_t
 #include "../group-manager/GroupManager.h"
@@ -58,11 +57,6 @@ bool ZambeziManager::open()
               << indexer_.totalDocNum();
 
     return true;
-}
-
-MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
-{
-    return new ZambeziMiningTask(config_, documentManager, indexer_);
 }
 
 void ZambeziManager::search(

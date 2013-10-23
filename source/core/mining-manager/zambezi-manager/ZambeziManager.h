@@ -23,7 +23,6 @@ class AttrManager;
 }
 
 class DocumentManager;
-class MiningTask;
 class ZambeziConfig;
 
 class ZambeziManager
@@ -35,8 +34,6 @@ public:
             NumericPropertyTableBuilder* numericTableBuilder);
 
     bool open();
-
-    MiningTask* createMiningTask(DocumentManager& documentManager);
 
     void search(
         const std::vector<std::pair<std::string, int> >& tokens,
