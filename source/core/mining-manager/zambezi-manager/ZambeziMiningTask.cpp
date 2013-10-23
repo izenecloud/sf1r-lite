@@ -22,25 +22,7 @@ ZambeziMiningTask::ZambeziMiningTask(
         isAttrTokenIndex_ = true;
 }
 
-bool ZambeziMiningTask::buildTokenize(); // need or not ....
-{
-    if (!isAttrTokenIndex_ )
-    {
-        // build new tokenize ...
-    }
-}
-
 bool ZambeziMiningTask::buildDocument(docid_t docID, const Document& doc) 
-{
-    if (!isAttrTokenIndex_ )
-    {
-        // build new tokenize ...
-    }
-    else
-        buildDocument_forAttr(docID, doc);
-}
-
-bool ZambeziMiningTask::buildDocument_forAttr(docid_t docID, const Document& doc) // this is just form Attr_tokenize
 {
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
@@ -83,8 +65,7 @@ bool ZambeziMiningTask::buildDocument_forAttr(docid_t docID, const Document& doc
         scoreList.push_back(uint32_t(it->second));
     }
 
-    indexer_.insertDoc(docID, tokenList, scoreList); //
-    // indexerList[0].insertDoc(docID, tokenList, scoreList);
+    indexer_.insertDoc(docID, tokenList, scoreList);
     return true;
 }
 

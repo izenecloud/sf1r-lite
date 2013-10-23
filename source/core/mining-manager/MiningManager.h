@@ -19,6 +19,7 @@
 #include "summarization-submanager/Summarization.h" //Summarization
 #include "custom-rank-manager/CustomRankValue.h"
 #include "merchant-score-manager/MerchantScore.h"
+#include "ad-index-manager/AdIndexManager.h"
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -120,7 +121,7 @@ class RTypeStringPropTableBuilder;
 class QueryIntentManager;
 class ZambeziManager;
 class QueryStatistics;
-
+class AdIndexManager;
 namespace sim
 {
 class SimilarityIndex;
@@ -502,7 +503,7 @@ public:
     }
 
     void updateMergeFuzzyIndex(int calltype);
-    
+
     RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
     {
         return rtypeStringPropTableBuilder_;
@@ -521,6 +522,11 @@ public:
     ZambeziManager* getZambeziManager()
     {
         return zambeziManager_;
+    }
+
+    AdIndexManager* getAdIndexManager()
+    {
+        return adIndexManager_;
     }
 
     QueryStatistics* getQueryStatistics()
@@ -636,12 +642,14 @@ private:
 
     bool initZambeziManager_(ZambeziConfig& zambeziConfig);
 
+    bool initAdIndexManager_(AdIndexConfig& adIndexConfig);
+
     const std::string& getOfferItemCountPropName_() const;
 
     void StartSynonym_(ProductMatcher* matcher, const std::string& path);
     void UpdateSynonym_(ProductMatcher* matcher, const std::string& path);
     void RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path);
-    
+
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;
@@ -713,7 +721,7 @@ private:
     boost::shared_ptr<faceted::CTRManager> ctrManager_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
-    
+
     RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 
     /** GROUP BY */
@@ -788,6 +796,9 @@ private:
     /** Zambezi */
     ZambeziManager* zambeziManager_;
 
+    /** AdIndexManager */
+    AdIndexManager* adIndexManager_;
+
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
 
@@ -795,11 +806,11 @@ private:
     MultiThreadMiningTaskBuilder* multiThreadMiningTaskBuilder_;
 
     izenelib::util::CronExpression cronExpression_;
-    
+
     static bool startSynonym_;
     long lastModifiedTime_;
-    
-#if BOOST_VERSION >= 105300	
+
+#if BOOST_VERSION >= 105300
     boost::atomic_bool hasDeletedDocDuringMining_;
 #else
 	bool hasDeletedDocDuringMining_;

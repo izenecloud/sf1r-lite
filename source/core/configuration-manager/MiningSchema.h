@@ -9,6 +9,7 @@
 #include "SuffixMatchConfig.h"
 #include "QueryIntentConfig.h"
 #include "ZambeziConfig.h"
+#include "AdIndexConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -110,6 +111,8 @@ public:
     QueryIntentConfig query_intent_config;
 
     ZambeziConfig zambezi_config;
+
+    AdIndexConfig ad_index_config;
 };
 
 } // namespace

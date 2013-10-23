@@ -39,7 +39,7 @@ public:
     MiningTask* createMiningTask(DocumentManager& documentManager);
 
     void search(
-        const std::vector<std::string>& tokens,
+        const std::vector<std::pair<std::string, int> >& tokens,
         const boost::function<bool(uint32_t)>& filter,
         uint32_t limit,
         std::vector<docid_t>& docids,

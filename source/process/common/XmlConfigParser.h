@@ -819,6 +819,13 @@ private:
         const ticpp::Element* zambeziNode,
         CollectionMeta& collectionMeta) const;
 
+    /// @brief Parse <MiningBundle> <Schema> <AdIndex>
+    /// @param rankNode Pointer to the Element <AdIndex>
+    /// @param collectionMeta t he config instance to update
+    void parseAdIndexNode(
+            const ticpp::Element* adIndexNode,
+            CollectionMeta& collectionMeta) const;
+
     /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode     Pointer to the Element
     void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);

@@ -11,6 +11,7 @@
 #include <document-manager/DocumentManager.h>
 #include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -21,9 +22,12 @@ namespace sf1r{
 class AdMiningTask : public MiningTask
 {
 public:
+    typedef boost::shared_lock<boost::shared_mutex> readLock;
+    typedef boost::unique_lock<boost::shared_mutex> writeLock;
+
     AdMiningTask(
             const std::string& path,
-            boost::shared_ptr<DocumentManager> dm);
+            boost::shared_ptr<DocumentManager>& dm);
 
     ~AdMiningTask();
 
@@ -45,6 +49,7 @@ public:
             const std::vector<std::pair<std::string, std::string> >& info,
             boost::unordered_set<uint32_t>& dnfIDs)
     {
+        readLock lock(rwMutex_);
         adIndex_->retrieve(info, dnfIDs);
     }
 
@@ -53,11 +58,15 @@ public:
 
 private:
 
+    boost::shared_mutex rwMutex_;
+
     std::string indexPath_;
 
-    boost::shared_ptr<DocumentManager> documentManager_;
+    boost::shared_ptr<DocumentManager>& documentManager_;
 
     boost::shared_ptr<AdIndexType> adIndex_;
+
+    boost::shared_ptr<AdIndexType> incrementalAdIndex_;
 
     docid_t startDocId_;
 };

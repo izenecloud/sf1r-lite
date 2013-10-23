@@ -15,8 +15,8 @@ public:
     Filter(const std::string& workdir);
     ~Filter();
 public:
-    void buildFilter();
-    bool isNeedBuild() const;
+    void buildFilter(const std::string& path = "");
+    bool isNeedBuild(const std::string& path = "") const;
     bool isFilter(const std::string& userQuery) const;
     bool isValid(const std::string& f) const;
     

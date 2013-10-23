@@ -84,6 +84,7 @@ FILE(GLOB mining_SRC
   "mining-manager/query-recommendation/pinyin/*.cpp"
   "mining-manager/query-recommendation/parser/*.cpp"
   "mining-manager/query-recommendation/tokenize/*.cpp"
+  "mining-manager/query-recommendation/evaluate/*.cpp"
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
   "mining-manager/zambezi-manager/*.cpp"

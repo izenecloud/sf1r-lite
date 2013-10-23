@@ -12,7 +12,7 @@
 #include "tokenize/Tokenizer.h"
 #include "StringUtil.h"
 
-#include "UserQueryCateTable.h"
+#include "UQCateEngine.h"
 
 namespace sf1r
 {
@@ -33,7 +33,7 @@ public:
 
 public:
     void insert(const std::string& userQuery, uint32_t count);
-    void search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equler) const;
+    void search(const std::string& userQuery, FreqStringVector& byCate, FreqStringVector& byFreq, uint32_t N, const CateEqualer* equler, const std::string& original) const;
 
     void flush();
     void clear();

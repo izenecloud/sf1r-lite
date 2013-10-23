@@ -70,9 +70,14 @@ void TaobaoParser::lineToUserQuery(const std::string& str, UserQuery& query)
     if (std::string::npos == pos)
     {
         pos = freqstr.find("-");
+        if (std::string::npos != pos)
+        {
+            int left = atoi(freqstr.substr(0, pos).c_str());
+            int right = atoi(freqstr.substr(pos + 1).c_str());
+            query.setFreq((left + right) / 2);
+        }
     }
-    
-    if (std::string::npos != pos)
+    else 
         query.setFreq(atoi(freqstr.substr(0, pos).c_str()));
 }
 

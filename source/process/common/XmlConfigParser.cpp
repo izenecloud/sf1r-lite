@@ -2322,6 +2322,22 @@ NEXT:
 
     task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
     parseZambeziNode(task_node, collectionMeta);
+
+    task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
+    parseAdIndexNode(task_node, collectionMeta);
+}
+
+void CollectionConfig::parseAdIndexNode(
+        const ticpp::Element* adIndexNode,
+        CollectionMeta& collectionMeta) const
+{
+    if(!adIndexNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+    miningSchema.ad_index_config.isEnable = true;
 }
 
 void CollectionConfig::parseZambeziNode(

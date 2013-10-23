@@ -11,9 +11,9 @@ class MiningSearchService;
 /// @{
 
 /**
- * @brief Controller \b auto_fill
+ * @brief Controller \b query_correction
  *
- * Gets list of popular keywords starting with specified prefix.
+ * Gets correct query for origianl query.
  */
 class QueryCorrectionController : public Sf1Controller
 {
@@ -21,6 +21,7 @@ public:
     QueryCorrectionController();
 
     void index();
+    void evaluate();
 
 protected:
     virtual bool checkCollectionService(std::string& error);
