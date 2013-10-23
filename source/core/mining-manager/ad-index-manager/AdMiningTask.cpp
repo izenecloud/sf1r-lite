@@ -43,14 +43,34 @@ bool AdMiningTask::buildDocument(docid_t docID, const Document& doc)
     dnf.conjunctions[0].assignments.push_back(a1);
     dnf.conjunctions[0].assignments.push_back(a2);
     dnf.conjunctions[0].assignments.push_back(a3);
-    adIndex_->addDNF(docID, dnf);
+    incrementalAdIndex_->addDNF(docID, dnf);
     return true;
 }
 
 bool AdMiningTask::preProcess(int64_t timestamp)
 {
-    startDocId_ = adIndex_->totalNumDNF()+1;
+    incrementalAdIndex_.reset(new AdIndexType);
+
+    LOG(INFO) << "totalDNFNUM: "<<adIndex_->totalNumDNF()<<endl;
+    if(adIndex_->totalNumDNF() > 0)
+    {
+        std::ifstream ifs(indexPath_.c_str(), std::ios_base::binary);
+        if(!ifs)
+            return false;
+        try
+        {
+            incrementalAdIndex_->load_binary(ifs);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "exception in read file: " << e.what()
+                       << ", path: " << indexPath_<<endl;
+            return false;
+        }
+    }
+
     const docid_t endDocId = documentManager_->getMaxDocId();
+    startDocId_ = incrementalAdIndex_->totalNumDNF()+1;
 
     LOG(INFO) << "AdIndex mining task"
               << ", start docid: " << startDocId_
@@ -69,7 +89,7 @@ bool AdMiningTask::postProcess()
 
     try
     {
-        adIndex_->save(ofs);
+        incrementalAdIndex_->save_binary(ofs);
     }
     catch(const std::exception& e)
     {
@@ -77,6 +97,11 @@ bool AdMiningTask::postProcess()
                    << ", path: " <<indexPath_<<endl;
         return false;
     }
+
+    writeLock lock(rwMutex_);
+    adIndex_ = incrementalAdIndex_;
+
+    incrementalAdIndex_.reset();
     return true;
 }
 
@@ -92,7 +117,8 @@ bool AdMiningTask::load()
         return false;
     try
     {
-        adIndex_->load(ifs);
+        writeLock lock(rwMutex_);
+        adIndex_->load_binary(ifs);
     }
     catch(const std::exception& e)
     {

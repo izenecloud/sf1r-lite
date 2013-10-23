@@ -87,7 +87,6 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
             }
             ScoreDoc scoreItem(*it, score);
             scoreItemQueue->insert(scoreItem);
-            LOG(INFO)<<"docid: "<<*it<<" price: "<<price<<endl;
         }
     }
 
@@ -98,7 +97,6 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
     for(unsigned int i=0; i<scoreSize;i++)
     {
         const ScoreDoc& scoreItem = scoreItemQueue->pop();
-        LOG(INFO)<<scoreItem.docId<<"   "<<scoreItem.score<<endl;
         topDocids.push_back(scoreItem.docId);
         scores.push_back(scoreItem.score);
     }
