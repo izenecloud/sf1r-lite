@@ -21,6 +21,13 @@ public:
 
     void start();
 
+    void resetStatus();
+
+    void checkCommand(
+        const std::string& command,
+        const std::string& goldFileName,
+        uint32_t goldMask);
+
 public:
     FileMonitor monitor_;
 
