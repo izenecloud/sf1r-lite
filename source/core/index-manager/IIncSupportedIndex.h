@@ -1,6 +1,9 @@
 #ifndef SF1V5_INDEX_MANAGER_IINCSUPPORTEDINDEX_H
 #define SF1V5_INDEX_MANAGER_IINCSUPPORTEDINDEX_H
 
+#include <common/inttypes.h>
+#include <ctime>
+
 namespace sf1r
 {
 class Document;
@@ -15,7 +18,7 @@ public:
     virtual void flush(bool force) = 0;
     virtual void optimize(bool wait) = 0;
 
-    virtual void preBuildFromSCD(size_t total_filesize) = 0;
+    virtual void preBuildFromSCD(std::size_t total_filesize) = 0;
     virtual void postBuildFromSCD(time_t timestamp) = 0;
 
     virtual void preMining() = 0;
