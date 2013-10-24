@@ -239,7 +239,7 @@ bool ProductMatcher::KeywordTag::IsModel() const
 ProductMatcher::ProductMatcher()
 :is_open_(false),
  use_price_sim_(true), matcher_only_(false), category_max_depth_(0), use_ngram_(false),
- aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
+ analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
@@ -254,11 +254,6 @@ ProductMatcher::ProductMatcher()
 
 ProductMatcher::~ProductMatcher()
 {
-    if(aid_manager_!=NULL)
-    {
-        aid_manager_->close();
-        delete aid_manager_;
-    }
     if(analyzer_!=NULL)
     {
         delete analyzer_;
@@ -1373,7 +1368,6 @@ void ProductMatcher::IndexFuzzy_()
         if(i%100000==0)
         {
             LOG(INFO)<<"fuzzy scanning product "<<i<<std::endl;
-            //LOG(INFO)<<"max tid "<<aid_manager_->getMaxDocId()<<std::endl;
         }
         //uint32_t pid = i;
         const Product& product = products_[i];
@@ -5755,7 +5749,6 @@ void ProductMatcher::ConstructSuffixTrie_(TrieType& trie)
         if(i%100==0)
         {
             LOG(INFO)<<"scanning category "<<i<<std::endl;
-            //LOG(INFO)<<"max tid "<<aid_manager_->getMaxDocId()<<std::endl;
         }
         Category category = category_list_[i];
         if(category.name.empty()) continue;
@@ -5822,7 +5815,6 @@ void ProductMatcher::ConstructSuffixTrie_(TrieType& trie)
         if(i%100000==0)
         {
             LOG(INFO)<<"scanning product "<<i<<std::endl;
-            //LOG(INFO)<<"max tid "<<aid_manager_->getMaxDocId()<<std::endl;
         }
         uint32_t pid = i;
         const Product& product = products_[i];

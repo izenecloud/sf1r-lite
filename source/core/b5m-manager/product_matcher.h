@@ -4,7 +4,6 @@
 #include "ngram_synonym.h"
 #include "b5m_helper.h"
 #include "b5m_types.h"
-#include "attribute_id_manager.h"
 #include "category_psm.h"
 #include "brand_manager.h"
 #include <boost/regex.hpp>
@@ -1022,7 +1021,6 @@ namespace sf1r {
         uint16_t category_max_depth_;
         bool use_ngram_;
         idmlib::sim::StringSimilarity string_similarity_;
-        AttributeIdManager* aid_manager_;
         IdManager id_manager_;
         idmlib::util::IDMAnalyzer* analyzer_;
         idmlib::util::IDMAnalyzer* char_analyzer_;

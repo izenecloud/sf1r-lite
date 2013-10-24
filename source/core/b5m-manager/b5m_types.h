@@ -6,224 +6,62 @@
 #include <util/ustring/UString.h>
 #include <boost/regex.hpp>
 
-namespace sf1r {
-namespace b5m {
-    struct Attribute
+
+#define NS_SF1R_B5M_BEGIN namespace sf1r{ namespace b5m{
+#define NS_SF1R_B5M_END }}
+
+NS_SF1R_B5M_BEGIN
+struct Attribute
+{
+    std::string name;
+    std::vector<std::string> values;
+    bool is_optional;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
     {
-        std::string name;
-        std::vector<std::string> values;
-        bool is_optional;
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            ar & name & values & is_optional;
-        }
-        std::string GetValue() const
-        {
-            std::string result;
-            for(uint32_t i=0;i<values.size();i++)
-            {
-                if(!result.empty()) result+="/";
-                result+=values[i];
-            }
-            return result;
-        }
-        std::string GetText() const
-        {
-            return name+":"+GetValue();
-        }
-    };
-}
-    struct MatchParameter
+        ar & name & values & is_optional;
+    }
+    std::string GetValue() const
     {
-        MatchParameter()
+        std::string result;
+        for(uint32_t i=0;i<values.size();i++)
         {
+            if(!result.empty()) result+="/";
+            result+=values[i];
         }
-
-        MatchParameter(const std::string& category_regex_str)
-        :category_regex(category_regex_str)
-        {
-        }
-
-        void SetCategoryRegex(const std::string& str)
-        {
-            category_regex = boost::regex(str);
-        }
-
-        bool MatchCategory(const std::string& scategory) const
-        {
-            if(category_regex.empty()) return true;
-            return boost::regex_match(scategory, category_regex);
-        }
-
-        boost::regex category_regex;
-    };
-
-
-    //struct FeatureCondition
-    //{
-        //virtual bool operator()(double v) const
-        //{
-            //return true;
-        //}
-    //};
-
-    //struct PositiveFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v>0.0) return true;
-            //return false;
-        //}
-    //};
-
-    //struct NonNegativeFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v<0.0) return false;
-            //return true;
-        //}
-    //};
-
-    //struct NonZeroFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v==0.0) return false;
-            //return true;
-        //}
-    //};
-
-    struct FeatureStatus
+        return result;
+    }
+    std::string GetText() const
     {
-        FeatureStatus():pnum(0), nnum(0), znum(0)
-        {
-        }
-        uint16_t pnum;//positive number
-        uint16_t nnum;//negative number
-        uint16_t znum;//zero number
-    };
-
-    typedef uint32_t AttribId;
-    typedef uint32_t AttribNameId;
-    struct ProductAttrib
+        return name+":"+GetValue();
+    }
+};
+struct MatchParameter
+{
+    MatchParameter()
     {
-        izenelib::util::UString oid;
-        std::vector<AttribId> aid_list;
-        template<class Archive> void serialize(Archive & ar,
-                const unsigned int version) {
-            ar & oid & aid_list;
-        }
-    };
+    }
 
-    struct ProductDocument
+    MatchParameter(const std::string& category_regex_str)
+    :category_regex(category_regex_str)
     {
-        std::map<std::string, izenelib::util::UString> property;
-        std::vector<AttribId> tag_aid_list;
-        std::vector<AttribId> aid_list;
-        template<class Archive> void serialize(Archive & ar,
-                const unsigned int version) {
-            ar & property & tag_aid_list & aid_list;
-        }
-    };
+    }
 
-    typedef izenelib::util::UString AttribRep;
-    typedef uint64_t AttribValueId;
-    typedef std::vector<std::pair<AttribNameId, double> > FeatureType;
-
-    struct B5MToken
+    void SetCategoryRegex(const std::string& str)
     {
-        enum TokenType {TOKEN_A, TOKEN_C, TOKEN_S};
-        izenelib::util::UString text;
-        TokenType type;
+        category_regex = boost::regex(str);
+    }
 
-        B5MToken()
-        :text(), type(TOKEN_C)
-        {
-        }
-
-        B5MToken(const izenelib::util::UString& tex, TokenType typ)
-        :text(tex), type(typ)
-        {
-        }
-    };
-
-    struct BuueFrom
+    bool MatchCategory(const std::string& scategory) const
     {
-        BuueFrom(){}
+        if(category_regex.empty()) return true;
+        return boost::regex_match(scategory, category_regex);
+    }
 
-        BuueFrom(const std::string& p1, const std::string& p2)
-        :docid(p1), from_uuid(p2)
-        {
-        }
-
-        std::string docid;
-        std::string from_uuid;
-    };
-
-    struct UueFromTo
-    {
-        std::string from;
-        std::string to;
-    };
-
-    struct UueItem
-    {
-        std::string docid;
-        UueFromTo from_to;
-    };
-
-    struct CompareUueFrom
-    {
-        bool operator()(const UueItem& u1, const UueItem& u2)
-        {
-            return u1.from_to.from < u2.from_to.from;
-        }
-    };
-
-    struct CompareUueTo
-    {
-        bool operator()(const UueItem& u1, const UueItem& u2)
-        {
-            return u1.from_to.to < u2.from_to.to;
-        }
-    };
-
-    enum {BUUE_APPEND, BUUE_REMOVE};
-
-    struct BuueItem
-    {
-        //BuueItem(){}
-
-
-        //BuueItem(const std::string& p1, const std::string& p2, const std::string& p3)
-        //:to_uuid(p1), from(1, BuueFrom(p2, p3))
-        //{
-        //}
-
-        int type;
-        std::string pid;
-        std::vector<std::string> docid_list;
-
-        //std::string to_uuid;
-        //std::vector<BuueFrom> from;
-        //bool operator<(const BuueItem& other) const
-        //{
-            //return to_uuid<other.to_uuid;
-        //}
-
-        //BuueItem& operator+=(const BuueItem& other)
-        //{
-            //from.insert(from.end(), other.from.begin(), other.from.end());
-            //return *this;
-        //}
-    };
-
-
-
-}
+    boost::regex category_regex;
+};
+NS_SF1R_B5M_END
 
 #endif
 

@@ -55,12 +55,14 @@ namespace sf1r {
                 Mapper::const_iterator it = mapper_.find(key);
                 if(it==mapper_.end())
                 {
+                    LOG(INFO)<<"omapper key not found : "<<key.first<<","<<key.second<<std::endl;
                     diff = true;
                 }
                 else
                 {
                     if(it->second!=value)
                     {
+                        LOG(INFO)<<"omapper key not match for key "<<key.first<<","<<key.second<<" : "<<it->second<<","<<value<<std::endl;
                         diff = true;
                     }
                 }

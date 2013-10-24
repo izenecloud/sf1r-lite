@@ -10,7 +10,6 @@
 #include <boost/lexical_cast.hpp>
 #include <util/ustring/UString.h>
 
-#include <b5m-manager/b5mp_processor.h>
 using namespace sf1r;
 using namespace std;
 using namespace boost;

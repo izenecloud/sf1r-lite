@@ -1,24 +1,15 @@
 #include <b5m-manager/product_matcher.h>
 #include <b5m-manager/product_discover.h>
-#include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_mapper.h>
 #include <b5m-manager/category_scd_spliter.h>
-#include <b5m-manager/b5mo_scd_generator.h>
 #include <b5m-manager/b5mo_processor.h>
-#include <b5m-manager/log_server_client.h>
 #include <b5m-manager/image_server_client.h>
-#include <b5m-manager/uue_generator.h>
-#include <b5m-manager/complete_matcher.h>
-#include <b5m-manager/similarity_matcher.h>
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/tuan_processor.h>
 #include <b5m-manager/tour_processor.h>
-#include <b5m-manager/uue_worker.h>
-#include <b5m-manager/b5mp_processor.h>
 #include <b5m-manager/b5mp_processor2.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
-#include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
@@ -26,7 +17,6 @@
 #include <b5m-manager/comment_db.h>
 #include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
-#include <b5m-manager/cmatch_generator.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -367,7 +357,6 @@ int do_main(int ac, char** av)
     boost::shared_ptr<CommentDb> cdb;
     boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
-    boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     boost::shared_ptr<RpcServerConnectionConfig> imgserver_config;
     std::string synonym_file;
     //std::string category_group;
@@ -472,25 +461,6 @@ int do_main(int ac, char** av)
         }
     } 
 
-    if(vm.count("logserver-config"))
-    {
-        std::string config_string = vm["logserver-config"].as<std::string>();
-        std::vector<std::string> vec;
-        boost::algorithm::split( vec, config_string, boost::algorithm::is_any_of("|") );
-        if(vec.size()==4)
-        {
-            std::string host = vec[0];
-            uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
-            uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
-            uint32_t driver_port = boost::lexical_cast<uint32_t>(vec[3]);
-            logserver_config.reset(new LogServerConnectionConfig(host, rpc_port, rpc_thread_num, driver_port));
-            cout << "using log server: " << host << "," << rpc_port << "," << driver_port << std::endl;
-        }
-        else
-        {
-            return EXIT_FAILURE;
-        }
-    }
     if(vm.count("imgserver-config"))
     {
         std::string config_string = vm["imgserver-config"].as<std::string>();
@@ -620,35 +590,6 @@ int do_main(int ac, char** av)
         merger.SetOutputPath(output);
         merger.Run();
     }
-    if (vm.count("attribute-index")) {
-        if( knowledge_dir.empty() )
-        {
-            return EXIT_FAILURE;
-        }
-        if(force_flag)
-        {
-            boost::filesystem::remove_all(knowledge_dir+"/index.done");
-        }
-        AttributeIndexer indexer(knowledge_dir);
-        indexer.SetCmaPath(cma_path);
-        if(!synonym_file.empty())
-        {
-            indexer.LoadSynonym(synonym_file);
-        }
-        //if(!category_regex.empty())
-        //{
-            //indexer.SetCategoryRegex(category_regex);
-        //}
-        if(!indexer.Index())
-        {
-            return EXIT_FAILURE;
-        }
-        //std::cout<<"attribute-index end"<<std::endl;
-        //if(!indexer.TrainSVM())
-        //{
-            //return EXIT_FAILURE;
-        //}
-    } 
     if (vm.count("product-train")) {
         if( knowledge_dir.empty()||scd_path.empty())
         {
@@ -987,28 +928,6 @@ int do_main(int ac, char** av)
             }
         }
     } 
-    if(vm.count("b5m-match"))
-    {
-        if( knowledge_dir.empty() )
-        {
-            return EXIT_FAILURE;
-        }
-        AttributeIndexer indexer(knowledge_dir);
-        indexer.SetCmaPath(cma_path);
-        if(!synonym_file.empty())
-        {
-            indexer.LoadSynonym(synonym_file);
-        }
-        //if(!category_regex.empty())
-        //{
-            //indexer.SetCategoryRegex(category_regex);
-        //}
-        if(!indexer.Open())
-        {
-            return EXIT_FAILURE;
-        }
-        indexer.ProductMatchingSVM();
-    }
     if(vm.count("psm-index"))
     {
         if( scd_path.empty() || knowledge_dir.empty())
@@ -1030,27 +949,6 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"psm matching fail"<<std::endl;
             return EXIT_FAILURE;
         }
-    }
-    if(vm.count("complete-match"))
-    {
-        if( scd_path.empty() || knowledge_dir.empty() )
-        {
-            return EXIT_FAILURE;
-        }
-        CompleteMatcher matcher;
-        matcher.Index(scd_path, knowledge_dir);
-    }
-    if(vm.count("similarity-match"))
-    {
-        if( scd_path.empty() || knowledge_dir.empty() || dictionary.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        SimilarityMatcher matcher;
-        matcher.SetCmaPath(cma_path);
-        PidDictionary dic;
-        matcher.SetPidDictionary(dictionary);
-        matcher.Index(scd_path, knowledge_dir);
     }
     if(vm.count("ticket-generate"))
     {
@@ -1093,30 +991,6 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("cmatch-generate"))
-    {
-        if( !odb || mdb_instance.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        CMatchGenerator generator(odb.get());
-        if(!generator.Generate(mdb_instance))
-        {
-            return EXIT_FAILURE;
-        }
-    }
-    if(vm.count("b5mo-generate") && scd_path.empty())
-    {
-        if( !odb || mdb_instance.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        B5moScdGenerator generator(odb.get());
-        if(!generator.Generate(mdb_instance, last_mdb_instance))
-        {
-            return EXIT_FAILURE;
-        }
-    }
     if(vm.count("b5mo-generate") && !scd_path.empty())
     {
         if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
@@ -1149,18 +1023,6 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"b5mo processor successfully"<<std::endl;
-    }
-    if(vm.count("uue-generate"))
-    {
-        if( mdb_instance.empty() || !odb )
-        {
-            return EXIT_FAILURE;
-        }
-        UueGenerator generator(odb.get());
-        if(!generator.Generate(mdb_instance))
-        {
-            return EXIT_FAILURE;
-        }
     }
     if(vm.count("b5mp-generate"))
     {
@@ -1204,52 +1066,6 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("logserver-update"))
-    {
-        if( mdb_instance.empty() || !logserver_config)
-        {
-            return EXIT_FAILURE;
-        }
-        LogServerHandler handler(*logserver_config);
-        if(!handler.Generate(mdb_instance))
-        {
-            return EXIT_FAILURE;
-        }
-    }
-    //if(vm.count("cr-train"))
-    //{
-        //if( knowledge_dir.empty())
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //ProductMatcher matcher(knowledge_dir);
-        //matcher.SetCmaPath(cma_path);
-        //if(!matcher.Open())
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //if(!matcher.IndexCR())
-        //{
-            //return EXIT_FAILURE;
-        //}
-    //}
-    //if(vm.count("cr"))
-    //{
-        //if( scd_path.empty() || knowledge_dir.empty())
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //ProductMatcher matcher(knowledge_dir);
-        //matcher.SetCmaPath(cma_path);
-        //if(!matcher.Open())
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //if(!matcher.DoCR(scd_path))
-        //{
-            //return EXIT_FAILURE;
-        //}
-    //}
     if(vm.count("trie"))
     {
         typedef izenelib::util::UString UString;
@@ -1293,62 +1109,6 @@ int do_main(int ac, char** av)
         //std::cout<<(*nit)->first<<std::endl;
         std::cout<<"nodes end"<<std::endl;
     }
-    //if(vm.count("match-test"))
-    //{
-        //if( knowledge_dir.empty() )
-        //{
-            //return EXIT_FAILURE;
-        //}
-        //AttributeIndexer indexer;
-        //indexer.SetCmaPath(cma_path);
-        //if(!synonym_file.empty())
-        //{
-            //indexer.LoadSynonym(synonym_file);
-        //}
-        //if(!category_regex.empty())
-        //{
-            //indexer.SetCategoryRegex(category_regex);
-        //}
-        //indexer.Open(knowledge_dir);
-        //std::cout<<"Input Product Title:"<<std::endl;
-        //std::string line;
-        //while( getline(std::cin, line) )
-        //{
-            //if(line.empty()) break;
-            //izenelib::util::UString category;
-            //izenelib::util::UString ustr;
-            //std::size_t split_index = line.find("|");
-            //if(split_index!=std::string::npos)
-            //{
-                //category.append( izenelib::util::UString(line.substr(0, split_index), izenelib::util::UString::UTF_8) );
-                //ustr.append( izenelib::util::UString(line.substr(split_index+1), izenelib::util::UString::UTF_8) );
-            //}
-            //else
-            //{
-                //ustr.append( izenelib::util::UString(line, izenelib::util::UString::UTF_8) );
-            //}
-            //std::vector<uint32_t> aid_list;
-            //indexer.GetAttribIdList(category, ustr, aid_list);
-            //for(std::size_t i=0;i<aid_list.size();i++)
-            //{
-                //std::cout<<"["<<aid_list[i]<<",";
-                //izenelib::util::UString arep;
-                //indexer.GetAttribRep(aid_list[i], arep);
-                //if(arep.length()>0)
-                //{
-                    //std::string sarep;
-                    //arep.convertString(sarep, izenelib::util::UString::UTF_8);
-                    //std::cout<<sarep;
-                //}
-                //std::cout<<"]"<<std::endl;
-            //}
-        //}
-    //}
-
-    //if(odb)
-    //{
-        //odb->flush();
-    //}
     return EXIT_SUCCESS;
 }
 

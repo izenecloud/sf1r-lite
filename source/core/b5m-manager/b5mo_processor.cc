@@ -1,5 +1,4 @@
 #include "b5mo_processor.h"
-#include "log_server_client.h"
 #include "image_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
