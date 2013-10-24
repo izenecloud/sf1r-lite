@@ -31,7 +31,7 @@ public:
     virtual DateGroupCounter* clone() const;
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
-    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level);
 
 private:
     const DateGroupTable& dateTable_;
@@ -135,7 +135,7 @@ void DateGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 }
 
 template<typename CounterType>
-void DateGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void DateGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
 {
     std::string dateStr;
     izenelib::util::UString dateUStr;
@@ -151,7 +151,7 @@ void DateGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRe
 }
 
 template<>
-void DateGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void DateGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
 {
     std::string dateStr;
     izenelib::util::UString dateUStr;

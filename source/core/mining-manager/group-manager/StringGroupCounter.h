@@ -14,7 +14,6 @@
 #include "SubGroupCounter.h"
 
 #include <util/ustring/UString.h>
-
 #include <vector>
 
 NS_FACETED_BEGIN
@@ -30,7 +29,7 @@ public:
     virtual StringGroupCounter* clone() const;
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
-    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level);
 
 private:
     /**
@@ -49,12 +48,13 @@ private:
         const izenelib::util::UString& valueStr
     ) const;
 
+    void addCountForParentId();
+
 private:
     const PropValueTable& propValueTable_;
 
     /** map from value id to doc count */
     std::vector<CounterType> countTable_;
-    mutable PropValueTable::ParentSetType parentSet_;
 };
 
 template<typename CounterType>
@@ -87,41 +87,43 @@ StringGroupCounter<CounterType>* StringGroupCounter<CounterType>::clone() const
 template<typename CounterType>
 void StringGroupCounter<CounterType>::addDoc(docid_t doc)
 {
-    parentSet_.clear();
-    propValueTable_.parentIdSet(doc, parentSet_);
+    PropValueTable::PropIdList propIdList;
+    propValueTable_.getPropIdList(doc, propIdList);
 
-    for (PropValueTable::ParentSetType::const_iterator it = parentSet_.begin();
-        it != parentSet_.end(); ++it)
+    const std::size_t idNum = propIdList.size();
+
+    if (idNum == 0)
+        return;
+
+    for (std::size_t i = 0; i < idNum; ++i)
     {
-        ++countTable_[*it];
+        ++countTable_[propIdList[i]];
     }
 
     // total doc count for this property
-    if (!parentSet_.empty())
-    {
-        ++countTable_[0];
-    }
+    ++countTable_[0];
 }
 
 template<>
 void StringGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
 {
-    parentSet_.clear();
-    propValueTable_.parentIdSet(doc, parentSet_);
+    PropValueTable::PropIdList propIdList;
+    propValueTable_.getPropIdList(doc, propIdList);
 
-    for (PropValueTable::ParentSetType::const_iterator it = parentSet_.begin();
-        it != parentSet_.end(); ++it)
+    const std::size_t idNum = propIdList.size();
+
+    if (idNum == 0)
+        return;
+
+    for (std::size_t i = 0; i < idNum; ++i)
     {
-        SubGroupCounter& subCounter = countTable_[*it];
+        SubGroupCounter& subCounter = countTable_[propIdList[i]];
         ++subCounter.count_;
         subCounter.groupCounter_->addDoc(doc);
     }
 
     // total doc count for this property
-    if (!parentSet_.empty())
-    {
-        ++countTable_[0].count_;
-    }
+    ++countTable_[0].count_;
 }
 
 template<typename CounterType>
@@ -137,7 +139,7 @@ void StringGroupCounter<CounterType>::appendGroupRep(
 
     const PropValueTable::PropStrMap& propStrMap = childMapTable[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
-        it != propStrMap.end(); ++it)
+         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId])
@@ -166,7 +168,7 @@ void StringGroupCounter<SubGroupCounter>::appendGroupRep(
 
     const PropValueTable::PropStrMap& propStrMap = childMapTable[pvId];
     for (PropValueTable::PropStrMap::const_iterator it = propStrMap.begin();
-        it != propStrMap.end(); ++it)
+         it != propStrMap.end(); ++it)
     {
         PropValueTable::pvid_t childId = it->second;
         if (countTable_[childId].count_)
@@ -179,6 +181,8 @@ void StringGroupCounter<SubGroupCounter>::appendGroupRep(
 template<typename CounterType>
 void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 {
+    addCountForParentId();
+
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
     izenelib::util::UString propName(propValueTable_.propName(), izenelib::util::UString::UTF_8);
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
@@ -188,8 +192,45 @@ void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 }
 
 template<typename CounterType>
-void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void StringGroupCounter<CounterType>::addCountForParentId()
 {
+    const std::size_t totalIdNum = countTable_.size();
+
+    if (totalIdNum == 0)
+        return;
+
+    std::vector<PropValueTable::pvid_t> parentIds;
+    std::vector<CounterType> newCountTable(totalIdNum);
+    newCountTable[0] = countTable_[0];
+
+    for (std::size_t i = 1; i < totalIdNum; ++i)
+    {
+        const CounterType count = countTable_[i];
+        if (count == 0)
+            continue;
+
+        propValueTable_.getParentIds(i, parentIds);
+        for (std::vector<PropValueTable::pvid_t>::const_iterator it = parentIds.begin();
+             it != parentIds.end(); ++it)
+        {
+            newCountTable[*it] += count;
+        }
+    }
+
+    countTable_.swap(newCountTable);
+}
+
+template<>
+void StringGroupCounter<SubGroupCounter>::addCountForParentId()
+{
+    // SubGroupCounter does not support count for parent ids
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
+{
+    addCountForParentId();
+
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
     const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
 
@@ -205,8 +246,10 @@ void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& str
 }
 
 template<>
-void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
 {
+    addCountForParentId();
+
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
     const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
 

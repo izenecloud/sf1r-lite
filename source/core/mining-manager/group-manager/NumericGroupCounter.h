@@ -33,7 +33,7 @@ public:
     virtual NumericGroupCounter* clone() const;
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
-    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level);
 
 private:
     std::string property_;
@@ -135,7 +135,7 @@ void NumericGroupCounter<SubGroupCounter>::getGroupRep(GroupRep &groupRep)
 }
 
 template<typename CounterType>
-void NumericGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void NumericGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
 {
     izenelib::util::UString ustr;
 
@@ -148,7 +148,7 @@ void NumericGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& st
 }
 
 template<>
-void NumericGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
+void NumericGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level)
 {
     izenelib::util::UString ustr;
 

@@ -1,7 +1,6 @@
 /**
  * @file FileMonitor.h
- * @brief This class is used as a parent class for file monitor.
- *        It supports monitor file change, and trigger the process
+ * @brief It supports monitor file change, and trigger the @c FileEventHandler
  *        when event happens.
  */
 
