@@ -16,6 +16,11 @@
 namespace sf1r {
     class RpcServerConnectionConfig;
     class B5moProcessor {
+        struct LastOMapperItem {
+            OriginalMapper* last_omapper;
+            ScdTypeWriter* writer;
+            std::string text;
+        };
     public:
         B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
             int mode,
@@ -30,6 +35,8 @@ namespace sf1r {
         bool Generate(const std::string& scd_file, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num=1);
 
     private:
+
+        void OMapperChange_(LastOMapperItem& item);
 
         void ProcessIU_(Document& doc, bool force_match = false);
 

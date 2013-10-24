@@ -671,12 +671,7 @@ int do_main(int ac, char** av)
         {
             ProductMatcher matcher;
             matcher.SetCmaPath(cma_path);
-            if(!matcher.Open(knowledge_dir))
-            {
-                LOG(ERROR)<<"matcher open failed"<<std::endl;
-                return EXIT_FAILURE;
-            }
-            if(!matcher.IndexPost(scd_path, thread_num))
+            if(!matcher.IndexPost(knowledge_dir, scd_path, thread_num))
             {
                 return EXIT_FAILURE;
             }
@@ -689,12 +684,7 @@ int do_main(int ac, char** av)
         }
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        if(!matcher.Open(knowledge_dir))
-        {
-            LOG(ERROR)<<"matcher open failed"<<std::endl;
-            return EXIT_FAILURE;
-        }
-        if(!matcher.IndexPost(scd_path, thread_num))
+        if(!matcher.IndexPost(knowledge_dir, scd_path, thread_num))
         {
             return EXIT_FAILURE;
         }

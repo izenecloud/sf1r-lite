@@ -10,7 +10,7 @@ B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
 {
 }
 
-void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
+void B5moSorter::Append(const ScdDocument& doc, const std::string& ts, int flag)
 {
     boost::unique_lock<MutexType> lock(mutex_);
     if(buffer_.size()==mcount_)
@@ -18,7 +18,7 @@ void B5moSorter::Append(const ScdDocument& doc, const std::string& ts)
         WaitUntilSortFinish_();
         DoSort_();
     }
-    buffer_.push_back(Value(doc, ts));
+    buffer_.push_back(Value(doc, ts, flag));
 }
 
 bool B5moSorter::StageOne()
@@ -144,8 +144,9 @@ void B5moSorter::DoSort_()
     buffer_.swap(docs);
     sort_thread_ = new boost::thread(boost::bind(&B5moSorter::Sort_, this, docs));
 }
-void B5moSorter::WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts)
+void B5moSorter::WriteValue_(std::ofstream& ofs, const Value& value)
 {
+    const ScdDocument& doc = value.doc;
     std::string spid;
     doc.getString("uuid", spid);
     if(spid.empty()) return;
@@ -154,20 +155,7 @@ void B5moSorter::WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const s
     Json::FastWriter writer;
     std::string str_value = writer.write(json_value);
     boost::algorithm::trim(str_value);
-    ofs<<spid<<"\t"<<doc.type<<"\t"<<ts<<"\t"<<str_value<<std::endl;
-}
-void B5moSorter::WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts)
-{
-    std::string spid;
-    doc.getString("uuid", spid);
-    if(spid.empty()) return;
-    Json::Value json_value;
-    JsonDocument::ToJson(doc, json_value);
-    Json::FastWriter writer;
-    std::string str_value = writer.write(json_value);
-    boost::algorithm::trim(str_value);
-    boost::unique_lock<MutexType> lock(mutex_);
-    ofs<<spid<<"\t"<<doc.type<<"\t"<<ts<<"\t"<<str_value<<std::endl;
+    ofs<<spid<<"\t"<<doc.type<<"\t"<<value.ts<<"\t"<<value.flag<<"\t"<<str_value<<std::endl;
 }
 void B5moSorter::Sort_(std::vector<Value>& docs)
 {
@@ -182,8 +170,8 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
     std::ofstream ofs(file.c_str());
     for(uint32_t i=0;i<docs.size();i++)
     {
-        const ScdDocument& doc = docs[i].doc;
-        WriteValue_(ofs, doc, docs[i].ts);
+        //const ScdDocument& doc = docs[i].doc;
+        WriteValue_(ofs, docs[i]);
     }
     ofs.close();
 }
@@ -235,20 +223,16 @@ void B5moSorter::OBag_(PItem& pitem)
             //    ODocMerge_(prev_odocs, doc);
             //}
         }
-        pitem.odocs = ovalues;
-        for(uint32_t i=0;i<ovalues.size();i++)
-        {
-            odocs.push_back(ovalues[i].doc);
-        }
         for(uint32_t i=0;i<pre_ovalues.size();i++)
         {
             prev_odocs.push_back(pre_ovalues[i].doc);
         }
         {
-            std::size_t i=0,j=0;
+            std::size_t j=0;
             for(std::size_t i=0;i<ovalues.size();i++)
             {
                 Value& v = ovalues[i];
+                //LOG(INFO)<<"ovalue "<<v.spid<<","<<v.doc.property("DOCID")<<","<<(int)v.doc.type<<std::endl;
                 v.diff_doc = v.doc;
                 if(v.doc.type!=UPDATE_SCD) continue;
                 for(;j<prev_odocs.size();j++)
@@ -270,6 +254,11 @@ void B5moSorter::OBag_(PItem& pitem)
                     }
                 }
             }
+        }
+        pitem.odocs = ovalues;
+        for(uint32_t i=0;i<ovalues.size();i++)
+        {
+            odocs.push_back(ovalues[i].doc);
         }
         //for(uint32_t i=0;i<odocs.size();i++)
         //{
@@ -341,7 +330,7 @@ void B5moSorter::OBag_(PItem& pitem)
         std::string str_value = writer.write(json_value);
         boost::algorithm::trim(str_value);
         std::stringstream ss;
-        ss<<spid<<"\t"<<doc.type<<"\t"<<pitem.odocs[i].ts<<"\t"<<str_value;
+        ss<<spid<<"\t"<<doc.type<<"\t"<<pitem.odocs[i].ts<<"\t"<<pitem.odocs[i].flag<<"\t"<<str_value;
         pitem.odocs[i].text = ss.str();
     }
     WritePItem_(pitem);
@@ -361,6 +350,7 @@ void B5moSorter::WritePItem_(PItem& pitem)
             {
                 LOG(INFO)<<"Processing pitem id "<<pitem.id<<std::endl;
             }
+            //LOG(INFO)<<"pid "<<pitem.pdoc.property("DOCID")<<","<<pitem.pdoc.type<<std::endl;
             
             //std::cerr<<"write pitem id "<<pitem.id<<","<<last_pitemid_<<std::endl;
             //for(uint32_t i=0;i<pitem.odocs.size();i++)
@@ -384,18 +374,22 @@ void B5moSorter::WritePItem_(PItem& pitem)
                 if(odoc.type!=UPDATE_SCD) continue;
                 odoc_count++;
                 if(value.ts<ts_) continue;
+                if(odoc.getPropertySize()<2) continue;
                 odoc.property("itemcount") = (int64_t)1;
                 //odoc.eraseProperty("uuid");
+                //LOG(INFO)<<"output OU "<<odoc.property("DOCID")<<std::endl;
                 pwriter_->Append(odoc);
             }
+            //LOG(INFO)<<"odoc stat "<<odoc_count<<","<<odoc_precount<<std::endl;
             for(uint32_t i=0;i<pitem.odocs.size();i++)
             {
                 Value& value = pitem.odocs[i];
                 if(value.ts<ts_) continue;
-                ScdDocument& odoc = value.diff_doc;
-                if(odoc.type==DELETE_SCD)
+                ScdDocument& odoc = value.doc;
+                if(odoc.type==DELETE_SCD&&value.flag==0)
                 {
                     odoc.clearExceptDOCID();
+                    //LOG(INFO)<<"output OD "<<odoc.property("DOCID")<<std::endl;
                     pwriter_->Append(odoc);
                 }
             }
@@ -403,13 +397,15 @@ void B5moSorter::WritePItem_(PItem& pitem)
             {
                 if(pitem.pdoc.type!=NOT_SCD)
                 {
+                    //LOG(INFO)<<"output P "<<pitem.pdoc.property("DOCID")<<std::endl;
                     pwriter_->Append(pitem.pdoc);
                 }
             }
-            else if(odoc_precount>1)
+            else if(odoc_precount>1&&pitem.pdoc.type!=NOT_SCD)
             {
                 pitem.pdoc.type = DELETE_SCD;
                 pitem.pdoc.clearExceptDOCID();
+                //LOG(INFO)<<"output PD "<<pitem.pdoc.property("DOCID")<<std::endl;
                 pwriter_->Append(pitem.pdoc);
             }
             last_pitemid_ = pitem.id+1;
@@ -443,8 +439,9 @@ void B5moSorter::ODocMerge_(std::vector<Value>& vec, const Value& doc)
     {
         if(vec.back().doc.property("DOCID")==doc.doc.property("DOCID"))
         {
-            vec.back().doc.merge(doc.doc);
-            vec.back().ts = doc.ts;
+            //vec.back().doc.merge(doc.doc);
+            //vec.back().ts = doc.ts;
+            vec.back().merge(doc);
         }
         else
         {
@@ -483,7 +480,8 @@ bool B5moSorter::GenMirrorBlock_(const std::string& mirror_path)
         {
             doc.property(p->first) = p->second;
         }
-        WriteValue_(block_ofs, doc, ts);
+        Value v(doc, ts);
+        WriteValue_(block_ofs, v);
     }
     block_ofs.close();
 
@@ -534,7 +532,7 @@ bool B5moSorter::GenMBlock_()
     std::ofstream ofs(block_file.c_str());
     for(uint32_t i=0;i<values.size();i++)
     {
-        WriteValue_(ofs, values[i].doc, values[i].ts);
+        WriteValue_(ofs, values[i]);
     }
     ofs.close();
     return true;

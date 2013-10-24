@@ -91,6 +91,15 @@ namespace sf1r {
             return mapper_.size();
         }
 
+        void Show() const
+        {
+            for(Mapper::const_iterator it = mapper_.begin();it!=mapper_.end();++it)
+            {
+                std::cerr<<it->first.first<<","<<it->first.second<<","<<it->second<<std::endl;
+            }
+        }
+
+
     private:
         static bool Parse_(const std::string& input, Key& key, Value& value)
         {

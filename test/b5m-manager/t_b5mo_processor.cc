@@ -58,7 +58,10 @@ ScdDocument GenODoc(SCD_TYPE type, const std::string& docid, const std::string& 
         std::string attrib = "ISBN:"+isbn;
         SetProperty(doc, "Attribute", attrib);
     }
-    SetProperty(doc, "uuid", pid);
+    if(!pid.empty())
+    {
+        SetProperty(doc, "uuid", pid);
+    }
     return doc;
 }
 ScdDocument GenPDoc(SCD_TYPE type, const std::string& docid, const std::string& title, const std::string& source, const std::string& original, int64_t itemcount)
@@ -214,13 +217,20 @@ public:
             m.getString("DOCID", mid);
             std::pair<iterator, iterator> result = std::equal_range(ref.begin(), ref.end(), m, DocidCompare);
             bool match = false;
-            for(iterator it = result.first;it<result.second;++it)
+            if(result.first<result.second)
             {
-                if(DocTest(m, *it))
+                for(iterator it = result.first;it<result.second;++it)
                 {
-                    match = true;
-                    break;
+                    if(DocTest(m, *it))
+                    {
+                        match = true;
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                std::cerr<<"doc not found in ref for "<<mid<<std::endl;
             }
             BOOST_CHECK_MESSAGE(match, mid);
         }
@@ -228,7 +238,11 @@ public:
 
     static bool DocTest(const ScdDocument& m, const ScdDocument& r)
     {
-        if(m.type!=r.type) return false;
+        if(m.type!=r.type) 
+        {
+            std::cerr<<"doc type not match"<<std::endl;
+            return false;
+        }
         for(ScdDocument::property_const_iterator it = r.propertyBegin(); it!=r.propertyEnd();++it)
         {
             ScdDocument::property_const_iterator it2 = m.findProperty(it->first);
@@ -250,7 +264,11 @@ public:
                 boost::algorithm::split(vec2, str2, boost::algorithm::is_any_of(","));
                 std::sort(vec1.begin(), vec1.end());
                 std::sort(vec2.begin(), vec2.end());
-                if(vec1!=vec2) return false;
+                if(vec1!=vec2) 
+                {
+                    std::cerr<<"Source not match"<<std::endl;
+                    return false;
+                }
             }
             else
             {
@@ -575,15 +593,21 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.input_docs.push_back(
         GenDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "英语教材","109"));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"111", "",""
+            , "",""));
         item.omapper.push_back(MapperData("AMAZON", "手机", "手机数码>手机配件"));
         item.omapper.push_back(MapperData("JD", "电视机", "家电>大家电>平板电视"));
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
             , "手机数码>手机配件>","", "aaa"));
+        //item.pdocs.push_back(
+        //GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
+        //    , "手机数码>手机配件>","", "aaa"));
         item.pdocs.push_back(
-        GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机配件>","", "aaa"));
+        GenODoc(UPDATE_SCD,"aaa", "",""
+            , "手机数码>手机配件>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE2","JD"
             , "家电>大家电>平板电视>","", "bbb"));
@@ -591,8 +615,8 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>平板电视>","", "bbb"));
         item.pdocs.push_back(
-        GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
-            , "家电>大家电>平板电视>","", "bbb"));
+        GenODoc(UPDATE_SCD,"bbb", "TITLE3",""
+            , "家电>大家电>平板电视>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK11","PUB"
             , "化妆品>","", "eee"));
@@ -602,6 +626,15 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.pdocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "化妆品>","", "eee"));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"111", "",""
+            , "","", ""));
+        item.pdocs.push_back(
+        GenPDoc(DELETE_SCD,"111", "",""
+            ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "","京东商城,卓越亚马逊,DD"
+            ,"",5));
 
         //item.pdocs.push_back(
         //GenPDoc(UPDATE_SCD,"aaa", "",""
@@ -628,6 +661,12 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.input_docs.push_back(
         GenDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "英语","110"));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"111", "",""
+            , "",""));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"222", "",""
+            , "",""));
         item.omapper.push_back(MapperData("AMAZON", "手机", "手机数码>手机"));
         item.omapper.push_back(MapperData("JD", "电视机", "家电>大家电>电视"));
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
@@ -638,20 +677,35 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
             , "","", "aaa"));
         item.pdocs.push_back(
-        GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
-            , "","", "aaa"));
+        GenODoc(UPDATE_SCD,"aaa", "TITLE01",""
+            , "","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>电视>","", "bbb"));
         item.pdocs.push_back(
-        GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
-            , "家电>大家电>电视>","", "bbb"));
+        GenODoc(UPDATE_SCD,"bbb", "",""
+            , "家电>大家电>电视>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "","", B5MHelper::GetPidByIsbn("110")));
         item.pdocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "","", B5MHelper::GetPidByIsbn("110")));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"111", "",""
+            , "","", ""));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"222", "",""
+            , "","", ""));
+        item.pdocs.push_back(
+        GenPDoc(DELETE_SCD,"111", "",""
+            ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(DELETE_SCD,"222", "",""
+            ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "",""
+            ,"",4));
 
         //item.pdocs.push_back(
         //GenPDoc(UPDATE_SCD,"aaa", "TITLE01",""

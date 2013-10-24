@@ -176,6 +176,7 @@ namespace sf1r {
 
         bool insert(const KeyType& key, const ValueType& value)
         {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
             return insert_(key, value, true);
         }
 
@@ -186,12 +187,14 @@ namespace sf1r {
 
         void insert_flag(const std::string& soid, const FlagType& flag)
         {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
             flag_db_->setInteger(B5MHelper::StringToUint128(soid), flag);
             has_modify_ = true;
         }
 
         void clear_all_flag()
         {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
             if(flag_db_!=NULL)
             {
                 delete flag_db_;
@@ -210,8 +213,10 @@ namespace sf1r {
             has_modify_ = true;
         }
 
-        bool get(const KeyType& key, ValueType& value) const
+        bool get(const KeyType& key, ValueType& value)
         {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
+            //boost::shared_lock<boost::shared_mutex> lock(mutex_);
             value = db_->getInteger(key);
             if(value==(ValueType)izenelib::am::succinct::fujimap::NOTFOUND)
             {
@@ -220,7 +225,7 @@ namespace sf1r {
             return true;
         }
 
-        bool get(const std::string& soid, std::string& spid) const
+        bool get(const std::string& soid, std::string& spid)
         {
             uint128_t pid;
             if(!get(B5MHelper::StringToUint128(soid), pid)) return false;
@@ -228,8 +233,9 @@ namespace sf1r {
             return true;
         }
 
-        bool get_flag(const std::string& key, FlagType& flag) const
+        bool get_flag(const std::string& key, FlagType& flag)
         {
+            //boost::unique_lock<boost::shared_mutex> lock(mutex_);
             flag = flag_db_->getInteger(B5MHelper::StringToUint128(key));
             if(flag==(FlagType)izenelib::am::succinct::fujimap::NOTFOUND)
             {
@@ -251,6 +257,7 @@ namespace sf1r {
 
         bool flush()
         {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
             LOG(INFO)<<"try flush odb.."<<std::endl;
             if(text_.is_open())
             {
@@ -312,6 +319,7 @@ namespace sf1r {
         std::ofstream text_;
         bool is_open_;
         bool has_modify_;
+        boost::shared_mutex mutex_;
     };
 
 }

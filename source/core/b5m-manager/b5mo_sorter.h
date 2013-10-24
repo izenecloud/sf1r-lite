@@ -27,10 +27,17 @@ namespace sf1r {
             //Document doc;
             //bool is_update;//else delete
             std::string ts;
+            int flag;
             std::string text;
-            Value(){}
-            Value(const ScdDocument& d, const std::string& t):doc(d), ts(t)
+            Value(): flag(0){}
+            Value(const ScdDocument& d, const std::string& t, int f=0):doc(d), ts(t), flag(f)
             {
+            }
+            void merge(const Value& value)
+            {
+                doc.merge(value.doc);
+                ts = value.ts;
+                flag = value.flag;
             }
             bool Parse(const std::string& str, Json::Reader* json_reader)
             {
@@ -47,6 +54,10 @@ namespace sf1r {
                 endp=str.find('\t', begp);
                 if(endp==std::string::npos) return false;
                 ts = str.substr(begp, endp-begp);
+                begp=endp+1;
+                endp=str.find('\t', begp);
+                if(endp==std::string::npos) return false;
+                flag = boost::lexical_cast<int>(str.substr(begp, endp-begp));
                 begp=endp+1;
                 std::string json_str = str.substr(begp);
                 if(json_str.empty()) return false;
@@ -74,14 +85,13 @@ namespace sf1r {
             buffer_size_ = bs;
         }
 
-        void Append(const ScdDocument& doc, const std::string& ts);
+        void Append(const ScdDocument& doc, const std::string& ts, int flag=0);
 
         bool StageOne();
         bool StageTwo(bool spu_only, const std::string& last_m, int thread_num=1);
 
     private:
-        void WriteValue_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
-        void WriteValueSafe_(std::ofstream& ofs, const ScdDocument& doc, const std::string& ts);
+        void WriteValue_(std::ofstream& ofs, const Value& value);
         static bool PidCompare_(const Value& doc1, const Value& doc2)
         {
             Document::doc_prop_value_strtype pid1;

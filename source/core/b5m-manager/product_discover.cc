@@ -16,6 +16,7 @@ ProductDiscover::ProductDiscover(ProductMatcher* matcher)
     cregexps_.push_back(boost::regex("^手机数码>摄像摄影.*$"));
     cregexps_.push_back(boost::regex("^家用电器>大家电.*$"));
     error_cregexps_.push_back(boost::regex("^.*配件$"));
+    matcher_->SetUsePriceSim(false);
 }
 
 ProductDiscover::~ProductDiscover()

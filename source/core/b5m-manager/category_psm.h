@@ -10,6 +10,7 @@
 #include <am/succinct/fujimap/fujimap.hpp>
 #include <glog/logging.h>
 #include <boost/unordered_map.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <idmlib/duplicate-detection/psm.h>
 #include <knlp/cluster_detector.h>
@@ -138,9 +139,10 @@ namespace sf1r {
             if(boost::filesystem::exists(path))
             {
                 std::string p = path+"/result";
-                std::map<BufferKey, std::vector<Group> > rmap;
-                izenelib::am::ssf::Util<uint64_t>::Load(p, rmap);
-                result_.insert(rmap.begin(), rmap.end());
+                //std::map<BufferKey, std::vector<Group> > rmap;
+                //izenelib::am::ssf::Util<uint64_t>::Load(p, rmap);
+                //result_.insert(rmap.begin(), rmap.end());
+                izenelib::am::ssf::Util<uint64_t>::Load(p, result_);
                 LOG(INFO)<<"psm result size "<<result_.size()<<std::endl;
                 p = path+"/brands";
                 izenelib::am::ssf::Util<>::Load(p, brand_set_);
@@ -461,8 +463,9 @@ namespace sf1r {
             //}
             B5MHelper::PrepareEmptyDir(path);
             std::string pa = path+"/result";
-            std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
-            izenelib::am::ssf::Util<uint64_t>::Save(pa, rmap);
+            //std::map<BufferKey, std::vector<Group> > rmap(result_.begin(), result_.end());
+            //izenelib::am::ssf::Util<uint64_t>::Save(pa, rmap);
+            izenelib::am::ssf::Util<uint64_t>::Save(pa, result_);
             pa = path+"/brands";
             izenelib::am::ssf::Util<>::Save(pa, brand_set_);
             std::set<std::string> attr_stdset(attr_set_.begin(), attr_set_.end());

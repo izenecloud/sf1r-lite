@@ -115,7 +115,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     std::string old_spid;
     if(type==RTYPE_SCD)
     {
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
             doc.property("uuid") = str_to_propstr(spid);
@@ -138,7 +138,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     else
     {
         doc.clearExceptDOCID();
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
         if(spid.empty()) type=NOT_SCD;
@@ -189,7 +189,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     std::string old_spid;
     bool is_human_edit = false;
     {
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
             OfferDb::FlagType flag = 0;
@@ -401,7 +401,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(old_spid!=spid)
     {
-        boost::unique_lock<boost::shared_mutex> lock(mutex_);
+        //boost::unique_lock<boost::shared_mutex> lock(mutex_);
         odb_->insert(sdocid, spid);
         //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
@@ -424,7 +424,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
             old_doc.type=DELETE_SCD;
             //last_ts_?
-            sorter_->Append(old_doc, ts_);
+            sorter_->Append(old_doc, ts_, 1);
         }
         ScdDocument sdoc(doc, type);
         //if(!original_attribute.empty())
@@ -441,6 +441,19 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     //else
     //{
     //}
+}
+
+void B5moProcessor::OMapperChange_(LastOMapperItem& item)
+{
+    boost::algorithm::trim(item.text);
+    B5moSorter::Value value;
+    Json::Reader json_reader;
+    if(!value.Parse(item.text, &json_reader)) return;
+    if(!OMap_(*(item.last_omapper), value.doc)) return;
+    value.doc.type = UPDATE_SCD;
+    ProcessIU_(value.doc, true);
+    boost::unique_lock<boost::shared_mutex> lock(mutex_);
+    item.writer->Append(value.doc, value.doc.type);
 }
 
 bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
@@ -465,7 +478,9 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     if(bfs::exists(omapper_path))
     {
         omapper_ = new OriginalMapper();
+        LOG(INFO)<<"Opening omapper"<<std::endl;
         omapper_->Open(omapper_path);
+        LOG(INFO)<<"Omapper opened"<<std::endl;
     }
     boost::shared_ptr<ScdTypeWriter> writer(new ScdTypeWriter(output_dir));
     ts_ = bfs::path(mdb_instance).filename().string();
@@ -483,23 +498,38 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 last_omapper.Diff(omapper_path);
                 if(last_omapper.Size()>0)
                 {
+                    LOG(INFO)<<"Omapper changed, size "<<last_omapper.Size()<<std::endl;
+                    last_omapper.Show();
                     std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_mdb_instance);
                     std::string last_block = last_mirror+"/block";
                     std::ifstream ifs(last_block.c_str());
                     std::string line;
-                    Json::Reader json_reader;
+                    B5mThreadPool<LastOMapperItem> pool(thread_num, boost::bind(&B5moProcessor::OMapperChange_, this, _1));
+                    std::size_t p=0;
                     while( getline(ifs, line))
                     {
-                        boost::algorithm::trim(line);
-                        B5moSorter::Value value;
-                        if(!value.Parse(line, &json_reader)) continue;
-                        if(!OMap_(last_omapper, value.doc)) continue;
-                        value.doc.type = UPDATE_SCD;
-                        ProcessIU_(value.doc, true);
-                        writer->Append(value.doc, value.doc.type);
+                        ++p;
+                        if(p%100000==0)
+                        {
+                            LOG(INFO)<<"Processing omapper change "<<p<<std::endl;
+                        }
+                        LastOMapperItem* item = new LastOMapperItem;
+                        item->last_omapper = &last_omapper;
+                        item->writer = writer.get();
+                        item->text = line;
+                        pool.schedule(item);
+                        //boost::algorithm::trim(line);
+                        //B5moSorter::Value value;
+                        //if(!value.Parse(line, &json_reader)) continue;
+                        //if(!OMap_(last_omapper, value.doc)) continue;
+                        //value.doc.type = UPDATE_SCD;
+                        //ProcessIU_(value.doc, true);
+                        //writer->Append(value.doc, value.doc.type);
                     }
+                    pool.wait();
                     ifs.close();
                     odb_->flush();
+                    LOG(INFO)<<"Omapper changing finished"<<std::endl;
                 }
             }
 

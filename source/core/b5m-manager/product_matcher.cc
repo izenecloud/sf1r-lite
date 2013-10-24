@@ -11,6 +11,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/serialization/hash_map.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
@@ -671,7 +672,10 @@ void ProductMatcher::SetIndexDone_(const std::string& path, bool b)
 }
 bool ProductMatcher::IsIndexDone() const
 {
-    return trie_.size()>0;
+    static const std::string file(path_+"/products");
+    bool b = boost::filesystem::exists(file);
+    LOG(INFO)<<"file "<<file<<" exists? : "<<(int)b<<std::endl;
+    return b;
 }
 
 bool ProductMatcher::IsIndexDone_(const std::string& path)
@@ -765,18 +769,18 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     {
         if(mode<2) mode = 2;
     }
-    if(mode<2) //not re-training, try open
+    if(mode<2) //not re-training
     {
-        if(!Open(path_))
-        {
-            mode = 2;
-            Init_();
-        }
         if(IsIndexDone())
         {
             std::cout<<"product trained at "<<path_<<std::endl;
             Init_();
             return true;
+        }
+        if(!Open(path_))
+        {
+            mode = 2;
+            Init_();
         }
     }
     LOG(INFO)<<"mode "<<mode<<std::endl;
@@ -1292,8 +1296,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     return true;
 }
 
-bool ProductMatcher::IndexPost(const std::string& scd_path, int thread_num)
+bool ProductMatcher::IndexPost(const std::string& path, const std::string& scd_path, int thread_num)
 {
+    path_ = path;
     std::string price_file = path_+"/spu_price";
     std::string sprice_file = scd_path+"/spu_price";
     if(boost::filesystem::exists(price_file))
@@ -1321,16 +1326,15 @@ bool ProductMatcher::IndexPost(const std::string& scd_path, int thread_num)
     {
         return false;
     }
+    if(!Open(path_))
+    {
+        LOG(ERROR)<<"index post open knowledge failed."<<std::endl;
+        return false;
+    }
     psm_ = new CategoryPsm(path_);
     ScdDocProcessor processor(boost::bind(&ProductMatcher::PostProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
-    if(psm_!=NULL) 
-    {
-        psm_->Flush(psm_path);
-        delete psm_;
-        psm_ = NULL;
-    }
     if(!offer_prices_finish_)
     {
         std::ofstream ofs1(price_file.c_str());
@@ -1350,6 +1354,12 @@ bool ProductMatcher::IndexPost(const std::string& scd_path, int thread_num)
         ofs1.close();
         ofs2.close();
         offer_prices_finish_ = true;
+    }
+    if(psm_!=NULL) 
+    {
+        psm_->Flush(psm_path);
+        delete psm_;
+        psm_ = NULL;
     }
     return true;
 }
@@ -5427,6 +5437,7 @@ void ProductMatcher::SetProductsPrice_(bool use_offer)
 
 bool ProductMatcher::IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const
 {
+    if(!use_price_sim_) return true;
     if(!p.Positive()) return true;
     if(!op.Positive()) return false;
     //if(IsValuePriceSim_(op.Min(), p.Min())) return true;

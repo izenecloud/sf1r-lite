@@ -798,7 +798,7 @@ namespace sf1r {
         static std::string GetAVersion(const std::string& path);
         static std::string GetRVersion(const std::string& path);
         bool Index(const std::string& path, const std::string& scd_path, int mode, int thread_num);
-        bool IndexPost(const std::string& scd_path, int thread_num);
+        bool IndexPost(const std::string& path, const std::string& scd_path, int thread_num);
         void Test(const std::string& scd_path);
         bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
