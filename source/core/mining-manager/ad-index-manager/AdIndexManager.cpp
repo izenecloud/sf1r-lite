@@ -28,7 +28,9 @@ AdIndexManager::~AdIndexManager()
 bool AdIndexManager::buildMiningTask()
 {
     adMiningTask_ = new AdMiningTask(indexPath_, documentManager_);
-    return adMiningTask_ ? true : false;
+
+    adMiningTask_->load();
+    return true;
 }
 
 bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string> >& info,

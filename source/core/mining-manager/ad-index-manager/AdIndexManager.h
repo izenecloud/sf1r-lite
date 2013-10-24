@@ -6,6 +6,7 @@
 #define SF1_AD_INDEX_MANAGER_H_
 
 #include "AdMiningTask.h"
+#include "AdClickPredictor.h"
 #include <boost/lexical_cast.hpp>
 #include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -46,6 +47,8 @@ public:
 private:
 
     std::string indexPath_;
+
+    std::string clickPredictorWorkingPath_;
 
     boost::shared_ptr<DocumentManager>& documentManager_;
 

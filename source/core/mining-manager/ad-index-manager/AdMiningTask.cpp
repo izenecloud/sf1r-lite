@@ -49,6 +49,8 @@ bool AdMiningTask::buildDocument(docid_t docID, const Document& doc)
 
 bool AdMiningTask::preProcess(int64_t timestamp)
 {
+    incrementalAdIndex_.reset(new AdIndexType(*adIndex_));
+/*
     incrementalAdIndex_.reset(new AdIndexType);
 
     LOG(INFO) << "totalDNFNUM: "<<adIndex_->totalNumDNF()<<endl;
@@ -68,7 +70,7 @@ bool AdMiningTask::preProcess(int64_t timestamp)
             return false;
         }
     }
-
+*/
     const docid_t endDocId = documentManager_->getMaxDocId();
     startDocId_ = incrementalAdIndex_->totalNumDNF()+1;
 
