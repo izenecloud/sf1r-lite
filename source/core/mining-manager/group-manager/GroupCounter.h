@@ -24,7 +24,7 @@ public:
 
     virtual void getGroupRep(GroupRep& groupRep) = 0;
 
-    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const {}
+    virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) {}
 };
 
 NS_FACETED_END

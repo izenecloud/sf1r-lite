@@ -8,7 +8,7 @@ using namespace sf1r;
 namespace
 {
 const std::string kMonitorFileName = "z.update.time";
-const uint32_t kMonitorEvent = IN_ATTRIB;
+const uint32_t kMonitorEvent = IN_MOVED_TO;
 }
 
 KNlpDictMonitor* KNlpDictMonitor::get()
@@ -23,7 +23,7 @@ KNlpDictMonitor::KNlpDictMonitor()
 
 bool KNlpDictMonitor::handle(const std::string& fileName, uint32_t mask)
 {
-    if (mask & kMonitorEvent)
+    if (mask & kMonitorEvent && fileName == kMonitorFileName)
     {
         boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir_));
         if (!knlpWrapper->loadDictFiles())
@@ -41,9 +41,8 @@ void KNlpDictMonitor::start(const std::string& dictDir)
         return;
 
     dictDir_ = dictDir;
-    std::string fileName = dictDir_ + "/" + kMonitorFileName;
 
-    if (!monitor_.addWatch(fileName, kMonitorEvent))
+    if (!monitor_.addWatch(dictDir_, kMonitorEvent))
         return;
 
     monitor_.setFileEventHandler(this);
