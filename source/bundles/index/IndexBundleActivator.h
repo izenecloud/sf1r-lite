@@ -37,6 +37,7 @@ class SearchMerger;
 class SearchWorker;
 class IndexMerger;
 class IndexWorker;
+class IIncSupportedIndex;
 
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -64,6 +65,7 @@ private:
     boost::shared_ptr<DocumentManager> documentManager_;
     boost::shared_ptr<InvertedIndexManager> invertedIndexManager_;
     boost::shared_ptr<RankingManager> rankingManager_;
+    boost::shared_ptr<IIncSupportedIndex> zambeziIndexManager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
     boost::shared_ptr<SearchAggregator> ro_searchAggregator_;
@@ -90,6 +92,9 @@ private:
 
     boost::shared_ptr<RankingManager>
     createRankingManager_() const;
+
+    boost::shared_ptr<IIncSupportedIndex>
+    createZambeziIndexManager_() const;
 
     boost::shared_ptr<SearchManager> createSearchManager_() const;
 

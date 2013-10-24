@@ -23,7 +23,6 @@ class AttrManager;
 }
 
 class DocumentManager;
-class MiningTask;
 class ZambeziConfig;
 
 typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
@@ -41,8 +40,6 @@ public:
     bool open();
 
     bool open_1();
-
-    MiningTask* createMiningTask(DocumentManager& documentManager);
 
     void search(
         const std::vector<std::pair<std::string, int> >& tokens,

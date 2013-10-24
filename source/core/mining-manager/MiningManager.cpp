@@ -3052,9 +3052,6 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
         return false;
     }
 
-    miningTaskBuilder_->addTask(
-        zambeziManager_->createMiningTask(*document_manager_));
-
     return true;
 }
 

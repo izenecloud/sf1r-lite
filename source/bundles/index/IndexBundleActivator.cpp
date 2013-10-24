@@ -6,6 +6,7 @@
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
 #include <index-manager/InvertedIndexManager.h>
+#include <index-manager/ZambeziIndexManager.h>
 #include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/QueryPruneFactory.h>
@@ -276,6 +277,9 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open ranking manager.."<<std::endl;
     rankingManager_ = createRankingManager_();
     SF1R_ENSURE_INIT(rankingManager_);
+    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open zambezi index manager.."<<std::endl;
+    zambeziIndexManager_ = createZambeziIndexManager_();
+    SF1R_ENSURE_INIT(invertedIndexManager_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open search manager.."<<std::endl;
     searchManager_ = createSearchManager_();
     SF1R_ENSURE_INIT(searchManager_);
@@ -289,6 +293,7 @@ bool IndexBundleActivator::init_()
     SF1R_ENSURE_INIT(indexWorker_);
     // add all kinds of index that will support increment build.
     indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+    indexWorker_->getIncSupportedIndexManager().addIndex(zambeziIndexManager_);
 
     indexAggregator_ = createIndexAggregator_();
     SF1R_ENSURE_INIT(indexAggregator_);
@@ -511,6 +516,13 @@ IndexBundleActivator::createRankingManager_() const
         }
     }
 
+    return ret;
+}
+
+boost::shared_ptr<IIncSupportedIndex>
+IndexBundleActivator::createZambeziIndexManager_() const
+{
+    boost::shared_ptr<IIncSupportedIndex> ret;
     return ret;
 }
 
