@@ -4,6 +4,9 @@
 
 #include "AdIndexManager.h"
 #include <search-manager/HitQueue.h>
+#include <algorithm>
+
+const size_t MAX_AD_COUNT = 20;
 
 namespace sf1r
 {
@@ -55,7 +58,9 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
 
     boost::shared_ptr<HitQueue> scoreItemQueue;
 
-    scoreItemQueue.reset(new ScoreSortedHitQueue(dnfIDs.size()));
+    uint32_t heapSize = std::min(MAX_AD_COUNT, dnfIDs.size());
+
+    scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
     LOG(INFO)<<"dnfIDs.size(): "<<dnfIDs.size()<<endl;
     for(boost::unordered_set<uint32_t>::iterator it = dnfIDs.begin();
