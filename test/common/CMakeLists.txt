@@ -82,6 +82,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     )
   TARGET_LINK_LIBRARIES(t_FileMonitor ${libs})
 
+  ADD_EXECUTABLE(t_ByteSizeParser
+    Runner.cpp
+    t_ByteSizeParser.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_ByteSizeParser ${libs})
+
 ENDIF()
 
 ADD_EXECUTABLE(ScdMerger
