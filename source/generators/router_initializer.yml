@@ -8,7 +8,6 @@ headers:
   - controllers/LogAnalysisController.h
   - controllers/FacetedController.h
   - controllers/QueryCorrectionController.h
-  - controllers/QueryRecommendController.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h
@@ -25,11 +24,6 @@ controllers:
   QueryCorrectionController:
     actions:
       - index
-      - evaluate
-
-  QueryRecommendController:
-    actions:
-      - recommend
 
   QueryNormalizeController:
     actions:
