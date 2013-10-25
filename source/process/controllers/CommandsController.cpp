@@ -15,6 +15,7 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
+#include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/NodeManagerBase.h>
@@ -220,5 +221,28 @@ void CommandsController::optimize_index()
     JobScheduler::get()->addTask(task, collectionName_);
 }
 
-} // namespace sf1r
+/*
+ * @brief training ad click predictor
+ */
+void CommandsController::train_ctr_model()
+{
+    AdClickPredictor* adClickPredictor = AdClickPredictor::get();
 
+    //LOG(INFO)<<"training ctr model" <<endl;
+    if (!adClickPredictor->preProcess())
+    {
+        response().addError("request failed, preProcess failed");
+        return;
+    }
+    if (!adClickPredictor->train())
+    {
+        response().addError("request failed when training");
+        return;
+    }
+    if (!adClickPredictor->postProcess())
+    {
+        response().addError("request failed, postProcess failed");
+    }
+}
+
+} // namespace sf1r

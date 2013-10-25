@@ -8,6 +8,7 @@ headers:
   - controllers/LogAnalysisController.h
   - controllers/FacetedController.h
   - controllers/QueryCorrectionController.h
+  - controllers/QueryRecommendController.h
   - controllers/TopicController.h
   - controllers/RecommendController.h
   - controllers/ServiceController.h
@@ -17,9 +18,18 @@ headers:
   - controllers/QueryNormalizeController.h
 
 controllers:
-  AutoFillController: ~
+  AutoFillController:
+    actions:
+      - index
 
-  QueryCorrectionController: ~
+  QueryCorrectionController:
+    actions:
+      - index
+      - evaluate
+
+  QueryRecommendController:
+    actions:
+      - recommend
 
   QueryNormalizeController:
     actions:
@@ -33,6 +43,7 @@ controllers:
       - optimize_index
       - index_query_log
       - mining
+      - train_ctr_model
 
   KeywordsController:
     actions:

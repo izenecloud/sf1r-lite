@@ -11,6 +11,7 @@ namespace sf1r {
 
 bool AdClickPredictor::preProcess()
 {
+    //LOG(INFO) << "preProcess before training " << std::endl;
     //use copy constructor
     learner_.reset(new AdPredictorType(*predictor_));
 /*
@@ -37,6 +38,8 @@ bool AdClickPredictor::preProcess()
 //Train model with named file
 bool AdClickPredictor::trainFromFile(const std::string& filename)
 {
+    LOG(INFO) << "training from file: " << filename << std::endl;
+
     std::string oldname = dataPath_ + filename;
 
     std::ifstream fin(oldname.c_str());
@@ -46,7 +49,7 @@ bool AdClickPredictor::trainFromFile(const std::string& filename)
     while ( getline(fin, str) )
     {
         //parse log
-        LOG(INFO) << "str: " << str << std::endl;
+        //LOG(INFO) << "str: " << str << std::endl;
 
         std::vector<std::string> elems;
         std::vector<std::pair<std::string, std::string> > knowledge;
@@ -66,7 +69,7 @@ bool AdClickPredictor::trainFromFile(const std::string& filename)
             continue;
         }
 
-        for (it = elems.begin(); it != elems.end(); it++ )
+        for (it = elems.begin(); it != end; it++ )
         {
             std::vector<std::string> assignment;
             boost::split(assignment, *it, boost::is_any_of(":"));
@@ -123,6 +126,7 @@ bool AdClickPredictor::train()
 
 bool AdClickPredictor::postProcess()
 {
+    //LOG(INFO) << "postProcess after training " << std::endl;
     std::ofstream ofs(modelPath_.c_str(), std::ios_base::binary);
     if (!ofs)
     {
