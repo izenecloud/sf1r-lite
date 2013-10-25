@@ -83,7 +83,8 @@ void FileMonitor::monitorLoop_()
 
         if (length < 0)
         {
-            LOG(ERROR) << "error in read(), fileId_: " << fileId_;
+            LOG(WARNING) << "error in read(), fileId_: " << fileId_
+                         << ", errno: " << errno;
             continue;
         }
 

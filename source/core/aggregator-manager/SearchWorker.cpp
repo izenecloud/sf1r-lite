@@ -229,10 +229,10 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
 
         resultItem.rawQueryString_ = actionItem.env_.queryString_;
 
-        if (!resultItem.topKDocs_.empty())
+        if (!resultItem.topKDocs_.empty() && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
             searchManager_->topKReranker_.rerank(actionItem, resultItem);
 
-        if (miningManager_)
+        if (miningManager_ && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
         {
             miningManager_->getMiningResult(actionItem, resultItem);
         }
