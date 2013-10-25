@@ -78,8 +78,8 @@ void CommandsController::indexSearch_()
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-        bool disable_sharding = false;
-        disable_sharding = asBool(request()[Keys::disable_sharding]);
+        int disable_sharding = 0;
+        disable_sharding = asInt(request()[Keys::disable_sharding]);
         if(!taskService->index(documentCount,
                 asString(request()[Keys::index_scd_path]),
                 disable_sharding))
