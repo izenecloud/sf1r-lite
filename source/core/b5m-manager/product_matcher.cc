@@ -22,6 +22,7 @@
 #include <3rdparty/json/json.h>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace idmlib::sim;
 using namespace idmlib::kpe;
 using namespace idmlib::util;
@@ -4193,7 +4194,7 @@ bool ProductMatcher::IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& a
     }
 }
 
-ProductMatcher::cid_t ProductMatcher::GetCid_(const UString& category) const
+cid_t ProductMatcher::GetCid_(const UString& category) const
 {
     cid_t cid = 0;
     std::string scategory;
@@ -5616,7 +5617,7 @@ void ProductMatcher::MergeAttributes(std::vector<Attribute>& eattributes, const 
     }
     for(uint32_t i=0;i<attributes.size();i++)
     {
-        const ProductMatcher::Attribute& a = attributes[i];
+        const Attribute& a = attributes[i];
         if(to_append_name.find(a.name)!=to_append_name.end())
         {
             eattributes.push_back(a);
@@ -5629,14 +5630,14 @@ UString ProductMatcher::AttributesText(const std::vector<Attribute>& attributes)
     std::string str;
     for(uint32_t i=0;i<attributes.size();i++)
     {
-        const ProductMatcher::Attribute& a = attributes[i];
+        const Attribute& a = attributes[i];
         if(!str.empty()) str+=",";
         str+=a.GetText();
     }
     return UString(str, UString::UTF_8);
 }
 
-ProductMatcher::term_t ProductMatcher::GetTerm_(const UString& text)
+term_t ProductMatcher::GetTerm_(const UString& text)
 {
     term_t term = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(text);
     //term_t term = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(text);
@@ -5645,7 +5646,7 @@ ProductMatcher::term_t ProductMatcher::GetTerm_(const UString& text)
 #endif
     return term;
 }
-ProductMatcher::term_t ProductMatcher::GetTerm_(const std::string& text)
+term_t ProductMatcher::GetTerm_(const std::string& text)
 {
     UString utext(text, UString::UTF_8);
     return GetTerm_(utext);
@@ -6198,7 +6199,7 @@ bool ProductMatcher::IsBlankSplit_(const UString& t1, const UString& t2) const
     if(t1.isDigitChar(t1.length()-1) && t2.isDigitChar(0)) return true;
     return false;
 }
-ProductMatcher::cid_t ProductMatcher::GetLevelCid_(const std::string& scategory, uint32_t level) const
+cid_t ProductMatcher::GetLevelCid_(const std::string& scategory, uint32_t level) const
 {
     if(level==0) return 0;
     std::vector<std::string> vec;

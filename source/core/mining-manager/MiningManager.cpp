@@ -143,6 +143,7 @@ bool greater_pair(const std::pair<std::string, double>& obj1, const std::pair<st
 
 using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
+using namespace sf1r::b5m;
 namespace bfs = boost::filesystem;
 
 std::string MiningManager::system_resource_path_;
@@ -701,7 +702,7 @@ bool MiningManager::open()
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
-            ProductMatcher* matcher = ProductMatcherInstance::get();
+            b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
             if (!matcher->Open(res_path))
             {
                 std::cerr<<"product matcher open failed"<<std::endl;
@@ -2604,7 +2605,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
         doc.property("Title") = ustr_to_propstr(query);
-        ProductMatcher::Product result_product;
+        Product result_product;
         if (matcher->Process(doc, result_product))
         {
             const std::string& category_name = result_product.scategory;
@@ -2644,7 +2645,7 @@ bool MiningManager::GetProductFrontendCategory(
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
         doc.property("Title") = ustr_to_propstr(query);
-        std::vector<ProductMatcher::Product> result_products;
+        std::vector<Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {
             for (uint32_t i = 0; i < result_products.size(); ++i)

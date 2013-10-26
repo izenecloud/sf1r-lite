@@ -184,11 +184,11 @@ void adjustWeight(TokenArray& tokens, std::string& keywords, MiningManager& mini
     if (tokens.empty() || tokens.size() <= 1)
         return;
     
-    static ProductMatcher* matcher = ProductMatcherInstance::get();
+    static b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
     if (NULL == matcher)
         return;
     izenelib::util::UString uQuery(keywords, izenelib::util::UString::UTF_8);
-    ProductMatcher::KeywordVector kv;
+    b5m::ProductMatcher::KeywordVector kv;
     matcher->ExtractKeywords(uQuery, kv);
    
     std::sort(tokens.begin(), tokens.end(), tokenComparator);

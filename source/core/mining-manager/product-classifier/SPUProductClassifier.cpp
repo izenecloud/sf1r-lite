@@ -201,7 +201,7 @@ bool SPUProductClassifier::GetProductCategory(
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
 
     std::map<docid_t, int> doc_idx_map;
     const unsigned int docListSize = res_list.size();

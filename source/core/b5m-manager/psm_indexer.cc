@@ -5,6 +5,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 PsmIndexer::PsmIndexer(const std::string& cma_path)
 :cma_path_(cma_path), psmk_(400)

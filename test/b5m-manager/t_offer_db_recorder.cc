@@ -1,30 +1,9 @@
-#include <b5m-manager/product_matcher.h>
-#include <b5m-manager/category_scd_spliter.h>
-#include <b5m-manager/b5mo_processor.h>
-#include <b5m-manager/image_server_client.h>
-#include <b5m-manager/ticket_processor.h>
-#include <b5m-manager/b5m_mode.h>
-#include <b5m-manager/b5mc_scd_generator.h>
-#include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
-#include <b5m-manager/brand_db.h>
-#include <b5m-manager/comment_db.h>
-#include <b5m-manager/history_db_helper.h>
-#include <b5m-manager/psm_indexer.h>
-#include "../TestResources.h"
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/trie_policy.hpp>
-#include <ext/pb_ds/tag_and_trait.hpp>
-#include <stack>
-#include <boost/network/protocol/http/server.hpp>
-#include <boost/network/uri/uri.hpp>
-#include <boost/network/uri/decode.hpp>
 #include <boost/test/unit_test.hpp>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 
 BOOST_AUTO_TEST_SUITE(odb_test)

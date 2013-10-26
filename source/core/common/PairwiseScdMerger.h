@@ -121,7 +121,7 @@ public:
         namespace bfs = boost::filesystem;
         LOG(INFO)<<"Start merging... "<<std::endl;
         std::vector<std::string> scd_list;
-        B5MHelper::GetScdList(scd_path_, scd_list);
+        ScdParser::getScdList(scd_path_, scd_list);
         if(scd_list.empty())
         {
             LOG(WARNING)<<"scd list empty"<<std::endl;
@@ -133,7 +133,7 @@ public:
         }
         cache_.clear();
         std::vector<std::string> e_scd_list;
-        B5MHelper::GetScdList(e_scd_path_, e_scd_list);
+        ScdParser::getScdList(e_scd_path_, e_scd_list);
         for(uint32_t m=0;m<m_;m++)
         {
             LOG(INFO)<<"Processing M "<<m<<std::endl;
@@ -368,7 +368,7 @@ private:
         std::string sdocid;
         doc.getString(pname, sdocid);
         if(sdocid.empty()) return 0;
-        return B5MHelper::StringToUint128(sdocid);
+        return Utilities::md5ToUint128(sdocid);
     }
 
     bool ValidM_(const Document& doc, uint32_t m) const

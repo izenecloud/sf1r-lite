@@ -4,6 +4,7 @@
 #include <b5m-manager/b5mp_processor2.h>
 #include "TestResources.h"
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 struct MapperData
 {
@@ -326,7 +327,7 @@ string toString(UString us)
 
 void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
 {
-    ProductMatcher::Product result_product;
+    Product result_product;
     for(unsigned i=0; i<docvec.size(); i++)
     {
         cout<<i<<endl;
@@ -373,7 +374,7 @@ void show(Document doc)
 {
     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
 }
-void check(ProductMatcher::Product product,string fcategory,string scategory,string sbrand)
+void check(Product product,string fcategory,string scategory,string sbrand)
 {
     BOOST_CHECK_EQUAL(product.scategory.find(scategory)==string::npos,false);
     BOOST_CHECK_EQUAL(product.fcategory.find(fcategory)==string::npos,false);
@@ -381,7 +382,7 @@ void check(ProductMatcher::Product product,string fcategory,string scategory,str
 }
 
 
-void show(ProductMatcher::Product product)
+void show(Product product)
 {
     cout<<"product"<<product.spid<<"title"<< product.stitle<<"attributes"<<product.GetAttributeValue()<<"frontcategory"<<product.fcategory<<"scategory"<<product.scategory<<"price"<<product.price<<"brand"<<product.sbrand<<endl;
 }

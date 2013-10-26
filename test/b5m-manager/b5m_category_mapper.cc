@@ -8,6 +8,7 @@
 
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 namespace http = boost::network::http;
 namespace uri = boost::network::uri;

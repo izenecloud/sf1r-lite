@@ -4,7 +4,7 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 
-using namespace sf1r;
+using namespace sf1r::b5m;
 B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
 :m_(m), mcount_(mcount), index_(0), last_pitemid_(1), sort_thread_(NULL)
 {

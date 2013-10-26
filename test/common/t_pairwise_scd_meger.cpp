@@ -1,11 +1,11 @@
 #include <boost/test/unit_test.hpp>
 #include <common/ScdParser.h>
 #include "ScdBuilder.h"
-#include <b5m-manager/b5m_helper.h>
 #include <iostream>
 #include <string>
 #include <common/ScdTypeWriter.h>
 #include <common/PairwiseScdMerger.h>
+#include <common/Utilities.h>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <util/ustring/UString.h>
@@ -24,7 +24,7 @@ uint128_t GetDocId_(const Document& doc, const std::string& pname="DOCID")
     std::string sdocid;
     doc.getString(pname, sdocid);
     if(sdocid.empty()) return 0;
-    return B5MHelper::StringToUint128(sdocid);
+    return Utilities::md5ToUint128(sdocid);
 }
 string GetDocId(const Document& doc, const std::string& pname="DOCID")
 {
@@ -374,7 +374,7 @@ vector< vector<Document> > getDoc(string scd_path_)
     vector< vector<Document> > vecdoc;
     vecdoc.resize(3);
     std::vector<std::string> scd_list;
-    B5MHelper::GetScdList(scd_path_, scd_list);
+    ScdParser::getScdList(scd_path_, scd_list);
     ScdParser parser(izenelib::util::UString::UTF_8);
     for(uint32_t s=0; s<scd_list.size(); s++)
     {
@@ -462,14 +462,15 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
         merger.SetMProperty("uuid");
 
 
-        std::string output_dir = B5MHelper::GetB5moMirrorPath("./pairewise_test");
-        B5MHelper::PrepareEmptyDir(output_dir);
+        std::string output_dir = "./pairewise_test/b5mo_mirror";
+        boost::filesystem::remove_all(output_dir);
+        boost::filesystem::create_directories(output_dir);
         merger.SetOutputPath(output_dir);
         merger.SetOutputer(boost::bind( &Output_,  _1, _2));
         merger.SetMEnd(boost::bind( &OutputAll_));
         merger.SetPreprocessor(boost::bind( &FilterTask_, _1));
         merger.Run();
-        vector< vector<Document> > vecdoc=getDoc(B5MHelper::GetB5moMirrorPath("./pairewise_test"));
+        vector< vector<Document> > vecdoc=getDoc("./pairewise_test/b5mo_mirror");
         // cout<<  resultMap.size()<<" " <<idValuemap.size()<<endl;
         // cout<<  vecdoc[0].size()<<" " <<vecdoc[1].size()<<"  "<<vecdoc[2].size()<<endl;
         BOOST_CHECK_EQUAL(    resultMap.size(),   idValuemap.size() );
@@ -481,7 +482,7 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
             BOOST_CHECK_EQUAL(    it==resultMap.end(),   false );
             if( (idv->second).type== RTYPE_SCD){(idv->second).type=UPDATE_SCD;}
             BOOST_CHECK_EQUAL(    (it->second).type,(idv->second).type );
-            if((it->second).type!=(idv->second).type ){cout<<B5MHelper::Uint128ToString(idv->first)<<endl;i=10;}
+            if((it->second).type!=(idv->second).type ){cout<<Utilities::uint128ToMD5(idv->first)<<endl;i=10;}
             //BOOST_CHECK_EQUAL(    GetDocId(    (i->second).doc),GetDocId( (idv->second).doc) );
             if((it->second).type==1)
             {
@@ -518,7 +519,7 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
             BOOST_CHECK_EQUAL(    (i->second).size(),(idv->second).size() );
 
             if( (i->second).size()!=(idv->second).size())
-                cout<<B5MHelper::Uint128ToString(idv->first)<<"status";
+                cout<<Utilities::uint128ToMD5(idv->first)<<"status";
             for(unsigned j=0; j<(idv->second).size(); j++)
             {
                 if( (i->second).size()!=(idv->second).size())
@@ -532,7 +533,7 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
         string dst="./scd_exist/";
         string src="./pairewise_test/";
         std::vector<std::string> scd_list;
-        B5MHelper::GetScdList(src, scd_list);
+        ScdParser::getScdList(src, scd_list);
         /*
             for(unsigned i=0;i<scd_list.size();i++)
             {

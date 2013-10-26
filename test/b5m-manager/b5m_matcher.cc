@@ -1,7 +1,6 @@
 #include <b5m-manager/product_matcher.h>
 #include <b5m-manager/product_discover.h>
 #include <b5m-manager/category_mapper.h>
-#include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_processor.h>
 #include <b5m-manager/image_server_client.h>
 #include <b5m-manager/ticket_processor.h>
@@ -15,7 +14,6 @@
 #include <b5m-manager/offer_db_recorder.h>
 #include <b5m-manager/brand_db.h>
 #include <b5m-manager/comment_db.h>
-#include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
@@ -31,6 +29,7 @@
 
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 namespace pbds = __gnu_pbds;
 namespace http = boost::network::http;
@@ -298,7 +297,6 @@ int do_main(int ac, char** av)
         ("last-odb", po::value<std::string>(), "specify last offer db path")
         ("bdb", po::value<std::string>(), "specify brand db path")
         ("cdb", po::value<std::string>(), "specify comment db path")
-        ("historydb", po::value<std::string>(), "specify offer history db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
         ("old-scd-path", po::value<std::string>(), "specify old processed scd path")
@@ -355,9 +353,8 @@ int do_main(int ac, char** av)
     boost::shared_ptr<OfferDb> last_odb;
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<CommentDb> cdb;
-    boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
-    boost::shared_ptr<RpcServerConnectionConfig> imgserver_config;
+    boost::shared_ptr<sf1r::RpcServerConnectionConfig> imgserver_config;
     std::string synonym_file;
     //std::string category_group;
     std::string dictionary;
@@ -452,14 +449,6 @@ int do_main(int ac, char** av)
         std::cout << "cdb path: " << cdb_path <<std::endl;
         cdb.reset(new CommentDb(cdb_path));
     } 
-    if (vm.count("historydb")) {
-        std::string hdb_path = vm["historydb"].as<std::string>();
-        std::cout << "historydb path: " << hdb_path <<std::endl;
-        if(hdb_path != "////" && hdb_path != "")
-        {
-            historydb.reset(new B5MHistoryDBHelper(hdb_path));
-        }
-    } 
 
     if(vm.count("imgserver-config"))
     {
@@ -471,7 +460,7 @@ int do_main(int ac, char** av)
             std::string host = vec[0];
             uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
             uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
-            imgserver_config.reset(new RpcServerConnectionConfig(host, rpc_port, rpc_thread_num));
+            imgserver_config.reset(new sf1r::RpcServerConnectionConfig(host, rpc_port, rpc_thread_num));
         }
         else
         {
@@ -566,19 +555,6 @@ int do_main(int ac, char** av)
         std::cout<<"pid:"<<pid<<std::endl;
     }
 
-    if(vm.count("scd-split"))
-    {
-        if( scd_path.empty() || knowledge_dir.empty() || name.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        CategoryScdSpliter spliter;
-        spliter.Load(knowledge_dir,name);
-        if(!spliter.Split(scd_path))
-        {
-            return EXIT_FAILURE;
-        }
-    }
     if(vm.count("scd-merge"))
     {
         if( input.empty()||output.empty())
@@ -919,7 +895,7 @@ int do_main(int ac, char** av)
                 Document doc;
                 doc.property("Title") = str_to_propstr(line, UString::UTF_8);
                 uint32_t limit = 3;
-                std::vector<ProductMatcher::Product> products;
+                std::vector<Product> products;
                 matcher.Process(doc, limit, products);
                 for(uint32_t i=0;i<products.size();i++)
                 {

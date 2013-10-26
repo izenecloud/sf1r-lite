@@ -2,6 +2,7 @@
 #include "scd_doc_processor.h"
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace bfs = boost::filesystem;
 
 ProductDiscover::ProductDiscover(ProductMatcher* matcher)
@@ -126,7 +127,7 @@ void ProductDiscover::ProcessSPU_(ScdDocument& doc)
     if(!ValidCategory_(category)) return;
     UString attrib;
     doc.getString("Attribute", attrib);
-    std::vector<ProductMatcher::Attribute> attributes;
+    std::vector<Attribute> attributes;
     ProductMatcher::ParseAttributes(attrib, attributes);
     std::vector<std::string> brands;
     std::vector<std::string> models;
@@ -171,7 +172,7 @@ void ProductDiscover::Process_(ScdDocument& doc)
     std::string category;
     doc.getString("Category", category);
     if(!ValidCategory_(category)) return;
-    ProductMatcher::Product product;
+    Product product;
     matcher_->Process(doc, product);
     if(!product.spid.empty()&&!product.stitle.empty()) return;
     std::vector<std::string> brands;

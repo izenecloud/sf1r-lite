@@ -7,7 +7,6 @@
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
-#include <configuration-manager/LogServerConnectionConfig.h>
 #include <sf1r-net/RpcServerConnectionConfig.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
@@ -17,10 +16,11 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
     int mode, 
-    RpcServerConnectionConfig* img_server_config)
+    sf1r::RpcServerConnectionConfig* img_server_config)
 :odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 ,attr_(matcher->GetAttributeNormalize())
 //,attr_(NULL)
@@ -213,7 +213,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         need_do_match = true;
     }
-    ProductMatcher::Product product;
+    Product product;
     if(attr_!=NULL)
     {
         std::string sattr;
@@ -287,8 +287,8 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
                 }
                 else
                 {
-                    const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
-                    const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
+                    const std::vector<Attribute>& attributes = product.attributes;
+                    const std::vector<Attribute>& dattributes = product.dattributes;
                     if(!attributes.empty()||!dattributes.empty())
                     {
                         if(!dattributes.empty())
@@ -323,7 +323,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             }
             else
             {
-                std::vector<ProductMatcher::Attribute> eattributes;
+                std::vector<Attribute> eattributes;
                 std::string sattrib;
                 doc.getString("Attribute", sattrib);
                 boost::algorithm::trim(sattrib);
@@ -334,7 +334,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
                 }
                 if(!product.display_attributes.empty()||!product.filter_attributes.empty())
                 {
-                    std::vector<ProductMatcher::Attribute> v;
+                    std::vector<Attribute> v;
                     ProductMatcher::ParseAttributes(product.filter_attributes, v);
                     ProductMatcher::MergeAttributes(eattributes, v);
                     v.clear();

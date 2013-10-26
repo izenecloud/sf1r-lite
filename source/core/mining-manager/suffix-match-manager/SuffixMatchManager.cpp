@@ -56,7 +56,7 @@ SuffixMatchManager::~SuffixMatchManager()
     //if (knowledge_) delete knowledge_;
 }
 
-void SuffixMatchManager::setProductMatcher(ProductMatcher* matcher)
+void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
 {
     if (tokenizer_)
         tokenizer_->SetProductMatcher(matcher);

@@ -4,6 +4,7 @@
 #include <mining-manager/util/split_ustr.h>
 #include <sstream>
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 B5mpDocGenerator::B5mpDocGenerator()
 {

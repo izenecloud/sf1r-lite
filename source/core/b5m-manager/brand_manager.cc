@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/serialization/set.hpp>
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 BrandManager::BrandManager()
 {
