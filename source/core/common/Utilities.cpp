@@ -314,7 +314,7 @@ std::string Utilities::generateMD5(const std::string& query)
 {
     unsigned char result[MD5_DIGEST_LENGTH];
     MD5((unsigned char*)(query.c_str()), query.length(), (unsigned char*)&result);
-    char md_chars[MD5_DIGEST_LENGTH+1];
+    char md_chars[MD5_DIGEST_LENGTH*2 + 1];
     for(int i=0;i<16;i++)
     {
         sprintf(&md_chars[i*2], "%02x", (unsigned int)result[i]);
