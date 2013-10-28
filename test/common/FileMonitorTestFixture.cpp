@@ -1,5 +1,8 @@
 #include "FileMonitorTestFixture.h"
 #include <boost/filesystem.hpp>
+#include <boost/test/unit_test.hpp>
+#include <cstdlib> // system
+#include <glog/logging.h>
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
@@ -24,4 +27,25 @@ void FileMonitorTestFixture::start()
 {
     monitor_.setFileEventHandler(this);
     monitor_.monitor();
+}
+
+void FileMonitorTestFixture::resetStatus()
+{
+    actualFileName_ = "";
+    actualMask_ = 0;
+}
+
+void FileMonitorTestFixture::checkCommand(
+    const std::string& command,
+    const std::string& goldFileName,
+    uint32_t goldMask)
+{
+    LOG(INFO) << "execute command: " << command;
+    BOOST_REQUIRE_EQUAL(std::system(command.c_str()), 0);
+
+    // wait for event is triggered and processed
+    sleep(1);
+
+    BOOST_CHECK_EQUAL(actualFileName_, goldFileName);
+    BOOST_CHECK(actualMask_ & goldMask);
 }

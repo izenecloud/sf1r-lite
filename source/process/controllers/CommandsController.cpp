@@ -15,6 +15,7 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
+#include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/NodeManagerBase.h>
@@ -78,8 +79,8 @@ void CommandsController::indexSearch_()
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-        bool disable_sharding = false;
-        disable_sharding = asBool(request()[Keys::disable_sharding]);
+        int disable_sharding = 0;
+        disable_sharding = asInt(request()[Keys::disable_sharding]);
         if(!taskService->index(documentCount,
                 asString(request()[Keys::index_scd_path]),
                 disable_sharding))
@@ -220,5 +221,28 @@ void CommandsController::optimize_index()
     JobScheduler::get()->addTask(task, collectionName_);
 }
 
-} // namespace sf1r
+/*
+ * @brief training ad click predictor
+ */
+void CommandsController::train_ctr_model()
+{
+    AdClickPredictor* adClickPredictor = AdClickPredictor::get();
 
+    //LOG(INFO)<<"training ctr model" <<endl;
+    if (!adClickPredictor->preProcess())
+    {
+        response().addError("request failed, preProcess failed");
+        return;
+    }
+    if (!adClickPredictor->train())
+    {
+        response().addError("request failed when training");
+        return;
+    }
+    if (!adClickPredictor->postProcess())
+    {
+        response().addError("request failed, postProcess failed");
+    }
+}
+
+} // namespace sf1r

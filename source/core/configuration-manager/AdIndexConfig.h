@@ -17,6 +17,8 @@ public:
 
     std::string indexFilePath;
 
+    std::string clickPredictorWorkingPath;
+
     AdIndexConfig() : isEnable(false)
     {}
 
