@@ -1,5 +1,5 @@
-#ifndef NEGOITIVE_EVALUATOR_H
-#define NEGOTIVE_EVALUATOR_H
+#ifndef SF1R_RECOMMEND_NEGOITIVE_EVALUATOR_H
+#define SF1R_RECOMMEND_NEGOTIVE_EVALUATOR_H
 
 #include "Evaluator.h"
 #include <fstream>

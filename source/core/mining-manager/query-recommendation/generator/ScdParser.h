@@ -1,5 +1,5 @@
-#ifndef SCD_PARSER_H
-#define SCD_PAESER_H
+#ifndef SF1R_RECOMMEND_SCD_PARSER_H
+#define SF1R_RECOMMEND_SCD_PAESER_H
 
 #include <string>
 #include <iostream>

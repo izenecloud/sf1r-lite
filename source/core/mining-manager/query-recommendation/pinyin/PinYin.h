@@ -1,5 +1,5 @@
-#ifndef PINYIN_H
-#define PINYIN_H
+#ifndef SF1R_RECOMMEND_PINYIN_PINYIN_H
+#define SF1R_RECOMMEND_PINYIN_PINYIN_H
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>

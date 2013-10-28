@@ -1,5 +1,5 @@
-#ifndef TAOBAO_PARSER_H
-#define TAOBAO_PARSER_H
+#ifndef SF1R_RECOMMEND_TAOBAO_PARSER_H
+#define SF1R_RECOMMEND_TAOBAO_PARSER_H
 
 #include "Parser.h"
 #include <fstream>

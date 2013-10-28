@@ -1,5 +1,5 @@
-#ifndef POSITIVE_EVALUATOR_H
-#define POSITIVE_EVALUATOR_H
+#ifndef SF1R_POSITIVE_EVALUATOR_H
+#define SF1R_POSITIVE_EVALUATOR_H
 
 #include "Evaluator.h"
 #include <fstream>

@@ -1,5 +1,5 @@
-#ifndef SF1R_QUERY_RECOMMEND_REBUILDER_H
-#define SF1R_QUERY_RECOMMEND_REBUIDLER_H
+#ifndef SF1R_RECOMMEND_REBUILDER_H
+#define SF1R_RECOMMEND_REBUIDLER_H
 
 #include <common/file-monitor/FileMonitor.h>
 #include <common/file-monitor/FileEventHandler.h>

@@ -1,5 +1,5 @@
-#ifndef EVALUATE_PARSER_H
-#define EVALUATE_PARSER_H
+#ifndef SF1R_RECOMMEND_EVALUATE_PARSER_H
+#define SF1R_RECOMMEND_EVALUATE_PARSER_H
 
 #include <string>
 #include <unistd.h>

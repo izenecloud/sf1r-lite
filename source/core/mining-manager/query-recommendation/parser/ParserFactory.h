@@ -1,5 +1,5 @@
-#ifndef PARSER_FACTORY_H
-#define PARSER_FACTORY_H
+#ifndef SF1R_RECOMMEND_PARSER_FACTORY_H
+#define SF1R_RECOMMEND_PARSER_FACTORY_H
 
 #include "TFParser.h"
 #include "TaobaoParser.h"
