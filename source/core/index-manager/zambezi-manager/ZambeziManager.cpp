@@ -1,9 +1,10 @@
 #include "ZambeziManager.h"
-
+/*
 #include "../group-manager/PropValueTable.h" // pvid_t
 #include "../group-manager/GroupManager.h"
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
+*/
 
 #include <common/PropSharedLock.h>
 #include <configuration-manager/ZambeziConfig.h>
@@ -22,15 +23,26 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
 }
 
 ZambeziManager::ZambeziManager(
-        const ZambeziConfig& config,
-        faceted::AttrManager* attrManager,
-        NumericPropertyTableBuilder* numericTableBuilder)
+        const ZambeziConfig& config)
     : config_(config)
-    , attrManager_(attrManager)
     , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
-    , numericTableBuilder_(numericTableBuilder)
 {
     void init();
+}
+
+void ZambeziManager::init()
+{
+    for (std::vector<zambeziProperty>::const_iterator i = config_.properties.begin(); i != config_.properties.end(); ++i)
+    {
+        propertyList_.push_back(i->name);
+        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+    }
+
+    for (std::vector<zambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
+    {
+        propertyList_.push_back(i->name);
+        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+    }
 }
 
 bool ZambeziManager::open_1()
@@ -108,14 +120,18 @@ void ZambeziManager::search(
         return;
     }
 
-    std::vector<std::vector<docid_t> > docidsList;
-    docidsList.resize(propertyList.size());
-    std::vector<std::vector<uint32_t> > scoresList;
-    scoresList.resize(propertyList.size());
+    std::vector<std::string> searchPropertyList = propertyList;
+    if (searchPropertyList.empty())
+        searchPropertyList = propertyList_;
 
-    for (unsigned int i = 0; i < propertyList.size(); ++i)
+    std::vector<std::vector<docid_t> > docidsList;
+    docidsList.resize(searchPropertyList.size());
+    std::vector<std::vector<uint32_t> > scoresList;
+    scoresList.resize(searchPropertyList.size());
+
+    for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
-        property_index_map_[propertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
+        property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
     }
 
     merge_(docidsList, scoresList, docids, scores);
@@ -146,73 +162,4 @@ void ZambeziManager::search(
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
               << ", costs :" << timer.elapsed() << " seconds";
-}
-
-void ZambeziManager::NormalizeScore(
-    std::vector<docid_t>& docids,
-    std::vector<float>& scores,
-    std::vector<float>& productScores,
-    PropSharedLockSet &sharedLockSet)
-{
-    faceted::AttrTable* attTable = NULL;
-
-    if (attrManager_)
-    {
-        attTable = &(attrManager_->getAttrTable());
-        sharedLockSet.insertSharedLock(attTable);
-    }
-    float maxScore = 1;
-
-    std::string propName = "itemcount";
-    std::string propName_comment = "CommentCount";
-
-    boost::shared_ptr<NumericPropertyTableBase> numericTable =
-        numericTableBuilder_->createPropertyTable(propName);
-
-    boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
-        numericTableBuilder_->createPropertyTable(propName_comment);
-
-    if (numericTable)
-        sharedLockSet.insertSharedLock(numericTable.get());
-
-    if (numericTable_comment)
-        sharedLockSet.insertSharedLock(numericTable_comment.get());
-
-    for (uint32_t i = 0; i < docids.size(); ++i)
-    {
-        uint32_t attr_size = 1;
-        if (attTable)
-        {
-            faceted::AttrTable::ValueIdList attrvids;
-            attTable->getValueIdList(docids[i], attrvids);
-            attr_size = std::min(attrvids.size(), size_t(10));
-        }
-
-        int32_t itemcount = 1;
-        if (numericTable)
-        {
-            numericTable->getInt32Value(docids[i], itemcount, false);
-            attr_size += std::min(itemcount, 50);
-        }
-
-        if (numericTable_comment)
-        {
-            int32_t commentcount = 1;
-            numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            if (itemcount != 0)
-                attr_size += std::min(commentcount/itemcount, 100);
-            else
-                attr_size += std::min(commentcount, 100);
-
-        }
-
-        scores[i] = scores[i] * pow(attr_size, 0.3);
-        if (scores[i] > maxScore)
-            maxScore = scores[i];
-    }
-
-    for (unsigned int i = 0; i < scores.size(); ++i)
-    {
-        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
-    }
 }

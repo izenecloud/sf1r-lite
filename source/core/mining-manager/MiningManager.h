@@ -502,6 +502,11 @@ public:
         return numericTableBuilder_;
     }
 
+    faceted::AttrManager* GetAttributeManager()
+    {
+        return attrManager_;
+    }
+
     void updateMergeFuzzyIndex(int calltype);
 
     RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()

@@ -38,6 +38,7 @@ class SearchWorker;
 class IndexMerger;
 class IndexWorker;
 class IIncSupportedIndex;
+class ZambeziManager;
 
 class IndexBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -59,6 +60,7 @@ private:
 
     IndexBundleConfiguration* config_;
     std::string currentCollectionDataName_;
+    ZambeziManager* zambeziManager_;
 
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
@@ -95,6 +97,9 @@ private:
 
     boost::shared_ptr<IIncSupportedIndex>
     createZambeziIndexManager_() const;
+
+    ZambeziManager* 
+    createZambeziManager_() const;
 
     boost::shared_ptr<SearchManager> createSearchManager_() const;
 

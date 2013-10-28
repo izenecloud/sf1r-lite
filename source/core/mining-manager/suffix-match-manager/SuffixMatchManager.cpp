@@ -953,6 +953,8 @@ void SuffixMatchManager::buildTokenizeDic()
     cma_fmindex_dic /= boost::filesystem::path("dict");
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
+
+    
     ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
         ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
     tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());

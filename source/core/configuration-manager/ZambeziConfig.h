@@ -14,7 +14,6 @@ namespace sf1r
 struct zambeziProperty
 {
     std::string name;
-    std::string tokenPath;
     uint32_t poolSize;
     float weight;
 
@@ -26,7 +25,7 @@ struct zambeziProperty
 
     void display()
     {
-        std::cout << "name:" << name << " ,tokenPath:" << tokenPath
+        std::cout << "name:" << name 
             << " ,poolSize:" << poolSize << " ,weight:" << weight << std::endl;   
     }
 
@@ -36,7 +35,6 @@ struct zambeziVirtualProperty
 {
     std::string name;
     std::vector<std::string> subProperties;
-    std::string tokenPath;
     uint32_t poolSize;
     float weight;
     bool isAttrToken;
@@ -50,7 +48,7 @@ struct zambeziVirtualProperty
 
     void display()
     {
-        std::cout << "name:" << name << " ,tokenPath:" << tokenPath
+        std::cout << "name:" << name
             << " ,poolSize:" << poolSize << " ,weight:" << weight
             << " ,isAttrToken" << isAttrToken << std::endl;
         std::cout << "subProperties:";
@@ -62,6 +60,18 @@ struct zambeziVirtualProperty
     }
 };
 
+struct propertyStatus
+{
+    bool isCombined;
+    bool isAttr;
+    propertyStatus()
+    : isCombined(false)
+    , isAttr(false)
+    {
+    }
+};
+
+
 class ZambeziConfig
 {
 public:
@@ -71,16 +81,22 @@ public:
     uint32_t poolSize;
     uint32_t poolCount;
 
+    std::string tokenPath;
     std::string indexFilePath;
+
+    std::string system_resource_path_;
 
     std::vector<zambeziProperty> properties;
 
     std::vector<zambeziVirtualProperty> virtualPropeties;
 
+    std::map<std::string, propertyStatus> property_status_map; //TODO
+
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
                     , poolCount(0)
     {}
+
 
     void display()
     {
@@ -90,6 +106,7 @@ public:
         std::cout << "poolSize: "<< poolSize << std::endl;
         std::cout << "poolCount: "<< poolCount << std::endl;
         std::cout << "indexFilePath: "<< indexFilePath << std::endl;
+        std::cout << "tokenPath: "<< tokenPath << std::endl;
 
         for (std::vector<zambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
             i->display();

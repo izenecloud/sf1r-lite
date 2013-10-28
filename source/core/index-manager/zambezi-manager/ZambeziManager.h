@@ -7,7 +7,6 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
-#include <search-manager/NumericPropertyTableBuilder.h>
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
 #include <string>
@@ -30,10 +29,7 @@ typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
 class ZambeziManager
 {
 public:
-    ZambeziManager(
-            const ZambeziConfig& config,
-            faceted::AttrManager* attrManager,
-            NumericPropertyTableBuilder* numericTableBuilder);
+    ZambeziManager(const ZambeziConfig& config);
 
     void init();
 
@@ -56,12 +52,15 @@ public:
         std::vector<docid_t>& docids,
         std::vector<uint32_t>& scores);
 
+    inline std::map<std::string, AttrIndex>& getIndexMap()
+    {
+        return property_index_map_;
+    }
 
-    void NormalizeScore(
-        std::vector<docid_t>& docids,
-        std::vector<float>& scores,
-        std::vector<float>& productScores,
-        PropSharedLockSet &sharedLockSet);
+    inline const std::vector<std::string>& getProperties()
+    {
+        return propertyList_;
+    }
 
 private:
     void merge_(
@@ -73,15 +72,11 @@ private:
 private:
     const ZambeziConfig& config_;
 
-    faceted::AttrManager* attrManager_;
-
     std::vector<std::string> propertyList_;
 
     izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
 
     std::map<std::string, AttrIndex> property_index_map_;
-
-    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r

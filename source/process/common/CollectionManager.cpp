@@ -192,7 +192,7 @@ bool CollectionManager::startCollection(const string& collectionName,
     }
 
     ///createIndexBundle
-    if (indexBundleConfig->isSchemaEnable_)
+    if (indexBundleConfig->isNormalSchemaEnable_)
     {
         std::string bundleName = "IndexBundle-" + collectionName;
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);

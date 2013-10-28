@@ -4,10 +4,9 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/RankingManagerConfig.h>
 #include <configuration-manager/CollectionPath.h>
-
+#include <configuration-manager/ZambeziConfig.h>
 #include <node-manager/Sf1rTopology.h>
 #include <ir/index_manager/utility/IndexManagerConfig.h>
-
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
 
@@ -85,12 +84,19 @@ private:
 public:
     std::string collectionName_;
 
-    // <IndexBundle><Schema>
-    bool isSchemaEnable_;
+    // <IndexBundle><NormalSchema>
+    bool isNormalSchemaEnable_;
+
+    // <IndexBundle><ZambeziSchema>
+    bool isZambeziSchemaEnable_;
 
     CollectionPath collPath_;
 
+    // config for NO.1 Inverted Index (Normal Index)
     IndexBundleSchema indexSchema_;
+
+    // config for No.2 Inverted Index (Zambezi Index)
+    ZambeziConfig zambeziConfig_;
 
     DocumentSchema documentSchema_;
 

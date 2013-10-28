@@ -1,4 +1,5 @@
 #include "ZambeziIndexManager.h"
+#include "./zambezi-tokenizer/ZambeziTokenizer.h"
 #include <la-manager/AttrTokenizeWrapper.h>
 #include <configuration-manager/ZambeziConfig.h>
 #include <document-manager/Document.h>
@@ -9,31 +10,53 @@ using namespace sf1r;
 
 ZambeziIndexManager::ZambeziIndexManager(
     const ZambeziConfig& config,
-    izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer)
+    const std::vector<std::string>& properties,
+    std::map<std::string, AttrIndex>& property_index_map)
     : config_(config)
-    , indexer_(indexer)
+    , properties_(properties)
+    , property_index_map_(property_index_map)
 {
+    buildTokenizeDic();
+}
+
+void ZambeziIndexManager::buildTokenizeDic()
+{
+    boost::filesystem::path cma_index_dic(config_.system_resource_path_);
+    cma_index_dic /= boost::filesystem::path("dict");
+    cma_index_dic /= boost::filesystem::path(config_.tokenPath);
+
+    ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
+    tokenizer_ = new ZambeziTokenizer(type, cma_index_dic.c_str());
+}
+
+ZambeziIndexManager::~ZambeziIndexManager()
+{
+    if (tokenizer_) delete tokenizer_;
 }
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 {
-    indexer_.flush();
+    for (std::map<std::string, AttrIndex>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
+    {
+        i->second.flush();
+        
+        std::string indexPath = config_.indexFilePath + "_" + i->first;
+        std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
+        if (! ofs)
+        {
+            LOG(ERROR) << "failed opening file " << indexPath;
+            return;
+        }
 
-    std::ofstream ofs(config_.indexFilePath.c_str(), std::ios_base::binary);
-    if (! ofs)
-    {
-        LOG(ERROR) << "failed opening file " << config_.indexFilePath;
-        return;
-    }
-
-    try
-    {
-        indexer_.save(ofs);
-    }
-    catch (const std::exception& e)
-    {
-        LOG(ERROR) << "exception in writing file: " << e.what()
-                   << ", path: " << config_.indexFilePath;
+        try
+        {
+            i->second.save(ofs);
+        }
+        catch (const std::exception& e)
+        {
+            LOG(ERROR) << "exception in writing file: " << e.what()
+                       << ", path: " << indexPath;
+        }
     }
 }
 
@@ -54,7 +77,68 @@ bool ZambeziIndexManager::updateDocument(
     return buildDocument_(newdoc);
 }
 
-bool ZambeziIndexManager::buildDocument_(const Document& doc)
+bool ZambeziIndexManager::insertDocIndex_(
+    const docid_t docId, 
+    const std::string property,
+    const std::list<std::pair<std::string, double> >& tokenScoreList)
+{       
+    std::vector<std::string> tokenList;
+    std::vector<uint32_t> scoreList;   
+    for (std::list<std::pair<std::string, double> >::const_iterator it =
+             tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
+    {
+        tokenList.push_back(it->first);
+        scoreList.push_back(uint32_t(it->second));
+    }
+    property_index_map_[property].insertDoc(docId, tokenList, scoreList);
+
+    return true; 
+}
+
+bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::string& property)
+{
+    std::string proValue;
+
+    doc.getProperty(property, proValue);
+
+    std::list<std::pair<std::string, double> > tokenScoreList;
+    tokenizer_->GetTokenResults(proValue, tokenScoreList);
+    docid_t docId = doc.getId();
+    insertDocIndex_(docId, property, tokenScoreList);
+
+    return true;
+}
+
+bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std::string& property)
+{   
+    std::vector<string> subProperties;
+    for (unsigned int i = 0; i < config_.virtualPropeties.size(); ++i)
+    {
+        if (config_.virtualPropeties[i].name == property)
+        {
+            subProperties = config_.virtualPropeties[i].subProperties;
+            break;
+        }
+    }
+
+    std::string proValue;
+    std::string combined_proValue;
+    for (unsigned int i = 0; i < subProperties.size(); ++i)
+    {
+        proValue.clear();
+        doc.getProperty(subProperties[i], proValue);
+        combined_proValue += proValue;
+    }
+
+    std::list<std::pair<std::string, double> > tokenScoreList;
+    tokenizer_->GetTokenResults(combined_proValue, tokenScoreList);
+    docid_t docId = doc.getId();
+    insertDocIndex_(docId, property, tokenScoreList);
+    
+    return true;
+}
+
+bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::string& property)
 {
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
@@ -88,18 +172,40 @@ bool ZambeziIndexManager::buildDocument_(const Document& doc)
                                                     propValueList[3],
                                                     propValueList[4],
                                                     tokenScoreList);
-    std::vector<std::string> tokenList;
-    std::vector<uint32_t> scoreList;
-
-    for (std::vector<std::pair<std::string, double> >::const_iterator it =
-             tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
-    {
-        tokenList.push_back(it->first);
-        scoreList.push_back(uint32_t(it->second));
-    }
 
     docid_t docId = doc.getId();
-    indexer_.insertDoc(docId, tokenList, scoreList);
+    std::list<std::pair<std::string, double> > tokenScoreList_1;
 
+    for (std::vector<std::pair<std::string, double> >::iterator it =
+             tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
+        tokenScoreList_1.push_back(*it);
+
+    insertDocIndex_(docId, property, tokenScoreList_1);
+
+    return true;
+}
+
+bool ZambeziIndexManager::buildDocument_(const Document& doc)
+{
+    for (std::vector<std::string>::const_iterator i = properties_.begin(); i != properties_.end(); ++i)
+    {
+        std::map<std::string, propertyStatus>::const_iterator iter
+         =  config_.property_status_map.find(*i);
+        if (iter == config_.property_status_map.end())
+            continue;
+
+        if (iter->second.isCombined && iter->second.isAttr)
+        {
+            buildDocument_Attr_(doc, *i);
+        }
+        else if (iter->second.isCombined)
+        {
+            buildDocument_Combined_(doc, *i);
+        }
+        else
+        {
+            buildDocument_Normal_(doc, *i);
+        }
+    }
     return true;
 }

@@ -10,6 +10,11 @@
 #include "SearchBase.h"
 #include <common/inttypes.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <mining-manager/group-manager/PropValueTable.h> // pvid_t
+#include <mining-manager/group-manager/GroupManager.h>
+#include <mining-manager/attr-manager/AttrManager.h>
+#include <mining-manager/attr-manager/AttrTable.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 #include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>
 #include <string>
@@ -38,7 +43,8 @@ public:
     ZambeziSearch(
         DocumentManager& documentManager,
         SearchManagerPreProcessor& preprocessor,
-        QueryBuilder& queryBuilder);
+        QueryBuilder& queryBuilder,
+        ZambeziManager* zambeziManager);
 
     virtual void setMiningManager(
         const boost::shared_ptr<MiningManager>& miningManager);
@@ -50,6 +56,12 @@ public:
         std::size_t offset);
 
 private:
+    void normalizeScore_(
+        std::vector<docid_t>& docids,
+        std::vector<float>& scores,
+        std::vector<float>& productScores,
+        PropSharedLockSet &sharedLockSet);
+    
     void normalizeTopDocs_(
         const boost::scoped_ptr<ProductScorer>& productScorer, 
         boost::scoped_ptr<HitQueue>& scoreItemQueue,
@@ -78,6 +90,10 @@ private:
     ZambeziManager* zambeziManager_;
 
     const faceted::PropValueTable* categoryValueTable_;
+
+    faceted::AttrManager* attrManager_;
+
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r

@@ -7,18 +7,23 @@
 #define SF1R_ZAMBEZI_INDEX_MANAGER_H
 
 #include "IIncSupportedIndex.h"
+#include "zambezi-manager/ZambeziManager.h"
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
+#include <process/common/XmlConfigParser.h>
 
 namespace sf1r
 {
 class ZambeziConfig;
+class ZambeziTokenizer;
 
 class ZambeziIndexManager : public IIncSupportedIndex
 {
 public:
     ZambeziIndexManager(
         const ZambeziConfig& config,
-        izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer);
+        const std::vector<std::string>& properties,
+        std::map<std::string, AttrIndex>& property_index_map);
+    ~ZambeziIndexManager();
 
     virtual bool isRealTime() { return false; }
     virtual void flush(bool force) {}
@@ -50,14 +55,31 @@ public:
 
     virtual void removeDocument(docid_t docid, time_t timestamp) {}
 
+    void buildTokenizeDic();
 private:
     bool buildDocument_(const Document& doc);
 
-private:
-    const ZambeziConfig& config_;
+    bool buildDocument_Normal_(const Document& doc, const std::string& property);
 
-    izenelib::ir::Zambezi::AttrScoreInvertedIndex& indexer_;
+    bool buildDocument_Combined_(const Document& doc, const std::string& property);
+
+    bool buildDocument_Attr_(const Document& doc, const std::string& property);
+
+    bool insertDocIndex_(
+        const docid_t docId, 
+        const std::string property,
+        const std::list<std::pair<std::string, double> >& tokenScoreList);
+
+private:
+    std::string system_resource_path_;
+
+    const ZambeziConfig& config_;
+    const std::vector<std::string>& properties_;
+
+    std::map<std::string, AttrIndex>& property_index_map_;
+    ZambeziTokenizer* tokenizer_;
 };
+
 
 } // namespace sf1r
 

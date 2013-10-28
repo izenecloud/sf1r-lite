@@ -921,8 +921,9 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
     {
         parseIndexBundleParam(getUniqChildElement(indexBundle, "Parameter", false), collectionMeta);
         parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
-        parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema", false), collectionMeta);
+        parseIndexBundleSchema(getUniqChildElement(indexBundle, "NormalSchema", false), collectionMeta);
         parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
+        parseZambeziNode(getUniqChildElement(indexBundle, "ZambeziSchema", false), collectionMeta);
 
         IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
         const std::string& collectionName = collectionMeta.getName();
@@ -1360,7 +1361,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
         return;
 
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
-    indexBundleConfig.isSchemaEnable_ = true;
+    indexBundleConfig.isNormalSchemaEnable_ = true;
     indexBundleConfig.setSchema(collectionMeta.documentSchema_);
 
     Iterator<Element> property("Property");
@@ -2320,8 +2321,8 @@ NEXT:
         }
     }
 
-    task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
-    parseZambeziNode(task_node, collectionMeta);
+    /*task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
+    parseZambeziNode(task_node, collectionMeta);*/
 
     task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
     parseAdIndexNode(task_node, collectionMeta);
@@ -2340,24 +2341,6 @@ void CollectionConfig::parseAdIndexNode(
     miningSchema.ad_index_config.isEnable = true;
 }
 
-/*void CollectionConfig::parseZambeziNode(
-    const ticpp::Element* zambeziNode,
-    CollectionMeta& collectionMeta) const
-{
-    if (!zambeziNode)
-        return;
-
-    MiningSchema& miningSchema =
-        collectionMeta.miningBundleConfig_->mining_schema_;
-
-    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
-
-    getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
-    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
-    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
-    zambeziConfig.isEnable = true;
-}*/
-
 void CollectionConfig::parseZambeziNode(
     const ticpp::Element* zambeziNode,
     CollectionMeta& collectionMeta) const
@@ -2365,16 +2348,14 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
-    MiningSchema& miningSchema =
-        collectionMeta.miningBundleConfig_->mining_schema_;
-
-    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+    ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
     getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
-    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
-    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
+    getAttribute_ByteSize(zambeziNode, "poolSize", zambeziConfig.poolSize, true);
+    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, true);
     zambeziConfig.isEnable = true;
 
+    zambeziConfig.system_resource_path_ = SF1Config::get()->getResourceDir();
     Iterator<Element> property("IndexProperty");
     for (property = property.begin(zambeziNode); property != property.end(); property++)
     {
@@ -2392,8 +2373,8 @@ void CollectionConfig::parseZambeziNode(
                 zProperty.weight = propertyWeight;
 
             // poolSize
-            uint32_t poolsize;
-            if (getAttribute(property.Get(), "poolSize", poolsize, false))
+            uint32_t poolsize = 0;
+            if (getAttribute_ByteSize(property.Get(), "poolSize", poolsize, false))
                 zProperty.poolSize = poolsize;
             else
                 zProperty.poolSize = zambeziConfig.poolSize;
@@ -2416,9 +2397,6 @@ void CollectionConfig::parseZambeziNode(
             zambeziVirtualProperty vProperty;
             getAttribute(virtualproperty.Get(), "name", vProperty.name);
 
-            // path
-            getAttribute(virtualproperty.Get(), "dict_path", vProperty.tokenPath, false);
-
             // weight
             //getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
             float propertyWeight;
@@ -2426,8 +2404,8 @@ void CollectionConfig::parseZambeziNode(
                 vProperty.weight = propertyWeight;
 
             // poolsize
-            uint32_t poolSize;
-            if (getAttribute(zambeziNode, "poolSize", poolSize, 1 << 28))
+            uint32_t poolSize = 0;
+            if (getAttribute_ByteSize(virtualproperty.Get(), "poolSize", poolSize, false))
                 vProperty.poolSize = poolSize;
             else
                 vProperty.poolSize = zambeziConfig.poolSize;
@@ -2460,11 +2438,7 @@ void CollectionConfig::parseZambeziNode(
     {
         std::string DictionaryPath;
         getAttribute(subNode, "path", DictionaryPath);
-        for (std::vector<zambeziProperty>::iterator i = zambeziConfig.properties.begin(); i != zambeziConfig.properties.end(); ++i)
-        {
-            std::cout << "DictionaryPath" << DictionaryPath <<std::endl;
-            i->tokenPath = DictionaryPath;
-        }
+        zambeziConfig.tokenPath = DictionaryPath;
     }
     else
     {
@@ -2650,7 +2624,7 @@ void CollectionConfig::parseRecommendDistribConfig(CollectionMeta& collectionMet
 
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
     DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
-    if (indexBundleConfig.isSchemaEnable_)
+    if (indexBundleConfig.isNormalSchemaEnable_)
     {
         searchNode.isMasterNode_ = sf1Config->checkSearchMasterAggregator(collectionName);
         searchNode.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);

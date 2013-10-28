@@ -12,7 +12,7 @@
 #include <common/PropSharedLockSet.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
-#include <mining-manager/zambezi-manager/ZambeziManager.h>
+#include <index-manager/zambezi-manager/ZambeziManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
@@ -46,12 +46,13 @@ bool DocLess(const ScoreDoc& o1, const ScoreDoc& o2)
 ZambeziSearch::ZambeziSearch(
     DocumentManager& documentManager,
     SearchManagerPreProcessor& preprocessor,
-    QueryBuilder& queryBuilder)
+    QueryBuilder& queryBuilder,
+    ZambeziManager* zambeziManager)
     : documentManager_(documentManager)
     , preprocessor_(preprocessor)
     , queryBuilder_(queryBuilder)
     , groupFilterBuilder_(NULL)
-    , zambeziManager_(NULL)
+    , zambeziManager_(zambeziManager)
     , categoryValueTable_(NULL)
 {
 }
@@ -60,8 +61,9 @@ void ZambeziSearch::setMiningManager(
     const boost::shared_ptr<MiningManager>& miningManager)
 {
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
-    zambeziManager_ = miningManager->getZambeziManager();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
+    attrManager_= miningManager->GetAttributeManager();
+    numericTableBuilder_ = miningManager->GetNumericTableBuilder();
 }
 
 void ZambeziSearch::normalizeTopDocs_(
@@ -87,7 +89,7 @@ void ZambeziSearch::normalizeTopDocs_(
     }
 
     //Normalize
-    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
+    normalizeScore_(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
 
     // fast sort
     resultList.resize(topRelevanceScores.size());
@@ -107,7 +109,9 @@ bool ZambeziSearch::search(
     std::size_t limit,
     std::size_t offset)
 {
+    const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
     const std::string& query = actionOperation.actionItem_.env_.queryString_;
+
     LOG(INFO) << "zambezi search for query: " << query;
 
     if (query.empty())
@@ -159,13 +163,13 @@ bool ZambeziSearch::search(
 
     {
         boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
-        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
+        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
 
         if (candidates.empty())
         {
             std::vector<std::pair<std::string, int> > subTokenList;
             attrTokenize->attr_subtokenize(tokenList, subTokenList);
-            zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, candidates, scores);
+            zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
         }
     }
 
@@ -406,5 +410,74 @@ void ZambeziSearch::getAnalyzedQuery_(
 
         analyzedQuery.append(token);
         analyzedQuery.push_back(kUCharSpace);
+    }
+}
+
+void ZambeziSearch::normalizeScore_(
+    std::vector<docid_t>& docids,
+    std::vector<float>& scores,
+    std::vector<float>& productScores,
+    PropSharedLockSet &sharedLockSet)
+{
+    faceted::AttrTable* attTable = NULL;
+
+    if (attrManager_)
+    {
+        attTable = &(attrManager_->getAttrTable());
+        sharedLockSet.insertSharedLock(attTable);
+    }
+    float maxScore = 1;
+
+    std::string propName = "itemcount";
+    std::string propName_comment = "CommentCount";
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable =
+        numericTableBuilder_->createPropertyTable(propName);
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
+        numericTableBuilder_->createPropertyTable(propName_comment);
+
+    if (numericTable)
+        sharedLockSet.insertSharedLock(numericTable.get());
+
+    if (numericTable_comment)
+        sharedLockSet.insertSharedLock(numericTable_comment.get());
+
+    for (uint32_t i = 0; i < docids.size(); ++i)
+    {
+        uint32_t attr_size = 1;
+        if (attTable)
+        {
+            faceted::AttrTable::ValueIdList attrvids;
+            attTable->getValueIdList(docids[i], attrvids);
+            attr_size = std::min(attrvids.size(), size_t(10));
+        }
+
+        int32_t itemcount = 1;
+        if (numericTable)
+        {
+            numericTable->getInt32Value(docids[i], itemcount, false);
+            attr_size += std::min(itemcount, 50);
+        }
+
+        if (numericTable_comment)
+        {
+            int32_t commentcount = 1;
+            numericTable_comment->getInt32Value(docids[i], commentcount, false);
+            if (itemcount != 0)
+                attr_size += std::min(commentcount/itemcount, 100);
+            else
+                attr_size += std::min(commentcount, 100);
+
+        }
+
+        scores[i] = scores[i] * pow(attr_size, 0.3);
+        if (scores[i] > maxScore)
+            maxScore = scores[i];
+    }
+
+    for (unsigned int i = 0; i < scores.size(); ++i)
+    {
+        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
     }
 }

@@ -22,7 +22,6 @@ FILE(GLOB_RECURSE la_SRC "la-manager/*.cpp")
 FILE(GLOB_RECURSE license_SRC "license-manager/*.cpp")
 FILE(GLOB_RECURSE ranking_SRC "ranking-manager/*.cpp")
 FILE(GLOB_RECURSE common_SRC "common/*.cpp")
-FILE(GLOB_RECURSE index_SRC "index-manager/*.cpp")
 FILE(GLOB_RECURSE log_SRC "log-manager/*.cpp")
 FILE(GLOB_RECURSE directory_SRC "directory-manager/*.cpp")
 FILE(GLOB_RECURSE search_SRC "search-manager/*.cpp")
@@ -33,6 +32,11 @@ FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
 FILE(GLOB b5m_SRC "b5m-manager/*.cc")
 FILE(GLOB sf1r_net_SRC "sf1r-net/*.cpp")
+
+FILE(GLOB index_SRC
+  "index-manager/zambezi-manager/*.cpp"
+  "index-manager/*.cpp"
+  "index-manager/zambezi-tokenizer/*.cpp")
 
 FILE(GLOB image_SRC
     "image-manager/*.cc"
@@ -87,7 +91,6 @@ FILE(GLOB mining_SRC
   "mining-manager/query-recommendation/evaluate/*.cpp"
   "mining-manager/category-classify/*.cpp"
   "mining-manager/title-scorer/*.cpp"
-  "mining-manager/zambezi-manager/*.cpp"
   "mining-manager/ad-index-manager/*.cpp"
 )
 
