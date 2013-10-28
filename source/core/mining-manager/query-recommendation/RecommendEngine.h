@@ -1,5 +1,5 @@
-#ifndef RECOMMEND_ENGINE_H
-#define RECOMMEND_ENGINE_H
+#ifndef SF1R_RECOMMEND_RECOMMEND_ENGINE_H
+#define SF1R_RECOMMEND_RECOMMEND_ENGINE_H
 
 #include "parser/Parser.h"
 #include "parser/ParserFactory.h"

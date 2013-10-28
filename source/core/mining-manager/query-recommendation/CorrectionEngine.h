@@ -1,5 +1,5 @@
-#ifndef CORRECTION_ENGINE_H
-#define CORRECTION_ENGINE_H
+#ifndef SF1R_RECOMMEND_CORRECTION_ENGINE_H
+#define SF1R_RECOMMEND_CORRECTION_ENGINE_H
 
 #include <string>
 #include "PinyinTable.h"

@@ -1,5 +1,5 @@
-#ifndef EVALUATOR_FACTORY_H
-#define EVALUATOR_FACTORY_H
+#ifndef SF1R_RECOMMEND_EVALUATOR_FACTORY_H
+#define SF1R_RECOMMEND_EVALUATOR_FACTORY_H
 
 #include "PositiveEvaluator.h"
 #include "NegotiveEvaluator.h"

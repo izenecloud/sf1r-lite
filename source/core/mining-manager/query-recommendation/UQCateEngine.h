@@ -1,5 +1,5 @@
-#ifndef UQ_CATE_ENGINE_H
-#define UQ_CATE_ENGINE_H
+#ifndef SF1R_RECOMMEND_UQ_CATE_ENGINE_H
+#define SF1R_RECOMMEND_UQ_CATE_ENGINE_H
 
 #include <boost/unordered_map.hpp>
 #include <queue>

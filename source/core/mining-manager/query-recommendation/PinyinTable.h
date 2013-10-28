@@ -1,5 +1,5 @@
-#ifndef PINYIN_TABLE_H
-#define PINYIN_TABLE_H
+#ifndef SF1R_RECOMMEND_PINYIN_TABLE_H
+#define SF1R_RECOMMEND_PINYIN_TABLE_H
 
 #include "parser/Parser.h"
 #include <boost/unordered_map.hpp>

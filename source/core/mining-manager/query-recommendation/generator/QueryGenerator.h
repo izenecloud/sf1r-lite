@@ -1,5 +1,5 @@
-#ifndef QUERY_GENERATOR_H
-#define QUERY_GENERATOR_H
+#ifndef SF1R_RECOMMEND_QUERY_GENERATOR_H
+#define SF1R_RECOMMEND_QUERY_GENERATOR_H
 
 #include <string>
 #include <vector>
