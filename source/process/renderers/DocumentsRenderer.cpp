@@ -407,11 +407,14 @@ void DocumentsRenderer::renderTopGroupLabel(const KeywordSearchResult& miaResult
     for (GroupParam::GroupLabelScoreMap::const_iterator labelIt = topLabels.begin();
          labelIt != topLabels.end(); ++labelIt)
     {
+        const GroupParam::GroupPathScoreVec& pathVec = labelIt->second;
+
+        if (pathVec.empty())
+            continue;
+
         Value& propValue = renderValue();
         propValue[Keys::group_property] = labelIt->first;
-
         Value& labelValue = propValue[Keys::group_label];
-        const GroupParam::GroupPathScoreVec& pathVec = labelIt->second;
 
         for (GroupParam::GroupPathScoreVec::const_iterator pathIt = pathVec.begin();
              pathIt != pathVec.end(); ++pathIt)
