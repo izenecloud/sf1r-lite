@@ -74,7 +74,7 @@ void ZambeziManager::search(
 {
     izenelib::util::ClockTimer timer;
 
-    indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);
+    indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, false, docids, scores);
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
               << ", costs :" << timer.elapsed() << " seconds";
