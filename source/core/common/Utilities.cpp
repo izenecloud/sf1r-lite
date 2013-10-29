@@ -315,10 +315,11 @@ std::string Utilities::generateMD5(const std::string& query)
     unsigned char result[MD5_DIGEST_LENGTH];
     MD5((unsigned char*)(query.c_str()), query.length(), (unsigned char*)&result);
     char md_chars[MD5_DIGEST_LENGTH*2 + 1];
-    for(int i=0;i<16;i++)
+    for(int i=0;i<MD5_DIGEST_LENGTH;i++)
     {
         sprintf(&md_chars[i*2], "%02x", (unsigned int)result[i]);
     }
+    md_chars[MD5_DIGEST_LENGTH*2] = '\0';
     std::string md5(md_chars);
     return md5;
     //MD5_CTX md5;
