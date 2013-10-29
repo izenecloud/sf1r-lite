@@ -1,5 +1,5 @@
-#ifndef PREFIX_TABLE_H
-#define PREFIX_TABLE_H
+#ifndef SF1R_RECOMMEND_PREFIX_TABLE_H
+#define SF1R_RECOMMEND_PREFIX_TABLE_H
 
 #include <boost/unordered_map.hpp>
 #include <vector>

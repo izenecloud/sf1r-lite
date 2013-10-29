@@ -12,10 +12,14 @@ namespace sf1r
 {
 
 AdIndexManager::AdIndexManager(
-        const std::string& path,
+        const std::string& indexPath,
+        const std::string& clickPredictorWorkingPath,
         boost::shared_ptr<DocumentManager>& dm,
         NumericPropertyTableBuilder* ntb)
-    :indexPath_(path), documentManager_(dm), numericTableBuilder_(ntb)
+    : indexPath_(indexPath),
+      clickPredictorWorkingPath_(clickPredictorWorkingPath),
+      documentManager_(dm),
+      numericTableBuilder_(ntb)
 {
 }
 
@@ -23,13 +27,24 @@ AdIndexManager::~AdIndexManager()
 {
     if(adMiningTask_)
         delete adMiningTask_;
+/*
+    if(adClickPredictor_)
+        delete adClickPredictor_;
+*/
 }
 
 bool AdIndexManager::buildMiningTask()
 {
     adMiningTask_ = new AdMiningTask(indexPath_, documentManager_);
-
     adMiningTask_->load();
+
+/*
+    adClickPredictor_ = new AdClickPredictor(clickPredictorWorkingPath_);
+*/
+    adClickPredictor_ = AdClickPredictor::get();
+    adClickPredictor_->init(clickPredictorWorkingPath_);
+    adClickPredictor_->load();
+
     return true;
 }
 
@@ -87,10 +102,10 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
             }
             else if(mode == 1)
             {
-                //TODO
                 // calculate CTR
-                // calcutate eCPM
-                score = price;
+                double ctr = adClickPredictor_->predict(info);
+                // calculate eCPM
+                score = ctr * price * 1000;
             }
             ScoreDoc scoreItem(*it, score);
             scoreItemQueue->insert(scoreItem);

@@ -3073,7 +3073,7 @@ bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
     const bfs::path filePath(adIndexDir / "index.bin");
     adIndexConfig.indexFilePath = filePath.string();
 
-    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath, document_manager_, numericTableBuilder_);
+    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath, adIndexConfig.clickPredictorWorkingPath, document_manager_, numericTableBuilder_);
     adIndexManager_->buildMiningTask();
 
     miningTaskBuilder_->addTask(

@@ -5,9 +5,11 @@
 #ifndef SF1_AD_CLICK_PREDICTOR_H_
 #define SF1_AD_CLICK_PREDICTOR_H_
 
+#include <util/singleton.h>
 #include <idmlib/ctr/AdPredictor.hpp>
 #include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <fstream>
 
@@ -19,6 +21,10 @@ public:
     typedef boost::unique_lock<boost::shared_mutex> writeLock;
     typedef idmlib::AdPredictor AdPredictorType;
 
+    AdClickPredictor()
+    {
+    }
+/*
     AdClickPredictor(const std::string& path)
         : workingPath_(path)
     {
@@ -26,8 +32,25 @@ public:
         dataPath_ = path + "/data/";
         modelPath_ = path + "/model/predictor.bin";
     }
+*/
     ~AdClickPredictor()
     {
+    }
+
+    static AdClickPredictor* get()
+    {
+        return izenelib::util::Singleton<AdClickPredictor>::get();
+    }
+
+    void init(const std::string& path)
+    {
+        predictor_.reset(new AdPredictorType);
+
+        dataPath_ = path + "/data/";
+        modelPath_ = path + "/model/predictor.bin";
+
+        boost::filesystem::create_directories(path + "/model");
+        boost::filesystem::create_directories(dataPath_ + "backup");
     }
 
     double predict(const std::vector<std::pair<std::string, std::string> >& assignment)

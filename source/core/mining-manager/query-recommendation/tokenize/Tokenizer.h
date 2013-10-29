@@ -1,5 +1,5 @@
-#ifndef TOKENIZER_H
-#define TOKENIZER_H
+#ifndef SF1R_RECOMMEND_TOKENIZE_TOKENIZER_H
+#define SF1R_RECOMMEND_TOKENIZE_TOKENIZER_H
 
 #include <string>
 #include <util/ustring/UString.h>

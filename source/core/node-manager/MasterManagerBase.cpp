@@ -237,6 +237,8 @@ void MasterManagerBase::registerIndexStatus(const std::string& collection, bool 
 std::string MasterManagerBase::findReCreatedServerPath()
 {
     std::string new_created_path;
+    if (!zookeeper_)
+        return new_created_path;
 
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(serverParentPath_, childrenList);
@@ -1889,6 +1891,8 @@ void MasterManagerBase::resetAggregatorConfig()
 
 bool MasterManagerBase::isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId)
 {
+    if (!zookeeper_)
+        return false;
     std::string nodepath = getNodePath(replicaId,  nodeId);
     std::string sdata;
     if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
@@ -1983,6 +1987,9 @@ std::string MasterManagerBase::getShardNodeIP(shardid_t shardid)
 
 bool MasterManagerBase::isShardingNodeOK(const std::vector<shardid_t>& shardids)
 {
+    if (!zookeeper_)
+        return false;
+
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         std::vector<std::string> node_list;
@@ -2007,6 +2014,8 @@ bool MasterManagerBase::isShardingNodeOK(const std::vector<shardid_t>& shardids)
 
 bool MasterManagerBase::isWriteQueueEmpty(const std::vector<shardid_t>& shardids)
 {
+    if (!zookeeper_)
+        return false;
     for (size_t i = 0; i < shardids.size(); ++i)
     {
         std::string write_req_queue = ZooKeeperNamespace::getCurrWriteReqQueueParent(shardids[i]);
@@ -2120,6 +2129,8 @@ bool MasterManagerBase::waitForMigrateReady(const std::vector<shardid_t>& shardi
 
 bool MasterManagerBase::waitForNewShardingNodes(const std::vector<shardid_t>& shardids)
 {
+    if (!zookeeper_)
+        return false;
     while (true)
     {
         ZNode znode;

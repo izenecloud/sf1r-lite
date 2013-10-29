@@ -1,5 +1,5 @@
-#ifndef TF_PARSER_H
-#define TF_PARSER_H
+#ifndef SF1R_RECOMMEND_TF_PARSER_H
+#define SF1R_RECOMMEND_TF_PARSER_H
 
 #include "Parser.h"
 #include <fstream>

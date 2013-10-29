@@ -154,6 +154,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
 GroupParam::GroupParam()
     : isAttrGroup_(false)
     , attrGroupNum_(0)
+    , attrIterDocNum_(0)
     , searchMode_(SearchingMode::DefaultSearchingMode)
 {
 }
@@ -354,6 +355,7 @@ bool operator==(const GroupParam& a, const GroupParam& b)
            a.boostGroupLabels_ == b.boostGroupLabels_ &&
            a.isAttrGroup_ == b.isAttrGroup_ &&
            a.attrGroupNum_ == b.attrGroupNum_ &&
+           a.attrIterDocNum_ == b.attrIterDocNum_ &&
            a.attrLabels_ == b.attrLabels_ &&
            a.searchMode_ == b.searchMode_;
 }
@@ -383,6 +385,7 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
     out << "attrGroupNum_: " << groupParam.attrGroupNum_ << std::endl;
+    out << "attrIterDocNum_: " << groupParam.attrIterDocNum_ << std::endl;
 
     out << "attrLabels_: ";
     for (GroupParam::AttrLabelMap::const_iterator labelIt = groupParam.attrLabels_.begin();

@@ -114,11 +114,16 @@ bool IndexTaskService::HookDistributeRequestForIndex()
     return ret;
 }
 
-bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, bool disable_sharding)
+bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, int disable_sharding_type)
 {
     bool result = true;
 
-    indexWorker_->disableSharding(disable_sharding);
+    // disable_sharding_type , 0 no disable, 1 disable sending request to sharding node,
+    // 2 disable sending to sharding node and disable sharding SCD on local. (This means
+    //  local node will index all of the docs in the given SCD files.)
+    bool disable_sharding = (disable_sharding_type != 0);
+
+    indexWorker_->disableSharding(disable_sharding_type == 2);
 
     if (DistributeFileSys::get()->isEnabled())
     {

@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef SF1R_RECOMMEND_PARSER_H
+#define SF1R_RECOMMEND_PARSER_H
 
 #include <string>
 #include <unistd.h>
