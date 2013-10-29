@@ -27,6 +27,10 @@ B5mpDocGenerator::B5mpDocGenerator()
     subdoc_weighter_.insert(std::make_pair("京东商城", 9));
     subdoc_weighter_.insert(std::make_pair("天猫", 8));
     subdoc_weighter_.insert(std::make_pair("淘宝网", 0));
+    pic_weighter_.insert(std::make_pair("卓越亚马逊", 10));
+    pic_weighter_.insert(std::make_pair("京东商城", 9));
+    pic_weighter_.insert(std::make_pair("天猫", 0));
+    pic_weighter_.insert(std::make_pair("淘宝网", 0));
 }
 void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
@@ -148,6 +152,40 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     if(!spu_pic.empty())
     {
         pdoc.property("Picture") = spu_pic;
+    }
+    else
+    {
+        std::pair<std::string, int> select_pic("", -1);
+        for(uint32_t i=0;i<odocs.size();i++)
+        {
+            const ScdDocument& doc=odocs[i];
+            if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
+            {
+                continue;
+            }
+            std::string pic;
+            doc.getString("Picture", pic);
+            if(pic.empty()) continue;
+            std::string source;
+            doc.getString("Source", source);
+            if(source.empty()) continue;
+            int weight = default_source_weight_;
+            boost::unordered_map<std::string, int>::const_iterator it = pic_weighter_.find(source);
+            if(it!=pic_weighter_.end())
+            {
+                weight = it->second;
+            }
+            if(weight>select_pic.second)
+            {
+                select_pic.first = pic;
+                select_pic.second = weight;
+            }
+        }
+        if(!select_pic.first.empty())
+        {
+            pdoc.property("Picture") = str_to_propstr(select_pic.first);
+        }
+
     }
     if(!spu_url.empty())
     {

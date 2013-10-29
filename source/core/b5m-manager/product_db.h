@@ -36,6 +36,7 @@ private:
 private:
     boost::unordered_set<std::string> sub_doc_props_;
     boost::unordered_map<std::string, int> subdoc_weighter_;
+    boost::unordered_map<std::string, int> pic_weighter_;
     int default_source_weight_;
 };
 

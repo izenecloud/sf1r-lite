@@ -13,23 +13,31 @@ B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
 void B5moSorter::Append(const ScdDocument& doc, const std::string& ts, int flag)
 {
     boost::unique_lock<MutexType> lock(mutex_);
-    if(buffer_.size()==mcount_)
+    if(!ofs_.is_open())
     {
-        WaitUntilSortFinish_();
-        DoSort_();
+        std::string file = m_+"/block";
+        ofs_.open(file.c_str());
     }
-    buffer_.push_back(Value(doc, ts, flag));
+    Value v(doc, ts, flag);
+    WriteValue_(ofs_, v);
+    //if(buffer_.size()==mcount_)
+    //{
+    //    WaitUntilSortFinish_();
+    //    DoSort_();
+    //}
+    //buffer_.push_back(Value(doc, ts, flag));
 }
 
 bool B5moSorter::StageOne()
 {
     boost::unique_lock<MutexType> lock(mutex_);
-    WaitUntilSortFinish_();
-    if(!buffer_.empty())
-    {
-        DoSort_();
-        WaitUntilSortFinish_();
-    }
+    ofs_.close();
+    //WaitUntilSortFinish_();
+    //if(!buffer_.empty())
+    //{
+    //    DoSort_();
+    //    WaitUntilSortFinish_();
+    //}
     return true;
 }
 bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_num)
@@ -189,15 +197,6 @@ void B5moSorter::OBag_(PItem& pitem)
             break;
         }
     }
-    //std::cerr<<"docs count "<<docs.size()<<","<<modified<<std::endl;
-    //if(!modified)
-    //{
-    //    for(uint32_t i=0;i<docs.size();i++)
-    //    {
-    //        WriteValueSafe_(mirror_ofs_, docs[i].doc, docs[i].ts);
-    //    }
-    //    return;
-    //}
 
     if(modified)
     {
@@ -284,11 +283,13 @@ void B5moSorter::OBag_(PItem& pitem)
             if(!prev_odocs.empty())
             {
                 pgenerator_.Gen(prev_odocs, prev_pdoc);
+            }
+            int64_t prev_itemcount=0;
+            prev_pdoc.getProperty("itemcount", prev_itemcount);
+            if(prev_itemcount>1)
+            {
                 pdoc.diff(prev_pdoc);
             }
-            int64_t itemcount=0;
-            pdoc.getProperty("itemcount", itemcount);
-            //if(itemcount>=100) return;
             SCD_TYPE ptype = pdoc.type;
             if(pdoc.getPropertySize()<2)
             {

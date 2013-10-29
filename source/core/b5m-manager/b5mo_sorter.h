@@ -134,6 +134,7 @@ private:
 private:
     std::string m_;
     std::string ts_;
+    std::ofstream ofs_;
     bool spu_only_;
     uint32_t mcount_;
     uint32_t index_;
