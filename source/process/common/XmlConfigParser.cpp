@@ -921,7 +921,7 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
     {
         parseIndexBundleParam(getUniqChildElement(indexBundle, "Parameter", false), collectionMeta);
         parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
-        parseIndexBundleSchema(getUniqChildElement(indexBundle, "NormalSchema", false), collectionMeta);
+        parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema", false), collectionMeta);
         parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
         parseZambeziNode(getUniqChildElement(indexBundle, "ZambeziSchema", false), collectionMeta);
 
@@ -2348,20 +2348,23 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
+    collectionMeta.indexBundleConfig_->isZambeziSchemaEnable_ = true;
     ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
     getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
     getAttribute_ByteSize(zambeziNode, "poolSize", zambeziConfig.poolSize, true);
     getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, true);
     zambeziConfig.isEnable = true;
-
+    //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
     zambeziConfig.system_resource_path_ = SF1Config::get()->getResourceDir();
+
     Iterator<Element> property("IndexProperty");
     for (property = property.begin(zambeziNode); property != property.end(); property++)
     {
         try
         {
             zambeziProperty zProperty;
+            propertyStatus  sProperty;
             // name
             string propertyName;
             getAttribute(property.Get(), "name", propertyName);
@@ -2380,6 +2383,8 @@ void CollectionConfig::parseZambeziNode(
                 zProperty.poolSize = zambeziConfig.poolSize;
 
             zambeziConfig.properties.push_back(zProperty);
+            zambeziConfig.property_status_map.insert(std::make_pair(propertyName, sProperty));
+
         }
         catch (XmlConfigParserException & e)
         {
@@ -2395,6 +2400,8 @@ void CollectionConfig::parseZambeziNode(
         {
             // name
             zambeziVirtualProperty vProperty;
+            propertyStatus  sProperty;
+            sProperty.isCombined = true;
             getAttribute(virtualproperty.Get(), "name", vProperty.name);
 
             // weight
@@ -2411,9 +2418,16 @@ void CollectionConfig::parseZambeziNode(
                 vProperty.poolSize = zambeziConfig.poolSize;
 
             // isAttrToken
-            bool isAttrToken;
+            bool isAttrToken = false;
             if (getAttribute(virtualproperty.Get(), "isAttrToken", isAttrToken, false))
+            {
                 vProperty.isAttrToken = isAttrToken;
+                if (isAttrToken)
+                {
+                    zambeziConfig.hasAttrtoken = true;
+                    sProperty.isAttr = true;
+                }
+            }
 
             // SubProperty
             Iterator<Element> subproperty("SubProperty");
@@ -2425,6 +2439,7 @@ void CollectionConfig::parseZambeziNode(
             }
 
             zambeziConfig.virtualPropeties.push_back(vProperty);
+            zambeziConfig.property_status_map.insert(std::make_pair(vProperty.name, sProperty));
         }
         catch (XmlConfigParserException & e)
         {

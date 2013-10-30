@@ -3,6 +3,10 @@
 
 #include <string>
 #include <boost/serialization/access.hpp>
+#include <map>
+#include <list>
+#include <iostream>
+#include <vector>
 
 namespace sf1r
 {
@@ -69,6 +73,11 @@ struct propertyStatus
     , isAttr(false)
     {
     }
+
+    void display()
+    {
+        std::cout << "  isCombined:" << isCombined << "  ,isAttr:" << isAttr << std::endl; 
+    }
 };
 
 
@@ -92,27 +101,37 @@ public:
 
     std::map<std::string, propertyStatus> property_status_map; //TODO
 
+    bool hasAttrtoken;
+
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
                     , poolCount(0)
+                    , hasAttrtoken(false)
     {}
 
 
     void display()
     {
-        std::cout << "zambezi search cnfig:" << std::endl;
+        std::cout << "ZAMBEZI SEARCH CONFIG..." << std::endl;
         std::cout << "isEnable:" << isEnable << std::endl;
         std::cout << "reverse:" << reverse << std::endl;
         std::cout << "poolSize: "<< poolSize << std::endl;
         std::cout << "poolCount: "<< poolCount << std::endl;
         std::cout << "indexFilePath: "<< indexFilePath << std::endl;
         std::cout << "tokenPath: "<< tokenPath << std::endl;
-
+        std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
+        std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
         for (std::vector<zambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
             i->display();
 
         for (std::vector<zambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
             i->display();
+
+        for (std::map<std::string, propertyStatus>::iterator i = property_status_map.begin(); i != property_status_map.end(); ++i)
+        {
+            std::cout << "Property:" << i->first; 
+            i->second.display();
+        }
     }
 
 private:

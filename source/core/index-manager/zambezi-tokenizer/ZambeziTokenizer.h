@@ -27,24 +27,27 @@ public:
         CMA_FMINCOVER ///type 5 of icma
     };
 
-    ZambeziTokenizer(
-            TokenizerType type,
-            const std::string& dict_path);
+    ZambeziTokenizer();
+
+    static ZambeziTokenizer* get();
 
     ~ZambeziTokenizer();
 
     bool GetTokenResults(
             const std::string& pattern,
-            std::list<std::pair<std::string, double> >& token_results);
+            std::vector<std::pair<std::string, int> >& token_results);
     
-private:
-    void InitWithCMA_(const std::string& dict_path);
+    void InitWithCMA_(
+            TokenizerType type,
+            const std::string& dict_path);
 
+private:
     bool GetTokenResultsByCMA_(
             const std::string& pattern,
-            std::list<std::pair<std::string, double> >& token_results);
+            std::vector<std::pair<std::string, int> >& token_results);
 
 private:
+    bool isInit_;
     TokenizerType type_;
 
     cma::Analyzer* analyzer_;

@@ -7,6 +7,7 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
+#include <configuration-manager/ZambeziConfig.h>
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
 #include <string>
@@ -22,10 +23,9 @@ class AttrManager;
 }
 
 class DocumentManager;
-class ZambeziConfig;
 
 typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
-
+const unsigned int MAXDOCID = 268435456; //
 class ZambeziManager
 {
 public:
@@ -34,15 +34,6 @@ public:
     void init();
 
     bool open();
-
-    bool open_1();
-
-    void search(
-        const std::vector<std::pair<std::string, int> >& tokens,
-        const boost::function<bool(uint32_t)>& filter,
-        uint32_t limit,
-        std::vector<docid_t>& docids,
-        std::vector<uint32_t>& scores);
 
     void search(
         const std::vector<std::pair<std::string, int> >& tokens,
@@ -62,6 +53,11 @@ public:
         return propertyList_;
     }
 
+    bool isAttrTokenize()
+    {
+        return config_.hasAttrtoken;
+    }
+
 private:
     void merge_(
         const std::vector<std::vector<docid_t> >& docidsList,
@@ -73,8 +69,6 @@ private:
     const ZambeziConfig& config_;
 
     std::vector<std::string> propertyList_;
-
-    izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
 
     std::map<std::string, AttrIndex> property_index_map_;
 };

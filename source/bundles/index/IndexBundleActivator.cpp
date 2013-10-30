@@ -15,6 +15,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
+#include <la-manager/AttrTokenizeWrapper.h>
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
@@ -295,7 +296,9 @@ bool IndexBundleActivator::init_()
     if (config_->isZambeziSchemaEnable_)
     {
         std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open zambezi index manager.."<<std::endl;
-        zambeziManager_ = createZambeziManager_();
+
+        if (!createZambeziManager_())
+            return false;
         zambeziIndexManager_ = createZambeziIndexManager_();
         SF1R_ENSURE_INIT(zambeziIndexManager_);
     }
@@ -318,7 +321,10 @@ bool IndexBundleActivator::init_()
     // add all kinds of index that will support increment build.
     indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
     if (config_->isZambeziSchemaEnable_)
+    {
+        std::cout << "add zambeziIndexManager_ ......." << std::endl;
         indexWorker_->getIncSupportedIndexManager().addIndex(zambeziIndexManager_);
+    }
 
     indexAggregator_ = createIndexAggregator_();
     SF1R_ENSURE_INIT(indexAggregator_);
@@ -540,14 +546,28 @@ IndexBundleActivator::createRankingManager_() const
             ret->setPropertyWeight(propertyConfigOut.getPropertyId(), it->second);
         }
     }
-
     return ret;
 }
 
-ZambeziManager*
-IndexBundleActivator::createZambeziManager_() const
+bool IndexBundleActivator::createZambeziManager_()
 {
-    return new ZambeziManager(config_->zambeziConfig_);
+    if (config_->zambeziConfig_.hasAttrtoken && 
+        !AttrTokenizeWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/attr_tokenize"))
+        return false;
+
+    std::string dir = getCurrentCollectionDataPath_()+"/zambezi/";
+    const bfs::path zambeziDir(dir);
+
+    config_->zambeziConfig_.indexFilePath = dir + "index_bin";
+    bfs::create_directories(zambeziDir);
+
+    if (zambeziManager_) delete zambeziManager_;
+    zambeziManager_ = new ZambeziManager(config_->zambeziConfig_);
+
+    if (!zambeziManager_->open())
+        return false;
+
+    return true;
 }
 
 boost::shared_ptr<IIncSupportedIndex>

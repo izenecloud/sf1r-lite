@@ -85,11 +85,15 @@ void ZambeziSearch::normalizeTopDocs_(
         float productScore = 0;
         productScore = productScorer->score(scoreItem.docId);
         topProductScores.push_back(productScore);
-        topRelevanceScores.push_back(scoreItem.score);
+        if (!zambeziManager_->isAttrTokenize())
+            topRelevanceScores.push_back(scoreItem.score + productScore);
+        else
+            topRelevanceScores.push_back(scoreItem.score);
     }
 
     //Normalize
-    normalizeScore_(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
+    if (zambeziManager_->isAttrTokenize())
+        normalizeScore_(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
 
     // fast sort
     resultList.resize(topRelevanceScores.size());
@@ -98,7 +102,7 @@ void ZambeziSearch::normalizeTopDocs_(
         ScoreDoc scoreItem(topDocids[i], topRelevanceScores[i]);
         resultList[i] = scoreItem;
     }
-    std::sort(resultList.begin(), resultList.end(), DocLess);
+    std::sort(resultList.begin(), resultList.end(), DocLess);  //desc
     LOG(INFO) << " Use productScore, Normalize TOP "<< resultList.size()
             << "Docs cost:" << timer.elapsed() << " seconds";
 }
@@ -152,11 +156,15 @@ bool ZambeziSearch::search(
         filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
         filterBitVector->importFromEWAH(*filterBitmap);
     }
-
-    AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
-    std::vector<std::pair<std::string, int> > tokenList;
-    attrTokenize->attr_tokenize(query, tokenList);
+    //
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
+
+    //
+    std::vector<std::pair<std::string, int> > tokenList;
+    if (zambeziManager_->isAttrTokenize())
+        AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict 
+    else
+        ZambeziTokenizer::get()->GetTokenResults(query, tokenList);
 
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
@@ -165,10 +173,10 @@ bool ZambeziSearch::search(
         boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
         zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
 
-        if (candidates.empty())
+        if (candidates.empty() && zambeziManager_->isAttrTokenize())
         {
             std::vector<std::pair<std::string, int> > subTokenList;
-            attrTokenize->attr_subtokenize(tokenList, subTokenList);
+            AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
             zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
         }
     }
@@ -225,7 +233,7 @@ bool ZambeziSearch::search(
     }
 
     std::vector<ScoreDoc> resultList;
-    if (!sorter) // productScorer;
+    if (!sorter && productScorer) // productScorer; //!sorter
     {
         normalizeTopDocs_(productScorer, 
                         scoreItemQueue, 

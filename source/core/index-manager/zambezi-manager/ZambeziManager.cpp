@@ -1,18 +1,11 @@
 #include "ZambeziManager.h"
-/*
-#include "../group-manager/PropValueTable.h" // pvid_t
-#include "../group-manager/GroupManager.h"
-#include "../attr-manager/AttrManager.h"
-#include "../attr-manager/AttrTable.h"
-*/
-
 #include <common/PropSharedLock.h>
-#include <configuration-manager/ZambeziConfig.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <fstream>
 #include <math.h>
 #include <algorithm>
+#include <iostream>
 
 using namespace sf1r;
 
@@ -25,9 +18,8 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
 ZambeziManager::ZambeziManager(
         const ZambeziConfig& config)
     : config_(config)
-    , indexer_(config_.poolSize, config_.poolCount, config_.reverse)
 {
-    void init();
+    init();
 }
 
 void ZambeziManager::init()
@@ -45,17 +37,21 @@ void ZambeziManager::init()
     }
 }
 
-bool ZambeziManager::open_1()
+bool ZambeziManager::open() 
 {
-    const std::string& basePath = config_.indexFilePath;
+    const std::string& basePath = config_.indexFilePath; //not init
 
+    LOG(INFO) << "index BASE PATH: " << basePath << std::endl;
     for (std::vector<std::string>::iterator i = propertyList_.begin(); i != propertyList_.end(); ++i)
     {
         std::string path = basePath + "_" + *i; // index.bin_Title
         std::ifstream ifs(path.c_str(), std::ios_base::binary);
 
-        if (! ifs)
-            return false;// orignal return true;
+        if (!ifs)
+        {
+            LOG(WARNING) << "NEW zambezi or add new property!";
+            return true; // nothing to load, if add new property, that need to rebuild;
+        }
 
         LOG(INFO) << "loading zambezi index for propery: " << *i << ", path" << path;
 
@@ -71,34 +67,7 @@ bool ZambeziManager::open_1()
         }
     }
 
-    LOG(INFO) << "Finished loading zambezi index";
-
-    return true;
-}
-
-bool ZambeziManager::open()
-{
-    const std::string& path = config_.indexFilePath;
-    std::ifstream ifs(path.c_str(), std::ios_base::binary);
-
-    if (! ifs)
-        return true;
-
-    LOG(INFO) << "loading zambezi index path: " << path;
-
-    try
-    {
-        indexer_.load(ifs);
-    }
-    catch (const std::exception& e)
-    {
-        LOG(ERROR) << "exception in read file: " << e.what()
-                   << ", path: " << path;
-        return false;
-    }
-
-    LOG(INFO) << "finished loading zambezi index, total doc num: "
-              << indexer_.totalDocNum();
+    LOG(INFO) << "Finished open zambezi index";
 
     return true;
 }
@@ -117,7 +86,6 @@ void ZambeziManager::search(
         property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
-        return;
     }
 
     std::vector<std::string> searchPropertyList = propertyList;
@@ -133,7 +101,7 @@ void ZambeziManager::search(
     {
         property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
     }
-
+    
     merge_(docidsList, scoresList, docids, scores);
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
@@ -146,20 +114,23 @@ void ZambeziManager::merge_(
         std::vector<docid_t>& docids,
         std::vector<uint32_t>& scores)
 {
+    unsigned int BitLen = (MAXDOCID + 7) >> 3;
+    char* BitMap = new char[BitLen];
+    memset(BitMap, 0, BitLen * sizeof(char));
 
-}
-
-void ZambeziManager::search(
-    const std::vector<std::pair<std::string, int> >& tokens,
-    const boost::function<bool(uint32_t)>& filter,
-    uint32_t limit,
-    std::vector<docid_t>& docids,
-    std::vector<uint32_t>& scores)
-{
-    izenelib::util::ClockTimer timer;
-
-    indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);
-
-    LOG(INFO) << "zambezi returns docid num: " << docids.size()
-              << ", costs :" << timer.elapsed() << " seconds";
+    for (unsigned int j = 0; j < docidsList.size(); ++j)
+    {
+        for (unsigned int i = 0; i < docidsList[j].size(); ++i)
+        {
+            unsigned int u = docidsList[j][i];
+            uint32_t s = scoresList[j][i];
+            if((BitMap[u>>3] & (0x80 >> (u&7))) == 0)
+            {
+                BitMap[u>>3] |= 0x80 >> (u&7);
+                docids.push_back(u);
+                scores.push_back(s);
+            }
+        }
+    }
+    delete [] BitMap;
 }

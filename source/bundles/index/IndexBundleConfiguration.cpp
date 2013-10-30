@@ -8,6 +8,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     : ::izenelib::osgi::BundleConfiguration("IndexBundle-"+collectionName, "IndexBundleActivator" )
     , collectionName_(collectionName)
     , isNormalSchemaEnable_(false)
+    , isZambeziSchemaEnable_(false)
     , logCreatedDoc_(false)
     , bIndexUnigramProperty_(true)
     , bUnigramSearchMode_(false)

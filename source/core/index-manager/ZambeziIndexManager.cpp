@@ -26,12 +26,11 @@ void ZambeziIndexManager::buildTokenizeDic()
     cma_index_dic /= boost::filesystem::path(config_.tokenPath);
 
     ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
-    tokenizer_ = new ZambeziTokenizer(type, cma_index_dic.c_str());
+    ZambeziTokenizer::get()->InitWithCMA_(type, cma_index_dic.c_str());
 }
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
-    if (tokenizer_) delete tokenizer_;
 }
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
@@ -42,7 +41,7 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
         
         std::string indexPath = config_.indexFilePath + "_" + i->first;
         std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
-        if (! ofs)
+        if (!ofs)
         {
             LOG(ERROR) << "failed opening file " << indexPath;
             return;
@@ -80,11 +79,11 @@ bool ZambeziIndexManager::updateDocument(
 bool ZambeziIndexManager::insertDocIndex_(
     const docid_t docId, 
     const std::string property,
-    const std::list<std::pair<std::string, double> >& tokenScoreList)
+    const std::vector<std::pair<std::string, int> >& tokenScoreList)
 {       
     std::vector<std::string> tokenList;
     std::vector<uint32_t> scoreList;   
-    for (std::list<std::pair<std::string, double> >::const_iterator it =
+    for (std::vector<std::pair<std::string, int> >::const_iterator it =
              tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
     {
         tokenList.push_back(it->first);
@@ -98,13 +97,15 @@ bool ZambeziIndexManager::insertDocIndex_(
 bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::string& property)
 {
     std::string proValue;
-
     doc.getProperty(property, proValue);
 
-    std::list<std::pair<std::string, double> > tokenScoreList;
-    tokenizer_->GetTokenResults(proValue, tokenScoreList);
-    docid_t docId = doc.getId();
-    insertDocIndex_(docId, property, tokenScoreList);
+    std::vector<std::pair<std::string, int> > tokenScoreList;
+    if (!proValue.empty())
+    {
+        ZambeziTokenizer::get()->GetTokenResults(proValue, tokenScoreList);
+        docid_t docId = doc.getId();
+        insertDocIndex_(docId, property, tokenScoreList);
+    }
 
     return true;
 }
@@ -130,11 +131,14 @@ bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std
         combined_proValue += proValue;
     }
 
-    std::list<std::pair<std::string, double> > tokenScoreList;
-    tokenizer_->GetTokenResults(combined_proValue, tokenScoreList);
-    docid_t docId = doc.getId();
-    insertDocIndex_(docId, property, tokenScoreList);
-    
+    if (!combined_proValue.empty())
+    {
+        std::vector<std::pair<std::string, int> > tokenScoreList;
+        ZambeziTokenizer::get()->GetTokenResults(combined_proValue, tokenScoreList);
+        docid_t docId = doc.getId();
+        insertDocIndex_(docId, property, tokenScoreList);        
+    }
+
     return true;
 }
 
@@ -174,13 +178,9 @@ bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::st
                                                     tokenScoreList);
 
     docid_t docId = doc.getId();
-    std::list<std::pair<std::string, double> > tokenScoreList_1;
+    std::vector<std::pair<std::string, int> > tokenScoreList1(tokenScoreList.begin(), tokenScoreList.end());
 
-    for (std::vector<std::pair<std::string, double> >::iterator it =
-             tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
-        tokenScoreList_1.push_back(*it);
-
-    insertDocIndex_(docId, property, tokenScoreList_1);
+    insertDocIndex_(docId, property, tokenScoreList1);
 
     return true;
 }
@@ -191,6 +191,7 @@ bool ZambeziIndexManager::buildDocument_(const Document& doc)
     {
         std::map<std::string, propertyStatus>::const_iterator iter
          =  config_.property_status_map.find(*i);
+
         if (iter == config_.property_status_map.end())
             continue;
 

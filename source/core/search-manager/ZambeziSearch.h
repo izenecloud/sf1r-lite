@@ -14,6 +14,7 @@
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/attr-manager/AttrManager.h>
 #include <mining-manager/attr-manager/AttrTable.h>
+#include <index-manager/zambezi-tokenizer/ZambeziTokenizer.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>

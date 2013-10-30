@@ -68,7 +68,7 @@ private:
     bool insertDocIndex_(
         const docid_t docId, 
         const std::string property,
-        const std::list<std::pair<std::string, double> >& tokenScoreList);
+        const std::vector<std::pair<std::string, int> >& tokenScoreList);
 
 private:
     std::string system_resource_path_;
@@ -77,7 +77,6 @@ private:
     const std::vector<std::string>& properties_;
 
     std::map<std::string, AttrIndex>& property_index_map_;
-    ZambeziTokenizer* tokenizer_;
 };
 
 

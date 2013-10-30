@@ -98,8 +98,7 @@ private:
     boost::shared_ptr<IIncSupportedIndex>
     createZambeziIndexManager_() const;
 
-    ZambeziManager* 
-    createZambeziManager_() const;
+    bool createZambeziManager_();
 
     boost::shared_ptr<SearchManager> createSearchManager_() const;
 
