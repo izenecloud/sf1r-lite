@@ -44,6 +44,8 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
 {
     spu_only_ = spu_only;
     namespace bfs=boost::filesystem;    
+    std::string tmp_path = B5MHelper::GetTmpPath(m_);
+    B5MHelper::PrepareEmptyDir(tmp_path);
     std::string sorter_path = B5MHelper::GetB5moBlockPath(m_); 
     ts_ = bfs::path(m_).filename().string();
     if(ts_==".")
@@ -51,8 +53,9 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
         ts_ = bfs::path(m_).parent_path().filename().string();
     }
     std::string buffer_size = buffer_size_;
-    if(buffer_size.empty()) buffer_size = "10G";
-    std::string cmd = "sort -m --buffer-size="+buffer_size+" "+sorter_path+"/*";
+    if(buffer_size.empty()) buffer_size = "30G";
+    std::string sort_bin = "/home/ops/coreutils/bin/sort";
+    std::string cmd = sort_bin+" --buffer-size="+buffer_size+" -T "+tmp_path+" "+sorter_path+"/*";
     if(!last_m.empty())
     {
         std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_m); 
@@ -70,8 +73,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
                 return false;
             }
         }
-
-        cmd+=" "+last_mirror_block;
+        cmd+=" | "+sort_bin+" -m --buffer-size="+buffer_size+" -T "+tmp_path+" "+last_mirror_block+" -";
     }
     LOG(INFO)<<cmd<<std::endl;
     std::string mirror_path = B5MHelper::GetB5moMirrorPath(m_);
@@ -133,6 +135,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     mirror_ofs_.close();
     pwriter_->Close();
     pclose(pipe);
+    boost::filesystem::remove_all(tmp_path);
     return true;
 }
 

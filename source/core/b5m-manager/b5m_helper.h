@@ -163,6 +163,10 @@ public:
     {
         return mdb_instance+"/b5mc";
     }
+    static std::string GetTmpPath(const std::string& mdb_instance)
+    {
+        return mdb_instance+"/tmp";
+    }
     static std::string GetPoMapPath(const std::string& mdb_instance)
     {
         return mdb_instance+"/po_map";
