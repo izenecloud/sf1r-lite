@@ -131,14 +131,10 @@ void ZambeziManager::NormalizeScore(
         {
             int32_t commentcount = 1;
             numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            if (itemcount != 0)
-                attr_size += std::min(commentcount/itemcount, 100);
-            else
-                attr_size += std::min(commentcount, 100);
-
+            attr_size += pow(std::min((float)commentcount/sqrt(itemcount+1), 500.),1.3);
         }
 
-        scores[i] = scores[i] * pow(attr_size, 0.3);
+        scores[i] = scores[i] * pow(attr_size, 0.5);
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
