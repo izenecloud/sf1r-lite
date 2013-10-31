@@ -1,5 +1,4 @@
 #include "CategoryClassifyMiningTask.h"
-#include "CategoryClassifyTable.h"
 #include <document-manager/DocumentManager.h>
 #include <common/ResourceManager.h>
 #include <common/NumericPropertyTableBase.h>
@@ -33,7 +32,7 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     const std::string& targetCategoryPropName,
     const boost::shared_ptr<const NumericPropertyTableBase>& priceTable)
     : documentManager_(documentManager)
-    , classifyTable_(classifyTable)
+    , classifyTableReader_(classifyTable)
     , targetCategoryPropName_(targetCategoryPropName)
     , priceTable_(priceTable)
     , startDocId_(0)
@@ -43,7 +42,7 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
 bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
     std::string title;
-    getDocPropValue(doc, classifyTable_.propName(), title);
+    getDocPropValue(doc, classifyTableWriter_.propName(), title);
 
     if (title.empty())
         return true;
@@ -55,7 +54,7 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
         ruleBySource_(doc, classifyCategory) ||
         classifyByTitle_(title, docID, classifyCategory, isRule))
     {
-        classifyTable_.setCategory(docID, classifyCategory, isRule);
+        classifyTableWriter_.setCategory(docID, classifyCategory, isRule);
     }
 
     return true;
@@ -137,7 +136,7 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
 
 bool CategoryClassifyMiningTask::preProcess(int64_t timestamp)
 {
-    startDocId_ = classifyTable_.docIdNum();
+    startDocId_ = classifyTableReader_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
 
     LOG(INFO) << "category classify mining task"
@@ -147,17 +146,24 @@ bool CategoryClassifyMiningTask::preProcess(int64_t timestamp)
     if (startDocId_ > endDocId)
         return false;
 
-    classifyTable_.resize(endDocId + 1);
+    classifyTableWriter_ = classifyTableReader_;
+    classifyTableWriter_.resize(endDocId + 1);
+
     return true;
 }
 
 bool CategoryClassifyMiningTask::postProcess()
 {
-    if (!classifyTable_.flush())
+    if (!classifyTableWriter_.flush())
     {
         LOG(ERROR) << "failed in CategoryClassifyTable::flush()";
         return false;
     }
+
+    classifyTableWriter_.swap(classifyTableReader_);
+
+    // release the memory of classifyTableWriter_
+    CategoryClassifyTable().swap(classifyTableWriter_);
 
     return true;
 }

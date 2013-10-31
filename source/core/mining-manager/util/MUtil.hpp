@@ -33,13 +33,12 @@ public:
 
     static void VMINFO(const std::string& str = "")
     {
-        unsigned long rlimit;
         static unsigned long  vm = 0, rss = 0;
         unsigned long pre_vm = vm;
 
 
         sleep(2);
-        izenelib::util::ProcMemInfo::getProcMemInfo(vm, rss, rlimit);
+        izenelib::util::ProcMemInfo::getProcMemInfo(vm, rss);
         std::cout<<"["<< str<<"] : " << vm << " bytes; \t" ;
         if (vm >= pre_vm )
             std::cout << "++++ : " << vm - pre_vm << " bytes;";
@@ -50,12 +49,11 @@ public:
 
     static void RSSINFO(const std::string& str = "")
     {
-        unsigned long rlimit;
         static unsigned long  vm = 0, rss = 0;
         unsigned long pre_rss = rss;
 
         sleep(2);
-        izenelib::util::ProcMemInfo::getProcMemInfo(vm, rss, rlimit);
+        izenelib::util::ProcMemInfo::getProcMemInfo(vm, rss);
         std::cout<<"["<< str<<"] : " << rss << " bytes; \t" ;
         if ( rss >= pre_rss )
             std::cout <<"++++ : " << rss - pre_rss  << " bytes.";
