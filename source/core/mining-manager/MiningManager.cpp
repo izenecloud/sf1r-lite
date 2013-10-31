@@ -131,6 +131,15 @@ namespace
 const std::string kTopLabelPropName = "Category";
 const size_t kTopLabelDocNum = 1000;
 const size_t kTopLabelCateNum = 4;
+
+double elapsedFromLast(izenelib::util::ClockTimer& clock, double& lastSec)
+{
+    double curSec = clock.elapsed();
+    double result = curSec - lastSec;
+    lastSec = curSec;
+    return result;
+}
+
 }
 
 namespace sf1r
@@ -2293,6 +2302,10 @@ bool MiningManager::GetSuffixMatch(
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
 
+    izenelib::util::ClockTimer clock;
+    double lastSec, tokenTime, suffixMatchTime, productScoreTime, groupTime;
+    lastSec = tokenTime = suffixMatchTime = productScoreTime = groupTime = 0;
+
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
     std::vector<std::pair<double, uint32_t> > res_list;
 
@@ -2393,6 +2406,8 @@ bool MiningManager::GetSuffixMatch(
         if (!itemcount.empty())
             isCompare = true;
 
+        tokenTime = elapsedFromLast(clock, lastSec);
+
         LOG(INFO) << "use compare: " << isCompare;
         if (isAndSearch)
         {
@@ -2471,12 +2486,18 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
+        suffixMatchTime = elapsedFromLast(clock, lastSec);
+
         searchManager_->fuzzySearchRanker_.rankByProductScore(
                 actionOperation.actionItem_, res_list, isCompare);
+
+        productScoreTime = elapsedFromLast(clock, lastSec);
 
         getGroupAttrRep_(res_list, actionOperation.actionItem_.groupParam_,
                          groupRep, attrRep,
                          kTopLabelPropName, topLabelMap);
+
+        groupTime = elapsedFromLast(clock, lastSec);
     }
 
     if (!totalCount ||res_list.empty()) return false;
@@ -2501,6 +2522,15 @@ bool MiningManager::GetSuffixMatch(
         actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
 
     cout<<"return true"<<endl;
+
+    LOG(INFO) << "GetSuffixMatch(): " << clock.elapsed()
+              << ", token: " << tokenTime
+              << ", suffix: " << suffixMatchTime
+              << ", product score: " << productScoreTime
+              << ", group: " << groupTime
+              << ", topk count: " << docIdList.size()
+              << ", query: " << actionOperation.actionItem_.env_.queryString_;
+
     return true;
 }
 
