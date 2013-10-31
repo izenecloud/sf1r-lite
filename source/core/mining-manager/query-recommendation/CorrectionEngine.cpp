@@ -403,6 +403,9 @@ void CorrectionEngine::flush() const
 
 bool CorrectionEngine::correct(const std::string& str, std::string& results, double& freq) const
 {
+    if (str.size() >= 20)
+        return false;
+
     std::string userQuery = str;
     try
     {
