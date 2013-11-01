@@ -416,7 +416,7 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
     char buf[32];
-    modp_dtoa((double)data_[pos], buf, 2);
+    modp_dtoa((double)data_[pos], buf, 6);
     value.assign(buf);
     return true;
 }
