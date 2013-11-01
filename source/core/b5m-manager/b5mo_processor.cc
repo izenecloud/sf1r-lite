@@ -405,7 +405,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
         //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
-    if(!original_attribute.empty())
+    if(!original_attribute.empty()&&attr_==NULL)
     {
         std::string nda;
         doc.getString("DisplayAttribute", nda);

@@ -51,6 +51,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     odocs.front().getProperty("uuid", pid);
     std::size_t sales_amount = 0;
     bool has_sales_amount = false;
+    std::vector<Attribute> attributes;
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
@@ -100,6 +101,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         //doc.getProperty("Attribute", uattribute);
         doc.getProperty("DATE", udate);
         doc.getProperty("Url", uurl);
+
+        UString uattrib;
+        doc.getString("Attribute", uattrib);
+        std::vector<Attribute> av;
+        ProductMatcher::ParseAttributes(uattrib, av);
+        ProductMatcher::MergeAttributes(attributes, av);
+
         if(udate.compare(pdate)>0) pdate=udate;
         ProductPrice price;
         price.Parse(uprice);
@@ -136,12 +144,11 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
                 std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
             }
         }
-        //if(!uattribute.empty())
-        //{
-            //std::vector<ProductMatcher::Attribute> attributes;
-            //ProductMatcher::ParseAttributes(uattribute, attributes);
-            //ProductMatcher::MergeAttributes(pattributes, attributes);
-        //}
+    }
+    UString uattrib = ProductMatcher::AttributesText(attributes);
+    if(!uattrib.empty())
+    {
+        pdoc.property("Attribute") = ustr_to_propstr(uattrib);
     }
     pdoc.property("Url") = url;
     if(!spu_title.empty())

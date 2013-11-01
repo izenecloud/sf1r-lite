@@ -99,6 +99,7 @@ class ScdTester
 public:
     ScdTester(): step_(0), mdb_("./mdb")
     {
+        //mdb_ = boost::filesystem::absolute(boost::filesystem::path(mdb_)).string();
         std::string odb_path="./odb";
         boost::filesystem::remove_all(odb_path);
         B5MHelper::PrepareEmptyDir(mdb_);

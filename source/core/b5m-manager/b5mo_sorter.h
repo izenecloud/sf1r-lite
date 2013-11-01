@@ -127,6 +127,7 @@ private:
     void OBag_(PItem& pitem);
     static void ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc);
     static void ODocMerge_(std::vector<Value>& vec, const Value& doc);
+    static void SetAttributes_(std::vector<Value>& values, const ScdDocument& pdoc);
     bool GenMirrorBlock_(const std::string& mirror_path);
     bool GenMBlock_();
     void WritePItem_(PItem& pitem);
