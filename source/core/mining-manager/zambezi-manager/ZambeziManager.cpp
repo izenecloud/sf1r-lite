@@ -131,7 +131,7 @@ void ZambeziManager::NormalizeScore(
         {
             int32_t commentcount = 1;
             numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            attr_size += pow(std::min((float)commentcount, 500.), 0.7);
+            attr_size += pow(std::min((double)commentcount, 500.), 0.7);
         }
 
         scores[i] = scores[i] * pow(attr_size, 0.5);
