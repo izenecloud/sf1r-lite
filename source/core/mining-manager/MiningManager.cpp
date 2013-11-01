@@ -2500,6 +2500,14 @@ bool MiningManager::GetSuffixMatch(
         groupTime = elapsedFromLast(clock, lastSec);
     }
 
+    LOG(INFO) << "GetSuffixMatch(): " << clock.elapsed()
+              << ", token: " << tokenTime
+              << ", suffix: " << suffixMatchTime
+              << ", product score: " << productScoreTime
+              << ", group: " << groupTime
+              << ", topk count: " << docIdList.size()
+              << ", query: " << actionOperation.actionItem_.env_.queryString_;
+
     if (!totalCount ||res_list.empty()) return false;
 
     //We do not use this post delete filtering because deleted documents should never be searched from
@@ -2522,14 +2530,6 @@ bool MiningManager::GetSuffixMatch(
         actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
 
     cout<<"return true"<<endl;
-
-    LOG(INFO) << "GetSuffixMatch(): " << clock.elapsed()
-              << ", token: " << tokenTime
-              << ", suffix: " << suffixMatchTime
-              << ", product score: " << productScoreTime
-              << ", group: " << groupTime
-              << ", topk count: " << docIdList.size()
-              << ", query: " << actionOperation.actionItem_.env_.queryString_;
 
     return true;
 }
