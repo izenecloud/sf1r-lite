@@ -15,13 +15,13 @@ namespace sf1r
  * @brief The configuration for <Zambezi>.
  */
 
-struct zambeziProperty
+struct ZambeziProperty
 {
     std::string name;
     uint32_t poolSize;
     float weight;
 
-    zambeziProperty()
+    ZambeziProperty()
     : poolSize(268435456) //256M
     , weight(1)
     {
@@ -35,7 +35,7 @@ struct zambeziProperty
 
 };
 
-struct zambeziVirtualProperty
+struct ZambeziVirtualProperty
 {
     std::string name;
     std::vector<std::string> subProperties;
@@ -43,7 +43,7 @@ struct zambeziVirtualProperty
     float weight;
     bool isAttrToken;
 
-    zambeziVirtualProperty()
+    ZambeziVirtualProperty()
     : poolSize(268435456) //256M
     , weight(1)
     , isAttrToken(false)
@@ -64,11 +64,11 @@ struct zambeziVirtualProperty
     }
 };
 
-struct propertyStatus
+struct PropertyStatus
 {
     bool isCombined;
     bool isAttr;
-    propertyStatus()
+    PropertyStatus()
     : isCombined(false)
     , isAttr(false)
     {
@@ -95,11 +95,11 @@ public:
 
     std::string system_resource_path_;
 
-    std::vector<zambeziProperty> properties;
+    std::vector<ZambeziProperty> properties;
 
-    std::vector<zambeziVirtualProperty> virtualPropeties;
+    std::vector<ZambeziVirtualProperty> virtualPropeties;
 
-    std::map<std::string, propertyStatus> property_status_map; //TODO
+    std::map<std::string, PropertyStatus> property_status_map;
 
     bool hasAttrtoken;
 
@@ -121,17 +121,25 @@ public:
         std::cout << "tokenPath: "<< tokenPath << std::endl;
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
-        for (std::vector<zambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
+
+        for (std::vector<ZambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
             i->display();
 
-        for (std::vector<zambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
+        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
             i->display();
 
-        for (std::map<std::string, propertyStatus>::iterator i = property_status_map.begin(); i != property_status_map.end(); ++i)
+        for (std::map<std::string, PropertyStatus>::iterator i = property_status_map.begin(); i != property_status_map.end(); ++i)
         {
             std::cout << "Property:" << i->first; 
             i->second.display();
         }
+    }
+
+    bool checkConfig()
+    {
+        if (hasAttrtoken)
+            return ((virtualPropeties.size() == 1) && (properties.empty()));
+        return true;
     }
 
 private:

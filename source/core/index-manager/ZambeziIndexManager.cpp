@@ -189,7 +189,7 @@ bool ZambeziIndexManager::buildDocument_(const Document& doc)
 {
     for (std::vector<std::string>::const_iterator i = properties_.begin(); i != properties_.end(); ++i)
     {
-        std::map<std::string, propertyStatus>::const_iterator iter
+        std::map<std::string, PropertyStatus>::const_iterator iter
          =  config_.property_status_map.find(*i);
 
         if (iter == config_.property_status_map.end())

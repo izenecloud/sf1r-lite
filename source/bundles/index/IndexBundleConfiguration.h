@@ -84,6 +84,9 @@ private:
 public:
     std::string collectionName_;
 
+    // if there is any index;
+    bool isSchemaEnable_;
+
     // <IndexBundle><NormalSchema>
     bool isNormalSchemaEnable_;
 

@@ -89,6 +89,7 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
     invertedIndexManager_->flush(false);
+
     if(miningSearchTracker_)
     {
         miningSearchTracker_->stopTracking();
@@ -148,6 +149,12 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
     MasterManagerBase::get()->unregisterAggregator(searchAggregator_);
     MasterManagerBase::get()->unregisterAggregator(ro_searchAggregator_);
     MasterManagerBase::get()->unregisterAggregator(indexAggregator_);
+
+    if (zambeziManager_)
+    {
+        delete zambeziManager_;
+    }
+    // TODO flush and delete
 }
 
 bool IndexBundleActivator::addingService( const ServiceReference& ref )

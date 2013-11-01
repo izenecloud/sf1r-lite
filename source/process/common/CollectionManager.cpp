@@ -192,7 +192,7 @@ bool CollectionManager::startCollection(const string& collectionName,
     }
 
     ///createIndexBundle
-    if (indexBundleConfig->isNormalSchemaEnable_)
+    if (indexBundleConfig->isSchemaEnable_) // isSchemaEnable_
     {
         std::string bundleName = "IndexBundle-" + collectionName;
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
@@ -201,7 +201,11 @@ bool CollectionManager::startCollection(const string& collectionName,
         collectionHandler->registerService(indexSearchService);
         IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
         collectionHandler->registerService(indexTaskService);
-        collectionHandler->setBundleSchema(indexBundleConfig->indexSchema_);
+
+        if (indexBundleConfig->isNormalSchemaEnable_)
+            collectionHandler->setBundleSchema(indexBundleConfig->indexSchema_);
+        if (indexBundleConfig->isZambeziSchemaEnable_)
+            collectionHandler->setBundleSchema(indexBundleConfig->zambeziConfig_);
     }
 
     ///createProductBundle

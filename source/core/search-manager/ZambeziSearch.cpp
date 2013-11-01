@@ -91,7 +91,7 @@ void ZambeziSearch::normalizeTopDocs_(
             topRelevanceScores.push_back(scoreItem.score);
     }
 
-    //Normalize
+    //Normalize for attr_tokens
     if (zambeziManager_->isAttrTokenize())
         normalizeScore_(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
 
@@ -156,11 +156,11 @@ bool ZambeziSearch::search(
         filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
         filterBitVector->importFromEWAH(*filterBitmap);
     }
-    //
+    //Query Analyzer
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
-    //
     std::vector<std::pair<std::string, int> > tokenList;
+    
     if (zambeziManager_->isAttrTokenize())
         AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict 
     else

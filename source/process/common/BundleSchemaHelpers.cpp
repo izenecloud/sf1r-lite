@@ -48,6 +48,24 @@ bool getPropertyConfig(
     return false;
 }
 
+void getDefaultZambeziSearchPropertyNames(
+    const ZambeziConfig& schema,
+    std::vector<std::string>& names
+)
+{
+    std::vector<std::string> result;
+    for (std::vector<ZambeziProperty>::const_iterator i = schema.properties.begin(); i != schema.properties.end(); ++i)
+    {
+        result.push_back(i->name);
+    }
+
+    for (std::vector<ZambeziVirtualProperty>::const_iterator i = schema.virtualPropeties.begin(); i != schema.virtualPropeties.end(); ++i)
+    {
+        result.push_back(i->name);
+    }
+    result.swap(names);   
+}
+
 void getDefaultSearchPropertyNames(
     const IndexBundleSchema& schema,
     std::vector<std::string>& names
@@ -86,6 +104,7 @@ void getDefaultSelectPropertyNames(
 
     result.swap(names);
 }
+
 bool isPropertySortable(
     const IndexBundleSchema& schema,
     const std::string& property

@@ -79,6 +79,7 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
+        zambeziConfig_(collectionHandler.zambeziConfig_),
         actionItem_(),
         returnAnalyzerResult_(false),
         TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_),
@@ -372,7 +373,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&selectParser);
     values.push_back(&request_[Keys::select]);
 
-    SearchParser searchParser(indexSchema_);
+    SearchParser searchParser(indexSchema_, zambeziConfig_);
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 

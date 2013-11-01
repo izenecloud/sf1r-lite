@@ -9,6 +9,7 @@
 
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/MiningSchema.h>
+#include <configuration-manager/ZambeziConfig.h>
 
 #include <vector>
 #include <string>
@@ -30,6 +31,11 @@ bool getPropertyConfig(
 /// specified.
 void getDefaultSearchPropertyNames(
     const IndexBundleSchema& schema,
+    std::vector<std::string>& names
+);
+
+void getDefaultZambeziSearchPropertyNames(
+    const ZambeziConfig& schema,
     std::vector<std::string>& names
 );
 

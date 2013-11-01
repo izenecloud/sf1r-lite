@@ -1361,6 +1361,8 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
         return;
 
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+
+    indexBundleConfig.isSchemaEnable_ = true;
     indexBundleConfig.isNormalSchemaEnable_ = true;
     indexBundleConfig.setSchema(collectionMeta.documentSchema_);
 
@@ -2321,9 +2323,6 @@ NEXT:
         }
     }
 
-    /*task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
-    parseZambeziNode(task_node, collectionMeta);*/
-
     task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
     parseAdIndexNode(task_node, collectionMeta);
 }
@@ -2348,6 +2347,7 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
+    collectionMeta.indexBundleConfig_->isSchemaEnable_ = true;
     collectionMeta.indexBundleConfig_->isZambeziSchemaEnable_ = true;
     ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
@@ -2363,8 +2363,8 @@ void CollectionConfig::parseZambeziNode(
     {
         try
         {
-            zambeziProperty zProperty;
-            propertyStatus  sProperty;
+            ZambeziProperty zProperty;
+            PropertyStatus  sProperty;
             // name
             string propertyName;
             getAttribute(property.Get(), "name", propertyName);
@@ -2399,8 +2399,8 @@ void CollectionConfig::parseZambeziNode(
         try
         {
             // name
-            zambeziVirtualProperty vProperty;
-            propertyStatus  sProperty;
+            ZambeziVirtualProperty vProperty;
+            PropertyStatus  sProperty;
             sProperty.isCombined = true;
             getAttribute(virtualproperty.Get(), "name", vProperty.name);
 
@@ -2460,8 +2460,13 @@ void CollectionConfig::parseZambeziNode(
         throw XmlConfigParserException("[TokenizeDictionary] used in ZambeziConfig is missing.");
     }
 
-
     zambeziConfig.display();
+    if (!zambeziConfig.checkConfig())
+    {
+        zambeziConfig.isEnable = false;
+        LOG(ERROR) << "att_token index can not should not config togther with other index";
+    }
+
 }
 
 void CollectionConfig::parseProductRankingNode(
@@ -2639,7 +2644,7 @@ void CollectionConfig::parseRecommendDistribConfig(CollectionMeta& collectionMet
 
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
     DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
-    if (indexBundleConfig.isNormalSchemaEnable_)
+    if (indexBundleConfig.isSchemaEnable_)
     {
         searchNode.isMasterNode_ = sf1Config->checkSearchMasterAggregator(collectionName);
         searchNode.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);

@@ -134,6 +134,7 @@ private:
     MiningSearchService* miningSearchService_;
     const IndexBundleSchema& indexSchema_;
     const MiningSchema& miningSchema_;
+    const ZambeziConfig& zambeziConfig_;
 
     KeywordSearchActionItem actionItem_;
 

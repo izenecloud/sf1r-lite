@@ -24,13 +24,13 @@ ZambeziManager::ZambeziManager(
 
 void ZambeziManager::init()
 {
-    for (std::vector<zambeziProperty>::const_iterator i = config_.properties.begin(); i != config_.properties.end(); ++i)
+    for (std::vector<ZambeziProperty>::const_iterator i = config_.properties.begin(); i != config_.properties.end(); ++i)
     {
         propertyList_.push_back(i->name);
         property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
     }
 
-    for (std::vector<zambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
+    for (std::vector<ZambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
     {
         propertyList_.push_back(i->name);
         property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
@@ -81,11 +81,22 @@ void ZambeziManager::search(
     std::vector<uint32_t>& scores)
 {
     izenelib::util::ClockTimer timer;
+    // in one property
     if (propertyList.size() == 1)
     {    
         property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
+        return;
+    }
+
+    // only one property
+    if (propertyList_.size() == 1)
+    {    
+        property_index_map_[propertyList_[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
+        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+                  << ", costs :" << timer.elapsed() << " seconds";
+        return;
     }
 
     std::vector<std::string> searchPropertyList = propertyList;
@@ -101,36 +112,102 @@ void ZambeziManager::search(
     {
         property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
     }
-    
+
+    izenelib::util::ClockTimer timer_merge;
+
+    for (int i = 0; i < docidsList.size(); ++i)
+    {
+        /*for (int j = 0; j < 10 && j < docidsList[i].size(); ++j)
+        {
+            std::cout << docidsList[i][j] << " , ";
+        }
+        std::cout << std::endl;*/
+        if (docidsList[i].size() != scoresList[i].size())
+        {
+            LOG(INFO) << "[ERROR] dismatch doclist and scorelist";
+            return;
+        }
+    }
+
     merge_(docidsList, scoresList, docids, scores);
+
+    LOG(INFO) << "zambezi merge " << docidsList.size()
+              << " properties, costs :" << timer_merge.elapsed() << " seconds";
 
     LOG(INFO) << "zambezi returns docid num: " << docids.size()
               << ", costs :" << timer.elapsed() << " seconds";
 }
 
 void ZambeziManager::merge_(
-        const std::vector<std::vector<docid_t> >& docidsList,
+        const std::vector<std::vector<docid_t> >& docidsList, //docid 自增
         const std::vector<std::vector<uint32_t> >& scoresList,
         std::vector<docid_t>& docids,
         std::vector<uint32_t>& scores)
 {
-    unsigned int BitLen = (MAXDOCID + 7) >> 3;
-    char* BitMap = new char[BitLen];
-    memset(BitMap, 0, BitLen * sizeof(char));
+    // init
+    unsigned int docidsListSize = docidsList.size();
+    int totalCount = 0;
+    int docCount = 0;
 
-    for (unsigned int j = 0; j < docidsList.size(); ++j)
+    std::list<pair<int, unsigned int> > existingList;
+    for (unsigned int i = 0; i < docidsListSize; ++i)
     {
-        for (unsigned int i = 0; i < docidsList[j].size(); ++i)
+        if (docidsList[i].size() != 0)
         {
-            unsigned int u = docidsList[j][i];
-            uint32_t s = scoresList[j][i];
-            if((BitMap[u>>3] & (0x80 >> (u&7))) == 0)
-            {
-                BitMap[u>>3] |= 0x80 >> (u&7);
-                docids.push_back(u);
-                scores.push_back(s);
-            }
+            totalCount += docidsList[i].size();
+            existingList.push_back(std::make_pair(i, 0));
         }
     }
-    delete [] BitMap;
+    docids.resize(totalCount);
+    scores.resize(totalCount);
+    
+    // count
+    std::vector<std::list<pair<int, unsigned int> >::iterator> minDocList;
+
+    unsigned int min = -1;
+    while(existingList.size() > 1)
+    {
+        if (config_.reverse)
+            min = 0;
+        else
+            min = -1;
+
+        for (std::list<pair<int, unsigned int> >::iterator i = existingList.begin(); i != existingList.end(); ++i)
+        {
+            if ((config_.reverse && min < docidsList[i->first][i->second]) || 
+                (!config_.reverse && min > docidsList[i->first][i->second]))
+            {
+                min = docidsList[i->first][i->second];
+                minDocList.clear();
+                minDocList.push_back(i);
+                continue;
+            }
+            if (min == docidsList[i->first][i->second])
+                minDocList.push_back(i);
+        }
+
+        for (unsigned int i = 0; i < minDocList.size(); ++i)
+        {
+            int k = minDocList[i]->first;
+            int j = minDocList[i]->second++;
+            if (minDocList[i]->second == docidsList[k].size())
+                existingList.erase(minDocList[i]);
+
+            docids[docCount] = docidsList[k][j];
+            scores[docCount] += scoresList[k][j];
+        }
+        docCount++;
+    }
+
+    if (existingList.size() == 1)
+    {
+        int k = existingList.begin()->first;
+        for (unsigned int i = existingList.begin()->second; i < docidsList[k].size(); ++i)
+        {
+            docids[docCount] = docidsList[k][i];
+            scores[docCount++] = scoresList[k][i];
+        }
+    }
+    docids.resize(docCount);
+    scores.resize(docCount);
 }
