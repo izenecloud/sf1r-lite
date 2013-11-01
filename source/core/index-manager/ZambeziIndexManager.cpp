@@ -11,22 +11,13 @@ using namespace sf1r;
 ZambeziIndexManager::ZambeziIndexManager(
     const ZambeziConfig& config,
     const std::vector<std::string>& properties,
-    std::map<std::string, AttrIndex>& property_index_map)
+    std::map<std::string, AttrIndex>& property_index_map,
+    ZambeziTokenizer* zambeziTokenizer)
     : config_(config)
     , properties_(properties)
+    , zambeziTokenizer_(zambeziTokenizer)
     , property_index_map_(property_index_map)
 {
-    buildTokenizeDic();
-}
-
-void ZambeziIndexManager::buildTokenizeDic()
-{
-    boost::filesystem::path cma_index_dic(config_.system_resource_path_);
-    cma_index_dic /= boost::filesystem::path("dict");
-    cma_index_dic /= boost::filesystem::path(config_.tokenPath);
-
-    ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
-    ZambeziTokenizer::get()->InitWithCMA_(type, cma_index_dic.c_str());
 }
 
 ZambeziIndexManager::~ZambeziIndexManager()
@@ -102,7 +93,7 @@ bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::
     std::vector<std::pair<std::string, int> > tokenScoreList;
     if (!proValue.empty())
     {
-        ZambeziTokenizer::get()->GetTokenResults(proValue, tokenScoreList);
+        zambeziTokenizer_->GetTokenResults(proValue, tokenScoreList);
         docid_t docId = doc.getId();
         insertDocIndex_(docId, property, tokenScoreList);
     }
@@ -134,7 +125,7 @@ bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std
     if (!combined_proValue.empty())
     {
         std::vector<std::pair<std::string, int> > tokenScoreList;
-        ZambeziTokenizer::get()->GetTokenResults(combined_proValue, tokenScoreList);
+        zambeziTokenizer_->GetTokenResults(combined_proValue, tokenScoreList);
         docid_t docId = doc.getId();
         insertDocIndex_(docId, property, tokenScoreList);        
     }

@@ -116,7 +116,7 @@ bool GroupFilter::initAttr(
     if (groupParam_.isAttrGroup_)
     {
         if (groupParam_.searchMode_ == SearchingMode::ZAMBEZI &&
-            categoryTable != NULL)
+            categoryTable != NULL && groupParam_.isAttrToken_)
         {
             sharedLockSet.insertSharedLock(categoryTable);
             attrCounter_ = new AttrScoreCounter(attrTable, *categoryTable);

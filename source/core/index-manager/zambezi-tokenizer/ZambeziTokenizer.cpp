@@ -80,24 +80,14 @@ bool ZambeziTokenizer::GetTokenResultsByCMA_(
     //LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
     for (int i = 0; i < pattern_sentence.getCount(1); i++)
     {
-        //printf("%s, ", pattern_sentence.getLexicon(1, i));
-        //token_results.push_back(std::make_pair(pattern_sentence.getLexicon(1, i), 1));
-
         if(!token_set.insert(std::make_pair(pattern_sentence.getLexicon(1, i), 1)).second)
             token_set.insert(std::make_pair(pattern_sentence.getLexicon(1, i), 1)).first->second + 1;
     }
-    //cout << endl;
-
+    
     for (std::set<std::pair<string, int> >::iterator i = token_set.begin(); i != token_set.end(); ++i)
     {
         token_results.push_back(*i);
     }
-
-    /*for (std::vector<std::pair<string, int> >::iterator it = token_results.begin();
-            it != token_results.end(); ++it)
-        std::cout << it->first << " " << it->second << " , ";
-
-    std::cout << std::endl;*/
     return true;
 }
 

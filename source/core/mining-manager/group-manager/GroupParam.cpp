@@ -155,6 +155,7 @@ GroupParam::GroupParam()
     : isAttrGroup_(false)
     , attrGroupNum_(0)
     , searchMode_(SearchingMode::DefaultSearchingMode)
+    , isAttrToken_(false)
 {
 }
 

@@ -1,5 +1,8 @@
 #include "ZambeziManager.h"
 #include <common/PropSharedLock.h>
+#include "../zambezi-tokenizer/ZambeziTokenizer.h"
+#include <boost/utility.hpp>
+#include <boost/filesystem.hpp>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <fstream>
@@ -18,8 +21,17 @@ const izenelib::ir::Zambezi::Algorithm kAlgorithm =
 ZambeziManager::ZambeziManager(
         const ZambeziConfig& config)
     : config_(config)
+    , zambeziTokenizer_(NULL)
 {
     init();
+
+    buildTokenizeDic();
+}
+
+ZambeziManager::~ZambeziManager()
+{
+    if (zambeziTokenizer_)
+        delete zambeziTokenizer_;
 }
 
 void ZambeziManager::init()
@@ -35,6 +47,23 @@ void ZambeziManager::init()
         propertyList_.push_back(i->name);
         property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
     }
+}
+
+void ZambeziManager::buildTokenizeDic()
+{
+    boost::filesystem::path cma_index_dic(config_.system_resource_path_);
+    cma_index_dic /= boost::filesystem::path("dict");
+    cma_index_dic /= boost::filesystem::path(config_.tokenPath);
+
+    ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
+
+    zambeziTokenizer_ = new ZambeziTokenizer();
+    zambeziTokenizer_->InitWithCMA_(type, cma_index_dic.c_str());
+}
+
+ZambeziTokenizer* ZambeziManager::getTokenizer()
+{
+    return zambeziTokenizer_;
 }
 
 bool ZambeziManager::open() 
@@ -80,6 +109,13 @@ void ZambeziManager::search(
     std::vector<docid_t>& docids,
     std::vector<uint32_t>& scores)
 {
+    std::cout <<"[ZambeziManager::search] Search tokens: ";
+    for (int i = 0; i < tokens.size(); ++i)
+    {
+        std::cout << tokens[i].first <<" , ";
+    }
+    std::cout << std::endl;
+
     izenelib::util::ClockTimer timer;
     // in one property
     if (propertyList.size() == 1)
@@ -115,13 +151,8 @@ void ZambeziManager::search(
 
     izenelib::util::ClockTimer timer_merge;
 
-    for (int i = 0; i < docidsList.size(); ++i)
+    for (unsigned int i = 0; i < docidsList.size(); ++i)
     {
-        /*for (int j = 0; j < 10 && j < docidsList[i].size(); ++j)
-        {
-            std::cout << docidsList[i][j] << " , ";
-        }
-        std::cout << std::endl;*/
         if (docidsList[i].size() != scoresList[i].size())
         {
             LOG(INFO) << "[ERROR] dismatch doclist and scorelist";

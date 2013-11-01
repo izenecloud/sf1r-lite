@@ -583,7 +583,8 @@ IndexBundleActivator::createZambeziIndexManager_() const
     boost::shared_ptr<IIncSupportedIndex> ret(new ZambeziIndexManager
                                              (config_->zambeziConfig_,
                                               zambeziManager_->getProperties(),
-                                              zambeziManager_->getIndexMap()));
+                                              zambeziManager_->getIndexMap(),
+                                              zambeziManager_->getTokenizer()));
     return ret;
 }
 

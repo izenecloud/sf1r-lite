@@ -160,11 +160,11 @@ bool ZambeziSearch::search(
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
     std::vector<std::pair<std::string, int> > tokenList;
-    
+
     if (zambeziManager_->isAttrTokenize())
         AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict 
     else
-        ZambeziTokenizer::get()->GetTokenResults(query, tokenList);
+        zambeziManager_->getTokenizer()->GetTokenResults(query, tokenList);
 
     ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
     boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
@@ -301,6 +301,7 @@ bool ZambeziSearch::search(
         attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
         attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
         attrGroupParam.searchMode_ = groupParam.searchMode_;
+        attrGroupParam.isAttrToken_ = zambeziManager_->isAttrTokenize();
 
         boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
             groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));

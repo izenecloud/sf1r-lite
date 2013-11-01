@@ -22,14 +22,15 @@ class GroupManager;
 class AttrManager;
 }
 
+class ZambeziTokenizer;
 class DocumentManager;
 
 typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
-const unsigned int MAXDOCID = 268435456; //
 class ZambeziManager
 {
 public:
     ZambeziManager(const ZambeziConfig& config);
+    ~ZambeziManager();
 
     void init();
 
@@ -58,6 +59,10 @@ public:
         return config_.hasAttrtoken;
     }
 
+    void buildTokenizeDic();
+    
+    ZambeziTokenizer* getTokenizer();
+
 private:
     void merge_(
         const std::vector<std::vector<docid_t> >& docidsList,
@@ -67,6 +72,7 @@ private:
 
 private:
     const ZambeziConfig& config_;
+    ZambeziTokenizer* zambeziTokenizer_;
 
     std::vector<std::string> propertyList_;
 

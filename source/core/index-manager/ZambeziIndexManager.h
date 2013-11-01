@@ -22,7 +22,9 @@ public:
     ZambeziIndexManager(
         const ZambeziConfig& config,
         const std::vector<std::string>& properties,
-        std::map<std::string, AttrIndex>& property_index_map);
+        std::map<std::string, AttrIndex>& property_index_map,
+        ZambeziTokenizer* zambeziTokenizer);
+    
     ~ZambeziIndexManager();
 
     virtual bool isRealTime() { return false; }
@@ -55,7 +57,6 @@ public:
 
     virtual void removeDocument(docid_t docid, time_t timestamp) {}
 
-    void buildTokenizeDic();
 private:
     bool buildDocument_(const Document& doc);
 
@@ -75,6 +76,7 @@ private:
 
     const ZambeziConfig& config_;
     const std::vector<std::string>& properties_;
+    ZambeziTokenizer* zambeziTokenizer_;
 
     std::map<std::string, AttrIndex>& property_index_map_;
 };

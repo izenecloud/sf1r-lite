@@ -423,7 +423,7 @@ bool SearchParser::parse(const Value& search)
             // validation
             PropertyConfig propertyConfig;
             propertyConfig.setName(properties_[i]);
-            if (!getPropertyConfig(indexSchema_,propertyConfig))
+            if (!getPropertyConfig(indexSchema_, propertyConfig) && !zambeziConfig_.checkValidationConfig(properties_[i]))
             {
                 error() = "Unknown property in search/in: " +
                           propertyConfig.getName();
