@@ -79,11 +79,10 @@
     <xs:element name="VirtualProperty">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="SubProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded" />
+                <xs:element name="SubProperty" type="PropertyType" minOccurs="0" maxOccurs="unbounded" />
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
             <xs:attribute name="poolSize" type="xs:string" use="optional"/>
-            <xs:attribute name="dict_path" type="xs:string" use="optional"/>
             <xs:attribute name="weight" type="xs:float" use="optional"/>
             <xs:attribute name="isAttrToken" type="YesNoType" use="optional"/>
         </xs:complexType>

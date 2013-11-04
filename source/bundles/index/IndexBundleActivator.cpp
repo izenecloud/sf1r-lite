@@ -303,6 +303,8 @@ bool IndexBundleActivator::init_()
 
     if (config_->isZambeziSchemaEnable_)
     {
+        if (!config_->zambeziConfig_.isEnable)
+            return false;
         std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open zambezi index manager.."<<std::endl;
 
         if (!createZambeziManager_())
@@ -560,7 +562,7 @@ IndexBundleActivator::createRankingManager_() const
 bool IndexBundleActivator::createZambeziManager_()
 {
     if (config_->zambeziConfig_.hasAttrtoken && 
-        !AttrTokenizeWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/attr_tokenize"))
+        !AttrTokenizeWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/" + config_->zambeziConfig_.tokenPath))
         return false;
 
     std::string dir = getCurrentCollectionDataPath_()+"/zambezi/";

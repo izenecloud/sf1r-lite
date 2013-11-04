@@ -2347,7 +2347,6 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
-    collectionMeta.indexBundleConfig_->isSchemaEnable_ = true;
     collectionMeta.indexBundleConfig_->isZambeziSchemaEnable_ = true;
     ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
@@ -2447,9 +2446,8 @@ void CollectionConfig::parseZambeziNode(
         }
     }
 
-    bool isNeedTokenize = !zambeziConfig.hasAttrtoken;
     std::string DictionaryPath;
-    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", isNeedTokenize);
+    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary");
     if (subNode)
     {
         std::string DictionaryPath;
@@ -2462,12 +2460,16 @@ void CollectionConfig::parseZambeziNode(
     }
 
     zambeziConfig.display();
+
     if (!zambeziConfig.checkConfig())
     {
         zambeziConfig.isEnable = false;
         LOG(ERROR) << "att_token index can not should not config togther with other index";
     }
-
+    else
+    {
+        collectionMeta.indexBundleConfig_->isSchemaEnable_ = true;
+    }
 }
 
 void CollectionConfig::parseProductRankingNode(
