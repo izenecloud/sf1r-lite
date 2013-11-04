@@ -294,6 +294,7 @@
             <xs:sequence>
                 <xs:element name="Property" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="ctrpath" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 

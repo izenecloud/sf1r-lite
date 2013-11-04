@@ -271,6 +271,16 @@ bool SynchroConsumer::synchronize()
                 LOG(INFO) << SYNCHRO_CONSUMER << "error on receive";
                 return false;
             }
+            if (!zookeeper_->isZNodeExists(producerZkNode_, ZooKeeper::WATCH))
+            {
+                LOG(INFO) << SYNCHRO_CONSUMER << "error on producer missing";
+                consumerStatus_ = CONSUMER_STATUS_WATCHING;
+                return false;
+            }
+            else
+            {
+                LOG(INFO) << "still waiting producer." << producerZkNode_;
+            }
         }
         else
         {

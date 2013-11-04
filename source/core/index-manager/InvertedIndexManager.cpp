@@ -545,6 +545,8 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
+	
+		case DOUBLE_PROPERTY_TYPE:
         case FLOAT_PROPERTY_TYPE:
             if (iter->getIsRange())
             {
@@ -858,6 +860,7 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
         }
         break;
     }
+	case DOUBLE_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     {
         if (iter->getIsMultiValue())
@@ -1136,5 +1139,5 @@ bool InvertedIndexManager::mergeDocument_(
     }
     return true;
 }
-
 }
+

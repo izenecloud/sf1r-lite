@@ -326,6 +326,7 @@ void SF1Config::parseFirewall(const ticpp::Element * fireElement)
     {
         string ipAddress;
 
+
         getAttribute(deny_it.Get(), "value", ipAddress, false);
 
         if (!ipAddress.empty())
@@ -2337,6 +2338,10 @@ void CollectionConfig::parseAdIndexNode(
     MiningSchema& miningSchema =
         collectionMeta.miningBundleConfig_->mining_schema_;
 
+
+    AdIndexConfig& adIndexConfig = miningSchema.ad_index_config;
+
+    getAttribute(adIndexNode, "ctrpath", adIndexConfig.clickPredictorWorkingPath);
     miningSchema.ad_index_config.isEnable = true;
 }
 

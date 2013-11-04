@@ -22,7 +22,8 @@ class AttrCounter
 public:
     AttrCounter(
         const AttrTable& attrTable,
-        int minValueCount = 1);
+        int minValueCount = 1,
+        int maxIterCount = 0);
 
     virtual ~AttrCounter() {}
 
@@ -61,6 +62,17 @@ protected:
      * @c minValueCount_, it would be excluded in final result.
      */
     const int minValueCount_;
+
+    /**
+     * the maximum count in calling @c addDoc() and @c addAttrDoc(),
+     * if zero, there would be no limit in calling those functions.
+     */
+    const int maxIterCount_;
+
+    /**
+     * count in calling @c addDoc() and @c addAttrDoc().
+     */
+    int iterCount_;
 
     /** map from name id to doc count */
     std::map<AttrTable::nid_t, int> nameDocCountTable_;

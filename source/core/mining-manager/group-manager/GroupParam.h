@@ -92,6 +92,9 @@ struct GroupParam
     /** the number of attributes to return */
     int attrGroupNum_;
 
+    /** to get attributes, the number of docs to iterate */
+    int attrIterDocNum_;
+
     /** a list of attribute values for one attribute name */
     typedef std::vector<std::string> AttrValueVec;
     /** map from attribute name to attribute values */

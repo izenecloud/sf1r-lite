@@ -120,7 +120,7 @@ void ZambeziManager::search(
     // in one property
     if (propertyList.size() == 1)
     {    
-        property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
+        property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docids, scores);// if need to use filter;
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -129,7 +129,7 @@ void ZambeziManager::search(
     // only one property
     if (propertyList_.size() == 1)
     {    
-        property_index_map_[propertyList_[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docids, scores);// if need to use filter;
+        property_index_map_[propertyList_[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docids, scores);// if need to use filter;
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -146,7 +146,7 @@ void ZambeziManager::search(
 
     for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
-        property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, docidsList[i], scoresList[i]); // add new interface;
+        property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docidsList[i], scoresList[i]); // add new interface;
     }
 
     izenelib::util::ClockTimer timer_merge;

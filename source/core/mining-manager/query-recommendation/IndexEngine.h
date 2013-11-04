@@ -1,5 +1,5 @@
-#ifndef INDEXE_ENGINE_H
-#define INDEXE_ENGINE_H
+#ifndef SF1R_RECOMMEND_INDEXE_ENGINE_H
+#define SF1R_RECOMMEND_INDEXE_ENGINE_H
 
 #include <util/DynamicBloomFilter.h>
 

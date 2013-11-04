@@ -30,14 +30,25 @@ NS_FACETED_BEGIN
 
 AttrCounter::AttrCounter(
     const AttrTable& attrTable,
-    int minValueCount)
+    int minValueCount,
+    int maxIterCount)
     : attrTable_(attrTable)
     , minValueCount_(minValueCount)
+    , maxIterCount_(maxIterCount)
+    , iterCount_(0)
 {
 }
 
 void AttrCounter::addDoc(docid_t doc)
 {
+    if (maxIterCount_)
+    {
+        if (iterCount_ >= maxIterCount_)
+            return;
+
+        ++iterCount_;
+    }
+
     std::set<AttrTable::nid_t> nameIdSet;
     AttrTable::ValueIdList valueIdList;
     attrTable_.getValueIdList(doc, valueIdList);
@@ -57,6 +68,14 @@ void AttrCounter::addDoc(docid_t doc)
 
 void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
 {
+    if (maxIterCount_)
+    {
+        if (iterCount_ >= maxIterCount_)
+            return;
+
+        ++iterCount_;
+    }
+
     bool findNameId = false;
     AttrTable::ValueIdList valueIdList;
     attrTable_.getValueIdList(doc, valueIdList);

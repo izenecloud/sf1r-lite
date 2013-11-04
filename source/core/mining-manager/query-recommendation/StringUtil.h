@@ -1,5 +1,5 @@
-#ifndef STRING_UTIL_H
-#define STRING_UTIL_H
+#ifndef SF1R_RECOMMEND_STRING_UTIL_H
+#define SF1R_RECOMMEND_STRING_UTIL_H
 
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>

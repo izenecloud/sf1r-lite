@@ -35,6 +35,8 @@ public:
 
     void optimize_index();
 
+    void train_ctr_model();
+
 private:
     void indexSearch_();
 

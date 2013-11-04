@@ -57,6 +57,16 @@ template <class T>
 class NumericPropertyTable : public NumericPropertyTableBase
 {
 public:
+	//define sf1r search precision
+	//float normally used as price
+	//double normally used as latitude/longitude
+	enum
+	{
+		kPrecisionFloat = 2,
+		kPrecisionDouble = 6
+	};
+
+public:
     NumericPropertyTable(PropertyDataType type)
         : NumericPropertyTableBase(type)
         , dirty_(false)
@@ -416,7 +426,19 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
     char buf[32];
-    modp_dtoa((double)data_[pos], buf, 2);
+    modp_dtoa((double)data_[pos], buf, kPrecisionFloat);
+    value.assign(buf);
+    return true;
+}
+
+template <>
+inline bool NumericPropertyTable<double>::getStringValue(std::size_t pos, std::string& value, bool isLock) const
+{
+    ScopedReadBoolLock lock(mutex_, isLock);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+    char buf[32];
+    modp_dtoa((double)data_[pos], buf, kPrecisionDouble);
     value.assign(buf);
     return true;
 }

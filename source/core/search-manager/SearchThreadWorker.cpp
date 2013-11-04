@@ -26,6 +26,11 @@
 
 using namespace sf1r;
 
+namespace
+{
+const int kStarSearchAttrIterDocNum = 200;
+}
+
 SearchThreadWorker::SearchThreadWorker(
     const IndexBundleConfiguration& config,
     const boost::shared_ptr<DocumentManager>& documentManager,
@@ -265,9 +270,16 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
     if (groupFilterBuilder_)
     {
+        faceted::GroupParam& groupParam =
+            actionOperation.actionItem_.groupParam_;
+
+        if (isFilterQuery)
+        {
+            groupParam.attrIterDocNum_ = kStarSearchAttrIterDocNum;
+        }
+
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_,
-                                              propSharedLockSet));
+            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
     ProductScorer* relevanceScorer = NULL;

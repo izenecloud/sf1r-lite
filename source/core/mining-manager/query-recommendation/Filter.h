@@ -1,5 +1,5 @@
-#ifndef FILTER_H
-#define FILTER_H
+#ifndef SF1R_RECOMMEND_FILTER_H
+#define SF1R_RECOMMEND_FILTER_H
 
 #include <string>
 #include <util/DynamicBloomFilter.h>

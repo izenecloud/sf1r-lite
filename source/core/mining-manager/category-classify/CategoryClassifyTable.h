@@ -21,10 +21,14 @@ public:
     /** rflag true for classified by rule, false for not by rule */
     typedef std::pair<category_t, bool> category_rflag_t;
 
+    CategoryClassifyTable();
+
     CategoryClassifyTable(
         const std::string& dirPath,
         const std::string& propName,
         bool isDebug);
+
+    CategoryClassifyTable& operator=(const CategoryClassifyTable& other);
 
     bool open();
     bool flush();
@@ -35,6 +39,7 @@ public:
 
     void resize(std::size_t num);
     void setCategory(docid_t docId, const category_t& category, bool ruleFlag);
+    void swap(CategoryClassifyTable& other);
 
     /**
      * @brief get classified category for @p docId (has lock version).
@@ -60,9 +65,9 @@ private:
     bool saveTextFile_() const;
 
 private:
-    const std::string dirPath_;
+    std::string dirPath_;
 
-    const std::string propName_;
+    std::string propName_;
 
     std::vector<category_rflag_t> categories_;
 

@@ -7,13 +7,13 @@
 #define SF1R_CATEGORY_CLASSIFY_MINING_TASK_H
 
 #include "../MiningTask.h"
+#include "CategoryClassifyTable.h"
 #include <string>
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
 class DocumentManager;
-class CategoryClassifyTable;
 class NumericPropertyTableBase;
 
 class CategoryClassifyMiningTask : public MiningTask
@@ -51,7 +51,9 @@ private:
 private:
     DocumentManager& documentManager_;
 
-    CategoryClassifyTable& classifyTable_;
+    CategoryClassifyTable& classifyTableReader_;
+
+    CategoryClassifyTable classifyTableWriter_;
 
     const std::string targetCategoryPropName_;
 

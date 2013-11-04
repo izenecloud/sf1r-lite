@@ -123,7 +123,8 @@ bool GroupFilter::initAttr(
         }
         else
         {
-            attrCounter_ = new AttrCounter(attrTable);
+            attrCounter_ = new AttrCounter(attrTable,
+                                           1, groupParam_.attrIterDocNum_);
         }
     }
 

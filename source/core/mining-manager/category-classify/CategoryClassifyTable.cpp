@@ -1,6 +1,7 @@
 #include "CategoryClassifyTable.h"
 #include "../util/fcontainer_febird.h"
 #include <fstream>
+#include <algorithm> // swap
 
 using namespace sf1r;
 
@@ -9,6 +10,11 @@ namespace
 const std::string kBinaryFileName = "category.bin";
 const std::string kTextFileName = "category.txt";
 const CategoryClassifyTable::category_rflag_t kEmptyCategory;
+}
+
+CategoryClassifyTable::CategoryClassifyTable()
+    : isDebug_(false)
+{
 }
 
 CategoryClassifyTable::CategoryClassifyTable(
@@ -20,6 +26,22 @@ CategoryClassifyTable::CategoryClassifyTable(
     , categories_(1) // doc id 0 is reserved for an empty doc
     , isDebug_(isDebug)
 {
+}
+
+CategoryClassifyTable& CategoryClassifyTable::operator=(const CategoryClassifyTable& other)
+{
+    if (this != &other)
+    {
+        ScopedWriteLock lock(mutex_);
+        ScopedReadLock otherLock(other.mutex_);
+
+        dirPath_ = other.dirPath_;
+        propName_ = other.propName_;
+        categories_ = other.categories_;
+        isDebug_ = other.isDebug_;
+    }
+
+    return *this;
 }
 
 bool CategoryClassifyTable::open()
@@ -83,6 +105,20 @@ void CategoryClassifyTable::setCategory(docid_t docId, const category_t& categor
 
     categories_[docId].first = category;
     categories_[docId].second = ruleFlag;
+}
+
+void CategoryClassifyTable::swap(CategoryClassifyTable& other)
+{
+    if (this == &other)
+        return;
+
+    ScopedWriteLock lock(mutex_);
+    ScopedWriteLock otherLock(other.mutex_);
+
+    dirPath_.swap(other.dirPath_);
+    propName_.swap(other.propName_);
+    categories_.swap(other.categories_);
+    std::swap(isDebug_, other.isDebug_);
 }
 
 const CategoryClassifyTable::category_rflag_t& CategoryClassifyTable::getCategoryHasLock(docid_t docId) const
