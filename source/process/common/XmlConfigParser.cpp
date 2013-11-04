@@ -2447,8 +2447,9 @@ void CollectionConfig::parseZambeziNode(
         }
     }
 
+    bool isNeedTokenize = !zambeziConfig.hasAttrtoken;
     std::string DictionaryPath;
-    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", true);
+    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", isNeedTokenize);
     if (subNode)
     {
         std::string DictionaryPath;

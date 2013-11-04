@@ -290,8 +290,9 @@ bool IndexBundleActivator::init_()
     Here, the NormalSchemaEnable must be true now, because the Schema must be used as a filter in documentSearch;
     Zambezi search now not support condition(filter) 2013.10.24;
     */
+    if(config_->isNormalSchemaEnable_)
     {    
-        std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
+        std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open normal index manager.."<<std::endl;
         invertedIndexManager_ = createInvertedIndexManager_();
         SF1R_ENSURE_INIT(invertedIndexManager_);
     }

@@ -24,8 +24,8 @@ ZambeziManager::ZambeziManager(
     , zambeziTokenizer_(NULL)
 {
     init();
-
-    buildTokenizeDic();
+    if (!config_.hasAttrtoken)
+        buildTokenizeDic();
 }
 
 ZambeziManager::~ZambeziManager()
@@ -110,7 +110,7 @@ void ZambeziManager::search(
     std::vector<uint32_t>& scores)
 {
     std::cout <<"[ZambeziManager::search] Search tokens: ";
-    for (int i = 0; i < tokens.size(); ++i)
+    for (unsigned int i = 0; i < tokens.size(); ++i)
     {
         std::cout << tokens[i].first <<" , ";
     }

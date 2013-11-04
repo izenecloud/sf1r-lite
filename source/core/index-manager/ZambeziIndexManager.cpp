@@ -73,7 +73,7 @@ bool ZambeziIndexManager::insertDocIndex_(
     const std::vector<std::pair<std::string, int> >& tokenScoreList)
 {       
     std::vector<std::string> tokenList;
-    std::vector<uint32_t> scoreList;   
+    std::vector<uint32_t> scoreList;
     for (std::vector<std::pair<std::string, int> >::const_iterator it =
              tokenScoreList.begin(); it != tokenScoreList.end(); ++it)
     {
