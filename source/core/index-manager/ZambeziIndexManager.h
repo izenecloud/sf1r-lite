@@ -28,7 +28,7 @@ public:
     ~ZambeziIndexManager();
 
     virtual bool isRealTime() { return false; }
-    virtual void flush(bool force) {}
+    virtual void flush(bool force);
     virtual void optimize(bool wait) {}
 
     virtual void preBuildFromSCD(std::size_t total_filesize) {}
@@ -72,7 +72,8 @@ private:
         const std::vector<std::pair<std::string, int> >& tokenScoreList);
 
 private:
-    std::string system_resource_path_;
+
+    unsigned int indexDocCount_;
 
     const ZambeziConfig& config_;
     const std::vector<std::string>& properties_;

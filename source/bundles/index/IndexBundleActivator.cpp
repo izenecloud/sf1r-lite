@@ -89,6 +89,7 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
     invertedIndexManager_->flush(false);
+    
 
     if(miningSearchTracker_)
     {

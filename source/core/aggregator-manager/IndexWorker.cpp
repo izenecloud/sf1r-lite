@@ -790,7 +790,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, timestamp, true);
+    bool ret = insertDoc_(0, document, timestamp, true);/////
     if (ret)
     {
         doMining_(reqlog.timestamp);

@@ -13,7 +13,8 @@ ZambeziIndexManager::ZambeziIndexManager(
     const std::vector<std::string>& properties,
     std::map<std::string, AttrIndex>& property_index_map,
     ZambeziTokenizer* zambeziTokenizer)
-    : config_(config)
+    : indexDocCount_(0)
+    , config_(config)
     , properties_(properties)
     , zambeziTokenizer_(zambeziTokenizer)
     , property_index_map_(property_index_map)
@@ -22,6 +23,14 @@ ZambeziIndexManager::ZambeziIndexManager(
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
+}
+
+void ZambeziIndexManager::flush(bool force) // make sure all the machine is the same
+{
+    if (indexDocCount_ != 0)
+    {
+        postBuildFromSCD(1);
+    }   
 }
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
@@ -48,12 +57,14 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
                        << ", path: " << indexPath;
         }
     }
+    indexDocCount_ = 0;
 }
 
-bool ZambeziIndexManager::insertDocument(
+bool ZambeziIndexManager::insertDocument(// two flush process....
     const Document& doc,
     time_t timestamp)
 {
+    indexDocCount_++;
     return buildDocument_(doc);
 }
 
