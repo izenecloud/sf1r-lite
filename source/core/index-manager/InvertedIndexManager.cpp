@@ -1051,7 +1051,7 @@ bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc,
     return true;
 }
 
-bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timestamp)
+bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timestamp, bool isRealTime)
 {
     IndexerDocument indexdoc;
     prepareIndexDocumentForInsert(newdoc, bundleConfig_->indexSchema_, indexdoc);

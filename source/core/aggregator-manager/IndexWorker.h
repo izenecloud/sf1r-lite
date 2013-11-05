@@ -157,11 +157,13 @@ private:
             size_t wid,
             Document& document,
             time_t timestamp,
-            bool immediately = false);
+            bool immediately = false,
+            bool useRealTime = false);
 
     bool doInsertDoc_(
             Document& document,
-            time_t timestamp);
+            time_t timestamp,
+            bool useRealTime = false);
 
     bool updateDoc_(
             size_t wid,

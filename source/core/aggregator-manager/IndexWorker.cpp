@@ -790,7 +790,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, timestamp, true);/////
+    bool ret = insertDoc_(0, document, timestamp, true, true);/////imeditely
     if (ret)
     {
         doMining_(reqlog.timestamp);
@@ -1562,11 +1562,12 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     return true;
 }
 
-bool IndexWorker::insertDoc_(
+bool IndexWorker::insertDoc_(//
         size_t wid,
         Document& document,
         time_t timestamp,
-        bool immediately)
+        bool immediately,
+        bool useRealTime)
 {
     if(hooker_)
     {
@@ -1576,7 +1577,7 @@ bool IndexWorker::insertDoc_(
 
     if (immediately)
     {
-        return doInsertDoc_(document, timestamp);
+        return doInsertDoc_(document, timestamp, useRealTime);
     }
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
@@ -1592,7 +1593,7 @@ bool IndexWorker::insertDoc_(
     return true;
 }
 
-bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp)
+bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp, bool useRealTime) ////
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
@@ -1603,7 +1604,7 @@ bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp)
         STOP_PROFILER(proDocumentIndexing);
 
         START_PROFILER(proIndexing);
-        inc_supported_index_manager_.insertDocument(document, timestamp);
+        inc_supported_index_manager_.insertDocument(document, timestamp, useRealTime); ///
         STOP_PROFILER(proIndexing);
         //indexStatus_.numDocs_ = inc_supported_index_manager_.numDocs();
         return true;

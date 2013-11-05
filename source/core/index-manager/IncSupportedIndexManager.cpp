@@ -73,10 +73,10 @@ void IncSupportedIndexManager::postProcessForAPI()
         inc_index_list_[i]->postProcessForAPI();
 }
 
-bool IncSupportedIndexManager::insertDocument(const Document& doc, time_t timestamp)
+bool IncSupportedIndexManager::insertDocument(const Document& doc, time_t timestamp, bool isRealTime)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)
-        inc_index_list_[i]->insertDocument(doc, timestamp);
+        inc_index_list_[i]->insertDocument(doc, timestamp, isRealTime);
     return true;
 }
 bool IncSupportedIndexManager::updateDocument(const Document& olddoc, const Document& old_rtype_doc,

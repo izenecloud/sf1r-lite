@@ -11,6 +11,12 @@
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <process/common/XmlConfigParser.h>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
+
+
+const unsigned int MAX_RT_INDEXDOC = 2000;
+
 namespace sf1r
 {
 class ZambeziConfig;
@@ -28,7 +34,7 @@ public:
     ~ZambeziIndexManager();
 
     virtual bool isRealTime() { return false; }
-    virtual void flush(bool force);
+    virtual void flush(bool force) {}
     virtual void optimize(bool wait) {}
 
     virtual void preBuildFromSCD(std::size_t total_filesize) {}
@@ -46,7 +52,8 @@ public:
 
     virtual bool insertDocument(
         const Document& doc,
-        time_t timestamp);
+        time_t timestamp,
+        bool isRealTime = false);
 
     virtual bool updateDocument(
         const Document& olddoc,
@@ -58,6 +65,8 @@ public:
     virtual void removeDocument(docid_t docid, time_t timestamp) {}
 
 private:
+    void flushForRtIndex_();
+    
     bool buildDocument_(const Document& doc);
 
     bool buildDocument_Normal_(const Document& doc, const std::string& property);
@@ -72,14 +81,18 @@ private:
         const std::vector<std::pair<std::string, int> >& tokenScoreList);
 
 private:
-
     unsigned int indexDocCount_;
-
     const ZambeziConfig& config_;
     const std::vector<std::string>& properties_;
     ZambeziTokenizer* zambeziTokenizer_;
-
     std::map<std::string, AttrIndex>& property_index_map_;
+
+
+    typedef boost::shared_mutex MutexType;
+    typedef boost::shared_lock<MutexType> ReadLock;
+    typedef boost::unique_lock<MutexType> WriteLock;
+
+    mutable MutexType mutex_;
 };
 
 

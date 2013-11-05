@@ -23,14 +23,20 @@ ZambeziIndexManager::ZambeziIndexManager(
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
+    flushForRtIndex_();
 }
 
-void ZambeziIndexManager::flush(bool force) // make sure all the machine is the same
+// build scd and creatdocument comes sequentially
+// it is controlled in zookeeper; all the index data comes in single thread in distribute env; 
+// and index_binlog for realtime index is not needed. 
+// If the index is down, the index rebuild from last backup;
+
+// WARNING: if the index is not used in distribute env;
+
+void ZambeziIndexManager::flushForRtIndex_()
 {
-    if (indexDocCount_ != 0)
-    {
-        postBuildFromSCD(1);
-    }   
+    postBuildFromSCD(1);
+    indexDocCount_ = 0;
 }
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
@@ -57,14 +63,19 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
                        << ", path: " << indexPath;
         }
     }
-    indexDocCount_ = 0;
 }
 
 bool ZambeziIndexManager::insertDocument(// two flush process....
     const Document& doc,
-    time_t timestamp)
+    time_t timestamp,
+    bool isRealTime)
 {
-    indexDocCount_++;
+    if (isRealTime)
+        indexDocCount_++;
+    
+    if (indexDocCount_ == MAX_RT_INDEXDOC)
+        flushForRtIndex_();
+
     return buildDocument_(doc);
 }
 
