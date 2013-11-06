@@ -309,6 +309,7 @@ bool ProductTokenizer::GetTokenResults(
         const std::string& pattern,
         std::list<std::pair<UString,double> >& major_tokens,
         std::list<std::pair<UString,double> >& minor_tokens,
+        bool is_refine_result,
         UString& refined_results)
 {
     std::list<std::pair<UString,double> > temp_major_tokens;
@@ -316,6 +317,9 @@ bool ProductTokenizer::GetTokenResults(
     UString temp_refined_results;
 
     GetTokenResultsByKNlp_(pattern, minor_tokens, temp_refined_results);
+
+    if (!is_refine_result)
+        return true;
 
     if (matcher_ && GetTokenResultsByMatcher_(pattern,
                                               temp_major_tokens,

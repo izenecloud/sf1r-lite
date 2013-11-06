@@ -2294,6 +2294,7 @@ bool MiningManager::GetSuffixMatch(
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
+        bool isAnalyzeQuery,
         UString& analyzedQuery,
         std::string& pruneQueryString_,
         DistKeywordSearchInfo& distSearchInfo,
@@ -2361,7 +2362,7 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         double rank_boundary;
-        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
+        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery, rank_boundary);
 
         double queryScore = 0;
         suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
@@ -2505,7 +2506,7 @@ bool MiningManager::GetSuffixMatch(
               << ", suffix: " << suffixMatchTime
               << ", product score: " << productScoreTime
               << ", group: " << groupTime
-              << ", topk count: " << docIdList.size()
+              << ", res_list.size(): " << res_list.size()
               << ", query: " << actionOperation.actionItem_.env_.queryString_;
 
     if (!totalCount ||res_list.empty()) return false;
