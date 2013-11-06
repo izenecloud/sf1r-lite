@@ -84,6 +84,10 @@ public:
     {
         buffer_size_ = bs;
     }
+    void SetSorterBin(const std::string& bin)
+    {
+        sorter_bin_ = bin;
+    }
 
     void Append(const ScdDocument& doc, const std::string& ts, int flag=0);
 
@@ -137,6 +141,7 @@ private:
     std::string ts_;
     std::ofstream ofs_;
     bool spu_only_;
+    std::string sorter_bin_;
     uint32_t mcount_;
     uint32_t index_;
     std::string buffer_size_;

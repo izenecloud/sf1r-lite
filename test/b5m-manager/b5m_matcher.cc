@@ -286,6 +286,7 @@ int do_main(int ac, char** av)
         ("frontend-test", "the frontend categorizing")
         ("search-keyword", "get search keywords")
         ("scd-merge", "merge scd")
+        ("imc", po::value<uint32_t>(), "specify in memory doc count of scd merger")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -317,6 +318,7 @@ int do_main(int ac, char** av)
         ("scd-split", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
+        ("sorter-bin", po::value<std::string>(), "specify third-party sorter binary")
         ("all", "specify all flag")
         ("test", "specify test flag")
         ("noprice", "no price flag")
@@ -372,7 +374,9 @@ int do_main(int ac, char** av)
     bool use_avg_price = true;
     uint16_t max_depth = 0;
     int thread_num = 1;
+    uint32_t imc = 0;
     std::string buffer_size;
+    std::string sorter_bin;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -389,6 +393,10 @@ int do_main(int ac, char** av)
     if (vm.count("buffer-size")) {
         buffer_size = vm["buffer-size"].as<std::string>();
         std::cout<<"buffer_size:"<<buffer_size<<std::endl;
+    } 
+    if (vm.count("sorter-bin")) {
+        sorter_bin = vm["sorter-bin"].as<std::string>();
+        std::cout<<"sorter_bin:"<<sorter_bin<<std::endl;
     } 
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
@@ -536,6 +544,11 @@ int do_main(int ac, char** av)
     {
         max_depth = vm["depth"].as<uint16_t>();
     }
+    if(vm.count("imc"))
+    {
+        imc = vm["imc"].as<uint32_t>();
+        LOG(INFO)<<"set imc to "<<imc<<std::endl;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("odb-test"))
@@ -562,6 +575,7 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         ScdMerger merger(input);
+        if(imc>0) merger.SetInMCount(imc);
         merger.SetAllType(all_flag);
         merger.SetOutputPath(output);
         merger.Run();
@@ -1010,6 +1024,10 @@ int do_main(int ac, char** av)
         if(!buffer_size.empty())
         {
             processor.SetBufferSize(buffer_size);
+        }
+        if(!sorter_bin.empty())
+        {
+            processor.SetSorterBin(sorter_bin);
         }
         if(!processor.Generate(spu_only, thread_num))
         {

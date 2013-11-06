@@ -28,6 +28,10 @@ public:
     {
         buffer_size_ = bs;
     }
+    void SetSorterBin(const std::string& bin)
+    {
+        sorter_bin_ = bin;
+    }
 
     bool Generate(bool spu_only=false, int thread_num=1)
     {
@@ -37,6 +41,11 @@ public:
         {
             sorter.SetBufferSize(buffer_size_);
         }
+        if(!sorter_bin_.empty())
+        {
+            sorter.SetSorterBin(sorter_bin_);
+        }
+
         bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
         LOG(INFO)<<"b5mp merger finish"<<std::endl;
         return succ;
@@ -48,6 +57,7 @@ private:
     std::string m_;
     std::string last_m_;
     std::string buffer_size_;
+    std::string sorter_bin_;
 };
 
 NS_SF1R_B5M_END

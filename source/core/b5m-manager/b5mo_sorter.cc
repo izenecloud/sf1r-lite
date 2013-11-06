@@ -54,7 +54,10 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     }
     std::string buffer_size = buffer_size_;
     if(buffer_size.empty()) buffer_size = "30G";
-    std::string sort_bin = "/home/ops/coreutils/bin/sort";
+    std::string sort_bin = sorter_bin_;
+    if(sort_bin.empty()) sort_bin = "sort";
+    LOG(INFO)<<"sorter bin : "<<sort_bin<<std::endl;
+    //std::string sort_bin = "/home/ops/coreutils/bin/sort";
     std::string cmd = sort_bin+" --stable -t$'\\t' -k1,1 --buffer-size="+buffer_size+" -T "+tmp_path+" "+sorter_path+"/block > "+sorter_path+"/block.sort";
     LOG(INFO)<<"cmd : "<<cmd<<std::endl;
     int status = system(cmd.c_str());

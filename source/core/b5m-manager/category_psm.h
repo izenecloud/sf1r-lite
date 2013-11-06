@@ -311,12 +311,21 @@ public:
             std::string sattr;
             doc.getString("Title", stitle);
             doc.getString("Attribute", sattr);
-            std::string ap = attr_->cluster_detect(stitle, scategory, sattr);
-            if(!ap.empty())
+            ProductPrice price;
+            UString uprice;
+            doc.getString("Price", uprice);
+            price.Parse(uprice);
+            double dp = 0.0;
+            price.GetMid(dp);
+            if(dp>0.0)
             {
-                //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
-                pid = B5MHelper::GetPidByUrl(ap);
-                return true;
+                std::string ap = attr_->cluster_detect(stitle, scategory, sattr, (float)dp);
+                if(!ap.empty())
+                {
+                    //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
+                    pid = B5MHelper::GetPidByUrl(ap);
+                    return true;
+                }
             }
             return false;
         }
