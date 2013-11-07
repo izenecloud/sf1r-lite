@@ -141,6 +141,14 @@ public:
     void getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) const;
 
     /**
+     * Get the root id of @p pvId.
+     * For example, assume @p pvId is 100, 100's parent id is 10,
+     * 10's parent id is 1, and 1 is a root id,
+     * then it would return 1.
+     */
+    pvid_t getRootValueId(pvid_t pvId) const;
+
+    /**
      * Whether @p docId belongs to group label of @p labelId.
      * @param docId the doc id
      * @param labelId the property value id of group label

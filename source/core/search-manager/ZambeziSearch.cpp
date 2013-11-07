@@ -22,6 +22,7 @@
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <iostream>
+#include <set>
 #include <boost/scoped_ptr.hpp>
 
 namespace
@@ -30,8 +31,7 @@ const std::size_t kAttrTopDocNum = 200;
 const std::size_t kZambeziTopKNum = 1e6;
 
 const std::string kTopLabelPropName = "Category";
-const size_t kTopLabelDocNum = 1000;
-const size_t kTopLabelCateNum = 4;
+const size_t kRootCateNum = 10;
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
 }
@@ -293,14 +293,17 @@ void ZambeziSearch::getTopLabels_(
     if (!categoryValueTable_)
         return;
 
+    izenelib::util::ClockTimer timer;
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
     typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
     TopCatIdsT topCateIds;
-    const std::size_t topNum = std::min(docIdList.size(), kTopLabelDocNum);
+    const std::size_t topNum = docIdList.size();
+    std::set<faceted::PropValueTable::pvid_t> rootCateIds;
+
     for (std::size_t i = 0; i < topNum; ++i)
     {
-        if (topCateIds.size() >= kTopLabelCateNum)
+        if (rootCateIds.size() >= kRootCateNum)
             break;
 
         category_id_t catId =
@@ -309,7 +312,8 @@ void ZambeziSearch::getTopLabels_(
         if (catId != 0)
         {
             bool is_exist = false;
-            for(TopCatIdsT::const_iterator cit = topCateIds.begin(); cit != topCateIds.end(); ++cit)
+            for (TopCatIdsT::const_iterator cit = topCateIds.begin();
+                 cit != topCateIds.end(); ++cit)
             {
                 if (cit->first == catId)
                 {
@@ -320,6 +324,9 @@ void ZambeziSearch::getTopLabels_(
             if (!is_exist)
             {
                 topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+
+                category_id_t rootId = categoryValueTable_->getRootValueId(catId);
+                rootCateIds.insert(rootId);
             }
         }
     }
@@ -337,7 +344,8 @@ void ZambeziSearch::getTopLabels_(
         topLabels.push_back(std::make_pair(path, idIt->second));
     }
 
-    LOG(INFO) << "top label num: "<< topLabels.size();
+    LOG(INFO) << "get top label num: "<< topLabels.size()
+              << ", costs: " << timer.elapsed() << " seconds";
 }
 
 void ZambeziSearch::getAnalyzedQuery_(
