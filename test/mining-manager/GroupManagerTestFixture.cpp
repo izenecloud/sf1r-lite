@@ -483,7 +483,7 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
         toplabels.push_back(std::make_pair(lpath, test_num - i - 1));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right, test_num);
+    GroupParam::mergeScoreGroupLabel(left, right);
     BOOST_CHECK( right == left );
 
     right.clear();
@@ -495,7 +495,7 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
         toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.5));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right, test_num);
+    GroupParam::mergeScoreGroupLabel(left, right);
 
     stringstream ss;
     using namespace faceted;
@@ -512,10 +512,10 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
         toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.6));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right, test_num);
+    GroupParam::mergeScoreGroupLabel(left, right);
     for(GroupParam::GroupLabelScoreMap::const_iterator cit = left.begin(); cit != left.end(); ++cit)
     {
-        BOOST_CHECK_EQUAL( cit->second.size(), test_num);
+        BOOST_CHECK_GE( cit->second.size(), test_num);
         double max_score = 10000;
         int part_num = 0;
         for(size_t i = 0; i < cit->second.size(); ++i)

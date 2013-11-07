@@ -108,7 +108,7 @@ struct GroupParam
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
     bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
-    static void mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from, size_t topNum);
+    static void mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from);
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_

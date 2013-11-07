@@ -331,4 +331,16 @@ void PropValueTable::getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) c
     }
 }
 
+PropValueTable::pvid_t PropValueTable::getRootValueId(pvid_t pvId) const
+{
+    pvid_t rootId = 0;
+
+    for (; pvId; pvId = parentIdVec_[pvId])
+    {
+        rootId = pvId;
+    }
+
+    return rootId;
+}
+
 NS_FACETED_END

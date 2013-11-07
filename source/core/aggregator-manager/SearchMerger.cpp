@@ -11,8 +11,6 @@
 #include <algorithm> // min
 #include <vector>
 
-#define TOP_LABEL_NUM 4
-
 namespace sf1r
 {
 
@@ -143,7 +141,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         }
 
         mergeResult.groupRep_.merge(wResult.groupRep_);
-        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_, TOP_LABEL_NUM);
+        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_);
 
         std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
         for(; cit != wResult.counterResults_.end(); ++cit)
