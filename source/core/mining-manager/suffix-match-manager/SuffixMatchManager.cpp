@@ -144,13 +144,14 @@ size_t SuffixMatchManager::longestSuffixMatch(
     return total_match;
 }
 
-void SuffixMatchManager::GetTokenResults(std::string pattern,
+void SuffixMatchManager::GetTokenResults(const std::string& pattern,
                                 std::list<std::pair<UString, double> >& major_tokens,
                                 std::list<std::pair<UString, double> >& minor_tokens,
+                                bool isAnalyzeQuery,
                                 UString& analyzedQuery,
                                 double& rank_boundary)
 {
-    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery);
     getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
 }
 

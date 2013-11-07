@@ -307,6 +307,7 @@ public:
         , removeDuplicatedDocs_(false)
         , isRandomRank_(false)
         , requireRelatedQueries_(false)
+        , isAnalyzeResult_(false)
     {
     }
 
@@ -333,6 +334,7 @@ public:
         , customRanker_(obj.customRanker_)
         , isRandomRank_(obj.isRandomRank_)
         , requireRelatedQueries_(obj.requireRelatedQueries_)
+        , isAnalyzeResult_(obj.isAnalyzeResult_)
     {
     }
 
@@ -360,6 +362,7 @@ public:
         customRanker_ = obj.customRanker_;
         isRandomRank_ = obj.isRandomRank_;
         requireRelatedQueries_ = obj.requireRelatedQueries_;
+        isAnalyzeResult_ = obj.isAnalyzeResult_;
 
         return (*this);
     }
@@ -386,7 +389,8 @@ public:
             && paramPropertyValueMap_ == obj.paramPropertyValueMap_
             && customRanker_ == obj.customRanker_
             && isRandomRank_ == obj.isRandomRank_
-            && requireRelatedQueries_ == obj.requireRelatedQueries_;
+            && requireRelatedQueries_ == obj.requireRelatedQueries_
+            && isAnalyzeResult_ == obj.isAnalyzeResult_;
     }
 
     void print(std::ostream& out = std::cout) const
@@ -452,6 +456,9 @@ public:
         ss << "------------------------------------------------" << endl;
 
         ss << "requireRelatedQueries_: " << requireRelatedQueries_ << endl;
+        ss << "------------------------------------------------" << endl;
+
+        ss << "isAnalyzeResult_: " << isAnalyzeResult_ << endl;
         ss << "------------------------------------------------" << endl;
 
         out << ss.str();
@@ -565,15 +572,22 @@ public:
     /// @brief whether contain related queries in the response
     bool requireRelatedQueries_;
 
+    ///
+    /// @brief If true, return "analyzer_result" in response,
+    /// which contains the tokenized result of the query
+    ///
+    bool isAnalyzeResult_;
+
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & disableGetDocs_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
              & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
-             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_);
+             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_ & isAnalyzeResult_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, disableGetDocs_, languageAnalyzerInfo_,
             searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
-                   rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_);
+            rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_,
+            isAnalyzeResult_);
 
 private:
     // Log : 2009.09.08
@@ -603,6 +617,7 @@ private:
         ar & paramPropertyValueMap_;
         ar & isRandomRank_;
         ar & requireRelatedQueries_;
+        ar & isAnalyzeResult_;
     }
 
 }; // end - class KeywordSearchActionItem

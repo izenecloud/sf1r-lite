@@ -67,9 +67,10 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list,
             double rank_boundary);
 
-    void GetTokenResults(std::string pattern,
+    void GetTokenResults(const std::string& pattern,
                     std::list<std::pair<UString, double> >& major_tokens,
                     std::list<std::pair<UString, double> >& manor_tokens,
+                    bool isAnalyzeQuery,
                     UString& analyzedQuery,
                     double& rank_boundary);
 

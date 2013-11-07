@@ -116,7 +116,7 @@ void generateTokens(TokenArray& tokens, const std::string& query, MiningManager&
     if (NULL == miningManager.getSuffixManager())
         return;
 
-    miningManager.getSuffixManager()->GetTokenResults(keywords, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
+    miningManager.getSuffixManager()->GetTokenResults(keywords, major_tokens, minor_tokens, true, analyzedQuery, rank_boundary);
     //tokens.reserve(major_tokens.size() + minor_tokens.size());
     std::string analyzedString;
     analyzedQuery.convertString(analyzedString, izenelib::util::UString::UTF_8);
