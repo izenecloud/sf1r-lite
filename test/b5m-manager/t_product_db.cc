@@ -48,12 +48,6 @@ BOOST_AUTO_TEST_CASE(Product)
     doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
     doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);;
 
-    bool independent=false;
-
-
-
-
-
     pp.Parse(doc);
 
     spid="12345f5d10830d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="SourceB",date="20130229",price="100~1213",attribute="产地:美国,质量:优,品牌:阿迪王";

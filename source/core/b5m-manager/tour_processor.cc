@@ -275,9 +275,9 @@ void TourProcessor::Finish_()
     ScdWriter pwriter(pdir, UPDATE_SCD);
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
     {
-        const BufferKey& key = it->first;
         BufferValue& value = it->second;
 #ifdef TOUR_DEBUG
+        const BufferKey& key = it->first;
 		LOG(INFO) << "1---->aggregate <" << key.first << "," 
 					<< key.second << "> count:"<< value.size();  
 #endif

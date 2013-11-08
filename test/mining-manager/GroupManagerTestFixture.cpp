@@ -522,7 +522,7 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
         {
             BOOST_ASSERT(cit->second[i].second <= max_score);
             max_score = cit->second[i].second;
-            if (cit->second[i].first.back()[0] > 'd' + test_num)
+            if (cit->second[i].first.back()[0] > (char)('d' + test_num))
             {
                 ++part_num;
             }

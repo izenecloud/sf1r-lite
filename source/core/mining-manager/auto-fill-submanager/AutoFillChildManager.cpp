@@ -817,8 +817,8 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
 
 bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint64_t OffsetEnd, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
-    if(OffsetEnd == -1)
-	return false;
+    if(OffsetEnd == static_cast<uint64_t>(-1))
+        return false;
     izenelib::util::UString tempUString;
     std::string ValueStr;
     uint32_t ValueID = 0;

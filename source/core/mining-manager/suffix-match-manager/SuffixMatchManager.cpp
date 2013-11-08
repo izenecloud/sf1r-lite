@@ -275,7 +275,7 @@ bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
 
 void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
 {
-    const size_t tmp_size = major_size;
+    // const size_t tmp_size = major_size;
     std::map<UString, bool> is_add;
 
     for (size_t j = 0; j < tokens.size(); ++j)
