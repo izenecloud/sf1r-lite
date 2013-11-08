@@ -114,13 +114,17 @@ bool ZambeziSearch::search(
     attrTokenize->attr_tokenize(query, tokenList);
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
-    zambeziManager_->search(tokenList, kEmptyFilterFunc, kZambeziTopKNum, candidates, scores);
+    zambeziManager_->search(tokenList, kEmptyFilterFunc, kZambeziTopKNum,
+                            candidates, scores);
 
     if (candidates.empty())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
-        attrTokenize->attr_subtokenize(tokenList, subTokenList);
-        zambeziManager_->search(subTokenList, kEmptyFilterFunc, kZambeziTopKNum, candidates, scores);
+        if (attrTokenize->attr_subtokenize(tokenList, subTokenList))
+        {
+            zambeziManager_->search(subTokenList, kEmptyFilterFunc, kZambeziTopKNum,
+                                    candidates, scores);
+        }
     }
 
     if (candidates.empty())
