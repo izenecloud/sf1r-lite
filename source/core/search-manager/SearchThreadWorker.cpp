@@ -87,8 +87,6 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
 
     TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
-    bool isTFIDFModel = (pTextRankingType == RankingType::BM25 ||
-                         config_.rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
     bool useOriginalQuery = actionOperation.actionItem_.searchingMode_.useOriginalQuery_;
 
     std::vector<boost::shared_ptr<PropertyRanker> > propertyRankers;
