@@ -238,6 +238,15 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   TARGET_LINK_LIBRARIES(t_ProductTokenizer ${libs})
 
+  ADD_EXECUTABLE(t_ad_ctr
+    t_ad_ctr.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_ad_ctr ${libs})
+  SET_TARGET_PROPERTIES(t_ad_ctr PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ad_ctr")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(
