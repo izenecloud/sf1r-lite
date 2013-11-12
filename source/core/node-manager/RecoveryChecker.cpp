@@ -1323,6 +1323,10 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             if( local_logdata_list[i] != primary_logdata_list[i] )
             {
                 LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                if (i == 0)
+                {
+                    check_start = local_logid_list[i] - 1;
+                }
                 break;
             }
             else

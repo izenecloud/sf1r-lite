@@ -18,13 +18,46 @@ int main(int argc, char* argv[])
         reqlogmgr.init(argv[1]);
         std::vector<uint32_t> logid_list;
         std::vector<std::string> logdata_list;
-        reqlogmgr.getReqLogIdList(0, reqlogmgr.getLastSuccessReqId(), false, logid_list, logdata_list);
+        reqlogmgr.getReqLogIdList(0, reqlogmgr.getLastSuccessReqId(), true, logid_list, logdata_list);
         for(size_t i = 0; i < logid_list.size(); ++i)
         {
             std::cout << logid_list[i] << ",";
+            uint32_t inc_id = logid_list[i];
+            ReqLogHead head;
+            size_t headoffset;
+            reqlogmgr.getHeadOffset(inc_id, head, headoffset);
+            std::cout << "headinfo: " << head.reqtype << "," << head.req_data_offset
+              << ", " << head.req_data_len << ", " << head.req_data_crc << std::endl;
             if (i % 10 == 0)
             {
                 std::cout << endl;
+            }
+        }
+        std::cout << endl;
+        for(size_t i = 0; i < logdata_list.size(); ++i)
+        {
+            CommonReqData data;
+            try
+            {
+            if (i == logdata_list.size() - 5)
+                throw std::runtime_error("test");
+            }
+            catch(const std::exception& e)
+            {
+                std::cout << "test" << std::endl;
+            }
+            ReqLogMgr::unpackReqLogData(logdata_list[i], data);
+            std::cout << "id: " << data.inc_id << ", data:" << data.reqtype << "," << data.req_json_data << std::endl;
+            if (data.reqtype == Req_Index)
+            {
+                IndexReqLog recdata;
+                ReqLogMgr::unpackReqLogData(logdata_list[i], recdata);
+                std::cout << "index log tm: " << recdata.timestamp << ", scdlist:";
+                for(size_t j = 0; j < recdata.scd_list.size(); ++j)
+                {
+                    std::cout << recdata.scd_list[j] << ", ";
+                }
+                std::cout << std::endl;
             }
         }
         std::cout << endl;
