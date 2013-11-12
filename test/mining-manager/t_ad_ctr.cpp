@@ -77,6 +77,8 @@ int main()
 {
 
     srand(time(NULL));
+    if (!bfs::exists("/opt/mine/ad_ctr_test"))
+        return 0;
     bfs::remove_all("/opt/mine/ad_ctr_test/data");
     bfs::create_directories("/opt/mine/ad_ctr_test/data");
 
