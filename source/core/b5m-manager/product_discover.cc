@@ -174,7 +174,14 @@ void ProductDiscover::Process_(ScdDocument& doc)
     if(!ValidCategory_(category)) return;
     Product product;
     matcher_->Process(doc, product);
-    if(!product.spid.empty()&&!product.stitle.empty()) return;
+    //if(!product.spid.empty()&&!product.stitle.empty()) return;
+    if(product.type==Product::SPU) return;
+    if(!product.why.empty()&&product.why!="text_error") return;
+    std::string title;
+    doc.getString("Title", title);
+    std::string sprice;
+    doc.getString("Price", sprice);
+    std::cout<<title<<"\t"<<category<<"\t"<<sprice<<std::endl;
     std::vector<std::string> brands;
     std::vector<std::string> models;
     GetBrandAndModel_(doc, brands, models);

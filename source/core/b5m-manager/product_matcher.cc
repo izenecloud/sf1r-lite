@@ -2405,7 +2405,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     Product pbook;
     if(ProcessBook(doc, pbook))
     {
-        pbook.type = 2;
+        pbook.type = Product::BOOK;
         result_products.resize(1, pbook);
         return true;
     }
@@ -2428,8 +2428,9 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     Analyze_(title, term_list);
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
-    Compute2_(doc, term_list, keyword_vector, limit, result_products);
-    if(!result_products.empty()) result_products.front().type = 1;
+    std::string why;
+    Compute2_(doc, term_list, keyword_vector, limit, result_products, why);
+    if(!result_products.empty()) result_products.front().type = Product::SPU;
     if((result_products.empty()||result_products.front().spid.empty())&&use_psm&&psm_!=NULL)
     {
         std::string spid;
@@ -2437,11 +2438,10 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         std::vector<std::string> brands;
         std::vector<std::pair<std::string, double> > psm_keywords;
         GetPsmKeywords_(keyword_vector, scategory, brands, psm_keywords);
-        if(psm_->Search(doc, brands, psm_keywords, spid, stitle))
+        Product p;
+        if(psm_->Search(doc, brands, psm_keywords, p))
         {
-            Product p;
-            p.spid = spid;
-            p.type = 3;
+            p.why = why;
             result_products.clear();
             result_products.resize(1, p);
             return true;
@@ -2476,7 +2476,8 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     //std::cerr<<"keywords count "<<keyword_vector.size()<<std::endl;
     uint32_t flimit = limit*2;
     std::vector<Product> result_products;
-    Compute2_(doc, term_list, keyword_vector, flimit, result_products);
+    std::string why;
+    Compute2_(doc, term_list, keyword_vector, flimit, result_products, why);
     for(uint32_t i=0;i<result_products.size();i++)
     {
         Product& p = result_products[i];
@@ -3485,7 +3486,8 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     std::cout<<"[BEFORE COMPUTE]"<<clocker.elapsed()<<std::endl;
     clocker.restart();
 #endif
-    Compute2_(doc, term_list, keyword_vector, 1, result_products);
+    std::string why;
+    Compute2_(doc, term_list, keyword_vector, 1, result_products, why);
 #ifdef B5M_DEBUG
     std::cout<<"[COMPUTE]"<<clocker.elapsed()<<std::endl;
     clocker.restart();
@@ -4554,7 +4556,7 @@ void ProductMatcher::ComputeT_(const Document& doc, const std::vector<Term>& ter
 
 }
 
-void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
+void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products, std::string& why)
 {
     std::string stitle;
     doc.getString("Title", stitle);
@@ -4847,6 +4849,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
     }
     std::vector<SpuMatchCandidate> spu_match_candidates;
+    bool has_text_match = false;
     for(SpuContributor::iterator it = spu_cc.begin();it!=spu_cc.end();it++)
     {
         uint32_t spuid = it->first;
@@ -4876,13 +4879,14 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #ifdef B5M_DEBUG
         LOG(ERROR)<<p.stitle<<",["<<price<<","<<p.price<<"],"<<(int)pricesim<<std::endl;
 #endif
-        if(!pricesim) continue;
 #ifdef B5M_DEBUG
         LOG(ERROR)<<p.stitle<<","<<scv.GetLenWeight()<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
 #endif
         //scv.lenweight/=text_term_len;
         if(IsSpuMatch_(p, scv, text_term_len))
         {
+            has_text_match = true;
+            if(!pricesim) continue;
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
             smc.lenweight = scv.GetLenWeight();
@@ -4899,6 +4903,8 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     }
     else
     {
+        if(has_text_match) why = "price_error";
+        else why = "text_error";
         std::size_t count = std::min((std::size_t)limit, cid_list.size());
         for(std::size_t i=0;i<count;i++)
         {

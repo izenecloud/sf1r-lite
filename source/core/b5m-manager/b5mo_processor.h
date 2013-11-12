@@ -10,6 +10,7 @@
 #include "product_matcher.h"
 #include "b5mo_sorter.h"
 #include "original_mapper.h"
+#include "matcher_status.h"
 #include <knlp/attr_normalize.h>
 #include <boost/atomic.hpp>
 #include <sf1r-net/RpcServerConnectionConfig.h>
@@ -60,9 +61,10 @@ private:
     boost::unordered_set<uint128_t> changed_match_;
     boost::shared_mutex mutex_;
     ilplib::knlp::AttributeNormalize* attr_;
-    boost::atomic<uint32_t> stat1_;
-    boost::atomic<uint32_t> stat2_;
-    boost::atomic<uint32_t> stat3_;
+    MatcherStatus status_;
+    //boost::atomic<uint32_t> stat1_;
+    //boost::atomic<uint32_t> stat2_;
+    //boost::atomic<uint32_t> stat3_;
 };
 
 NS_SF1R_B5M_END

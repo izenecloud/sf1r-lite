@@ -64,9 +64,10 @@ struct Attribute
 };
 struct Product
 {
+    enum Type {NOTP, BOOK, SPU, FASHION, ATTRIB};
     typedef idmlib::sim::StringSimilarity::Object SimObject;
     Product()
-    : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0), type(0)
+    : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0), type(NOTP)
     {
     }
     uint32_t id;
@@ -88,7 +89,9 @@ struct Product
     double tweight;
     SimObject title_obj;
     double score;
-    int type;
+    //int type;
+    Type type;
+    std::string why;
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)

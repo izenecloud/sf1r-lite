@@ -718,7 +718,7 @@ private:
     void MergeCategoryContributor_(CategoryContributor& cc, const CategoryContributor& cc2);
     void GenSpuContributor_(const KeywordTag& tag, SpuContributor& sc);
     void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
-    void Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products);
+    void Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products, std::string& why);
     void ComputeT_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products);
     uint32_t GetCidBySpuId_(uint32_t spu_id);
     uint32_t GetCidByMaxDepth_(uint32_t cid);

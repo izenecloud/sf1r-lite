@@ -281,7 +281,7 @@ public:
         return true;
     }
 
-    bool Search(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords, std::string& pid, std::string& ptitle)
+    bool Search(const Document& doc, const std::vector<std::string>& brands, const std::vector<std::pair<std::string, double> >& keywords, Product& product)
     {
         std::string scategory;
         doc.getString("Category", scategory);
@@ -323,7 +323,8 @@ public:
                 if(!ap.empty())
                 {
                     //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;
-                    pid = B5MHelper::GetPidByUrl(ap);
+                    product.spid = B5MHelper::GetPidByUrl(ap);
+                    product.type = Product::ATTRIB;
                     return true;
                 }
             }
@@ -349,7 +350,8 @@ public:
         if(dist_index.first>=0.0&&ValidDistance_(dist_index.first))
         {
             std::string url = "http://www.b5m.com/"+key.first+"/"+key.second+"/"+boost::lexical_cast<std::string>(dist_index.second);
-            pid = B5MHelper::GetPidByUrl(url);
+            product.spid = B5MHelper::GetPidByUrl(url);
+            product.type = Product::FASHION;
             //std::cerr<<"psm find pid "<<pid<<std::endl;
             //const Group& g = groups[dist_index.second];
             //const BufferItem& center = g.items[g.cindex];

@@ -24,8 +24,16 @@ B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
 :odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 ,attr_(matcher->GetAttributeNormalize())
 //,attr_(NULL)
-, stat1_(0), stat2_(0), stat3_(0)
+//, stat1_(0), stat2_(0), stat3_(0)
 {
+    status_.AddCategoryGroup("^电脑办公.*$","电脑办公", 0.001);
+    status_.AddCategoryGroup("^手机数码>手机$","手机", 0.001);
+    status_.AddCategoryGroup("^手机数码>摄像摄影.*$","摄影", 0.001);
+    status_.AddCategoryGroup("^家用电器.*$","家用电器", 0.001);
+    status_.AddCategoryGroup("^服装服饰.*$","服装服饰", 0.0001);
+    status_.AddCategoryGroup("^鞋包配饰.*$","鞋包配饰", 0.0001);
+    status_.AddCategoryGroup("^运动户外.*$","运动户外", 0.0001);
+    status_.AddCategoryGroup("^母婴童装.*$","母婴童装", 0.0001);
 }
 
 B5moProcessor::~B5moProcessor()
@@ -234,6 +242,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     if(need_do_match)
     {
         matcher_->Process(doc, product, true);
+        status_.Insert(doc, product);
     }
     else
     {
@@ -254,9 +263,9 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(!product.spid.empty())
     {
-        if(product.type==1) stat1_+=1;
-        else if(product.type==2) stat2_+=1;
-        else if(product.type==3) stat3_+=1;
+        //if(product.type==1) stat1_+=1;
+        //else if(product.type==2) stat2_+=1;
+        //else if(product.type==3) stat3_+=1;
         //has SPU matched
         spid = product.spid;
         if(!title.empty()) 
@@ -619,7 +628,9 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         delete omapper_;
         omapper_ = NULL;
     }
-    LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<","<<stat3_<<std::endl;
+    std::string status_path = mdb_instance+"/status";
+    status_.Flush(status_path);
+    //LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<","<<stat3_<<std::endl;
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())
