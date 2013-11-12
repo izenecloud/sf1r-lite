@@ -14,6 +14,9 @@ template <bool State>
 class MonomorphicFilter
 {
 public:
+    MonomorphicFilter() {}
+    ~MonomorphicFilter() {}
+
     bool test(uint32_t docId) const
     {
         return State;
