@@ -10,6 +10,16 @@
 namespace sf1r
 {
 
+template <bool State>
+class MonomorphicFilter
+{
+public:
+    bool test(uint32_t docId) const
+    {
+        return State;
+    }
+};
+
 class ZambeziFilter
 {
 public:

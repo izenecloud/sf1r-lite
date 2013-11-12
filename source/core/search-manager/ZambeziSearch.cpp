@@ -25,6 +25,9 @@
 #include <set>
 #include <boost/scoped_ptr.hpp>
 
+namespace sf1r
+{
+
 namespace
 {
 const std::size_t kAttrTopDocNum = 200;
@@ -35,10 +38,8 @@ const size_t kRootCateNum = 10;
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
 
-const boost::function<bool(uint32_t)> kEmptyFilterFunc;
+const MonomorphicFilter<true> kAllPassFilter;
 }
-
-using namespace sf1r;
 
 ZambeziSearch::ZambeziSearch(
     DocumentManager& documentManager,
@@ -114,7 +115,7 @@ bool ZambeziSearch::search(
     attrTokenize->attr_tokenize(query, tokenList);
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
-    zambeziManager_->search(tokenList, kEmptyFilterFunc, kZambeziTopKNum,
+    zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum,
                             candidates, scores);
 
     if (candidates.empty())
@@ -122,7 +123,7 @@ bool ZambeziSearch::search(
         std::vector<std::pair<std::string, int> > subTokenList;
         if (attrTokenize->attr_subtokenize(tokenList, subTokenList))
         {
-            zambeziManager_->search(subTokenList, kEmptyFilterFunc, kZambeziTopKNum,
+            zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum,
                                     candidates, scores);
         }
     }
@@ -386,4 +387,6 @@ void ZambeziSearch::getAnalyzedQuery_(
         analyzedQuery.append(token);
         analyzedQuery.push_back(kUCharSpace);
     }
+}
+
 }
