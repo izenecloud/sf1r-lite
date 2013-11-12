@@ -49,7 +49,10 @@ public:
         const std::string& Q,
         std::vector<std::pair<std::string, int> >& tokenList);
 
-    void attr_subtokenize(
+    /**
+     * @return true if @p tokenList is not equal with @p tks.
+     */
+    bool attr_subtokenize(
         const std::vector<std::pair<std::string, int> >& tks,
         std::vector<std::pair<std::string, int> >& tokenList);
 

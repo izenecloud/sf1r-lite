@@ -6,21 +6,13 @@
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
 
-#include <common/PropSharedLock.h>
 #include <configuration-manager/ZambeziConfig.h>
-#include <util/ClockTimer.h>
-#include <glog/logging.h>
 #include <fstream>
 #include <math.h>
 #include <algorithm>
 
-using namespace sf1r;
-
-namespace
+namespace sf1r
 {
-const izenelib::ir::Zambezi::Algorithm kAlgorithm =
-    izenelib::ir::Zambezi::SVS;
-}
 
 ZambeziManager::ZambeziManager(
         const ZambeziConfig& config,
@@ -63,21 +55,6 @@ bool ZambeziManager::open()
 MiningTask* ZambeziManager::createMiningTask(DocumentManager& documentManager)
 {
     return new ZambeziMiningTask(config_, documentManager, indexer_);
-}
-
-void ZambeziManager::search(
-    const std::vector<std::pair<std::string, int> >& tokens,
-    const boost::function<bool(uint32_t)>& filter,
-    uint32_t limit,
-    std::vector<docid_t>& docids,
-    std::vector<uint32_t>& scores)
-{
-    izenelib::util::ClockTimer timer;
-
-    indexer_.retrievalAndFiltering(kAlgorithm, tokens, filter, limit, false, docids, scores);
-
-    LOG(INFO) << "zambezi returns docid num: " << docids.size()
-              << ", costs :" << timer.elapsed() << " seconds";
 }
 
 void ZambeziManager::NormalizeScore(
@@ -131,14 +108,10 @@ void ZambeziManager::NormalizeScore(
         {
             int32_t commentcount = 1;
             numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            if (itemcount != 0)
-                attr_size += std::min(commentcount/itemcount, 100);
-            else
-                attr_size += std::min(commentcount, 100);
-
+            attr_size += pow(std::min((double)commentcount, 500.), 0.7);
         }
 
-        scores[i] = scores[i] * pow(attr_size, 0.3);
+        scores[i] = scores[i] * pow(attr_size, 0.5);
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
@@ -147,4 +120,6 @@ void ZambeziManager::NormalizeScore(
     {
         scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
     }
+}
+
 }

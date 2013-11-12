@@ -40,8 +40,8 @@ BOOST_AUTO_TEST_CASE(odbInsert_test)
         odb_.insert(oid,pid);
         o2pmap.push_back(std::make_pair(oid,pid));
         uint128_t pidmirror;
-        //odb_.get(oid,pidmirror);
-        bool ret=odb_.get(oid,pidmirror);
+        odb_.get(oid,pidmirror);
+        //bool ret=odb_.get(oid,pidmirror);
         //BOOST_CHECK_EQUAL(ret, false);
         
     }

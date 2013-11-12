@@ -142,7 +142,7 @@ void ProductTokenizerTest::tokenize( const std::string& pattern, std::string& re
     tokens_type major_tokens;
     tokens_type minor_tokens;
     UString refined_results(refined, UString::UTF_8);
-    tokenizer_.GetTokenResults(pattern, major_tokens, minor_tokens, refined_results);
+    tokenizer_.GetTokenResults(pattern, major_tokens, minor_tokens, true, refined_results);
     std::cout<<"tokenization:";
     for(tokens_type::iterator tit = minor_tokens.begin(); tit != minor_tokens.end(); ++tit)
     {

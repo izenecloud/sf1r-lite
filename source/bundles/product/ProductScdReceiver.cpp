@@ -29,12 +29,19 @@ bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
 {
     if (MasterManagerBase::get()->isDistributed())
     {
+        // Because all the primary worker of each sharding will push a 
+        // index request to the write queue, the sharding disable type should be 
+        // set as type "1" to disallow the master distribute the request to other sharding again.
         if (NodeManagerBase::get()->isPrimary())
         {
-            std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"index_scd_path\":\"" + scd_source_dir + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+            std::string json_req = "{\"collection\":\"" + collectionName_ +
+                "\",\"index_scd_path\":\"" + scd_source_dir +
+                "\",\"disable_sharding\":1,\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
             if (callback_type_ == "rebuild")
             {
-                json_req = "{\"collection\":\"" + collectionName_ + "\",\"index_scd_path\":\"" + scd_source_dir + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"rebuild_from_scd\",\"controller\":\"collection\"},\"uri\":\"collection/rebuild_from_scd\"}";
+                json_req = "{\"collection\":\"" + collectionName_ +
+                    "\",\"index_scd_path\":\"" + scd_source_dir +
+                    "\",\"disable_sharding\":1,\"header\":{\"acl_tokens\":\"\",\"action\":\"rebuild_from_scd\",\"controller\":\"collection\"},\"uri\":\"collection/rebuild_from_scd\"}";
             }
             MasterManagerBase::get()->pushWriteReq(json_req);
             LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;

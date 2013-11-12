@@ -336,6 +336,7 @@ void SearchWorker::makeQueryIdentity(
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
+        identity.isAnalyzeResult = item.isAnalyzeResult_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -501,6 +502,7 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.totalCount_,
                                             resultItem.groupRep_,
                                             resultItem.attrRep_,
+                                            actionOperation.actionItem_.isAnalyzeResult_,
                                             resultItem.analyzedQuery_,
                                             resultItem.pruneQueryString_,
                                             resultItem.distSearchInfo_,

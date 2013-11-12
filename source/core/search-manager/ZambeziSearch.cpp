@@ -22,7 +22,11 @@
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <iostream>
+#include <set>
 #include <boost/scoped_ptr.hpp>
+
+namespace sf1r
+{
 
 namespace
 {
@@ -30,13 +34,12 @@ const std::size_t kAttrTopDocNum = 200;
 const std::size_t kZambeziTopKNum = 1e6;
 
 const std::string kTopLabelPropName = "Category";
-const size_t kTopLabelDocNum = 1000;
-const size_t kTopLabelCateNum = 4;
+const size_t kRootCateNum = 10;
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
-}
 
-using namespace sf1r;
+const MonomorphicFilter<true> kAllPassFilter;
+}
 
 ZambeziSearch::ZambeziSearch(
     DocumentManager& documentManager,
@@ -112,18 +115,16 @@ bool ZambeziSearch::search(
     attrTokenize->attr_tokenize(query, tokenList);
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
-    ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
-    boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
+    zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum,
+                            candidates, scores);
 
+    if (candidates.empty())
     {
-        boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
-        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, candidates, scores);
-
-        if (candidates.empty())
+        std::vector<std::pair<std::string, int> > subTokenList;
+        if (attrTokenize->attr_subtokenize(tokenList, subTokenList))
         {
-            std::vector<std::pair<std::string, int> > subTokenList;
-            attrTokenize->attr_subtokenize(tokenList, subTokenList);
-            zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, candidates, scores);
+            zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum,
+                                    candidates, scores);
         }
     }
 
@@ -165,18 +166,27 @@ bool ZambeziSearch::search(
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
 
-    for (size_t i = 0; i < candNum; ++i)
     {
-        docid_t docId = candidates[i];
-        ScoreDoc scoreItem(docId, scores[i]);
-        if (customRanker)
-        {
-            scoreItem.custom_score = customRanker->evaluate(docId);
-        }
-        scoreItemQueue->insert(scoreItem);
+        ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
 
-        ++totalCount;
+        for (size_t i = 0; i < candNum; ++i)
+        {
+            docid_t docId = candidates[i];
+
+            if (!filter.test(docId))
+                continue;
+
+            ScoreDoc scoreItem(docId, scores[i]);
+            if (customRanker)
+            {
+                scoreItem.custom_score = customRanker->evaluate(docId);
+            }
+            scoreItemQueue->insert(scoreItem);
+
+            ++totalCount;
+        }
     }
+
     /// ret score, add product score;
     std::vector<docid_t> topDocids;
     std::vector<float> topRelevanceScores;
@@ -278,7 +288,7 @@ bool ZambeziSearch::search(
                                                          propSharedLockSet);
     }
 
-    LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
+    LOG(INFO) << "in zambezi ranking, total count: " << totalCount
               << ", costs :" << timer.elapsed() << " seconds";
 
     return true;
@@ -293,14 +303,17 @@ void ZambeziSearch::getTopLabels_(
     if (!categoryValueTable_)
         return;
 
+    izenelib::util::ClockTimer timer;
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
     typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
     TopCatIdsT topCateIds;
-    const std::size_t topNum = std::min(docIdList.size(), kTopLabelDocNum);
+    const std::size_t topNum = docIdList.size();
+    std::set<faceted::PropValueTable::pvid_t> rootCateIds;
+
     for (std::size_t i = 0; i < topNum; ++i)
     {
-        if (topCateIds.size() >= kTopLabelCateNum)
+        if (rootCateIds.size() >= kRootCateNum)
             break;
 
         category_id_t catId =
@@ -309,7 +322,8 @@ void ZambeziSearch::getTopLabels_(
         if (catId != 0)
         {
             bool is_exist = false;
-            for(TopCatIdsT::const_iterator cit = topCateIds.begin(); cit != topCateIds.end(); ++cit)
+            for (TopCatIdsT::const_iterator cit = topCateIds.begin();
+                 cit != topCateIds.end(); ++cit)
             {
                 if (cit->first == catId)
                 {
@@ -320,6 +334,9 @@ void ZambeziSearch::getTopLabels_(
             if (!is_exist)
             {
                 topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+
+                category_id_t rootId = categoryValueTable_->getRootValueId(catId);
+                rootCateIds.insert(rootId);
             }
         }
     }
@@ -337,7 +354,8 @@ void ZambeziSearch::getTopLabels_(
         topLabels.push_back(std::make_pair(path, idIt->second));
     }
 
-    LOG(INFO) << "top label num: "<< topLabels.size();
+    LOG(INFO) << "get top label num: "<< topLabels.size()
+              << ", costs: " << timer.elapsed() << " seconds";
 }
 
 void ZambeziSearch::getAnalyzedQuery_(
@@ -369,4 +387,6 @@ void ZambeziSearch::getAnalyzedQuery_(
         analyzedQuery.append(token);
         analyzedQuery.push_back(kUCharSpace);
     }
+}
+
 }

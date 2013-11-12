@@ -394,6 +394,7 @@ public:
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
+            bool isAnalyzeQuery,
             UString& analyzedQuery,
             std::string& pruneQuery,
             DistKeywordSearchInfo& distSearchInfo,

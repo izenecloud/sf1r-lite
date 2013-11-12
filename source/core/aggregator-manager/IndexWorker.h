@@ -141,7 +141,8 @@ private:
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
-    bool doBuildCollection_(const std::string& scdFile, SCD_TYPE scdType, uint32_t numdoc);
+    bool doBuildCollection_(const std::string& scdFile, SCD_TYPE scdType,
+        uint32_t numdoc, int64_t timestamp);
 
     bool insertOrUpdateSCD_(
             ScdParser& parser,

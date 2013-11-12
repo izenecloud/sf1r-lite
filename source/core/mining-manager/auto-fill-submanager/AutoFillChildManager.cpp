@@ -817,6 +817,8 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
 
 bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint64_t OffsetEnd, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
+    if(OffsetEnd == static_cast<uint64_t>(-1))
+        return false;
     izenelib::util::UString tempUString;
     std::string ValueStr;
     uint32_t ValueID = 0;
@@ -1145,6 +1147,8 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     if(offsetstr.length() > 0)
     {
         std::size_t pos = offsetstr.find("/");
+	if (pos == string::npos)
+            return false;
         std::string offsetbegin = offsetstr.substr(0, pos);
         std::string offsetcount = offsetstr.substr(pos + 1);
         try
@@ -1154,6 +1158,8 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
         }
         catch(boost::bad_lexical_cast& e)
         {
+	   OffsetStart = 1;
+           OffsetEnd = 0;
         }
     }
     return true;

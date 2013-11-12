@@ -306,7 +306,7 @@ static bool IsGreaterGroup(const std::pair<GroupParam::GroupPath, double>& left,
     return left.second > right.second;
 }
 
-void GroupParam::mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from, size_t topNum)
+void GroupParam::mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from)
 {
     GroupLabelScoreMap::const_iterator groupit = from.begin();
 
@@ -340,10 +340,6 @@ void GroupParam::mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLa
             }
         }
         std::sort(merged_it->second.begin(), merged_it->second.end(), IsGreaterGroup);
-        if (merged_it->second.size() > topNum)
-        {
-            merged_it->second.erase(merged_it->second.begin() + topNum, merged_it->second.end());
-        }
     }
 }
 
