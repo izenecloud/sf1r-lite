@@ -7,9 +7,13 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
-#include <search-manager/NumericPropertyTableBuilder.h>
-#include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
+
+#include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
+#include <glog/logging.h>
+#include <util/ClockTimer.h>
+
 #include <string>
 #include <vector>
 
@@ -38,12 +42,21 @@ public:
 
     MiningTask* createMiningTask(DocumentManager& documentManager);
 
+    template <class FilterType>
     void search(
         const std::vector<std::pair<std::string, int> >& tokens,
-        const boost::function<bool(uint32_t)>& filter,
+        const FilterType& filter,
         uint32_t limit,
         std::vector<docid_t>& docids,
-        std::vector<uint32_t>& scores);
+        std::vector<uint32_t>& scores)
+    {
+        izenelib::util::ClockTimer timer;
+
+        indexer_.retrievalAndFiltering(tokens, filter, limit, false, docids, scores);
+
+        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+                  << ", costs: " << timer.elapsed() << " seconds";
+    }
 
     void NormalizeScore(
         std::vector<docid_t>& docids,
