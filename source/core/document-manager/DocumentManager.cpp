@@ -122,6 +122,7 @@ bool DocumentManager::insertDocument(const Document& document)
         if (!pid)
         {
             // not in config, skip
+            std::cout <<"xxxxxxx"<<std::endl;
             continue;
         }
 
@@ -249,7 +250,7 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 {
 
     boost::unordered_map< std::string, unsigned int>::const_iterator iter =
-        propertyAliasMap_.find(property);
+        propertyAliasMap_.find(property);DocumentManager
 
     boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
     if (iter != propertyAliasMap_.end() && iter->second < propertyLengthDb_.size())
@@ -439,7 +440,7 @@ void DocumentManager::buildPropertyIdMapper_()
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap;
     config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap);
 
-    for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end();
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end(); // 
             it != itEnd; ++it)
     {
         propertyid_t originalPropertyId(0), originalBlockId(0);

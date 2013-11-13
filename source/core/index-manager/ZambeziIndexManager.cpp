@@ -6,24 +6,28 @@
 #include <glog/logging.h>
 #include <fstream>
 
+#include <document-manager/DocumentManager.h>
 using namespace sf1r;
 
 ZambeziIndexManager::ZambeziIndexManager(
     const ZambeziConfig& config,
     const std::vector<std::string>& properties,
     std::map<std::string, AttrIndex>& property_index_map,
-    ZambeziTokenizer* zambeziTokenizer)
+    ZambeziTokenizer* zambeziTokenizer,
+    boost::shared_ptr<DocumentManager> documentManager)
     : indexDocCount_(0)
     , config_(config)
     , properties_(properties)
     , zambeziTokenizer_(zambeziTokenizer)
     , property_index_map_(property_index_map)
+    , documentManager_(documentManager)
 {
 }
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
-    flushForRtIndex_();
+    LOG(INFO) << " ~ZambeziIndexManager() ";
+    //postProcessForAPI();
 }
 
 // build scd and creatdocument comes sequentially
@@ -33,7 +37,7 @@ ZambeziIndexManager::~ZambeziIndexManager()
 
 // WARNING: if the index is not used in distribute env;
 
-void ZambeziIndexManager::flushForRtIndex_()
+void ZambeziIndexManager::postProcessForAPI()
 {
     postBuildFromSCD(1);
     indexDocCount_ = 0;
@@ -65,16 +69,16 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
     }
 }
 
-bool ZambeziIndexManager::insertDocument(// two flush process....
+bool ZambeziIndexManager::insertDocument(
     const Document& doc,
-    time_t timestamp,
-    bool isRealTime)
+    time_t timestamp)
 {
-    if (isRealTime)
+    //never flush during the create document ...
+    /*if (isRealTime)
         indexDocCount_++;
     
-    if (indexDocCount_ == MAX_RT_INDEXDOC)
-        flushForRtIndex_();
+    if (indexDocCount_ == MAX_API_INDEXDOC)
+        postProcessForAPI();*/
 
     return buildDocument_(doc);
 }

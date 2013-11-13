@@ -366,26 +366,32 @@ bool DocumentsSearchHandler::parse()
     if (queryIntentManager)
         queryIntentManager->queryIntent(request_, response_);
 
-    std::vector<Parser*> parsers;
-    std::vector<const Value*> values;
-
-    SelectParser selectParser(indexSchema_);
-    parsers.push_back(&selectParser);
-    values.push_back(&request_[Keys::select]);
-
     SearchParser searchParser(indexSchema_, zambeziConfig_);
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 
-    FilteringParser filteringParser(indexSchema_,miningSchema_);
+    // SearchingModeInfo searchingModeInfo() const
+    // {
+    //    return searchingModeInfo_;
+    // }
+
+    std::vector<Parser*> parsers;
+    std::vector<const Value*> values;
+
+    SelectParser selectParser(indexSchema_); // indexSchema_, zambeziconfig_, searchMode;
+    parsers.push_back(&selectParser);
+    values.push_back(&request_[Keys::select]); 
+
+    // now, suffx index is depent on indexSchema_;
+    FilteringParser filteringParser(indexSchema_, miningSchema_); //FilteringParser, indexSchema_, zambeziSchema , searchingModeInfo_; //zambei or other; 
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 
-    CustomRankingParser customrRankingParser(indexSchema_);
+    CustomRankingParser customrRankingParser(indexSchema_); // indexSchema_, zambeziConfig_, searchModelInfo, 
     parsers.push_back(&customrRankingParser);
     values.push_back(&request_[Keys::custom_rank]);
-
-    SortParser sortParser(indexSchema_);
+ 
+    SortParser sortParser(indexSchema_); // indexSchema_, zambeziConfig_, searchModelInfo,
     Value& customRankingValue = request_[Keys::custom_rank];
     if (customRankingValue.type() != Value::kNullType) {
         sortParser.validateCustomRank(true);
@@ -405,7 +411,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&attrParser);
     values.push_back(&request_[Keys::attr]);
 
-    RangeParser rangeParser(indexSchema_);
+    RangeParser rangeParser(indexSchema_); // indexSchema, zambeziConfig, searchModelInfo, 
     parsers.push_back(&rangeParser);
     values.push_back(&request_[Keys::range]);
 

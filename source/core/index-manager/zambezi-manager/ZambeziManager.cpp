@@ -24,6 +24,7 @@ ZambeziManager::ZambeziManager(
     , zambeziTokenizer_(NULL)
 {
     init();
+    
     if (!config_.hasAttrtoken)
         buildTokenizeDic();
 }
@@ -38,8 +39,11 @@ void ZambeziManager::init()
 {
     for (std::vector<ZambeziProperty>::const_iterator i = config_.properties.begin(); i != config_.properties.end(); ++i)
     {
-        propertyList_.push_back(i->name);
-        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+        if (i->poolSize != 0)
+        {
+            propertyList_.push_back(i->name);
+            property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+        }
     }
 
     for (std::vector<ZambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
@@ -57,7 +61,7 @@ void ZambeziManager::buildTokenizeDic()
 
     ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
 
-    zambeziTokenizer_ = new ZambeziTokenizer();
+    zambeziTokenizer_ = new ZambeziTokenizer(); // this is true;
     zambeziTokenizer_->InitWithCMA_(type, cma_index_dic.c_str());
 }
 
@@ -70,9 +74,10 @@ bool ZambeziManager::open()
 {
     const std::string& basePath = config_.indexFilePath; //not init
 
-    LOG(INFO) << "index BASE PATH: " << basePath << std::endl;
     for (std::vector<std::string>::iterator i = propertyList_.begin(); i != propertyList_.end(); ++i)
     {
+
+        LOG(INFO) << "index BASE PATH: " << basePath << std::endl;
         std::string path = basePath + "_" + *i; // index.bin_Title
         std::ifstream ifs(path.c_str(), std::ios_base::binary);
 

@@ -7,12 +7,13 @@
 #include <list>
 #include <iostream>
 #include <vector>
+#include "PropertyConfig.h"
 
 namespace sf1r
 {
-
 /**
- * @brief The configuration for <Zambezi>.
+ * @brief : this is the base configuration for Zambezi index;
+ *
  */
 
 struct ZambeziProperty
@@ -20,33 +21,38 @@ struct ZambeziProperty
     std::string name;
     uint32_t poolSize;
     float weight;
+    bool isFilter;
+    sf1r::PropertyDataType type;
 
     ZambeziProperty()
     : poolSize(268435456) //256M
-    , weight(1)
+    , weight(1.0)
+    , isFilter(false)
     {
     }
 
     void display()
     {
         std::cout << "name:" << name 
-            << " ,poolSize:" << poolSize << " ,weight:" << weight << std::endl;   
+            << " ,poolSize:" << poolSize << " ,weight:" << weight << " ,isFilter:" << isFilter <<std::endl;   
     }
-
 };
 
-struct ZambeziVirtualProperty
+/**
+ * @brief : this is the configuration for Zambezi index virtual preporty;
+ *
+ */
+class ZambeziVirtualProperty : public ZambeziProperty
 {
-    std::string name;
+public:
+    /*
+    * @brief: all the property used to build virtual property must be put in subProperties;
+    */
     std::vector<std::string> subProperties;
-    uint32_t poolSize;
-    float weight;
+    sf1r::PropertyDataType type;
     bool isAttrToken;
 
     ZambeziVirtualProperty()
-    : poolSize(268435456) //256M
-    , weight(1)
-    , isAttrToken(false)
     {
     }
 
@@ -54,6 +60,7 @@ struct ZambeziVirtualProperty
     {
         std::cout << "name:" << name
             << " ,poolSize:" << poolSize << " ,weight:" << weight
+            << " ,isFilter:" << isFilter
             << " ,isAttrToken" << isAttrToken << std::endl;
         std::cout << "subProperties:";
         for (unsigned int i = 0; i < subProperties.size(); ++i)
@@ -68,9 +75,11 @@ struct PropertyStatus
 {
     bool isCombined;
     bool isAttr;
+    bool isFilter;
     PropertyStatus()
     : isCombined(false)
     , isAttr(false)
+    , isFilter(false)
     {
     }
 
@@ -80,7 +89,10 @@ struct PropertyStatus
     }
 };
 
-
+/*
+ * @brief the integrated configuration for zambezi index;
+ *
+ */
 class ZambeziConfig
 {
 public:
@@ -100,6 +112,8 @@ public:
     std::vector<ZambeziVirtualProperty> virtualPropeties;
 
     std::map<std::string, PropertyStatus> property_status_map;
+
+    std::set<PropertyConfig, PropertyComp> ZambeziIndexSchema;
 
     bool hasAttrtoken;
 
@@ -137,6 +151,9 @@ public:
 
     bool checkConfig()
     {
+        if (!setZambeziIndexSchema()) // make sure there is no duplicate property;
+            return false;
+
         if (hasAttrtoken)
             return ((virtualPropeties.size() == 1) && (properties.empty()));
         return true;
@@ -153,6 +170,37 @@ public:
                 return true;
 
         return false;
+    }
+
+    bool setZambeziIndexSchema()
+    {
+        for (std::vector<ZambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
+        {
+            PropertyConfig tmpConfig;
+
+            tmpConfig.setRankWeight(i->weight);
+            tmpConfig.setIsFilter(i->isFilter);
+            tmpConfig.setName(i->name);
+            tmpConfig.setType(i->type);
+            //TODO add isIndexed;
+
+            if (!ZambeziIndexSchema.insert(tmpConfig).second)
+                return false;
+        }
+
+        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
+        {
+            PropertyConfig tmpConfig;
+            tmpConfig.setRankWeight(i->weight);
+            tmpConfig.setIsFilter(i->isFilter);
+            tmpConfig.setName(i->name);
+            tmpConfig.setType(i->type);
+            //TODO add isIndexed;
+            if (!ZambeziIndexSchema.insert(tmpConfig).second)
+                return false;
+        }
+
+        return true;
     }
 
 private:

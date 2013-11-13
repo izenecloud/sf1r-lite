@@ -337,6 +337,19 @@ void SearchWorker::makeQueryIdentity(
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
         break;
+    case SearchingMode::ZAMBEZI:
+        identity.query = item.env_.queryString_;
+        identity.properties = item.searchPropertyList_;
+        identity.filterInfo = item.filteringList_;
+        identity.sortInfo = item.sortPriorityList_;
+        identity.strExp = item.strExp_;
+        identity.paramConstValueMap = item.paramConstValueMap_;
+        identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+        identity.groupParam = item.groupParam_;
+        identity.isRandomRank = item.isRandomRank_;
+        identity.querySource = item.env_.querySource_;
+        identity.distActionType = distActionType;
+        break;
     default:
         identity.query = item.env_.queryString_;
         identity.expandedQueryString = item.env_.expandedQueryString_;

@@ -426,6 +426,7 @@ void InvertedIndexManager::finishRebuild()
     flush();
 }
 
+// inverted index always true here, that means the doc an not be out-of-order;
 void InvertedIndexManager::preProcessForAPI()
 {
     if (!isRealTime())
@@ -434,6 +435,9 @@ void InvertedIndexManager::preProcessForAPI()
 
 void InvertedIndexManager::postProcessForAPI()
 {
+    idManager_->flush();
+    flush();
+    deletebinlog();
 }
 
 bool InvertedIndexManager::prepareIndexRTypeProperties_(
@@ -1051,7 +1055,7 @@ bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc,
     return true;
 }
 
-bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timestamp, bool isRealTime)
+bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timestamp)
 {
     IndexerDocument indexdoc;
     prepareIndexDocumentForInsert(newdoc, bundleConfig_->indexSchema_, indexdoc);

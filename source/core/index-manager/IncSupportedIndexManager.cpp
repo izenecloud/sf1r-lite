@@ -31,6 +31,11 @@ bool IncSupportedIndexManager::isRealTime()
     return false;
 }
 
+void IncSupportedIndexManager::setDocumentManager(boost::shared_ptr<DocumentManager>& documentManager)
+{
+    documentManager_ = documentManager;
+}
+
 void IncSupportedIndexManager::preBuildFromSCD(size_t total_filesize)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)
@@ -69,16 +74,19 @@ void IncSupportedIndexManager::preProcessForAPI()
 }
 void IncSupportedIndexManager::postProcessForAPI()
 {
+    documentManager_->flush();
     for (size_t i = 0; i< inc_index_list_.size(); ++i)
         inc_index_list_[i]->postProcessForAPI();
 }
 
-bool IncSupportedIndexManager::insertDocument(const Document& doc, time_t timestamp, bool isRealTime)
+//all insertDocument is realtime ...
+bool IncSupportedIndexManager::insertDocument(const Document& doc, time_t timestamp)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)
-        inc_index_list_[i]->insertDocument(doc, timestamp, isRealTime);
+        inc_index_list_[i]->insertDocument(doc, timestamp);
     return true;
 }
+
 bool IncSupportedIndexManager::updateDocument(const Document& olddoc, const Document& old_rtype_doc,
     const Document& newdoc, int updateType, time_t timestamp)
 {
@@ -86,6 +94,7 @@ bool IncSupportedIndexManager::updateDocument(const Document& olddoc, const Docu
         inc_index_list_[i]->updateDocument(olddoc, old_rtype_doc, newdoc, updateType, timestamp);
     return true;
 }
+
 void IncSupportedIndexManager::removeDocument(docid_t docid, time_t timestamp)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)

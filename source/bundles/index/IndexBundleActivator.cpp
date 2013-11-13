@@ -88,8 +88,15 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
-    invertedIndexManager_->flush(false);
-    
+    if (config_->isNormalSchemaEnable_)
+    {
+        invertedIndexManager_->flush(false);
+    }
+
+    if (config_->isZambeziSchemaEnable_)
+    {
+        zambeziIndexManager_->postProcessForAPI();    
+    }
 
     if(miningSearchTracker_)
     {
@@ -329,8 +336,11 @@ bool IndexBundleActivator::init_()
     
     indexWorker_ = createIndexWorker_();
     SF1R_ENSURE_INIT(indexWorker_);
+
+    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index worker.."<<std::endl;
     // add all kinds of index that will support increment build.
     indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+    indexWorker_->getIncSupportedIndexManager().setDocumentManager(documentManager_);
     if (config_->isZambeziSchemaEnable_)
     {
         std::cout << "add zambeziIndexManager_ ......." << std::endl;
@@ -588,7 +598,8 @@ IndexBundleActivator::createZambeziIndexManager_() const
                                              (config_->zambeziConfig_,
                                               zambeziManager_->getProperties(),
                                               zambeziManager_->getIndexMap(),
-                                              zambeziManager_->getTokenizer()));
+                                              zambeziManager_->getTokenizer(),
+                                              documentManager_));
     return ret;
 }
 
@@ -597,7 +608,7 @@ IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
 
-    if (documentManager_ && invertedIndexManager_ && rankingManager_)
+    if (documentManager_ && rankingManager_ && (invertedIndexManager_ || zambeziManager_))
     {
 
         SearchFactory factory(*config_,
@@ -605,7 +616,6 @@ IndexBundleActivator::createSearchManager_() const
                           invertedIndexManager_,
                           rankingManager_,
                           zambeziManager_);
-    
         ret.reset(new SearchManager(*config_, factory));
     }
     return ret;

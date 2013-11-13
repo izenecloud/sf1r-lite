@@ -12,16 +12,14 @@
 #include <process/common/XmlConfigParser.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
-
-
-const unsigned int MAX_RT_INDEXDOC = 2000;
 
 namespace sf1r
 {
 class ZambeziConfig;
 class ZambeziTokenizer;
-
+class DocumentManager;
 class ZambeziIndexManager : public IIncSupportedIndex
 {
 public:
@@ -29,11 +27,14 @@ public:
         const ZambeziConfig& config,
         const std::vector<std::string>& properties,
         std::map<std::string, AttrIndex>& property_index_map,
-        ZambeziTokenizer* zambeziTokenizer);
+        ZambeziTokenizer* zambeziTokenizer,
+        boost::shared_ptr<DocumentManager> documentManager
+        );
     
     ~ZambeziIndexManager();
-
-    virtual bool isRealTime() { return false; }
+    
+    // this is a real time index;
+    virtual bool isRealTime() { return true; }
     virtual void flush(bool force) {}
     virtual void optimize(bool wait) {}
 
@@ -48,12 +49,11 @@ public:
     virtual void finishRebuild() {}
 
     virtual void preProcessForAPI() {}
-    virtual void postProcessForAPI() {}
+    virtual void postProcessForAPI();
 
     virtual bool insertDocument(
         const Document& doc,
-        time_t timestamp,
-        bool isRealTime = false);
+        time_t timestamp);
 
     virtual bool updateDocument(
         const Document& olddoc,
@@ -65,7 +65,6 @@ public:
     virtual void removeDocument(docid_t docid, time_t timestamp) {}
 
 private:
-    void flushForRtIndex_();
     
     bool buildDocument_(const Document& doc);
 
@@ -86,6 +85,7 @@ private:
     const std::vector<std::string>& properties_;
     ZambeziTokenizer* zambeziTokenizer_;
     std::map<std::string, AttrIndex>& property_index_map_;
+    boost::shared_ptr<DocumentManager> documentManager_;
 
 
     typedef boost::shared_mutex MutexType;

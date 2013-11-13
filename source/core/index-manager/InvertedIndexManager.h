@@ -141,7 +141,7 @@ public:
     virtual void preProcessForAPI();
     virtual void postProcessForAPI();
 
-    virtual bool insertDocument(const Document& doc, time_t timestamp, bool isRealTime = false);
+    virtual bool insertDocument(const Document& doc, time_t timestamp);
     virtual bool updateDocument(const Document& olddoc, const Document& old_rtype_doc, const Document& newdoc, int updateType, time_t timestamp);
     virtual void removeDocument(docid_t docid, time_t timestamp);
 

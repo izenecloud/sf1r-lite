@@ -2369,9 +2369,27 @@ void CollectionConfig::parseZambeziNode(
         {
             ZambeziProperty zProperty;
             PropertyStatus  sProperty;
-            // name
-            string propertyName;
+            // name and type
+            std::string propertyName;
+            std::string type;
             getAttribute(property.Get(), "name", propertyName);
+            if (!validateID(propertyName))
+                throw XmlConfigParserException("Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
+
+            PropertyConfigBase tmpConfig;
+            tmpConfig.propertyName_ = propertyName;
+            PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+            dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
+            
+            zProperty.type = dataType;
+            std::string pName = propertyName;
+            boost::to_lower(pName);
+            if ((pName == "date")||(pName == "docid"))
+            {
+                stringstream message;
+                message << "DATE/DOCID are inherent properties and should not exist within IndexBundleSchema";
+                throw XmlConfigParserException(message.str());
+            }
             zProperty.name = propertyName;
 
             // weight
@@ -2386,15 +2404,33 @@ void CollectionConfig::parseZambeziNode(
             else
                 zProperty.poolSize = zambeziConfig.poolSize;
 
+            // filter
+            bool isFilter;
+            getAttribute(property.Get(), "filter", isFilter, false);
+            zProperty.isFilter = isFilter;
+            sProperty.isFilter = isFilter;
+            if (isFilter)
+                zProperty.poolSize = 0;
+
             zambeziConfig.properties.push_back(zProperty);
             zambeziConfig.property_status_map.insert(std::make_pair(propertyName, sProperty));
-
         }
         catch (XmlConfigParserException & e)
         {
             throw e;
         }
     }
+    
+    // add DATE to zambezi index;
+    ZambeziProperty zProperty;
+    PropertyStatus  sProperty;
+    zProperty.name = "date";
+    zProperty.isFilter = true;
+    sProperty.isFilter = true;
+    zProperty.poolSize = 0;
+
+    zambeziConfig.properties.push_back(zProperty);
+    zambeziConfig.property_status_map.insert(std::make_pair("date", sProperty));
 
     //// for virtual Property
     Iterator<Element> virtualproperty("VirtualProperty");
@@ -2434,13 +2470,27 @@ void CollectionConfig::parseZambeziNode(
             }
 
             // SubProperty
+            PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
             Iterator<Element> subproperty("SubProperty");
             for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
             {
-                string subPropName;
+                std::string subPropName;
+
                 getAttribute(subproperty.Get(), "name", subPropName);
+
+                PropertyConfigBase tmpConfig;
+                tmpConfig.propertyName_ = subPropName;
+                PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+                dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
+
+                if (dataType != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("VirtualProperty's subproperty only support STRING type!!!");
+                }
+
                 vProperty.subProperties.push_back(subPropName);
             }
+            vProperty.type = dataType;
 
             zambeziConfig.virtualPropeties.push_back(vProperty);
             zambeziConfig.property_status_map.insert(std::make_pair(vProperty.name, sProperty));

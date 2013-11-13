@@ -47,6 +47,9 @@ public:
         std::string& language
     ) const;
 
+    std::set<PropertyConfig, PropertyComp>::const_iterator 
+    findIndexProperty(PropertyConfig tempPropertyConfig, bool& isIndexSchema) const;
+
     std::string getSearchAnalyzer() const
     {
         return searchAnalyzer_;

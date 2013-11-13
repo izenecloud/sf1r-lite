@@ -227,7 +227,7 @@ bool SearchParser::parse(const Value& search)
                 // validation
                 PropertyConfig propertyConfig;
                 propertyConfig.setName(countList_[i]);
-                if (!getPropertyConfig(indexSchema_,propertyConfig))
+                if (!getPropertyConfig(indexSchema_, propertyConfig))
                 {
                     error() = "Unknown property in count/in: " +
                               propertyConfig.getName();

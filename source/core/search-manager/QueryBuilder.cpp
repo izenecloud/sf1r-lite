@@ -46,10 +46,11 @@ QueryBuilder::QueryBuilder(
 )
     :documentManagerPtr_(documentManager)
     ,indexManagerPtr_(indexManager)
-    ,pIndexReader_(indexManager->pIndexReader_)
     ,schemaMap_(schemaMap)
     ,filterCache_(new FilterCache(filterCacheNum))
 {
+    if (indexManager)
+        pIndexReader_ = (indexManager->pIndexReader_);
 }
 
 QueryBuilder::~QueryBuilder()
@@ -65,6 +66,9 @@ void QueryBuilder::prepare_filter(
     const std::vector<QueryFiltering::FilteringType>& filtingList,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
+    if (!indexManagerPtr_)
+        return;
+    
     if (filtingList.size() == 1)
     {
         const QueryFiltering::FilteringType& filteringItem= filtingList[0];

@@ -45,6 +45,72 @@ void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)
     }
 }
 
+std::set<PropertyConfig, PropertyComp>::const_iterator 
+IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, bool& isIndexSchema) const
+{
+    // TODO:: to check this is no dupilcate property in different schema;
+    // the correct way is merge the two schema;
+
+    // InvertedIndex Schema
+    if (isNormalSchemaEnable_)
+    {
+        std::set<PropertyConfig, PropertyComp>::const_iterator iter
+        = indexSchema_.find(tempPropertyConfig);
+
+        if (iter != indexSchema_.end())
+        {
+            isIndexSchema = true;
+            return iter;
+        }
+    }
+    // ZambeziIndex Schema
+    if (isZambeziSchemaEnable_) //TO UPDATE
+    {
+        std::set<PropertyConfig, PropertyComp>::const_iterator iter
+        = zambeziConfig_.ZambeziIndexSchema.find(tempPropertyConfig);
+
+        if (iter != zambeziConfig_.ZambeziIndexSchema.end())
+        {
+            isIndexSchema = true;
+            return iter;
+        }
+
+        // search virtual property
+        for (std::vector<ZambeziVirtualProperty>::const_iterator i = zambeziConfig_.virtualPropeties.begin(); 
+            i != zambeziConfig_.virtualPropeties.end(); ++i)
+        {
+            for (std::vector<std::string>::const_iterator j = i->subProperties.begin();
+             j != i->subProperties.end(); ++j)
+                if (*j == tempPropertyConfig.getName())
+                {
+                    isIndexSchema = true;
+
+                    PropertyConfig tempConfig;
+                    tempConfig.propertyName_ = tempPropertyConfig.getName();
+                    std::set<PropertyConfig, PropertyComp>::const_iterator iter
+                    = zambeziConfig_.ZambeziIndexSchema.find(tempConfig);
+                    return iter;
+                }
+        }
+    }
+
+    //CANDO: add more index
+
+    isIndexSchema = false;
+    if (isNormalSchemaEnable_)
+    {
+        return indexSchema_.end();
+    }
+
+    if (isZambeziSchemaEnable_)
+    {
+        return zambeziConfig_.ZambeziIndexSchema.end();
+    }
+
+    std::set<PropertyConfig, PropertyComp>::const_iterator iter;
+    return iter;
+}
+
 void IndexBundleConfiguration::setIndexMultiLangGranularity(
     const std::string& granularity
 )
