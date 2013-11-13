@@ -239,8 +239,10 @@ bool DocumentManager::removeDocument(docid_t docId)
     if (delfilter_.size() < docId)
     {
         boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
-        delfilter_.resize(docId);
+        if (delfilter_.size() < docId )
+            delfilter_.resize(docId);
     }
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
