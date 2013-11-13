@@ -235,9 +235,14 @@ bool DocumentManager::isDeleted(docid_t docId, bool use_lock) const
 bool DocumentManager::removeDocument(docid_t docId)
 {
     if (docId < 1) return false;
-    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
+    
     if (delfilter_.size() < docId)
-        delfilter_.resize(docId);
+    {
+        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
+        if (delfilter_.size() < docId )
+            delfilter_.resize(docId);
+    }
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
