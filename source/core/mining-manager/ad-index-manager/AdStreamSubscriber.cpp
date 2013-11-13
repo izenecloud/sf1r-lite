@@ -4,6 +4,7 @@
 #include <node-manager/SuperNodeManager.h>
 
 #define QUEUE_SIZE 1000
+#define LOCAL_RPC_PORT  9999
 
 namespace sf1r
 {
@@ -65,6 +66,8 @@ void AdStreamReceiveServer::dispatch(msgpack::rpc::request req)
         std::string method;
         req.method().convert(&method);
 
+        LOG(INFO) << "got msg: " << method;
+
         if (method == AdStreamReceiveServerRequest::method_names[AdStreamReceiveServerRequest::METHOD_TEST])
         {
             msgpack::type::tuple<bool> params;
@@ -73,6 +76,9 @@ void AdStreamReceiveServer::dispatch(msgpack::rpc::request req)
         }
         else if (method == AdStreamReceiveServerRequest::method_names[AdStreamReceiveServerRequest::METHOD_PUSH_ADMESSAGE])
         {
+            LOG(INFO) << "got pushed ad msg";
+            LOG(INFO) << "data:" << req.params();
+
             msgpack::type::tuple<AdMessageListData> params;
             req.params().convert(&params);
             AdMessageListData& data_list = params.get<0>();
@@ -101,18 +107,17 @@ AdStreamSubscriber::AdStreamSubscriber()
 
 void AdStreamSubscriber::init(const std::string& sub_server_ip, uint16_t sub_server_port)
 {
-    //rpcserver_.reset(new AdStreamReceiveServer(SuperNodeManager::get()->getLocalHostIP(),
-    //        9999, 4));
-    rpcserver_.reset(new AdStreamReceiveServer("localhost",
-            9999, 4));
+    rpcserver_.reset(new AdStreamReceiveServer(SuperNodeManager::get()->getLocalHostIP(),
+            LOCAL_RPC_PORT, 4));
     rpcserver_->start();
 
     conn_mgr_ = new RpcServerConnection();
     RpcServerConnectionConfig config;
     config.rpcThreadNum = 4;
+    config.host = sub_server_ip;
+    config.rpcPort = sub_server_port;
     conn_mgr_->init(config);
-    sub_server_ip_ = sub_server_ip;
-    sub_server_port_ = sub_server_port;
+    heart_check_thread_ = boost::thread(boost::bind(&AdStreamSubscriber::heart_check, this));
 }
 
 AdStreamSubscriber::~AdStreamSubscriber()
@@ -122,21 +127,9 @@ AdStreamSubscriber::~AdStreamSubscriber()
 
 void AdStreamSubscriber::stop()
 {
-    std::vector<std::string> topic_list;
-    {
-        boost::unique_lock<boost::mutex> guard(mutex_);
-        SubscriberListT::const_iterator sub_it = subscriber_list_.begin();
-        while (sub_it != subscriber_list_.end())
-        {
-            topic_list.push_back(sub_it->first);
-            ++sub_it;
-        }
-    }
-    for(size_t i = 0; i < topic_list.size(); ++i)
-    {
-        unsubscribe(topic_list[i]);
-    }
-
+    heart_check_thread_.interrupt();
+    heart_check_thread_.join();
+    unsubscribe_all();
     boost::unique_lock<boost::mutex> guard(mutex_);
     if (rpcserver_)
     {
@@ -160,6 +153,40 @@ void AdStreamSubscriber::onAdMessage(const std::vector<AdMessage>& msg_list, int
         }
         consume_task_list_[msg_list[i].topic]->push(msg_list[i]);
     }
+}
+
+void AdStreamSubscriber::heart_check()
+{
+    bool server_lost = false;
+    while(true)
+    {
+        if (!conn_mgr_)
+            break;
+        try
+        {
+            server_lost = !conn_mgr_->testServer();
+            boost::this_thread::interruption_point();
+            sleep(10);
+            if (server_lost)
+            {
+                LOG(INFO) << "server lost, try resubscribe_all.";
+                resubscribe_all();
+            }
+            else
+            {
+                retry_failed_subscriber();
+            }
+        }
+        catch(const boost::thread_interrupted& e)
+        {
+            break;
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "exception in heart_check : " << e.what();
+        }
+    }
+    LOG(INFO) << "heart_check thread exit. ";
 }
 
 void AdStreamSubscriber::consume(const std::string& topic)
@@ -221,29 +248,31 @@ bool AdStreamSubscriber::subscribe(const std::string& topic, MessageCBFuncT cb)
     if (it != subscriber_list_.end())
     {
         LOG(INFO) << "topic already subscribed." << topic;
+        retry_sub_list_.erase(topic);
         return true;
     }
     // send subscribe rpc request to server.
     SubscribeAdStreamRequest req;
     req.param_.topic = topic;
     req.param_.ip = SuperNodeManager::get()->getLocalHostIP();
-    //req.param_.ip = "localhost";
-    req.param_.port = 9999;
+    req.param_.port = LOCAL_RPC_PORT;
     req.param_.un_subscribe = false;
     bool rsp = false;
     try
     {
-        //conn_mgr_->syncRequest(sub_server_ip_, sub_server_port_, req, rsp);
-        rsp = true;
+        conn_mgr_->syncRequest(req, rsp);
+        //rsp = true;
     }
     catch(const std::exception& e)
     {
         LOG(WARNING) << "send request failed: " << e.what();
+        retry_sub_list_[topic] = cb;
         return false;
     }
     if (!rsp)
     {
         LOG(WARNING) << "server return subscribe failed.";
+        retry_sub_list_[topic] = cb;
         return false;
     }
     LOG(INFO) << "subscribe topic success: " << topic;
@@ -251,10 +280,55 @@ bool AdStreamSubscriber::subscribe(const std::string& topic, MessageCBFuncT cb)
     consume_task_list_[topic].reset(new izenelib::util::concurrent_queue<AdMessage>(QUEUE_SIZE));
     subscriber_list_[topic] = cb; 
     consuming_thread_list_[topic].reset(new boost::thread(boost::bind(&AdStreamSubscriber::consume, this, topic)));
+    retry_sub_list_.erase(topic);
     return true;
 }
 
-void AdStreamSubscriber::unsubscribe(const std::string& topic)
+void AdStreamSubscriber::unsubscribe_all()
+{
+    std::vector<std::string> topic_list;
+    {
+        boost::unique_lock<boost::mutex> guard(mutex_);
+        SubscriberListT::const_iterator sub_it = subscriber_list_.begin();
+        while (sub_it != subscriber_list_.end())
+        {
+            topic_list.push_back(sub_it->first);
+            ++sub_it;
+        }
+    }
+    for(size_t i = 0; i < topic_list.size(); ++i)
+    {
+        unsubscribe(topic_list[i], true);
+    }
+}
+
+void AdStreamSubscriber::resubscribe(const SubscriberListT& resub_list, bool unsub_before)
+{
+    SubscriberListT tmp_sub_list;
+    {
+        boost::unique_lock<boost::mutex> guard(mutex_);
+        tmp_sub_list = resub_list;
+    }
+    for(SubscriberListT::const_iterator it = tmp_sub_list.begin();
+        it != tmp_sub_list.end(); ++it)
+    {
+        if (unsub_before)
+            unsubscribe(it->first, true);
+        subscribe(it->first, it->second);
+    }
+}
+
+void AdStreamSubscriber::resubscribe_all()
+{
+    resubscribe(subscriber_list_, true);
+}
+
+void AdStreamSubscriber::retry_failed_subscriber()
+{
+    resubscribe(retry_sub_list_, false);
+}
+
+void AdStreamSubscriber::unsubscribe(const std::string& topic, bool remove_retry)
 {
     LOG(INFO) << "begin unsubscribe topic: " << topic;
     if(conn_mgr_ == NULL)
@@ -262,6 +336,10 @@ void AdStreamSubscriber::unsubscribe(const std::string& topic)
     boost::shared_ptr<boost::thread> consume_thread;
     {
         boost::unique_lock<boost::mutex> guard(mutex_);
+
+        if (remove_retry)
+            retry_sub_list_.erase(topic);
+
         SubscriberListT::iterator sub_it = subscriber_list_.find(topic);
         if (sub_it == subscriber_list_.end())
         {
@@ -273,17 +351,16 @@ void AdStreamSubscriber::unsubscribe(const std::string& topic)
         SubscribeAdStreamRequest req;
         req.param_.topic = topic;
         req.param_.ip = SuperNodeManager::get()->getLocalHostIP();
-        req.param_.port = 9999;
+        req.param_.port = LOCAL_RPC_PORT;
         req.param_.un_subscribe = true;
         bool rsp = false;
         try
         {
-            //conn_mgr_->syncRequest(sub_server_ip_, sub_server_port_, req, rsp);
+            conn_mgr_->syncRequest(req, rsp);
         }
         catch(const std::exception& e)
         {
             LOG(WARNING) << "send request failed: " << e.what();
-            return;
         }
 
         consume_thread = consuming_thread_list_[topic];

@@ -267,6 +267,8 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
+    SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
+
     // Do not connect to zookeeper if disabled
     if (SF1Config::get()->isDisableZooKeeper())
     {
@@ -278,8 +280,6 @@ bool CobraProcess::initNodeManager()
     ZooKeeperManager::get()->init(
         SF1Config::get()->distributedUtilConfig_.zkConfig_,
         SF1Config::get()->distributedCommonConfig_.clusterId_);
-
-    SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
 
     if (SF1Config::get()->isDistributedNode())
     {

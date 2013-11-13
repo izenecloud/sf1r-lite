@@ -119,12 +119,18 @@ public:
     void init(const std::string& ip, uint16_t port);
     void stop();
     bool subscribe(const std::string& topic, MessageCBFuncT on_message);
-    void unsubscribe(const std::string& topic);
+    void unsubscribe(const std::string& topic, bool remove_retry = true);
     void onAdMessage(const std::vector<AdMessage>& msg_list, int calltype = 0);
 
 private:
-    void consume(const std::string& topic);
     typedef std::map<std::string, MessageCBFuncT>  SubscriberListT;
+    void heart_check();
+    void resubscribe_all();
+    void unsubscribe_all();
+    void retry_failed_subscriber();
+    void resubscribe(const SubscriberListT& resub_list, bool unsub_before);
+    void consume(const std::string& topic);
+
     SubscriberListT subscriber_list_;
     std::map<std::string, boost::shared_ptr<boost::thread> > consuming_thread_list_;
     std::map<std::string, boost::shared_ptr<izenelib::util::concurrent_queue<AdMessage> > > consume_task_list_;
@@ -132,8 +138,8 @@ private:
 
     boost::mutex mutex_;
     RpcServerConnection* conn_mgr_;
-    std::string sub_server_ip_;
-    uint16_t  sub_server_port_;
+    SubscriberListT  retry_sub_list_;
+    boost::thread    heart_check_thread_;
 };
 
 }
