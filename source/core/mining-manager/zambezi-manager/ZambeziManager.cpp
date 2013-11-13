@@ -74,12 +74,16 @@ void ZambeziManager::NormalizeScore(
 
     std::string propName = "itemcount";
     std::string propName_comment = "CommentCount";
+    std::string propName_sales = "SalesAmount";
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
         numericTableBuilder_->createPropertyTable(propName_comment);
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable_sales =
+        numericTableBuilder_->createPropertyTable(propName_sales);
 
     if (numericTable)
         sharedLockSet.insertSharedLock(numericTable.get());
@@ -94,24 +98,32 @@ void ZambeziManager::NormalizeScore(
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size = std::min(attrvids.size(), size_t(10));
+            attr_size = std::min(attrvids.size(), size_t(2));
         }
 
         int32_t itemcount = 1;
         if (numericTable)
         {
             numericTable->getInt32Value(docids[i], itemcount, false);
-            attr_size += std::min(itemcount, 50);
+            //attr_size += std::min(itemcount, 50);
         }
 
         if (numericTable_comment)
         {
-            int32_t commentcount = 1;
+            int32_t commentcount = 0;
             numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            attr_size += pow(std::min((double)commentcount, 500.), 0.7);
+            attr_size += (double)commentcount/itemcount;
         }
 
-        scores[i] = scores[i] * pow(attr_size, 0.5);
+        if (numericTable_sales)
+        {
+            int32_t salescount = 0;
+            numericTable_sales->getInt32Value(docids[i], salescount, false);
+            attr_size += (double)salescount/itemcount*10.;
+        }
+
+        //add salesAmount/itemcount to attr_size
+        scores[i] = scores[i] * attr_size;
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
