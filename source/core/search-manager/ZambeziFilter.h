@@ -15,11 +15,15 @@ class MonomorphicFilter
 {
 public:
     MonomorphicFilter() {}
-    ~MonomorphicFilter() {}
 
     bool test(uint32_t docId) const
     {
         return State;
+    }
+
+    uint32_t skipTo(uint32_t docId) const
+    {
+        return docId;
     }
 };
 
