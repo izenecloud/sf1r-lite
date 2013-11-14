@@ -98,7 +98,7 @@ void ZambeziManager::NormalizeScore(
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size = std::min(attrvids.size(), size_t(2));
+            attr_size += std::min(attrvids.size(), size_t(20));
         }
 
         int32_t itemcount = 1;
@@ -119,11 +119,11 @@ void ZambeziManager::NormalizeScore(
         {
             int32_t salescount = 0;
             numericTable_sales->getInt32Value(docids[i], salescount, false);
-            attr_size += (double)salescount/itemcount*10.;
+            attr_size += (double)salescount/itemcount;
         }
 
         //add salesAmount/itemcount to attr_size
-        scores[i] = scores[i] * attr_size;
+        scores[i] = scores[i] + std::min(attr_size, (uint32_t)1000);
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
