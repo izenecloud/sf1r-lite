@@ -44,11 +44,16 @@ void AdClickPredictor::stop()
 void AdClickPredictor::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
 {
     std::vector<std::pair<AssignmentT, bool> > assignment_list;
-    LOG(INFO) << "got ad stream data. size: " << msg_list.size();
-    for (size_t i = 0; i < msg_list.size(); ++i)
+    static int cnt = 0;
+    if (cnt % 10000 == 0)
     {
-        LOG(INFO) << "stream data: " << msg_list[i].body;
+        for (size_t i = 0; i < msg_list.size(); ++i)
+        {
+            LOG(INFO) << "stream data: " << msg_list[i].body;
+        }
+        LOG(INFO) << "got ad stream data. size: " << msg_list.size() << ", total " << cnt;
     }
+    cnt += msg_list.size();
     // read from stream msg
     for(size_t i = 0; i < assignment_list.size(); ++i)
     {

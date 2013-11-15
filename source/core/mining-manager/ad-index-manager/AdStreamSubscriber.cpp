@@ -5,6 +5,7 @@
 
 #define QUEUE_SIZE 1000
 #define LOCAL_RPC_PORT  9999
+#define HEART_CHECK_INTERVAL  10
 
 namespace sf1r
 {
@@ -66,18 +67,18 @@ void AdStreamReceiveServer::dispatch(msgpack::rpc::request req)
         std::string method;
         req.method().convert(&method);
 
-        LOG(INFO) << "got msg: " << method;
 
         if (method == AdStreamReceiveServerRequest::method_names[AdStreamReceiveServerRequest::METHOD_TEST])
         {
-            msgpack::type::tuple<bool> params;
-            req.params().convert(&params);
+            LOG(INFO) << "got heart check msg.";
+            //msgpack::type::tuple<bool> params;
+            //req.params().convert(&params);
             req.result(true);
         }
         else if (method == AdStreamReceiveServerRequest::method_names[AdStreamReceiveServerRequest::METHOD_PUSH_ADMESSAGE])
         {
-            LOG(INFO) << "got pushed ad msg";
-            LOG(INFO) << "data:" << req.params();
+            //LOG(INFO) << "got pushed ad msg";
+            //LOG(INFO) << "data:" << req.params();
 
             msgpack::type::tuple<AdMessageListData> params;
             req.params().convert(&params);
@@ -93,10 +94,12 @@ void AdStreamReceiveServer::dispatch(msgpack::rpc::request req)
     catch (const msgpack::type_error& e)
     {
         req.error(msgpack::rpc::ARGUMENT_ERROR);
+        LOG(WARNING) << "type error in rpc server." << e.what();
     }
     catch (const std::exception& e)
     {
         req.error(std::string(e.what()));
+        LOG(WARNING) << "exception in rpc server." << e.what();
     }
 }
 
@@ -166,7 +169,7 @@ void AdStreamSubscriber::heart_check()
         {
             server_lost = !conn_mgr_->testServer();
             boost::this_thread::interruption_point();
-            sleep(10);
+            sleep(HEART_CHECK_INTERVAL);
             if (server_lost)
             {
                 LOG(INFO) << "server lost, try resubscribe_all.";
@@ -220,9 +223,10 @@ void AdStreamSubscriber::consume(const std::string& topic)
                 msg_list.push_back(msg);
             }
             if (msg_list.empty())
+            {
                 tasks->pop(msg);
-
-            msg_list.push_back(msg);
+                msg_list.push_back(msg);
+            }
             boost::this_thread::interruption_point();
 
             cb_func(msg_list);
