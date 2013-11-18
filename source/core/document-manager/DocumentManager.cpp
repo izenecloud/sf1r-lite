@@ -212,7 +212,7 @@ bool DocumentManager::isDeleted(docid_t docId) const
     if (docId-- == 0) return false;
 
     size_t segment = docId / DELFILTER_SEGMENT_SIZE;
-    if (delfilter_[segment].none()) return false;
+    if (delfilter_[segment].empty()) return false;
     size_t offset = docId % DELFILTER_SEGMENT_SIZE;
 
     return delfilter_[segment].test(offset);
