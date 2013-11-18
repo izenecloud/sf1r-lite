@@ -23,9 +23,16 @@ class SearchCache
 public:
     typedef QueryIdentity key_type;
     typedef KeywordSearchResult value_type;
+    typedef izenelib::cache::IzeneCache<
+        key_type,
+        value_type,
+        izenelib::util::ReadWriteLock,
+        izenelib::cache::RDE_HASH,
+        izenelib::cache::LRLFU
+    > cache_type;
 
     explicit SearchCache(unsigned cacheSize, time_t refreshInterval = 60*60, bool refreshAll = false)
-        : cache_(cacheSize)
+        : cache_(cacheSize), special_cache_(cacheSize)
         , refreshInterval_(refreshInterval)
         , refreshAll_(refreshAll)
     {
@@ -41,7 +48,12 @@ public:
             return false;
 
         value_type value;
-        if (cache_.getValueNoInsert(key, value))
+        cache_type* pcache = &cache_;
+        if (IsSpecialSearch(key))
+        {
+            pcache = &special_cache_;
+        }
+        if ((*pcache).getValueNoInsert(key, value))
         {
             if (!needRefresh(key, value.timeStamp_))
             {
@@ -69,7 +81,13 @@ public:
         snippetText.swap(result.snippetTextOfDocumentInPage_);
         rawText.swap(result.rawTextOfSummaryInPage_);
 
-        cache_.updateValue(key, result);
+        cache_type* pcache = &cache_;
+        if (IsSpecialSearch(key))
+        {
+            pcache = &special_cache_;
+        }
+
+        (*pcache).updateValue(key, result);
 
         fullText.swap(result.fullTextOfDocumentInPage_);
         snippetText.swap(result.snippetTextOfDocumentInPage_);
@@ -79,6 +97,7 @@ public:
     void clear()
     {
         cache_.clear();
+        special_cache_.clear();
     }
 
 private:
@@ -116,16 +135,16 @@ private:
             return false;
     }
 
+    // for the search which may consume a lot time, we treat it as special and cache in the special cache.
+    bool IsSpecialSearch(const key_type& key)
+    {
+        return key.query == "*";
+    }
+
 private:
-    typedef izenelib::cache::IzeneCache<
-        key_type,
-        value_type,
-        izenelib::util::ReadWriteLock,
-        izenelib::cache::RDE_HASH,
-        izenelib::cache::LRLFU
-    > cache_type;
 
     cache_type cache_;
+    cache_type special_cache_;
     time_t refreshInterval_; // seconds
     bool refreshAll_;
 };
