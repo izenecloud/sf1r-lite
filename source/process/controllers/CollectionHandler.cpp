@@ -68,7 +68,7 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
         int success = 0;
         for (std::size_t i = 0; i < abbrs.size(); ++i)
         {
-            std::cout<<abbrs[i]<<"\n";
+            //std::cout<<abbrs[i]<<"\n";
             request[Keys::search][Keys::keywords] = abbrs[i];
             ::izenelib::driver::Response newResponse;
             DocumentsSearchHandler sHandler(request, newResponse, *this);

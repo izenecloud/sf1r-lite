@@ -39,14 +39,14 @@ void AbbrEngine::init(const std::string& workdir, const std::string& resdir)
     resdir_  = resdir;
 
     hot_ = new HotTokens(workdir_);
-    if (hot_->isNeedBuild(resdir_ + "/qa_term.txt"))
+    if (hot_->isNeedBuild(resdir_ + "/query_abbreviation/qa_term.txt"))
     {
-        std::cout<<"Build....\n";
-        hot_->build(resdir_ + "/qa_term.txt");
+//        std::cout<<"Build....\n";
+        hot_->build(resdir_ + "/query_abbreviation/qa_term.txt");
     }
     else
     {
-        std::cout<<"Load....\n";
+//        std::cout<<"Load....\n";
         hot_->load();
     }
 
@@ -74,7 +74,7 @@ void AbbrEngine::abbreviation(const std::string& userQuery, std::vector<std::str
     {
         std::string term = it->term();
         uint32_t factor = hot_->search(term);
-        std::cout<<term<<"\t=>"<<factor<<"\n";
+        //std::cout<<term<<"\t=>"<<factor<<"\n";
         if (factor == std::numeric_limits<uint32_t>::max())
             continue;
         ftVector.push_back(std::make_pair(term, factor));

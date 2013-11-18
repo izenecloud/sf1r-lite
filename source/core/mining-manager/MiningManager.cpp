@@ -67,7 +67,6 @@
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
-#include "query-abbreviation/QueryStatistics.h"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -205,7 +204,6 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , queryIntentManager_(NULL)
-    , queryStatistics_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
     , summarizationManagerTask_(NULL)
@@ -252,7 +250,6 @@ MiningManager::~MiningManager()
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
     if (adIndexManager_) delete adIndexManager_;
-    if (queryStatistics_) delete queryStatistics_;
 
     close();
 }
@@ -782,10 +779,6 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-
-        /** query statistics */
-        queryStatistics_ = new QueryStatistics(this, collectionName_);
-
     }
     catch (NotEnoughMemoryException& ex)
     {
