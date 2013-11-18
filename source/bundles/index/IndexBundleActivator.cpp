@@ -293,6 +293,7 @@ bool IndexBundleActivator::init_()
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open document manager.."<<std::endl;
     documentManager_ = createDocumentManager_();
     SF1R_ENSURE_INIT(documentManager_);
+    documentManager_->setZambeziConfig(config_->zambeziConfig_);
 
     /*
     Here, the NormalSchemaEnable must be true now, because the Schema must be used as a filter in documentSearch;
@@ -342,10 +343,7 @@ bool IndexBundleActivator::init_()
     indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
     indexWorker_->getIncSupportedIndexManager().setDocumentManager(documentManager_);
     if (config_->isZambeziSchemaEnable_)
-    {
-        std::cout << "add zambeziIndexManager_ ......." << std::endl;
         indexWorker_->getIncSupportedIndexManager().addIndex(zambeziIndexManager_);
-    }
 
     indexAggregator_ = createIndexAggregator_();
     SF1R_ENSURE_INIT(indexAggregator_);

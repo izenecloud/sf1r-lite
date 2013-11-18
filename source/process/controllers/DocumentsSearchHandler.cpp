@@ -366,32 +366,36 @@ bool DocumentsSearchHandler::parse()
     if (queryIntentManager)
         queryIntentManager->queryIntent(request_, response_);
 
+    std::vector<Parser*> parsers;
+    std::vector<const Value*> values;
+    
     SearchParser searchParser(indexSchema_, zambeziConfig_);
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 
-    // SearchingModeInfo searchingModeInfo() const
-    // {
-    //    return searchingModeInfo_;
-    // }
+     for (std::size_t i = 0; i < 1; ++i)
+    {
+        if (!parsers[i]->parse(*values[i]))
+        {
+            response_.addError(parsers[i]->errorMessage());
+            return false;
+        }
+        response_.addWarning(parsers[i]->warningMessage());
+    }
 
-    std::vector<Parser*> parsers;
-    std::vector<const Value*> values;
-
-    SelectParser selectParser(indexSchema_); // indexSchema_, zambeziconfig_, searchMode;
+    SelectParser selectParser(indexSchema_, zambeziConfig_, searchParser.searchingModeInfo().mode_);
     parsers.push_back(&selectParser);
     values.push_back(&request_[Keys::select]); 
 
-    // now, suffx index is depent on indexSchema_;
-    FilteringParser filteringParser(indexSchema_, miningSchema_); //FilteringParser, indexSchema_, zambeziSchema , searchingModeInfo_; //zambei or other; 
+    FilteringParser filteringParser(indexSchema_, miningSchema_); 
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 
-    CustomRankingParser customrRankingParser(indexSchema_); // indexSchema_, zambeziConfig_, searchModelInfo, 
+    CustomRankingParser customrRankingParser(indexSchema_); 
     parsers.push_back(&customrRankingParser);
     values.push_back(&request_[Keys::custom_rank]);
  
-    SortParser sortParser(indexSchema_); // indexSchema_, zambeziConfig_, searchModelInfo,
+    SortParser sortParser(indexSchema_);
     Value& customRankingValue = request_[Keys::custom_rank];
     if (customRankingValue.type() != Value::kNullType) {
         sortParser.validateCustomRank(true);
@@ -411,11 +415,11 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&attrParser);
     values.push_back(&request_[Keys::attr]);
 
-    RangeParser rangeParser(indexSchema_); // indexSchema, zambeziConfig, searchModelInfo, 
+    RangeParser rangeParser(indexSchema_);
     parsers.push_back(&rangeParser);
     values.push_back(&request_[Keys::range]);
 
-    for (std::size_t i = 0; i < parsers.size(); ++i)
+    for (std::size_t i = 1; i < parsers.size(); ++i)
     {
         if (!parsers[i]->parse(*values[i]))
         {

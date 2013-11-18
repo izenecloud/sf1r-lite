@@ -1,7 +1,15 @@
+/**
+ * @file ZambeziConfig.h
+ * @brief Configuration for zambezi index;
+ * @author Hongliang Zhao
+ * @date 2013-11.12
+ */
+
 #ifndef SF1R_ZAMBEZI_CONFIG_H_
 #define SF1R_ZAMBEZI_CONFIG_H_
 
 #include <string>
+#include <glog/logging.h>
 #include <boost/serialization/access.hpp>
 #include <map>
 #include <list>
@@ -15,26 +23,28 @@ namespace sf1r
  * @brief : this is the base configuration for Zambezi index;
  *
  */
-
 struct ZambeziProperty
 {
     std::string name;
     uint32_t poolSize;
     float weight;
     bool isFilter;
+    bool isTokenizer;
     sf1r::PropertyDataType type;
 
     ZambeziProperty()
     : poolSize(268435456) //256M
     , weight(1.0)
     , isFilter(false)
+    , isTokenizer(false)
     {
     }
 
     void display()
     {
         std::cout << "name:" << name 
-            << " ,poolSize:" << poolSize << " ,weight:" << weight << " ,isFilter:" << isFilter <<std::endl;   
+            << " ,poolSize:" << poolSize << " ,weight:" << weight << " ,isFilter:" << isFilter 
+            << ",isTokenizer:" << isTokenizer <<std::endl;   
     }
 };
 
@@ -76,10 +86,12 @@ struct PropertyStatus
     bool isCombined;
     bool isAttr;
     bool isFilter;
+    bool isTokenizer;
     PropertyStatus()
     : isCombined(false)
     , isAttr(false)
     , isFilter(false)
+    , isTokenizer(false)
     {
     }
 
@@ -107,13 +119,20 @@ public:
 
     std::string system_resource_path_;
 
+    /**
+     * @brief: @properties, and @virtualPropeties
+     * this is used to build zambezi index, and to build zambeziIndexSchema;
+     * the two vectors are from each collection's xml config;
+     */
     std::vector<ZambeziProperty> properties;
-
     std::vector<ZambeziVirtualProperty> virtualPropeties;
 
     std::map<std::string, PropertyStatus> property_status_map;
 
-    std::set<PropertyConfig, PropertyComp> ZambeziIndexSchema;
+    /**
+     * @brief: it it used in document-manager and docuemntSearch handler;
+     */
+    std::set<PropertyConfig, PropertyComp> zambeziIndexSchema;
 
     bool hasAttrtoken;
 
@@ -149,9 +168,13 @@ public:
         }
     }
 
+    /**
+     * @breif set zambezi schema, and make sure attr_token can not use together will other property;
+     *
+     **/
     bool checkConfig()
     {
-        if (!setZambeziIndexSchema()) // make sure there is no duplicate property;
+        if (!setZambeziIndexSchema())
             return false;
 
         if (hasAttrtoken)
@@ -172,34 +195,66 @@ public:
         return false;
     }
 
+    /**
+     * @brief set zambezi Index Schema after zambezi config is parsered;
+     *        and, check there is no vialid property in zambezi config;
+     *
+     */
     bool setZambeziIndexSchema()
     {
         for (std::vector<ZambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
         {
             PropertyConfig tmpConfig;
-
-            tmpConfig.setRankWeight(i->weight);
-            tmpConfig.setIsFilter(i->isFilter);
             tmpConfig.setName(i->name);
-            tmpConfig.setType(i->type);
-            //TODO add isIndexed;
 
-            if (!ZambeziIndexSchema.insert(tmpConfig).second)
+            std::set<PropertyConfig, PropertyComp>::iterator sp = zambeziIndexSchema.find(tmpConfig);
+            if (sp == zambeziIndexSchema.end())
+            {
+                LOG(ERROR) << "[ERROR]: the property:<" << i->name << "> does not exsit in document Schema";
                 return false;
+            }
+            PropertyConfig propertyConfig(*sp);
+            zambeziIndexSchema.erase(*sp);
+
+            propertyConfig.setRankWeight(i->weight);
+            propertyConfig.setIsFilter(i->isFilter);
+            propertyConfig.setName(i->name);
+            propertyConfig.setType(i->type);
+            propertyConfig.setIsIndex(true);
+
+            zambeziIndexSchema.insert(propertyConfig);
         }
 
         for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
         {
-            PropertyConfig tmpConfig;
-            tmpConfig.setRankWeight(i->weight);
-            tmpConfig.setIsFilter(i->isFilter);
-            tmpConfig.setName(i->name);
-            tmpConfig.setType(i->type);
-            //TODO add isIndexed;
-            if (!ZambeziIndexSchema.insert(tmpConfig).second)
-                return false;
-        }
+            // to support only config virtual config; 
+            // only when the subProperty has not exsit in properties, add this subProperty to zambezIndexSchema;
+            for (std::vector<std::string>::iterator j = i->subProperties.begin(); j != i->subProperties.end(); ++j)
+            {
+                if (!checkValidationConfig(*j))
+                {
+                    PropertyConfig tmpConfig;
+                    tmpConfig.setName(i->name);
+                    std::set<PropertyConfig, PropertyComp>::iterator sp = zambeziIndexSchema.find(tmpConfig);
+                    if (sp == zambeziIndexSchema.end())
+                    {
+                        LOG(ERROR) << "[ERROR]: the property:" << i->name << "> does not exsit in document Schema";
+                        return false;
+                    }
 
+                    PropertyConfig propertyConfig(*sp);
+                    zambeziIndexSchema.erase(*sp);
+
+                    propertyConfig.setRankWeight(i->weight);
+                    propertyConfig.setIsFilter(i->isFilter);
+                    propertyConfig.setName(i->name);
+                    propertyConfig.setType(i->type);
+                    propertyConfig.setIsIndex(true);
+
+                    zambeziIndexSchema.insert(propertyConfig);
+                }
+            }
+        }
         return true;
     }
 

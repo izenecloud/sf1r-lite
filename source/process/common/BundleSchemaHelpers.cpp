@@ -56,7 +56,8 @@ void getDefaultZambeziSearchPropertyNames(
     std::vector<std::string> result;
     for (std::vector<ZambeziProperty>::const_iterator i = schema.properties.begin(); i != schema.properties.end(); ++i)
     {
-        result.push_back(i->name);
+        if (i->isTokenizer)
+            result.push_back(i->name);
     }
 
     for (std::vector<ZambeziVirtualProperty>::const_iterator i = schema.virtualPropeties.begin(); i != schema.virtualPropeties.end(); ++i)
@@ -203,6 +204,37 @@ void getDocumentPropertyNames(
     {
         names.push_back(it->propertyName_);
     }
+}
+
+void getDefaultZambeziSelectPropertyNames(
+    const ZambeziConfig& schema,
+    std::vector<std::string>& names
+)
+{
+    std::vector<std::string> result;
+    typedef IndexBundleSchema::const_iterator iterator;
+    for (iterator it = schema.zambeziIndexSchema.begin();
+         it != schema.zambeziIndexSchema.end(); ++it)
+    {
+        result.push_back(it->propertyName_);
+    }
+
+    result.swap(names);
+}
+
+bool getPropertyConfig(
+    const ZambeziConfig& schema,
+    PropertyConfig& config
+)
+{
+    IndexBundleSchema::const_iterator it(schema.zambeziIndexSchema.find(config));
+    if (it != schema.zambeziIndexSchema.end())
+    {
+        config = *it;
+        return true;
+    }
+
+    return false;
 }
 
 } // NAMESPACE sf1r

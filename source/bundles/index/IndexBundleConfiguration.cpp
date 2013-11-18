@@ -25,7 +25,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
 void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)
 {
     documentSchema_ = documentSchema;
-
+    
     for(DocumentSchema::const_iterator iter = documentSchema_.begin();
         iter != documentSchema_.end(); ++iter)
     {
@@ -41,6 +41,29 @@ void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)
             updatedDatePropertyConfig.setIsFilter(true);
             eraseProperty(iter->propertyName_);
             indexSchema_.insert(updatedDatePropertyConfig);
+        }
+    }
+}
+
+void IndexBundleConfiguration::setZambeziSchema(const DocumentSchema& documentSchema)
+{
+    documentSchema_ = documentSchema;
+    
+    for(DocumentSchema::const_iterator iter = documentSchema_.begin();
+        iter != documentSchema_.end(); ++iter)
+    {
+        PropertyConfig property(*iter);
+        zambeziConfig_.zambeziIndexSchema.insert(property);
+        string pName = iter->propertyName_;
+        boost::to_lower(pName);
+        if(pName == "date" )
+        {
+            // always index and filterable
+            PropertyConfig updatedDatePropertyConfig(*iter);
+            updatedDatePropertyConfig.setIsIndex(true);
+            updatedDatePropertyConfig.setIsFilter(true);
+            eraseProperty(iter->propertyName_);
+            zambeziConfig_.zambeziIndexSchema.insert(updatedDatePropertyConfig);
         }
     }
 }
@@ -67,9 +90,9 @@ IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, b
     if (isZambeziSchemaEnable_) //TO UPDATE
     {
         std::set<PropertyConfig, PropertyComp>::const_iterator iter
-        = zambeziConfig_.ZambeziIndexSchema.find(tempPropertyConfig);
+        = zambeziConfig_.zambeziIndexSchema.find(tempPropertyConfig);
 
-        if (iter != zambeziConfig_.ZambeziIndexSchema.end())
+        if (iter != zambeziConfig_.zambeziIndexSchema.end())
         {
             isIndexSchema = true;
             return iter;
@@ -88,7 +111,7 @@ IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, b
                     PropertyConfig tempConfig;
                     tempConfig.propertyName_ = tempPropertyConfig.getName();
                     std::set<PropertyConfig, PropertyComp>::const_iterator iter
-                    = zambeziConfig_.ZambeziIndexSchema.find(tempConfig);
+                    = zambeziConfig_.zambeziIndexSchema.find(tempConfig);
                     return iter;
                 }
         }
@@ -104,7 +127,7 @@ IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, b
 
     if (isZambeziSchemaEnable_)
     {
-        return zambeziConfig_.ZambeziIndexSchema.end();
+        return zambeziConfig_.zambeziIndexSchema.end();
     }
 
     std::set<PropertyConfig, PropertyComp>::const_iterator iter;

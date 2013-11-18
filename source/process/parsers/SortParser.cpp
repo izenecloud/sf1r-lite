@@ -39,7 +39,7 @@ namespace sf1r {
 
 bool SortParser::parse(const Value& orders)
 {
-    OrderArrayParser::parse(orders); //firt, get all in orders, then do the check ...
+    OrderArrayParser::parse(orders);
 
     sortPriorityList_.resize(parsedOrderCount());
     for (std::size_t i = 0; i < parsedOrderCount(); ++i)
@@ -55,7 +55,7 @@ bool SortParser::parse(const Value& orders)
                 return false;
             }
         }
-        else if (!isPropertySortable(indexSchema_, parsedOrders(i).property())) // update this ..
+        else if (!isPropertySortable(indexSchema_, parsedOrders(i).property()))
         {
             error() = "Property is not sortable: " + parsedOrders(i).property();
             return false;

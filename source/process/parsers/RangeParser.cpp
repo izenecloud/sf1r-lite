@@ -38,15 +38,6 @@ bool RangeParser::parse(const Value& rangeValue)
     PropertyConfig propertyConfig;
     propertyConfig.setName(property);
 
-    if (searchModel_ == zambezi)
-    {
-        
-    }
-    else // search model is zambezi or other nothing ... 
-    {
-
-    }
-
     if (!getPropertyConfig(indexSchema_, propertyConfig))
     {
         error() = "Unknown property in range[property]: " + property;

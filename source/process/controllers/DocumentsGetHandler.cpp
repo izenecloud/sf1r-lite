@@ -209,7 +209,7 @@ bool DocumentsGetHandler::parseSelect()
 {
     using std::swap;
 
-    SelectParser selectParser(indexSchema_);
+    SelectParser selectParser(indexSchema_, zambeziConfig_, SearchingMode::DefaultSearchingMode); //  TODO update
     if (selectParser.parse(request_[Keys::select]))
     {
         response_.addWarning(selectParser.warningMessage());

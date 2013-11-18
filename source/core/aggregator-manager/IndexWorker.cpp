@@ -605,7 +605,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
             continue;
         }
 
-        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId);
+        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId); //
         if (!insertDoc_(0, document, timestamp, true))
             continue;
 
@@ -1414,7 +1414,6 @@ bool IndexWorker::insertOrUpdateSCD_(
         {
             // real time can not using multi thread because of the inverted index in 
             // the real time can not handle the out-of-order docid list.
-            LOG(INFO) << "is_real_time_:" << is_real_time_<<std::endl;
             time_t new_timestamp = timestamp;
             document.clear();
             old_rtype_doc.clear();
@@ -1619,7 +1618,6 @@ bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp) ////
     START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {
-        std::cout << "documentManager_->insertDocument(document)" << std::endl;
         STOP_PROFILER(proDocumentIndexing);
 
         START_PROFILER(proIndexing);
@@ -1922,8 +1920,6 @@ bool IndexWorker::prepareDocument_(
         bool isIndexSchema = false;
         IndexBundleSchema::const_iterator iter = bundleConfig_->findIndexProperty(tempPropertyConfig, isIndexSchema);
 
-
-        std::cout << "name : " << p->first << ", isIndexSchema:" << isIndexSchema << std::endl;
         const ScdPropertyValueType & propertyValueU = p->second; // preventing copy
         if (boost::iequals(fieldStr, DOCID) && isIndexSchema)
         {

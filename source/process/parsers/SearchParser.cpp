@@ -426,11 +426,11 @@ bool SearchParser::parse(const Value& search)
             if (!getPropertyConfig(indexSchema_, propertyConfig) && !zambeziConfig_.checkValidationConfig(properties_[i]))
             {
                 error() = "Unknown property in search/in: " +
-                          propertyConfig.getName();
+                      propertyConfig.getName();
                 return false;
             }
 
-            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
+            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_)) //TODO
             {
                 warning() = "Property is not indexed, ignore it: " +
                             propertyConfig.getName();

@@ -15,6 +15,7 @@
 
 #include "Document.h"
 
+#include <configuration-manager/ZambeziConfig.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <common/PropertyKey.h>
 #include <common/PropertyValue.h>
@@ -80,6 +81,8 @@ public:
             const IndexBundleSchema& indexSchema,
             izenelib::util::UString::EncodingType encondingType,
             size_t documentCacheNum = 20000);
+
+    void setZambeziConfig(const ZambeziConfig& zambeziConfig);
     /**
      * @brief a destructor
      */
@@ -396,6 +399,9 @@ private:
 
     /// @brief property specification from the configuration file
     IndexBundleSchema indexSchema_;
+
+    /// @brief zambezi index config ...
+    ZambeziConfig zambeziConfig_;
 
     /// @brief encoding type used in system
     izenelib::util::UString::EncodingType encodingType_;

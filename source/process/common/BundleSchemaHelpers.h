@@ -16,6 +16,10 @@
 
 namespace sf1r {
 
+/**
+ * @brief the following functions is for Normal Index;
+ *
+ */
 bool getPropertyConfig(
     const IndexBundleSchema& schema,
     PropertyConfig& config
@@ -31,11 +35,6 @@ bool getPropertyConfig(
 /// specified.
 void getDefaultSearchPropertyNames(
     const IndexBundleSchema& schema,
-    std::vector<std::string>& names
-);
-
-void getDefaultZambeziSearchPropertyNames(
-    const ZambeziConfig& schema,
     std::vector<std::string>& names
 );
 
@@ -67,6 +66,26 @@ bool isDocumentProperty(
 
 void getDocumentPropertyNames(
     const DocumentSchema& schema,
+    std::vector<std::string>& names
+);
+
+/**
+ * @brief the following functions is for Zambezi Index;
+ *
+ */
+
+bool getPropertyConfig(
+    const ZambeziConfig& schema,
+    PropertyConfig& config
+);
+
+void getDefaultZambeziSearchPropertyNames(
+    const ZambeziConfig& schema,
+    std::vector<std::string>& names
+);
+
+void getDefaultZambeziSelectPropertyNames(
+    const ZambeziConfig& schema,
     std::vector<std::string>& names
 );
 

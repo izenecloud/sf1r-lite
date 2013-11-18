@@ -198,6 +198,7 @@ bool CollectionManager::startCollection(const string& collectionName,
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, IndexBundleActivator);
         osgiLauncher_.start(indexBundleConfig);
         IndexSearchService* indexSearchService = static_cast<IndexSearchService*>(osgiLauncher_.getService(bundleName, "IndexSearchService"));
+
         collectionHandler->registerService(indexSearchService);
         IndexTaskService* indexTaskService = static_cast<IndexTaskService*>(osgiLauncher_.getService(bundleName, "IndexTaskService"));
         collectionHandler->registerService(indexTaskService);

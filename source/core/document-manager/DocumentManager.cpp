@@ -63,13 +63,14 @@ DocumentManager::DocumentManager(
 {
     propertyValueTable_ = new DocContainer(path);
     propertyValueTable_->open();
-    buildPropertyIdMapper_();
+    //buildPropertyIdMapper_();
     restorePropertyLengthDb_();
     loadDelFilter_();
     //aclTable_.open();
     snippetGenerator_ = new SnippetGeneratorSubManager;
     highlighter_ = new Highlighter;
 
+    // Normal index
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
             it != indexSchema_.end(); ++it)
     {
@@ -82,6 +83,26 @@ DocumentManager::DocumentManager(
             initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
         }
     }
+}
+
+void DocumentManager::setZambeziConfig(const ZambeziConfig& zambeziConfig)
+{
+    zambeziConfig_ = zambeziConfig;
+    
+    for (IndexBundleSchema::const_iterator it = zambeziConfig_.zambeziIndexSchema.begin();
+         it != zambeziConfig_.zambeziIndexSchema.end(); ++it)
+    {
+        if(it->isRTypeString())
+        {
+            initRTypeStringPropTable(it->getName());
+        }
+        else if (it->isRTypeNumeric())
+        {
+            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
+        } 
+    }
+
+    buildPropertyIdMapper_();
 }
 
 DocumentManager::~DocumentManager()
@@ -121,8 +142,6 @@ bool DocumentManager::insertDocument(const Document& document)
         const propertyid_t* pid = propertyIdMapper_.findIdByValue(it->first);
         if (!pid)
         {
-            // not in config, skip
-            std::cout <<"xxxxxxx"<<std::endl;
             continue;
         }
 
@@ -180,7 +199,7 @@ bool DocumentManager::updateDocument(const Document& document)
     return false;
 }
 
-bool DocumentManager::updatePartialDocument(const Document& document)
+bool DocumentManager::updatePartialDocument(const Document& document) // ok, right ...
 {
     docid_t docId = document.getId();
     Document oldDoc;
@@ -250,7 +269,7 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 {
 
     boost::unordered_map< std::string, unsigned int>::const_iterator iter =
-        propertyAliasMap_.find(property);DocumentManager
+        propertyAliasMap_.find(property);
 
     boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
     if (iter != propertyAliasMap_.end() && iter->second < propertyLengthDb_.size())
@@ -438,7 +457,7 @@ bool DocumentManager::saveDelFilter_()
 void DocumentManager::buildPropertyIdMapper_()
 {
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap;
-    config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap);
+    config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap); // for the second map ...
 
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end(); // 
             it != itEnd; ++it)
@@ -464,7 +483,7 @@ void DocumentManager::buildPropertyIdMapper_()
                                                         dispLength));
             }
         }
-        originalPropertyId = propertyIdMapper_.insert(it->getName());
+        originalPropertyId = propertyIdMapper_.insert(it->getName()); // only this is ok;..
 
         // For alias property
         config_tool::PROPERTY_ALIAS_MAP_T::iterator aliasIter =
@@ -488,6 +507,14 @@ void DocumentManager::buildPropertyIdMapper_()
             }
         }
     }
+
+    // for zambezi index;
+    for (IndexBundleSchema::const_iterator it = zambeziConfig_.zambeziIndexSchema.begin(),
+        itEnd = zambeziConfig_.zambeziIndexSchema.end(); it != itEnd; ++it)
+    {
+        propertyIdMapper_.insert(it->getName());
+    }
+
 } // end - buildPropertyIdMapper_()
 
 bool DocumentManager::savePropertyLengthDb_() const
@@ -876,16 +903,20 @@ void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
         rtype_it->second->copyValue(oldId, newId);
     }
 }
+ 
+// this is used for Rebuild collection ...
 
 void DocumentManager::copyRTypeValues(
     boost::shared_ptr<DocumentManager>& source,
     docid_t from, docid_t to)
 {
+    std::set<std::string> doneProperty;
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
             it != indexSchema_.end(); ++it)
     {
         if(it->isRTypeString())
         {
+            doneProperty.insert(it->getName());
             std::string fieldValue;
             boost::shared_ptr<RTypeStringPropTable> sourceTable = source->getRTypeStringPropTable(it->getName());
             if(!sourceTable) continue;
@@ -895,6 +926,35 @@ void DocumentManager::copyRTypeValues(
         }
         else if (it->isRTypeNumeric())
         {
+            doneProperty.insert(it->getName());
+            boost::shared_ptr<NumericPropertyTableBase> sourceTable = source->getNumericPropertyTable(it->getName());
+            if(!sourceTable) continue;
+            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->getName()];
+            if( (it->getType() == DATETIME_PROPERTY_TYPE) &&
+                (it->getIsFilter() && !it->getIsMultiValue()) )
+            {
+                time_t fieldValue;
+                bool ret = sourceTable->getInt64Value(from, fieldValue);
+                if(ret) numericPropertyTable->setInt64Value(to, fieldValue);
+            }
+            else
+            {
+                std::string fieldValue;
+                bool ret = sourceTable->getStringValue(from, fieldValue);
+                if(ret) numericPropertyTable->setStringValue(to, fieldValue);
+            }
+        }
+    }
+
+    // for zambezi index
+    for (IndexBundleSchema::const_iterator it = zambeziConfig_.zambeziIndexSchema.begin();
+            it != zambeziConfig_.zambeziIndexSchema.end(); ++it)
+    {
+        if (it->isRTypeNumeric())
+        {
+            if (!doneProperty.insert(it->getName()).second)
+                continue;
+
             boost::shared_ptr<NumericPropertyTableBase> sourceTable = source->getNumericPropertyTable(it->getName());
             if(!sourceTable) continue;
             boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->getName()];

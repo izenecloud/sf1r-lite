@@ -39,7 +39,7 @@ void ZambeziManager::init()
 {
     for (std::vector<ZambeziProperty>::const_iterator i = config_.properties.begin(); i != config_.properties.end(); ++i)
     {
-        if (i->poolSize != 0)
+        if (i->isTokenizer)
         {
             propertyList_.push_back(i->name);
             property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));

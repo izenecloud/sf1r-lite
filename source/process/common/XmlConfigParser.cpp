@@ -1365,7 +1365,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     indexBundleConfig.isSchemaEnable_ = true;
     indexBundleConfig.isNormalSchemaEnable_ = true;
-    indexBundleConfig.setSchema(collectionMeta.documentSchema_);
+    indexBundleConfig.setSchema(collectionMeta.documentSchema_); // setZambeziSchema.
 
     Iterator<Element> property("Property");
 
@@ -2352,6 +2352,8 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
+    collectionMeta.indexBundleConfig_->setZambeziSchema(collectionMeta.documentSchema_);
+
     collectionMeta.indexBundleConfig_->isZambeziSchemaEnable_ = true;
     ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
@@ -2392,6 +2394,12 @@ void CollectionConfig::parseZambeziNode(
             }
             zProperty.name = propertyName;
 
+            // tokenizer
+            bool istokenizer;
+            getAttribute(property.Get(), "tokenizer", istokenizer, false);
+            zProperty.isTokenizer = istokenizer;
+            sProperty.isTokenizer = istokenizer;
+
             // weight
             float propertyWeight;
             if (getAttribute_FloatType(property.Get(), "weight", propertyWeight, false))
@@ -2420,17 +2428,6 @@ void CollectionConfig::parseZambeziNode(
             throw e;
         }
     }
-    
-    // add DATE to zambezi index;
-    ZambeziProperty zProperty;
-    PropertyStatus  sProperty;
-    zProperty.name = "date";
-    zProperty.isFilter = true;
-    sProperty.isFilter = true;
-    zProperty.poolSize = 0;
-
-    zambeziConfig.properties.push_back(zProperty);
-    zambeziConfig.property_status_map.insert(std::make_pair("date", sProperty));
 
     //// for virtual Property
     Iterator<Element> virtualproperty("VirtualProperty");

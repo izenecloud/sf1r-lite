@@ -22,6 +22,8 @@ public:
 
     void setSchema(const DocumentSchema& documentSchema);
 
+    void setZambeziSchema(const DocumentSchema& documentSchema);
+
     void numberProperty();
 
     const bool isUnigramWildcard() { return wildcardType_ == "unigram"; }

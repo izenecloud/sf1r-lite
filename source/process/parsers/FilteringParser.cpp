@@ -34,8 +34,7 @@ bool FilteringParser::parse(const Value& conditions)
         // validation
         sf1r::PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
 
-        if (isPropertyFilterable(indexSchema_, condition.property())
-            ) // add for zambezi index;
+        if (isPropertyFilterable(indexSchema_, condition.property()))
         {
             dataType = getPropertyDataType(indexSchema_, condition.property());
             if (dataType == sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
