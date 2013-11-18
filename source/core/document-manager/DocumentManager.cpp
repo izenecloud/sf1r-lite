@@ -52,13 +52,10 @@ DocumentManager::DocumentManager(
         const izenelib::util::UString::EncodingType encodingType,
         size_t documentCacheNum)
     : path_(path)
+    , delfilter_count_(0)
     , documentCache_(100)
     , indexSchema_(indexSchema)
     , encodingType_(encodingType)
-    , propertyLengthDb_()
-    , propertyIdMapper_()
-    , propertyAliasMap_()
-    , displayLengthMap_()
     , maxSnippetLength_(200)
 {
     propertyValueTable_ = new DocContainer(path);
@@ -210,50 +207,45 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId, bool use_lock) const
+bool DocumentManager::isDeleted(docid_t docId) const
 {
-    if (use_lock)
-    {
-        boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_, boost::defer_lock);
-        lock.lock();
-        if (docId == 0 || docId > delfilter_.size())
-        {
-            return false;
-        }
+    if (docId-- == 0) return false;
 
-        return delfilter_.test(docId - 1);
-    }
+    size_t segment = docId / DELFILTER_SEGMENT_SIZE;
+    if (delfilter_[segment].none()) return false;
+    size_t offset = docId % DELFILTER_SEGMENT_SIZE;
 
-    if (docId == 0 || docId > delfilter_.size())
-    {
-        return false;
-    }
-
-    return delfilter_.test(docId - 1);
+    return delfilter_[segment].test(offset);
 }
 
 bool DocumentManager::removeDocument(docid_t docId)
 {
-    if (docId < 1) return false;
-    
-    if (delfilter_.size() < docId)
+    if (docId-- == 0) return false;
+
+    size_t segment = docId / DELFILTER_SEGMENT_SIZE;
+    size_t offset = docId % DELFILTER_SEGMENT_SIZE;
+    for (int i = segment; i > 0; --i)
     {
-        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
-        if (delfilter_.size() < docId )
-            delfilter_.resize(docId);
+        if (delfilter_[i].empty())
+        {
+            delfilter_[i].resize(DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
+        }
+        else break;
     }
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
-    if(delfilter_.test(docId - 1))
+
+    if (delfilter_[segment].test(offset))
         return false;
-    delfilter_.set(docId - 1);
-    documentCache_.del(docId);
+
+    delfilter_[segment].set(offset);
+    ++delfilter_count_;
+    documentCache_.del(docId + 1);
+
     return true;
 }
 
 std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 {
-
-    boost::unordered_map< std::string, unsigned int>::const_iterator iter =
+    boost::unordered_map<std::string, unsigned int>::const_iterator iter =
         propertyAliasMap_.find(property);
 
     boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
@@ -389,47 +381,61 @@ docid_t DocumentManager::getMaxDocId() const
 
 uint32_t DocumentManager::getNumDocs()
 {
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
-    return getMaxDocId() - delfilter_.count();
+    return getMaxDocId() - delfilter_count_;
 }
 
-bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
+bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list) const
 {
     docid_list.clear();
-    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
-    DelFilterType::size_type find = delfilter_.find_first();
-    docid_list.reserve(delfilter_.count());
-    while (find!=DelFilterType::npos)
+    docid_list.reserve(delfilter_count_);
+
+    for (size_t segment = 0; segment < 32 && !delfilter_[segment].empty(); ++segment)
     {
-        docid_t docid = (docid_t)find + 1;
-        docid_list.push_back(docid);
-        find = delfilter_.find_next(find);
+        docid_t base = segment * DELFILTER_SEGMENT_SIZE + 1;
+        DelFilterType::size_type find = delfilter_[segment].find_first();
+        while (find != DelFilterType::npos)
+        {
+            docid_list.push_back(base + (docid_t)find);
+            find = delfilter_[segment].find_next(find);
+        }
     }
+
     return true;
 }
 
 bool DocumentManager::loadDelFilter_()
 {
-    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
-
-    const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
+    const std::string filter_file = (boost::filesystem::path(path_) / "del_filter").string();
     std::vector<DelFilterBlockType> filter_data;
+
     if (!izenelib::am::ssf::Util<>::Load(filter_file, filter_data))
         return false;
 
-    delfilter_.clear();
-    delfilter_.append(filter_data.begin(), filter_data.end());
+    size_t segment = filter_data.size() / (DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
+    for (size_t i = 0; i < segment; ++i)
+    {
+        delfilter_[i].clear();
+        delfilter_[i].append(filter_data.begin(), filter_data.end());
+    }
 
     return true;
 }
 
-bool DocumentManager::saveDelFilter_()
+bool DocumentManager::saveDelFilter_() const
 {
-    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
+    size_t segment = 0;
+    while (segment < 32 && !delfilter_[segment].empty()) ++segment;
 
-    const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
-    std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
-    boost::to_block_range(delfilter_, filter_data.begin());
+    std::vector<DelFilterBlockType> filter_data(segment * DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
+
+    std::vector<DelFilterBlockType>::iterator it = filter_data.begin();
+    for (size_t i = 0; i < segment; ++i)
+    {
+        boost::to_block_range(delfilter_[i], it);
+        it += DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType);
+    }
+
+    const std::string filter_file = (boost::filesystem::path(path_) / "del_filter").string();
     if (!izenelib::am::ssf::Util<>::Save(filter_file, filter_data))
     {
         std::cout << "DocumentManager::saveDelFilter_() failed" << std::endl;

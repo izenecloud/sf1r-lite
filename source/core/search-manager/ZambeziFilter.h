@@ -35,7 +35,6 @@ public:
             const boost::shared_ptr<faceted::GroupFilter>& groupFilter,
             const boost::shared_ptr<izenelib::ir::indexmanager::BitVector>& filterBitVector)
         : documentManager_(documentManager)
-        , lock_(documentManager_.getMutex())
         , groupFilter_(groupFilter)
         , filterBitVector_(filterBitVector)
     {
@@ -43,14 +42,13 @@ public:
 
     bool test(uint32_t docId) const
     {
-        return !documentManager_.isDeleted(docId, false) &&
+        return !documentManager_.isDeleted(docId) &&
             (!filterBitVector_ || filterBitVector_->test(docId)) &&
             (!groupFilter_ || groupFilter_->test(docId));
     }
 
 private:
     const DocumentManager& documentManager_;
-    boost::shared_lock<boost::shared_mutex> lock_;
     boost::shared_ptr<faceted::GroupFilter> groupFilter_;
     boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector_;
 };
