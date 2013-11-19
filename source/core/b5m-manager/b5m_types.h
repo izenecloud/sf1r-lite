@@ -3,227 +3,131 @@
 
 #include <string>
 #include <vector>
-#include <util/ustring/UString.h>
-#include <boost/regex.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <types.h>
+#include <product-manager/product_price.h>
+#include <idmlib/similarity/string_similarity.h>
 
-namespace sf1r {
-namespace b5m {
-    struct Attribute
+
+#define NS_SF1R_B5M_BEGIN namespace sf1r{ namespace b5m{
+#define NS_SF1R_B5M_END }}
+
+NS_SF1R_B5M_BEGIN
+typedef uint32_t term_t;
+typedef uint32_t cid_t;
+struct Category
+{
+    Category()
+    : cid(0), parent_cid(0), is_parent(true), depth(0), has_spu(false)
     {
-        std::string name;
-        std::vector<std::string> values;
-        bool is_optional;
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            ar & name & values & is_optional;
-        }
-        std::string GetValue() const
-        {
-            std::string result;
-            for(uint32_t i=0;i<values.size();i++)
-            {
-                if(!result.empty()) result+="/";
-                result+=values[i];
-            }
-            return result;
-        }
-        std::string GetText() const
-        {
-            return name+":"+GetValue();
-        }
-    };
-}
-    struct MatchParameter
+    }
+    std::string name;
+    uint32_t cid;//inner cid starts with 1, not specified by category file.
+    uint32_t parent_cid;//also inner cid
+    bool is_parent;
+    uint32_t depth;
+    bool has_spu;
+    std::vector<std::string> keywords;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
     {
-        MatchParameter()
-        {
-        }
-
-        MatchParameter(const std::string& category_regex_str)
-        :category_regex(category_regex_str)
-        {
-        }
-
-        void SetCategoryRegex(const std::string& str)
-        {
-            category_regex = boost::regex(str);
-        }
-
-        bool MatchCategory(const std::string& scategory) const
-        {
-            if(category_regex.empty()) return true;
-            return boost::regex_match(scategory, category_regex);
-        }
-
-        boost::regex category_regex;
-    };
-
-
-    //struct FeatureCondition
-    //{
-        //virtual bool operator()(double v) const
-        //{
-            //return true;
-        //}
-    //};
-
-    //struct PositiveFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v>0.0) return true;
-            //return false;
-        //}
-    //};
-
-    //struct NonNegativeFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v<0.0) return false;
-            //return true;
-        //}
-    //};
-
-    //struct NonZeroFC : public FeatureCondition
-    //{
-        //bool operator()(double v) const
-        //{
-            //if(v==0.0) return false;
-            //return true;
-        //}
-    //};
-
-    struct FeatureStatus
+        ar & name & cid & parent_cid & is_parent & depth & has_spu;
+    }
+};
+struct Attribute
+{
+    std::string name;
+    std::vector<std::string> values;
+    bool is_optional;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
     {
-        FeatureStatus():pnum(0), nnum(0), znum(0)
+        ar & name & values & is_optional;
+    }
+    std::string GetValue() const
+    {
+        std::string result;
+        for(uint32_t i=0;i<values.size();i++)
         {
+            if(!result.empty()) result+="/";
+            result+=values[i];
         }
-        uint16_t pnum;//positive number
-        uint16_t nnum;//negative number
-        uint16_t znum;//zero number
-    };
-
-    typedef uint32_t AttribId;
-    typedef uint32_t AttribNameId;
-    struct ProductAttrib
+        return result;
+    }
+    std::string GetText() const
     {
-        izenelib::util::UString oid;
-        std::vector<AttribId> aid_list;
-        template<class Archive> void serialize(Archive & ar,
-                const unsigned int version) {
-            ar & oid & aid_list;
-        }
-    };
-
-    struct ProductDocument
+        return name+":"+GetValue();
+    }
+};
+struct Product
+{
+    enum Type {NOTP, BOOK, SPU, FASHION, ATTRIB};
+    typedef idmlib::sim::StringSimilarity::Object SimObject;
+    Product()
+    : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0), type(NOTP)
     {
-        std::map<std::string, izenelib::util::UString> property;
-        std::vector<AttribId> tag_aid_list;
-        std::vector<AttribId> aid_list;
-        template<class Archive> void serialize(Archive & ar,
-                const unsigned int version) {
-            ar & property & tag_aid_list & aid_list;
-        }
-    };
-
-    typedef izenelib::util::UString AttribRep;
-    typedef uint64_t AttribValueId;
-    typedef std::vector<std::pair<AttribNameId, double> > FeatureType;
-
-    struct B5MToken
+    }
+    uint32_t id;
+    std::string spid;
+    std::string stitle;
+    std::string scategory;
+    std::string fcategory; //front-end category
+    std::string spic;
+    std::string surl;
+    std::string smarket_time;
+    cid_t cid;
+    ProductPrice price;
+    std::vector<Attribute> attributes;
+    std::vector<Attribute> dattributes; //display attributes
+    UString display_attributes;
+    UString filter_attributes;
+    std::string sbrand;
+    double aweight;
+    double tweight;
+    SimObject title_obj;
+    double score;
+    //int type;
+    Type type;
+    std::string why;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
     {
-        enum TokenType {TOKEN_A, TOKEN_C, TOKEN_S};
-        izenelib::util::UString text;
-        TokenType type;
+        ar & spid & stitle & scategory & spic & surl & smarket_time & cid & price & attributes & display_attributes & filter_attributes & sbrand & aweight & tweight & title_obj;
+    }
 
-        B5MToken()
-        :text(), type(TOKEN_C)
+    static bool FCategoryCompare(const Product& p1, const Product& p2)
+    {
+        return p1.fcategory<p2.fcategory;
+    }
+
+    static bool ScoreCompare(const Product& p1, const Product& p2)
+    {
+        return p1.score>p2.score;
+    }
+
+    static bool CidCompare(const Product& p1, const Product& p2)
+    {
+        return p1.cid<p2.cid;
+    }
+
+    std::string GetAttributeValue() const
+    {
+        std::string result;
+        for(uint32_t i=0;i<attributes.size();i++)
         {
+            if(!result.empty()) result+=",";
+            result+=attributes[i].name;
+            result+=":";
+            result+=attributes[i].GetValue();
         }
-
-        B5MToken(const izenelib::util::UString& tex, TokenType typ)
-        :text(tex), type(typ)
-        {
-        }
-    };
-
-    struct BuueFrom
-    {
-        BuueFrom(){}
-
-        BuueFrom(const std::string& p1, const std::string& p2)
-        :docid(p1), from_uuid(p2)
-        {
-        }
-
-        std::string docid;
-        std::string from_uuid;
-    };
-
-    struct UueFromTo
-    {
-        std::string from;
-        std::string to;
-    };
-
-    struct UueItem
-    {
-        std::string docid;
-        UueFromTo from_to;
-    };
-
-    struct CompareUueFrom
-    {
-        bool operator()(const UueItem& u1, const UueItem& u2)
-        {
-            return u1.from_to.from < u2.from_to.from;
-        }
-    };
-
-    struct CompareUueTo
-    {
-        bool operator()(const UueItem& u1, const UueItem& u2)
-        {
-            return u1.from_to.to < u2.from_to.to;
-        }
-    };
-
-    enum {BUUE_APPEND, BUUE_REMOVE};
-
-    struct BuueItem
-    {
-        //BuueItem(){}
-
-
-        //BuueItem(const std::string& p1, const std::string& p2, const std::string& p3)
-        //:to_uuid(p1), from(1, BuueFrom(p2, p3))
-        //{
-        //}
-
-        int type;
-        std::string pid;
-        std::vector<std::string> docid_list;
-
-        //std::string to_uuid;
-        //std::vector<BuueFrom> from;
-        //bool operator<(const BuueItem& other) const
-        //{
-            //return to_uuid<other.to_uuid;
-        //}
-
-        //BuueItem& operator+=(const BuueItem& other)
-        //{
-            //from.insert(from.end(), other.from.begin(), other.from.end());
-            //return *this;
-        //}
-    };
-
-
-
-}
+        return result;
+    }
+};
+NS_SF1R_B5M_END
 
 #endif
 

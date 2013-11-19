@@ -11,7 +11,9 @@
 
 namespace sf1r
 {
+namespace b5m {
 class ProductMatcher;
+}
 
 /**
  * @brief Controller \b extract keywords
@@ -26,7 +28,7 @@ public:
     void extract_keywords();
 
 private:
-    ProductMatcher* matcher_;
+    b5m::ProductMatcher* matcher_;
 };
 
 } // namespace sf1r

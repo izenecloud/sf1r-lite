@@ -212,13 +212,6 @@ SET_TARGET_PROPERTIES(b5m_psm PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
 
-ADD_EXECUTABLE(simhash_train_id
-simhash_train_id.cc
-)
-TARGET_LINK_LIBRARIES(simhash_train_id ${libs})
-SET_TARGET_PROPERTIES(simhash_train_id PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
 
 ADD_TEST(t_commentdb "${SF1RENGINE_ROOT}/testbin/t_commentdb")
 ADD_TEST(t_offerdb "${SF1RENGINE_ROOT}/testbin/t_offerdb")

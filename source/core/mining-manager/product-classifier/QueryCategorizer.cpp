@@ -60,8 +60,8 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     Document doc;
     doc.property("Title") = str_to_propstr(query);
 
-    std::vector<ProductMatcher::Product> result_products;
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    std::vector<b5m::Product> result_products;
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
     UString queryU(query, UString::UTF_8);
     matcher->GetFrontendCategory(queryU, (uint32_t)limit, frontends);
 

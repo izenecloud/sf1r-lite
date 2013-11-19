@@ -10,6 +10,7 @@
 
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 TourProcessor::TourProcessor()
 {

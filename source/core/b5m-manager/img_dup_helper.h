@@ -8,10 +8,11 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
 #include "b5m_helper.h"
+#include "b5m_types.h"
 #include <boost/regex.hpp>
 
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
 struct PsmAttach
 {
@@ -81,7 +82,6 @@ public:
         return true;
     }
 };
-
-}
+NS_SF1R_B5M_END
 
 #endif
