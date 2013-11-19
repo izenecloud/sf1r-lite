@@ -84,7 +84,7 @@ bool ProductDiscover::CValid_(const std::string& key, const CValue& value) const
         if(dprice<=0.0) continue;
         count++;
     }
-    if(count<5) return false;
+    if(count<3) return false;
     return true;
 }
 
@@ -181,11 +181,19 @@ void ProductDiscover::Process_(ScdDocument& doc)
     doc.getString("Title", title);
     std::string sprice;
     doc.getString("Price", sprice);
-    std::cout<<title<<"\t"<<category<<"\t"<<sprice<<std::endl;
+    //std::cout<<title<<"\t"<<category<<"\t"<<sprice<<std::endl;
     std::vector<std::string> brands;
     std::vector<std::string> models;
     GetBrandAndModel_(doc, brands, models);
     if(brands.empty()||models.empty()) return;
+    //for(uint32_t i=0;i<brands.size();i++)
+    //{
+    //    std::cout<<"\t[BRAND]"<<brands[i]<<std::endl;
+    //}
+    //for(uint32_t i=0;i<models.size();i++)
+    //{
+    //    std::cout<<"\t[MODEL]"<<models[i]<<std::endl;
+    //}
     Insert_(doc, brands, models);
 }
 
