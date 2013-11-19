@@ -159,6 +159,12 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
         {
             if(!documentManager_->isDeleted(internalId))
                 idList.push_back(internalId);
+            else
+                LOG(INFO) << "doc is deleted while try to get." << *it << ", " << internalId;
+        }
+        else
+        {
+            LOG(INFO) << "get doc not found: " << *it;
         }
     }
 

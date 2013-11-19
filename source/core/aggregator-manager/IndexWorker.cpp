@@ -876,6 +876,12 @@ bool IndexWorker::updateDocument(const Value& documentValue)
                 return false;
             }
         }
+
+        if (!idManager_->getDocIdByDocName(num_docid, olddocid, false))
+        {
+            LOG(INFO) << "update failed for the doc does not existed.";
+            return false;
+        }
     }
 
     CreateOrUpdateDocReqLog reqlog;
