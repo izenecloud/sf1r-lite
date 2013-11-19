@@ -149,6 +149,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     std::vector<sf1r::workerid_t> workeridList;
     actionItem.getDocWorkerIdLists(idList, workeridList);
 
+    LOG(INFO) << "get docs by ids, idlist: " << idList.size() << ", docidlist:" << actionItem.docIdList_.size();
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
     sf1r::docid_t internalId;
@@ -168,6 +169,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
         }
     }
 
+    LOG(INFO) << "after convert, get docs by ids idlist: " << idList.size();
     // get docids by property value
     collectionid_t colId = 1;
     if (!actionItem.propertyName_.empty())
