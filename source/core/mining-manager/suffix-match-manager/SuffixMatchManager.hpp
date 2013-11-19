@@ -19,7 +19,9 @@ class DocumentManager;
 class FilterManager;
 class FMIndexManager;
 class ProductTokenizer;
+namespace b5m {
 class ProductMatcher;
+}
 class CategoryClassifyTable;
 
 namespace faceted
@@ -43,7 +45,7 @@ public:
 
     ~SuffixMatchManager();
 
-    void setProductMatcher(ProductMatcher* matcher);
+    void setProductMatcher(b5m::ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
     void buildTokenizeDic();

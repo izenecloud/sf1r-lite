@@ -1,6 +1,7 @@
 #include <b5m-manager/product_matcher.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 
 int main(int ac, char** av)

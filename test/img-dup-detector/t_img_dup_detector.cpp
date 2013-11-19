@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 /* Glibals */
 void usage();
 void version();

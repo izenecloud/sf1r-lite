@@ -14,43 +14,53 @@
 #include <am/sequence_file/ssfr.h>
 #include <util/DynamicBloomFilter.h>
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
-    ///B5mpProcessor is responsibility to generate b5mp scds and also b5mo_mirror scd
-    class B5mpProcessor2{
-    public:
-        B5mpProcessor2(const std::string& m, const std::string& last_m)
-        :m_(m), last_m_(last_m)
+///B5mpProcessor is responsibility to generate b5mp scds and also b5mo_mirror scd
+class B5mpProcessor2{
+public:
+    B5mpProcessor2(const std::string& m, const std::string& last_m)
+    :m_(m), last_m_(last_m)
+    {
+    }
+
+    void SetBufferSize(const std::string& bs)
+    {
+        buffer_size_ = bs;
+    }
+    void SetSorterBin(const std::string& bin)
+    {
+        sorter_bin_ = bin;
+    }
+
+    bool Generate(bool spu_only=false, int thread_num=1)
+    {
+        LOG(INFO)<<"b5mp merger begin"<<std::endl;
+        B5moSorter sorter(m_);
+        if(!buffer_size_.empty())
         {
+            sorter.SetBufferSize(buffer_size_);
+        }
+        if(!sorter_bin_.empty())
+        {
+            sorter.SetSorterBin(sorter_bin_);
         }
 
-        void SetBufferSize(const std::string& bs)
-        {
-            buffer_size_ = bs;
-        }
+        bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
+        LOG(INFO)<<"b5mp merger finish"<<std::endl;
+        return succ;
+    }
 
-        bool Generate(bool spu_only=false, int thread_num=1)
-        {
-            LOG(INFO)<<"b5mp merger begin"<<std::endl;
-            B5moSorter sorter(m_);
-            if(!buffer_size_.empty())
-            {
-                sorter.SetBufferSize(buffer_size_);
-            }
-            bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
-            LOG(INFO)<<"b5mp merger finish"<<std::endl;
-            return succ;
-        }
+private:
 
-    private:
+private:
+    std::string m_;
+    std::string last_m_;
+    std::string buffer_size_;
+    std::string sorter_bin_;
+};
 
-    private:
-        std::string m_;
-        std::string last_m_;
-        std::string buffer_size_;
-    };
-
-}
+NS_SF1R_B5M_END
 
 #endif
 

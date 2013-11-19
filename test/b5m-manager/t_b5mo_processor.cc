@@ -4,6 +4,7 @@
 #include <b5m-manager/b5mp_processor2.h>
 #include "TestResources.h"
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 struct MapperData
 {
@@ -58,7 +59,10 @@ ScdDocument GenODoc(SCD_TYPE type, const std::string& docid, const std::string& 
         std::string attrib = "ISBN:"+isbn;
         SetProperty(doc, "Attribute", attrib);
     }
-    SetProperty(doc, "uuid", pid);
+    if(!pid.empty())
+    {
+        SetProperty(doc, "uuid", pid);
+    }
     return doc;
 }
 ScdDocument GenPDoc(SCD_TYPE type, const std::string& docid, const std::string& title, const std::string& source, const std::string& original, int64_t itemcount)
@@ -95,6 +99,7 @@ class ScdTester
 public:
     ScdTester(): step_(0), mdb_("./mdb")
     {
+        //mdb_ = boost::filesystem::absolute(boost::filesystem::path(mdb_)).string();
         std::string odb_path="./odb";
         boost::filesystem::remove_all(odb_path);
         B5MHelper::PrepareEmptyDir(mdb_);
@@ -151,9 +156,11 @@ public:
         pprocessor.Generate();
         std::vector<ScdDocument> odocs;
         GetAllDocs(B5MHelper::GetB5moPath(mdb_instance), odocs);
+        std::cerr<<"start to do batch test on b5mo"<<std::endl;
         DocBatchTest(odocs, item.odocs);
         std::vector<ScdDocument> pdocs;
         GetAllDocs(B5MHelper::GetB5mpPath(mdb_instance), pdocs);
+        std::cerr<<"start to do batch test on b5mp"<<std::endl;
         DocBatchTest(pdocs, item.pdocs);
 
 
@@ -212,13 +219,20 @@ public:
             m.getString("DOCID", mid);
             std::pair<iterator, iterator> result = std::equal_range(ref.begin(), ref.end(), m, DocidCompare);
             bool match = false;
-            for(iterator it = result.first;it<result.second;++it)
+            if(result.first<result.second)
             {
-                if(DocTest(m, *it))
+                for(iterator it = result.first;it<result.second;++it)
                 {
-                    match = true;
-                    break;
+                    if(DocTest(m, *it))
+                    {
+                        match = true;
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                std::cerr<<"doc not found in ref for "<<mid<<std::endl;
             }
             BOOST_CHECK_MESSAGE(match, mid);
         }
@@ -226,7 +240,11 @@ public:
 
     static bool DocTest(const ScdDocument& m, const ScdDocument& r)
     {
-        if(m.type!=r.type) return false;
+        if(m.type!=r.type) 
+        {
+            std::cerr<<"doc type not match"<<std::endl;
+            return false;
+        }
         for(ScdDocument::property_const_iterator it = r.propertyBegin(); it!=r.propertyEnd();++it)
         {
             ScdDocument::property_const_iterator it2 = m.findProperty(it->first);
@@ -248,7 +266,11 @@ public:
                 boost::algorithm::split(vec2, str2, boost::algorithm::is_any_of(","));
                 std::sort(vec1.begin(), vec1.end());
                 std::sort(vec2.begin(), vec2.end());
-                if(vec1!=vec2) return false;
+                if(vec1!=vec2) 
+                {
+                    std::cerr<<"Source not match"<<std::endl;
+                    return false;
+                }
             }
             else
             {
@@ -306,7 +328,7 @@ string toString(UString us)
 
 void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
 {
-    ProductMatcher::Product result_product;
+    Product result_product;
     for(unsigned i=0; i<docvec.size(); i++)
     {
         cout<<i<<endl;
@@ -353,7 +375,7 @@ void show(Document doc)
 {
     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
 }
-void check(ProductMatcher::Product product,string fcategory,string scategory,string sbrand)
+void check(Product product,string fcategory,string scategory,string sbrand)
 {
     BOOST_CHECK_EQUAL(product.scategory.find(scategory)==string::npos,false);
     BOOST_CHECK_EQUAL(product.fcategory.find(fcategory)==string::npos,false);
@@ -361,7 +383,7 @@ void check(ProductMatcher::Product product,string fcategory,string scategory,str
 }
 
 
-void show(ProductMatcher::Product product)
+void show(Product product)
 {
     cout<<"product"<<product.spid<<"title"<< product.stitle<<"attributes"<<product.GetAttributeValue()<<"frontcategory"<<product.fcategory<<"scategory"<<product.scategory<<"price"<<product.price<<"brand"<<product.sbrand<<endl;
 }
@@ -547,21 +569,22 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         GenODoc(UPDATE_SCD,"666", "BOOKF","DD"
             , "","", B5MHelper::GetPidByIsbn("999")));
 
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
-            , "手机数码>手机>",1));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "TITLE2","JD"
-            , "大家电>平板电视>",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
+        //    , "手机数码>手机>",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "TITLE2","JD"
+        //    , "大家电>平板电视>",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|BOOK11","DD,PUB"
             ,"",2));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("103"), "BOOK2","DD"
-            ,"",1));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("103"), "BOOK2","DD"
+        //    ,"",1));
         item.pdocs.push_back(
         GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "BOOKA|BOOKB|BOOKC|BOOKD|BOOKE|BOOKF","PUB,京东商城,卓越亚马逊,DD"
             ,"",6));
+        item.pdocs.insert(item.pdocs.end(), item.odocs.begin(), item.odocs.end());
         tester.Test(item);
     }
     {
@@ -572,37 +595,64 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.input_docs.push_back(
         GenDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "英语教材","109"));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"111", "",""
+            , "",""));
         item.omapper.push_back(MapperData("AMAZON", "手机", "手机数码>手机配件"));
         item.omapper.push_back(MapperData("JD", "电视机", "家电>大家电>平板电视"));
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
             , "手机数码>手机配件>","", "aaa"));
+        //item.pdocs.push_back(
+        //GenODoc(UPDATE_SCD,"aaa", "TITLE1","AMAZON"
+        //    , "手机数码>手机配件>","", "aaa"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"aaa", "",""
+            , "手机数码>手机配件>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE2","JD"
             , "家电>大家电>平板电视>","", "bbb"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>平板电视>","", "bbb"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"bbb", "TITLE3",""
+            , "家电>大家电>平板电视>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK11","PUB"
             , "化妆品>","", "eee"));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "化妆品>","", "eee"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+            , "化妆品>","", "eee"));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"111", "",""
+            , "","", ""));
+        item.pdocs.push_back(
+        GenPDoc(DELETE_SCD,"111", "",""
+            ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "","京东商城,卓越亚马逊,DD"
+            ,"",5));
 
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "",""
+        //    , "手机数码>手机配件>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "TITLE3",""
+        //    , "家电>大家电>平板电视>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|","DD"
+        //    ,"",1));
         item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "",""
-            , "手机数码>手机配件>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "TITLE3",""
-            , "家电>大家电>平板电视>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("101"), "BOOK1|","DD"
-            ,"",1));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
-            ,"化妆品>",1));
+        GenPDoc(DELETE_SCD,B5MHelper::GetPidByIsbn("101"), "",""
+            ,"",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+        //    ,"化妆品>",1));
         tester.Test(item);
     }
     {
@@ -613,6 +663,12 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.input_docs.push_back(
         GenDoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "英语","110"));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"111", "",""
+            , "",""));
+        item.input_docs.push_back(
+        GenDoc(DELETE_SCD,"222", "",""
+            , "",""));
         item.omapper.push_back(MapperData("AMAZON", "手机", "手机数码>手机"));
         item.omapper.push_back(MapperData("JD", "电视机", "家电>大家电>电视"));
         item.omapper.push_back(MapperData("PUB", "英语教材", "化妆品"));
@@ -622,26 +678,50 @@ BOOST_AUTO_TEST_CASE(b5mo_omap_test)
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"aaa", "TITLE01","AMAZON"
             , "","", "aaa"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"aaa", "TITLE01",""
+            , "","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"bbb", "TITLE3","JD"
             , "家电>大家电>电视>","", "bbb"));
+        item.pdocs.push_back(
+        GenODoc(UPDATE_SCD,"bbb", "",""
+            , "家电>大家电>电视>","", ""));
         item.odocs.push_back(
         GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
             , "","", B5MHelper::GetPidByIsbn("110")));
-
         item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"aaa", "TITLE01",""
-            , "",0));
+        GenODoc(UPDATE_SCD,"eee", "BOOK12","PUB"
+            , "","", B5MHelper::GetPidByIsbn("110")));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"111", "",""
+            , "","", ""));
+        item.odocs.push_back(
+        GenODoc(DELETE_SCD,"222", "",""
+            , "","", ""));
         item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,"bbb", "",""
-            , "家电>大家电>电视>",0));
-        item.pdocs.push_back(
-        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("110")
-            , "BOOK12","PUB"
-            ,"",1));
-        item.pdocs.push_back(
-        GenPDoc(DELETE_SCD,"eee", "",""
+        GenPDoc(DELETE_SCD,"111", "",""
             ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(DELETE_SCD,"222", "",""
+            ,"",0));
+        item.pdocs.push_back(
+        GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("999"), "",""
+            ,"",4));
+
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"aaa", "TITLE01",""
+        //    , "",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,"bbb", "",""
+        //    , "家电>大家电>电视>",0));
+        //item.pdocs.push_back(
+        //GenPDoc(UPDATE_SCD,B5MHelper::GetPidByIsbn("110")
+        //    , "BOOK12","PUB"
+        //    ,"",1));
+        //item.pdocs.push_back(
+        //GenPDoc(DELETE_SCD,"eee", "",""
+        //    ,"",0));
         tester.Test(item);
     }
 }

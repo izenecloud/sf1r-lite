@@ -14,38 +14,37 @@
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <idmlib/duplicate-detection/psm.h>
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
-
-    class PsmIndexer
+class PsmIndexer
+{
+    struct CacheType
     {
-        struct CacheType
+        CacheType(){}
+        CacheType(const std::string& p1, const std::vector<std::pair<std::string, double> >& p2, const PsmAttach& p3)
+        :key(p1), doc_vector(p2), attach(p3)
         {
-            CacheType(){}
-            CacheType(const std::string& p1, const std::vector<std::pair<std::string, double> >& p2, const PsmAttach& p3)
-            :key(p1), doc_vector(p2), attach(p3)
-            {
-            }
-            std::string key;
-            std::vector<std::pair<std::string, double> > doc_vector;
-            PsmAttach attach;
-        };
-    public:
-        typedef idmlib::dd::DupDetector<uint32_t, uint32_t, PsmAttach> DDType;
-        typedef DDType::GroupTableType GroupTableType;
-        typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, PsmAttach> PsmType;
-        PsmIndexer(const std::string& cma_path);
-        void SetPsmK(uint32_t k) {psmk_ = k;}
-        
-        bool Index(const std::string& scd_path, const std::string& output_path, bool test = false);
-        bool DoMatch(const std::string& scd_path, const std::string& knowledge_dir);
-
-    private:
-        std::string cma_path_;
-        uint32_t psmk_;
+        }
+        std::string key;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
     };
+public:
+    typedef idmlib::dd::DupDetector<uint32_t, uint32_t, PsmAttach> DDType;
+    typedef DDType::GroupTableType GroupTableType;
+    typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, PsmAttach> PsmType;
+    PsmIndexer(const std::string& cma_path);
+    void SetPsmK(uint32_t k) {psmk_ = k;}
+    
+    bool Index(const std::string& scd_path, const std::string& output_path, bool test = false);
+    bool DoMatch(const std::string& scd_path, const std::string& knowledge_dir);
 
-}
+private:
+    std::string cma_path_;
+    uint32_t psmk_;
+};
+
+NS_SF1R_B5M_END
 
 #endif
 

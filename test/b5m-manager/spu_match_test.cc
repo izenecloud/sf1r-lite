@@ -3,6 +3,7 @@
 #include <common/ScdTypeWriter.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 
 int main(int ac, char** av)
@@ -83,7 +84,7 @@ int main(int ac, char** av)
             doc.getProperty("FilterAttribute", e_fattrib);
             std::string stitle;
             doc.getString("Title", stitle);
-            ProductMatcher::Product result_product;
+            Product result_product;
             matcher.Process(doc, result_product, true);
             all_count++;
             bool spu_match = false;
