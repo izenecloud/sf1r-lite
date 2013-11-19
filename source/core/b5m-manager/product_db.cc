@@ -37,6 +37,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
     std::set<std::string> psource;
+    std::set<std::string> pcountry;
     std::vector<Document> subdocs;
     ProductPrice pprice;
     Document::doc_prop_value_strtype pdate;
@@ -130,6 +131,9 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             std::string ssource = propstr_to_str(usource);
             psource.insert(ssource);
         }
+        std::string country;
+        doc.getString("Country", country);
+        if(!country.empty()) pcountry.insert(country);
         std::string samount;
         doc.getString(B5MHelper::GetSalesAmountPropertyName(), samount);
         if(!samount.empty())
@@ -221,6 +225,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         ssource+=*it;
     }
     if(!ssource.empty()) pdoc.property("Source") = str_to_propstr(ssource, UString::UTF_8);
+    std::string scountry;
+    for(std::set<std::string>::const_iterator it=pcountry.begin();it!=pcountry.end();++it)
+    {
+        if(!scountry.empty()) scountry+=",";
+        scountry+=*it;
+    }
+    if(!scountry.empty()) pdoc.property("Country") = str_to_propstr(scountry, UString::UTF_8);
     if(has_sales_amount)
     {
         pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;
