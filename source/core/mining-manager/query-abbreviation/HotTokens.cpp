@@ -75,9 +75,15 @@ void HotTokens::load()
     std::string serialize = workdir_ + "/" + uuid;
     if (boost::filesystem::exists(serialize))
     {
-        std::ifstream ifs(serialize.c_str(), std::ios::binary);
-        boost::archive::text_iarchive ia(ifs);
-        ia >> hotTokens_;
+        try
+        {
+            std::ifstream ifs(serialize.c_str(), std::ios::binary);
+            boost::archive::text_iarchive ia(ifs);
+            ia >> hotTokens_;
+        }
+        catch(...)
+        {
+        }
     }
 }
 
