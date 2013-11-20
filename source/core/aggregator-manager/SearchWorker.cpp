@@ -171,7 +171,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
 
     LOG(INFO) << "after convert, get docs by ids idlist: " << idList.size();
     // get docids by property value
-    collectionid_t colId = 1;
+    //collectionid_t colId = 1;
     if (!actionItem.propertyName_.empty())
     {
         std::vector<PropertyValue>::const_iterator property_value;
@@ -181,7 +181,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
             boost::apply_visitor(converter, (*property_value).getVariant());
-            invertedIndexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
+            invertedIndexManager_->getDocsByPropertyValue(actionItem.propertyName_, value, idList);
         }
     }
 
