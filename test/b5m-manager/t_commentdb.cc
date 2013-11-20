@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 using namespace boost;
 

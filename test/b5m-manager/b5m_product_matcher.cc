@@ -16,6 +16,7 @@
 #include "TestResources.h"
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 using namespace boost;
 
@@ -179,18 +180,18 @@ Document rand_doc()
     return doc;
 }
 
-void show(Document doc)
+void show(Document& doc)
 {
     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
 }
 
 
-void show(ProductMatcher::Product product)
+void show(const Product& product)
 {
     cout<<"productid"<<product.spid<<"title"<< product.stitle<<"attributes"<<product.GetAttributeValue()<<"frontcategory"<<product.fcategory<<"scategory"<<product.scategory<<"price"<<product.price<<"brand"<<product.sbrand<<endl;
 }
 
-bool checkProduct(ProductMatcher::Product &product,string &fcategory,string &scategory,string &sbrand,string spid)
+bool checkProduct(Product &product,string &fcategory,string &scategory,string &sbrand,string spid)
 {
     if(product.scategory.find(scategory)==string::npos)return false;
     if(product.fcategory.find(fcategory)==string::npos)return false;
@@ -208,7 +209,7 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
     doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
     doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);
 
-    ProductMatcher::Product result_product;
+    Product result_product;
     matcher.Process(doc,result_product,true);
     bool check=true;
 
@@ -228,7 +229,7 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
     return check;
 }
 
-void ProcessVector(ProductMatcher* matcher,vector<Document>& docvec, vector<ProductMatcher::Product>& result_product)
+void ProcessVector(ProductMatcher* matcher,vector<Document>& docvec, vector<Product>& result_product)
 {
     result_product.resize(docvec.size());
     for(unsigned i=0; i<docvec.size(); i++)
@@ -266,15 +267,15 @@ void ProcessRandom(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
     boost::posix_time::ptime time_now  = boost::posix_time::microsec_clock::local_time();;
     while( time_now <time_end)
     {
-        ProductMatcher::Product result_product;
+        Product result_product;
         matcher->Process(rand_doc(), result_product,true);
         time_now = boost::posix_time::microsec_clock::local_time();
     }
 }
 
-void CheckProcessVector(ProductMatcher* matcher,vector<Document>& doc,  vector<ProductMatcher::Product>& product)
+void CheckProcessVector(ProductMatcher* matcher,vector<Document>& doc,  vector<Product>& product)
 {
-    ProductMatcher::Product re;
+    Product re;
     for(unsigned i=0; i<doc.size(); i++)
     {
 
@@ -421,7 +422,7 @@ void MultiThreadProcessTest(string scd_file, std::string knowledge_dir,    unsig
         threaddocvec[n%threadnum].push_back(doc);
 
     }
-    vector<vector<ProductMatcher::Product> > Product;
+    vector<vector<Product> > Product;
     Product.resize(threadnum);
     //single thread to get right answer
     for(unsigned i=0; i<threadnum; i++)

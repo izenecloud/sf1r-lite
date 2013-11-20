@@ -111,7 +111,6 @@ class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalFuzzyManager;
-class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
 class MultiThreadMiningTaskBuilder;
@@ -121,6 +120,10 @@ class RTypeStringPropTableBuilder;
 class QueryIntentManager;
 class ZambeziManager;
 class AdIndexManager;
+namespace b5m
+{
+class ProductMatcher;
+}
 namespace sim
 {
 class SimilarityIndex;
@@ -642,9 +645,9 @@ private:
 
     const std::string& getOfferItemCountPropName_() const;
 
-    void StartSynonym_(ProductMatcher* matcher, const std::string& path);
-    void UpdateSynonym_(ProductMatcher* matcher, const std::string& path);
-    void RunUpdateSynonym_(ProductMatcher* matcher, const std::string& path);
+    void StartSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
+    void UpdateSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
+    void RunUpdateSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
 
 public:
     /// Should be initialized after construction

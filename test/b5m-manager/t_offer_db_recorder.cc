@@ -1,40 +1,9 @@
-#include <b5m-manager/product_matcher.h>
-#include <b5m-manager/attribute_indexer.h>
-#include <b5m-manager/category_scd_spliter.h>
-#include <b5m-manager/b5mo_scd_generator.h>
-#include <b5m-manager/b5mo_processor.h>
-#include <b5m-manager/log_server_client.h>
-#include <b5m-manager/image_server_client.h>
-#include <b5m-manager/uue_generator.h>
-#include <b5m-manager/complete_matcher.h>
-#include <b5m-manager/similarity_matcher.h>
-#include <b5m-manager/ticket_processor.h>
-#include <b5m-manager/uue_worker.h>
-#include <b5m-manager/b5mp_processor.h>
-#include <b5m-manager/b5m_mode.h>
-#include <b5m-manager/b5mc_scd_generator.h>
-#include <b5m-manager/log_server_handler.h>
-#include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
-#include <b5m-manager/brand_db.h>
-#include <b5m-manager/comment_db.h>
-#include <b5m-manager/history_db_helper.h>
-#include <b5m-manager/psm_indexer.h>
-#include <b5m-manager/cmatch_generator.h>
-#include "../TestResources.h"
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/trie_policy.hpp>
-#include <ext/pb_ds/tag_and_trait.hpp>
-#include <stack>
-#include <boost/network/protocol/http/server.hpp>
-#include <boost/network/uri/uri.hpp>
-#include <boost/network/uri/decode.hpp>
 #include <boost/test/unit_test.hpp>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 
 BOOST_AUTO_TEST_SUITE(odb_test)
@@ -106,7 +75,7 @@ BOOST_AUTO_TEST_CASE(Insert_test)
         bool ret=false;
         odbr->get(oid,pidmirror,ret);
         odbr->get_last(oid, pidlast);
-        std::cout<<"oid"<<oid<<"pid"<<pid<<"pidlast"<<pidlast<<"ret"<<ret<<std::endl;
+        //std::cout<<"oid"<<oid<<"pid"<<pid<<"pidlast"<<pidlast<<"ret"<<ret<<std::endl;
         BOOST_CHECK_EQUAL(pid==pidmirror,true);
         BOOST_CHECK_EQUAL(pidlast==lastpid,true);
         BOOST_CHECK_EQUAL(ret^(pidmirror!=pidlast),false);

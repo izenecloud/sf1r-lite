@@ -1,12 +1,13 @@
 #ifndef SF1R_B5MMANAGER_MAPPERMODEL_H_
 #define SF1R_B5MMANAGER_MAPPERMODEL_H_
 
+#include "b5m_types.h"
 #include <idmlib/util/svm_model.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/unordered_map.hpp>
 
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 class MapperModel
 {
 public:
@@ -239,7 +240,7 @@ private:
 
 
 };
-}
+NS_SF1R_B5M_END
 
 
 #endif

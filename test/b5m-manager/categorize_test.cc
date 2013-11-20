@@ -1,6 +1,7 @@
 #include <b5m-manager/product_matcher.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 
 
@@ -8,7 +9,7 @@ int32_t IsMatch(ProductMatcher* pm, const std::string& text, const std::vector<s
 {
     Document doc;
     doc.property("Title") = str_to_propstr(text, UString::UTF_8);
-    ProductMatcher::Product p;
+    Product p;
     pm->Process(doc, p);
     category = p.scategory;
     //if(!p.sbrand.empty())

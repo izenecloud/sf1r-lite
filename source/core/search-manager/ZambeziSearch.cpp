@@ -362,7 +362,7 @@ void ZambeziSearch::getAnalyzedQuery_(
     const std::string& rawQuery,
     izenelib::util::UString& analyzedQuery)
 {
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
 
     if (!matcher->IsOpen())
         return;

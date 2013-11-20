@@ -5,10 +5,10 @@
 #include <iostream>
 #include <string>
 #include <common/ScdTypeWriter.h>
+#include <common/ScdParser.h>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <util/ustring/UString.h>
-#include <b5m-manager/b5m_helper.h>
 using namespace sf1r;
 using namespace std;
 using namespace boost;
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(SCDTypeWirter_Append)
     }
 
     std::vector<std::string> scd_list;
-    B5MHelper::GetScdList("./scd_type_test", scd_list);
+    ScdParser::getScdList("./scd_type_test", scd_list);
     for(uint32_t i=0; i<scd_list.size(); i++)
     {
         std::string scd_file = scd_list[i];

@@ -20,111 +20,111 @@
 #include <common/ScdWriter.h>
 
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
-    class ImgDupDetector
+class ImgDupDetector
+{
+public:
+    typedef idmlib::dd::PSM<64, 0, 24, uint32_t, std::string, PsmAttach> PsmType;
+
+    ImgDupDetector();
+    ImgDupDetector(std::string sp,
+            std::string op,
+            std::string sn,
+            bool li,
+            bool im,
+            int con,
+            int icl,
+            std::string icn
+            );
+    ~ImgDupDetector();
+
+    void SetPsmK(uint32_t k) {psmk_ = k;}
+
+    static ImgDupDetector* get()
     {
-    public:
-        typedef idmlib::dd::PSM<64, 0, 24, uint32_t, std::string, PsmAttach> PsmType;
+        return izenelib::util::Singleton<ImgDupDetector>::get();
+    }
 
-        ImgDupDetector();
-        ImgDupDetector(std::string sp,
-                std::string op,
-                std::string sn,
-                bool li,
-                bool im,
-                int con,
-                int icl,
-                std::string icn
-                );
-        ~ImgDupDetector();
+    bool SetParams(std::string sp,
+            std::string op,
+            std::string sn,
+            bool li,
+            bool im,
+            int con,
+            int icl,
+            std::string icn
+            );
 
-        void SetPsmK(uint32_t k) {psmk_ = k;}
+    bool SetController();
+    bool ClearHistory();
+    bool ClearHistoryCon();
+    bool ClearHistoryUrl();
+    bool SetPath();
+    bool InitFujiMap();
+    bool InitLevelDb();
+    bool SaveFujiMap();
+    bool LoadFujiMap();
+    bool DupDetectorMain();
+    bool BeginToDupDetect(const std::string& filename);
+    bool BuildUrlIndex(const std::string& scd_file, const std::string& psm_path);
+    bool BuildConIndex(const std::string& scd_file, const std::string& psm_path);
+    bool DetectUrl(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
+    bool DetectCon(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
+    bool BuildGidMem();
+    bool WriteCurrentFile(const std::string& filename);
 
-        static ImgDupDetector* get()
-        {
-            return izenelib::util::Singleton<ImgDupDetector>::get();
-        }
+public:
 
-        bool SetParams(std::string sp,
-                std::string op,
-                std::string sn,
-                bool li,
-                bool im,
-                int con,
-                int icl,
-                std::string icn
-                );
+    std::string scd_path_;
+    std::string scd_temp_path_;
+    std::string output_path_;
+    std::string source_name_;
+    bool log_info_;
+    bool incremental_mode_;
 
-        bool SetController();
-        bool ClearHistory();
-        bool ClearHistoryCon();
-        bool ClearHistoryUrl();
-        bool SetPath();
-        bool InitFujiMap();
-        bool InitLevelDb();
-        bool SaveFujiMap();
-        bool LoadFujiMap();
-        bool DupDetectorMain();
-        bool BeginToDupDetect(const std::string& filename);
-        bool BuildUrlIndex(const std::string& scd_file, const std::string& psm_path);
-        bool BuildConIndex(const std::string& scd_file, const std::string& psm_path);
-        bool DetectUrl(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
-        bool DetectCon(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
-        bool BuildGidMem();
-        bool WriteCurrentFile(const std::string& filename);
+    int controller_;
+    uint32_t image_content_length_;
 
-    public:
+    std::string cma_path_;
+    uint32_t psmk_;
 
-        std::string scd_path_;
-        std::string scd_temp_path_;
-        std::string output_path_;
-        std::string source_name_;
-        bool log_info_;
-        bool incremental_mode_;
+    std::string img_content_name_;
 
-        int controller_;
-        uint32_t image_content_length_;
+    std::string psm_path_;
+    std::string psm_path_incr_;
+    std::string psm_path_noin_;
+    std::string psm_path_incr_url_;
+    std::string psm_path_noin_url_;
+    std::string psm_path_incr_con_;
+    std::string psm_path_noin_con_;
 
-        std::string cma_path_;
-        uint32_t psmk_;
-
-        std::string img_content_name_;
-
-        std::string psm_path_;
-        std::string psm_path_incr_;
-        std::string psm_path_noin_;
-        std::string psm_path_incr_url_;
-        std::string psm_path_noin_url_;
-        std::string psm_path_incr_con_;
-        std::string psm_path_noin_con_;
-
-        bool dup_by_url_;
-        bool dup_by_con_;
+    bool dup_by_url_;
+    bool dup_by_con_;
 
 //        std::map<uint32_t, uint32_t> con_docid_key_;
 //        std::map<uint32_t, uint32_t> con_key_docid_;
-        ImgDupFujiMap* con_docid_key_;
-        ImgDupFujiMap* con_key_docid_;
-        uint32_t con_key_;
+    ImgDupFujiMap* con_docid_key_;
+    ImgDupFujiMap* con_key_docid_;
+    uint32_t con_key_;
 
 //        std::map<uint32_t, uint32_t> url_docid_key_;
 //        std::map<uint32_t, uint32_t> url_key_docid_;
-        ImgDupFujiMap* url_docid_key_;
-        ImgDupFujiMap* url_key_docid_;
-        uint32_t url_key_;
+    ImgDupFujiMap* url_docid_key_;
+    ImgDupFujiMap* url_key_docid_;
+    uint32_t url_key_;
 
-        ImgDupFujiMap* docid_docid_;
-        std::map<uint32_t, std::vector<uint32_t> > gid_docids_;
+    ImgDupFujiMap* docid_docid_;
+    std::map<uint32_t, std::vector<uint32_t> > gid_docids_;
 
-        ImgDupFujiMap* gid_memcount_;
+    ImgDupFujiMap* gid_memcount_;
 
-        std::map<uint32_t, UString> key_con_map_;
-        std::map<uint32_t, UString> key_url_map_;
+    std::map<uint32_t, UString> key_con_map_;
+    std::map<uint32_t, UString> key_url_map_;
 
-        DocidImgDbTable* docidImgDbTable;
+    DocidImgDbTable* docidImgDbTable;
 
-    };
-}
+};
+NS_SF1R_B5M_END
 
 #endif // IMG_DUP_DETECTOR_H_
