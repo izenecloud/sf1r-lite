@@ -11,8 +11,6 @@
 #include <algorithm> // min
 #include <vector>
 
-#define TOP_LABEL_NUM 4
-
 namespace sf1r
 {
 
@@ -143,7 +141,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         }
 
         mergeResult.groupRep_.merge(wResult.groupRep_);
-        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_, TOP_LABEL_NUM);
+        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_);
 
         std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
         for(; cit != wResult.counterResults_.end(); ++cit)
@@ -531,6 +529,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
         workerid_t workerid = workerResults.workerId(w);
         const RawTextResultFromSIA& wResult = workerResults.result(w);
 
+        LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
         for (size_t i = 0; i < wResult.idList_.size(); i++)
         {
             if (mergeResult.idList_.empty())
@@ -553,7 +552,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
 
             for (size_t s = 0; s <wResult.rawTextOfSummaryInPage_.size(); s++)
             {
-                mergeResult.snippetTextOfDocumentInPage_[s].push_back(wResult.snippetTextOfDocumentInPage_[s][i]);
+                mergeResult.rawTextOfSummaryInPage_[s].push_back(wResult.rawTextOfSummaryInPage_[s][i]);
             }
         }
     }

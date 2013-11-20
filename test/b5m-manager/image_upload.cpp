@@ -26,6 +26,7 @@
 using namespace std;
 namespace po = boost::program_options;
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 
 typedef struct {

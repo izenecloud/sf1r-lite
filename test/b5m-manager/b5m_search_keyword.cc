@@ -8,6 +8,7 @@
 
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 namespace pbds = __gnu_pbds;
 namespace http = boost::network::http;

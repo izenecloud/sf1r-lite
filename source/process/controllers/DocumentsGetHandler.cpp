@@ -362,13 +362,13 @@ bool DocumentsGetHandler::getIdListFromConditions()
             cout<<"DOCID"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
             if(theOnlyCondition.id_type()=="isbn")
             {
-                std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                std::string originid=b5m::B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
                 cout<<"originid"<<originid<<endl;
                 actionItem_.docIdList_.push_back(originid);
             }
             else  if(theOnlyCondition.id_type()=="url")
             {
-                std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                std::string originid=b5m::B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
                 actionItem_.docIdList_.push_back(originid);
             }
             else
@@ -395,12 +395,12 @@ bool DocumentsGetHandler::getIdListFromConditions()
             {
                 if(theOnlyCondition.id_type()=="isbn")
                 {
-                    std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                    std::string originid=b5m::B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
                     ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
                 }
                 else  if(theOnlyCondition.id_type()=="url")
                 {
-                    std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                    std::string originid=b5m::B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
                     ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
                 }
                 else

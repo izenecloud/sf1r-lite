@@ -147,7 +147,7 @@ void CollectionController::start_collection()
 #endif
     configFile += slash + collection + ".xml";
 
-    if (!CollectionManager::get()->checkConfig(collection, configFile))
+    if (DistributeRequestHooker::get()->isRunningPrimary() && !CollectionManager::get()->checkConfig(collection, configFile))
     {
         response().addError("collection config is invalid.");
         return;
@@ -357,7 +357,7 @@ void CollectionController::update_collection_conf()
         slash = "/";
 #endif
     configFile += slash + collection + ".xml";
-    if (!CollectionManager::get()->checkConfig(collection, configFile, false))
+    if (DistributeRequestHooker::get()->isRunningPrimary() && !CollectionManager::get()->checkConfig(collection, configFile, false))
     {
         response().addError("collection config is invalid.");
         return;

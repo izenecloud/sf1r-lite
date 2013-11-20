@@ -22,7 +22,11 @@
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <iostream>
+#include <set>
 #include <boost/scoped_ptr.hpp>
+
+namespace sf1r
+{
 
 namespace
 {
@@ -30,13 +34,12 @@ const std::size_t kAttrTopDocNum = 200;
 const std::size_t kZambeziTopKNum = 1e6;
 
 const std::string kTopLabelPropName = "Category";
-const size_t kTopLabelDocNum = 1000;
-const size_t kTopLabelCateNum = 4;
+const size_t kRootCateNum = 10;
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
-}
 
-using namespace sf1r;
+const MonomorphicFilter<true> kAllPassFilter;
+}
 
 bool DocLess(const ScoreDoc& o1, const ScoreDoc& o2)
 {
@@ -113,7 +116,7 @@ bool ZambeziSearch::search(
     std::size_t limit,
     std::size_t offset)
 {
-    const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
+    const std::vector<std::string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
     const std::string& query = actionOperation.actionItem_.env_.queryString_;
 
     LOG(INFO) << "zambezi search for query: " << query;
@@ -165,19 +168,17 @@ bool ZambeziSearch::search(
         AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict 
     else
         zambeziManager_->getTokenizer()->GetTokenResults(query, tokenList);
+    
+    zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
+                            candidates, scores);
 
-    ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
-    boost::function<bool(uint32_t)> filter_func = boost::bind(&ZambeziFilter::test, &filter, _1);
-
+    if (candidates.empty())
     {
-        boost::shared_lock<boost::shared_mutex> lock(documentManager_.getMutex());
-        zambeziManager_->search(tokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
-
-        if (candidates.empty() && zambeziManager_->isAttrTokenize())
+        std::vector<std::pair<std::string, int> > subTokenList;
+        if (AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList))
         {
-            std::vector<std::pair<std::string, int> > subTokenList;
-            AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
-            zambeziManager_->search(subTokenList, filter_func, kZambeziTopKNum, search_in_properties, candidates, scores);
+            zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
+                                    candidates, scores);
         }
     }
 
@@ -219,22 +220,32 @@ bool ZambeziSearch::search(
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
 
-    for (size_t i = 0; i < candNum; ++i)
     {
-        docid_t docId = candidates[i];
-        ScoreDoc scoreItem(docId, scores[i]);
-        if (customRanker)
-        {
-            scoreItem.custom_score = customRanker->evaluate(docId);
-        }
-        scoreItemQueue->insert(scoreItem);
+        ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
 
-        ++totalCount;
+        for (size_t i = 0; i < candNum; ++i)
+        {
+            docid_t docId = candidates[i];
+
+            if (!filter.test(docId))
+                continue;
+
+            ScoreDoc scoreItem(docId, scores[i]);
+            if (customRanker)
+            {
+                scoreItem.custom_score = customRanker->evaluate(docId);
+            }
+            scoreItemQueue->insert(scoreItem);
+
+            ++totalCount;
+        }
     }
 
     std::vector<ScoreDoc> resultList;
+    unsigned int scoreSize = scoreItemQueue->size();
     if (!sorter && productScorer) // productScorer; //!sorter
     {
+        LOG(INFO) << "do normalize top docs ...";
         normalizeTopDocs_(productScorer, 
                         scoreItemQueue, 
                         resultList,
@@ -242,7 +253,6 @@ bool ZambeziSearch::search(
     }
     else
     {
-        unsigned int scoreSize = scoreItemQueue->size();
         resultList.resize(scoreSize);
         for (int i = scoreSize - 1; i >= 0; --i)
         {
@@ -253,9 +263,10 @@ bool ZambeziSearch::search(
 
     searchResult.totalCount_ = totalCount;
     std::size_t topKCount = 0;
-    if (offset < resultList.size())// if bigger is zero;
+
+    if (offset < scoreSize)// if bigger is zero;
     {
-        topKCount = resultList.size() - offset;
+        topKCount = scoreSize - offset;
     }
 
     std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
@@ -270,6 +281,9 @@ bool ZambeziSearch::search(
         customScoreList.resize(topKCount);
     }
 
+    LOG(INFO) << "resultList size: " << resultList.size() 
+              << ", topKCount: " << topKCount;
+
     for (unsigned int i = resultList.size() - topKCount; i < resultList.size(); ++i)
     {
         const ScoreDoc& scoreItem =  resultList[i];//need to ASC
@@ -283,8 +297,7 @@ bool ZambeziSearch::search(
 
     if (groupFilter)
     {
-        getTopLabels_(docIdList,
-                      rankScoreList,
+        getTopLabels_(docIdList, rankScoreList,
                       propSharedLockSet,
                       searchResult.autoSelectGroupLabels_);
 
@@ -329,7 +342,7 @@ bool ZambeziSearch::search(
                                                          propSharedLockSet);
     }
 
-    LOG(INFO) << "in zambezi ranking, candidate doc num: " << candNum
+    LOG(INFO) << "in zambezi ranking, total count: " << totalCount
               << ", costs :" << timer.elapsed() << " seconds";
 
     return true;
@@ -340,18 +353,22 @@ void ZambeziSearch::getTopLabels_(
     const std::vector<float>& rankScoreList,
     PropSharedLockSet& propSharedLockSet,
     faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
+
 {
     if (!categoryValueTable_)
         return;
 
+    izenelib::util::ClockTimer timer;
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
     typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
     TopCatIdsT topCateIds;
-    const std::size_t topNum = std::min(docIdList.size(), kTopLabelDocNum);
+    const std::size_t topNum = docIdList.size();
+    std::set<faceted::PropValueTable::pvid_t> rootCateIds;
+
     for (std::size_t i = 0; i < topNum; ++i)
     {
-        if (topCateIds.size() >= kTopLabelCateNum)
+        if (rootCateIds.size() >= kRootCateNum)
             break;
 
         category_id_t catId =
@@ -360,7 +377,8 @@ void ZambeziSearch::getTopLabels_(
         if (catId != 0)
         {
             bool is_exist = false;
-            for(TopCatIdsT::const_iterator cit = topCateIds.begin(); cit != topCateIds.end(); ++cit)
+            for (TopCatIdsT::const_iterator cit = topCateIds.begin();
+                 cit != topCateIds.end(); ++cit)
             {
                 if (cit->first == catId)
                 {
@@ -371,6 +389,9 @@ void ZambeziSearch::getTopLabels_(
             if (!is_exist)
             {
                 topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+
+                category_id_t rootId = categoryValueTable_->getRootValueId(catId);
+                rootCateIds.insert(rootId);
             }
         }
     }
@@ -388,14 +409,15 @@ void ZambeziSearch::getTopLabels_(
         topLabels.push_back(std::make_pair(path, idIt->second));
     }
 
-    LOG(INFO) << "top label num: "<< topLabels.size();
+    LOG(INFO) << "get top label num: "<< topLabels.size()
+              << ", costs: " << timer.elapsed() << " seconds";
 }
 
 void ZambeziSearch::getAnalyzedQuery_(
     const std::string& rawQuery,
     izenelib::util::UString& analyzedQuery)
 {
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
 
     if (!matcher->IsOpen())
         return;
@@ -489,4 +511,6 @@ void ZambeziSearch::normalizeScore_(
     {
         scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
     }
+}
+
 }

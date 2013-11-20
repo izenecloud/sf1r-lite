@@ -91,30 +91,30 @@ public:
 
     void HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result);
 
-    void index(const std::string& scd_path, unsigned int numdoc, bool& result); // need to check;
+    void index(const std::string& scd_path, unsigned int numdoc, bool& result);
 
     bool reindex(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
-    bool buildCollection(const std::string& scd_path, unsigned int numdoc); // ok
+    bool buildCollection(const std::string& scd_path, unsigned int numdoc);
     bool buildCollectionOnReplica(unsigned int numdoc);
-    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp); // ok
+    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp);
 
-    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp); //TODO:need to check...
+    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
-    bool optimizeIndex(); //TODO:need to check ...
+    bool optimizeIndex();
 
-    bool createDocument(const ::izenelib::driver::Value& documentValue); //checking ... 
+    bool createDocument(const ::izenelib::driver::Value& documentValue);
 
-    bool updateDocument(const ::izenelib::driver::Value& documentValue); // TODO:checking ...
-    bool updateDocumentInplace(const ::izenelib::driver::Value& request); // TODO
+    bool updateDocument(const ::izenelib::driver::Value& documentValue);
+    bool updateDocumentInplace(const ::izenelib::driver::Value& request);
 
-    bool destroyDocument(const ::izenelib::driver::Value& documentValue); //TODO
+    bool destroyDocument(const ::izenelib::driver::Value& documentValue);
 
     bool getIndexStatus(Status& status);
 
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
-    void flush(bool mergeBarrel = false); // TODO
+    void flush(bool mergeBarrel = false);
 
     IncSupportedIndexManager& getIncSupportedIndexManager()
     {
@@ -141,13 +141,14 @@ private:
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
-    bool doBuildCollection_(const std::string& scdFile, SCD_TYPE scdType, uint32_t numdoc);// ok
+    bool doBuildCollection_(const std::string& scdFile, SCD_TYPE scdType,
+        uint32_t numdoc, int64_t timestamp);
 
     bool insertOrUpdateSCD_(
             ScdParser& parser,
             SCD_TYPE scdType,
             uint32_t numdoc,
-            time_t timestamp); // ok 
+            time_t timestamp);
 
     bool createInsertDocId_(const uint128_t& scdDocId, docid_t& newId);
 
@@ -170,7 +171,7 @@ private:
             const Document& old_rtype_doc,
             time_t timestamp,
             IndexWorker::UpdateType updateType,
-            bool immediately = false); // important...
+            bool immediately = false);
 
     bool doUpdateDoc_(
             docid_t oldId,
@@ -207,7 +208,7 @@ private:
             const docid_t& docId,
             time_t& timestamp,
             const UpdateType& updateType,
-            SCD_TYPE scdType); // important: need to deal with add different ...
+            SCD_TYPE scdType);
 
     bool mergeDocument_(
             docid_t oldId,

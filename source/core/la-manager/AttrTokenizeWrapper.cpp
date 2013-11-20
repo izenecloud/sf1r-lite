@@ -73,11 +73,12 @@ void AttrTokenizeWrapper::attr_tokenize(
     attr_tokenizer_->tokenize(Q, tokenList);
 }
 
-void AttrTokenizeWrapper::attr_subtokenize(
+bool AttrTokenizeWrapper::attr_subtokenize(
         const std::vector<std::pair<std::string, int> >& tks,
         std::vector<std::pair<std::string, int> >& tokenList)
 {
     attr_tokenizer_->subtokenize(tks, tokenList);
+    return tokenList != tks;
 }
 
 double AttrTokenizeWrapper::att_name_weight(

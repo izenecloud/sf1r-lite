@@ -1294,6 +1294,8 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
     std::vector<std::string> primary_logdata_list;
     while(true)
     {
+        bool is_ready_before = NodeManagerBase::get()->isPrimaryReadyForCheckLog();
+
         LOG(INFO) << "checking log start from :" << check_start;
         if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
         {
@@ -1321,6 +1323,10 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             if( local_logdata_list[i] != primary_logdata_list[i] )
             {
                 LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                if (i == 0)
+                {
+                    check_start = local_logid_list[i] - 1;
+                }
                 break;
             }
             else
@@ -1332,7 +1338,7 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
         if (min_size == 0 && check_start <= newest_reqid)
         {
             LOG(INFO) << "local log data is forword at id " << check_start;
-            if (!NodeManagerBase::get()->isPrimaryReadyForCheckLog())
+            if (!is_ready_before || !NodeManagerBase::get()->isPrimaryReadyForCheckLog())
             {
                 LOG(INFO) << "primary is not ready for checking log, waiting...";
                 sleep(10);

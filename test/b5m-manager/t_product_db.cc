@@ -16,6 +16,7 @@
 #include <boost/test/unit_test.hpp>
 #include <stdlib.h>
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 using namespace boost;
 ProductProperty pp;
@@ -47,12 +48,6 @@ BOOST_AUTO_TEST_CASE(Product)
     doc.property("Price") = str_to_propstr(price,izenelib::util::UString::UTF_8);;
     doc.property("Source") = str_to_propstr(source,izenelib::util::UString::UTF_8);
     doc.property("Attribute") = str_to_propstr(attribute,izenelib::util::UString::UTF_8);;
-
-    bool independent=false;
-
-
-
-
 
     pp.Parse(doc);
 

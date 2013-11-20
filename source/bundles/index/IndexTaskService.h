@@ -25,6 +25,17 @@ class ScdSharder;
 class IndexTaskService : public ::izenelib::osgi::IService
 {
 public:
+
+    enum ShardingType
+    {
+        DefaultShard = 0,
+        // disable sending request to sharding node
+        DisableForwardToShard,
+        // disable sending to sharding node and disable sharding SCD on local.
+        // (This means local node will index all of the docs in the given SCD files.)
+        LocalOnly,
+    };
+
     IndexTaskService(IndexBundleConfiguration* bundleConfig);
 
     ~IndexTaskService();

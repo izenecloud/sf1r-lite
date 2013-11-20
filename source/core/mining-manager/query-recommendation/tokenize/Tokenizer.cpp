@@ -33,7 +33,14 @@ public:
     void tokenize(const std::string& str, TermVector& tv)
     {
         KNlpWrapper::string_t kstr(str);
-        ilplib::knlp::Normalize::normalize(kstr);
+        try
+        {
+            ilplib::knlp::Normalize::normalize(kstr);
+        }
+        catch(...)
+        {
+        }
+
         KNlpWrapper::token_score_list_t tokenScores;
         tokenizer_->fmm(kstr, tokenScores);
         tokenScores = tokenizer_->subtokens(tokenScores);

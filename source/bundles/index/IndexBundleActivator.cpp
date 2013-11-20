@@ -155,7 +155,7 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
     }
 
     MasterManagerBase::get()->unregisterAggregator(searchAggregator_);
-    MasterManagerBase::get()->unregisterAggregator(ro_searchAggregator_);
+    MasterManagerBase::get()->unregisterAggregator(ro_searchAggregator_, true);
     MasterManagerBase::get()->unregisterAggregator(indexAggregator_);
 
     if (zambeziManager_)

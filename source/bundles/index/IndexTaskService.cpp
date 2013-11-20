@@ -121,9 +121,9 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path, int disa
     // disable_sharding_type , 0 no disable, 1 disable sending request to sharding node,
     // 2 disable sending to sharding node and disable sharding SCD on local. (This means
     //  local node will index all of the docs in the given SCD files.)
-    bool disable_sharding = (disable_sharding_type != 0);
+    bool disable_sharding = (disable_sharding_type != (int)DefaultShard);
 
-    indexWorker_->disableSharding(disable_sharding_type == 2);
+    indexWorker_->disableSharding(disable_sharding_type == (int)LocalOnly);
 
     if (DistributeFileSys::get()->isEnabled())
     {
@@ -791,7 +791,7 @@ bool IndexTaskService::indexShardingNodes(const std::map<shardid_t, std::vector<
         // send index command.
         std::string json_req = "{\"collection\":\"" + bundleConfig_->collectionName_
             + "\",\"index_scd_path\":\"" + shard_scd_dir
-            + "\",\"disable_sharding\":true"
+            + "\",\"disable_sharding\":2"
             + ",\"header\":{\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
 
         LOG(INFO) << "send request : " << json_req;

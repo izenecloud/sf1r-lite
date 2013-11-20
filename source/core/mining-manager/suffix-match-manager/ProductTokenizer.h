@@ -75,7 +75,9 @@ public:
 
 };
 
+namespace b5m {
 class ProductMatcher;
+}
 class CategoryClassifyTable;
 
 class ProductTokenizer
@@ -104,10 +106,11 @@ public:
             const std::string& pattern,
             std::list<std::pair<UString, double> >& major_tokens,
             std::list<std::pair<UString, double> >& minor_tokens,
+            bool is_refine_result,
             UString& refined_results);
     bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
     bool GetSynonymId(const UString& pattern, int& setid);
-    void SetProductMatcher(ProductMatcher* matcher)
+    void SetProductMatcher(b5m::ProductMatcher* matcher)
     {
         matcher_ = matcher;
     }
@@ -177,7 +180,7 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
 
-    ProductMatcher* matcher_;
+    b5m::ProductMatcher* matcher_;
     CategoryClassifyTable* categoryClassifyTable_;
 
     std::vector<std::pair<std::string, double> > dict_names_;

@@ -9,8 +9,11 @@
 namespace sf1r
 {
 using izenelib::util::UString;
-
+namespace b5m
+{
 class ProductMatcher;
+}
+
 class SuffixMatchManager;
 class DocumentManager;
 class QueryCategorizer
@@ -20,7 +23,7 @@ public:
     QueryCategorizer();
     ~QueryCategorizer();
 
-    void SetProductMatcher(ProductMatcher* matcher)
+    void SetProductMatcher(b5m::ProductMatcher* matcher)
     {
         matcher_ = matcher;
     }
@@ -42,7 +45,7 @@ private:
         std::vector<std::vector<std::string> >& pathVec);
 
 
-    ProductMatcher* matcher_;
+    b5m::ProductMatcher* matcher_;
 
     izenelib::cache::IzeneCache<std::string, std::vector<std::vector<std::string> >, izenelib::util::ReadWriteLock> cache_;
 };

@@ -293,7 +293,7 @@ public:
         return RtypeDocidPros_.size() > 0;
     }
 
-    boost::shared_mutex& getMutex()
+    boost::shared_mutex& getMutex() const
     {
         return delfilter_mutex_;
     }

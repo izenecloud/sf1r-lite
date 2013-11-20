@@ -15,6 +15,7 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 //#define B5MC_DEBUG
 
 
@@ -169,7 +170,7 @@ void B5mcScdGenerator::ProcessFurther_(ScdDocument& doc)
     doc.getString("uuid", spid);
     if(spid.empty())
     {
-        ProductMatcher::Product product;
+        Product product;
         std::string isbn;
         if(ProductMatcher::GetIsbnAttribute(doc, isbn))
         {

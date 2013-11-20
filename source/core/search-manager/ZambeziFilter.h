@@ -5,9 +5,27 @@
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <ir/index_manager/utility/BitVector.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 namespace sf1r
 {
+
+template <bool State>
+class MonomorphicFilter
+{
+public:
+    MonomorphicFilter() {}
+
+    bool test(uint32_t docId) const
+    {
+        return State;
+    }
+
+    uint32_t skipTo(uint32_t docId) const
+    {
+        return docId;
+    }
+};
 
 class ZambeziFilter
 {
@@ -17,6 +35,7 @@ public:
             const boost::shared_ptr<faceted::GroupFilter>& groupFilter,
             const boost::shared_ptr<izenelib::ir::indexmanager::BitVector>& filterBitVector)
         : documentManager_(documentManager)
+        , lock_(documentManager_.getMutex())
         , groupFilter_(groupFilter)
         , filterBitVector_(filterBitVector)
     {
@@ -31,6 +50,7 @@ public:
 
 private:
     const DocumentManager& documentManager_;
+    boost::shared_lock<boost::shared_mutex> lock_;
     boost::shared_ptr<faceted::GroupFilter> groupFilter_;
     boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector_;
 };

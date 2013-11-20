@@ -1324,7 +1324,9 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
             LOG(ERROR) << "node was deleted while not stopping: " << self_primary_path_;
             // try re-enter 
             LOG(WARNING) << "need re-enter";
-            reEnterCluster();
+            setElectingState();
+            checkForPrimaryElecting();
+            //reEnterCluster();
         }
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)

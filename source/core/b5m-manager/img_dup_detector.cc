@@ -11,6 +11,7 @@
 #define MAX_BUF_SIZE 1024
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 uint32_t history = 0;
 
 ImgDupDetector::ImgDupDetector()

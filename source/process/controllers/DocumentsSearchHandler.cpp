@@ -81,7 +81,6 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSchema_(collectionHandler.miningSchema_),
         zambeziConfig_(collectionHandler.zambeziConfig_),
         actionItem_(),
-        returnAnalyzerResult_(false),
         TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_),
         renderer_(miningSchema_, TOP_K_NUM)
 {
@@ -660,7 +659,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
 void DocumentsSearchHandler::parseOptions()
 {
     actionItem_.removeDuplicatedDocs_ = asBool(request_[Keys::remove_duplicated_result]);
-    returnAnalyzerResult_ = asBoolOr(request_[Keys::analyzer_result], false);
+    actionItem_.isAnalyzeResult_ = asBoolOr(request_[Keys::analyzer_result], false);
 }
 
 bool DocumentsSearchHandler::doSearch(
@@ -674,7 +673,7 @@ bool DocumentsSearchHandler::doSearch(
     }
 
     // Return analyzer result even when result validation fails.
-    if (returnAnalyzerResult_)
+    if (actionItem_.isAnalyzeResult_)
     {
         std::string convertBuffer;
         searchResult.analyzedQuery_.convertString(

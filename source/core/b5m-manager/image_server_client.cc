@@ -7,11 +7,12 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
+using namespace sf1r::b5m;
 using namespace sf1r;
 
-bool ImageServerClient::Init(const RpcServerConnectionConfig& config)
+bool ImageServerClient::Init(const sf1r::RpcServerConnectionConfig& config)
 {
-    RpcServerConnection& conn = RpcServerConnection::instance();
+    sf1r::RpcServerConnection& conn = sf1r::RpcServerConnection::instance();
     if(!conn.init(config))
     {
         return false;
@@ -21,7 +22,7 @@ bool ImageServerClient::Init(const RpcServerConnectionConfig& config)
 
 bool ImageServerClient::Test()
 {
-    RpcServerConnection& conn = RpcServerConnection::instance();
+    sf1r::RpcServerConnection& conn = sf1r::RpcServerConnection::instance();
     if(!conn.testServer())
     {
         std::cout << "Image server test failed!" << endl;

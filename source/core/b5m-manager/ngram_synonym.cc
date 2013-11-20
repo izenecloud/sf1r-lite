@@ -1,6 +1,7 @@
 #include "ngram_synonym.h"
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 NgramSynonym::NgramSynonym()
 : gb_regex_("^\\d{1,3}g$")

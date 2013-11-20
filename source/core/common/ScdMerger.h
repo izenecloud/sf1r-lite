@@ -75,7 +75,7 @@ public:
     
 public:
 
-    ScdMerger(const std::string& scd_path): m_(0), scd_path_(scd_path), mproperty_("DOCID"), all_type_(false)
+    ScdMerger(const std::string& scd_path): m_(0), imc_(1200000), scd_path_(scd_path), mproperty_("DOCID"), all_type_(false)
     {
     }
 
@@ -89,6 +89,11 @@ public:
     {
         LOG(INFO)<<"set mod split "<<m<<std::endl;
         m_ = m;
+    }
+
+    void SetInMCount(uint32_t imc)
+    {
+        imc_ = imc;
     }
 
     void SetAllType(bool b=true)
@@ -285,7 +290,7 @@ private:
     void GenM_()
     {
         uint64_t count = ScdParser::getScdDocCount(scd_path_);
-        m_ = count/1200000+1;
+        m_ = count/imc_+1;
         LOG(INFO)<<"m set to "<<m_<<std::endl;
     }
 
@@ -313,6 +318,7 @@ private:
     
 private:
     uint32_t m_;
+    uint32_t imc_;
     std::string scd_path_;
     boost::shared_ptr<ScdTypeWriter> writer_;
     //Outputer outputer_;

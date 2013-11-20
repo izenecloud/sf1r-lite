@@ -692,6 +692,11 @@ bool MasterManagerBase::pushWriteReqToShard(const std::string& reqdata,
         return false;
     }
 
+    if (reqdata.size() > 1024*512)
+    {
+        LOG(ERROR) << "the reqdata size is too large to save to zookeeper." << reqdata.size();
+    }
+
     if (!for_migrate && zookeeper_->isZNodeExists(migrate_prepare_node_, ZooKeeper::WATCH))
     {
         LOG(INFO) << "Faile to push write for the running migrate.";
@@ -751,6 +756,11 @@ bool MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
     {
         LOG(INFO) << "Faile to push write for the running migrate.";
         return false;
+    }
+
+    if (reqdata.size() > 1024*512)
+    {
+        LOG(ERROR) << "the reqdata size is too large to save to zookeeper." << reqdata.size();
     }
 
     if (!isMinePrimary())

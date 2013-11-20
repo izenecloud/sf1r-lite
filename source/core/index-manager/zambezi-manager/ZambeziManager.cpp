@@ -3,20 +3,12 @@
 #include "../zambezi-tokenizer/ZambeziTokenizer.h"
 #include <boost/utility.hpp>
 #include <boost/filesystem.hpp>
-#include <util/ClockTimer.h>
-#include <glog/logging.h>
 #include <fstream>
 #include <math.h>
 #include <algorithm>
 #include <iostream>
 
 using namespace sf1r;
-
-namespace
-{
-const izenelib::ir::Zambezi::Algorithm kAlgorithm =
-    izenelib::ir::Zambezi::SVS;
-}
 
 ZambeziManager::ZambeziManager(
         const ZambeziConfig& config)
@@ -104,74 +96,6 @@ bool ZambeziManager::open()
     LOG(INFO) << "Finished open zambezi index";
 
     return true;
-}
-
-void ZambeziManager::search(
-    const std::vector<std::pair<std::string, int> >& tokens,
-    const boost::function<bool(uint32_t)>& filter,
-    uint32_t limit,
-    const std::vector<std::string>& propertyList,
-    std::vector<docid_t>& docids,
-    std::vector<uint32_t>& scores)
-{
-    std::cout <<"[ZambeziManager::search] Search tokens: ";
-    for (unsigned int i = 0; i < tokens.size(); ++i)
-    {
-        std::cout << tokens[i].first <<" , ";
-    }
-    std::cout << std::endl;
-
-    izenelib::util::ClockTimer timer;
-    // in one property
-    if (propertyList.size() == 1)
-    {    
-        property_index_map_[propertyList[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docids, scores);// if need to use filter;
-        LOG(INFO) << "zambezi returns docid num: " << docids.size()
-                  << ", costs :" << timer.elapsed() << " seconds";
-        return;
-    }
-
-    // only one property
-    if (propertyList_.size() == 1)
-    {    
-        property_index_map_[propertyList_[0]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docids, scores);// if need to use filter;
-        LOG(INFO) << "zambezi returns docid num: " << docids.size()
-                  << ", costs :" << timer.elapsed() << " seconds";
-        return;
-    }
-
-    std::vector<std::string> searchPropertyList = propertyList;
-    if (searchPropertyList.empty())
-        searchPropertyList = propertyList_;
-
-    std::vector<std::vector<docid_t> > docidsList;
-    docidsList.resize(searchPropertyList.size());
-    std::vector<std::vector<uint32_t> > scoresList;
-    scoresList.resize(searchPropertyList.size());
-
-    for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
-    {
-        property_index_map_[searchPropertyList[i]].retrievalAndFiltering(kAlgorithm, tokens, filter, limit, true, docidsList[i], scoresList[i]); // add new interface;
-    }
-
-    izenelib::util::ClockTimer timer_merge;
-
-    for (unsigned int i = 0; i < docidsList.size(); ++i)
-    {
-        if (docidsList[i].size() != scoresList[i].size())
-        {
-            LOG(INFO) << "[ERROR] dismatch doclist and scorelist";
-            return;
-        }
-    }
-
-    merge_(docidsList, scoresList, docids, scores);
-
-    LOG(INFO) << "zambezi merge " << docidsList.size()
-              << " properties, costs :" << timer_merge.elapsed() << " seconds";
-
-    LOG(INFO) << "zambezi returns docid num: " << docids.size()
-              << ", costs :" << timer.elapsed() << " seconds";
 }
 
 void ZambeziManager::merge_(

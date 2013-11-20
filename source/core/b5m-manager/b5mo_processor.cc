@@ -1,5 +1,4 @@
 #include "b5mo_processor.h"
-#include "log_server_client.h"
 #include "image_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
@@ -8,7 +7,6 @@
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
-#include <configuration-manager/LogServerConnectionConfig.h>
 #include <sf1r-net/RpcServerConnectionConfig.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
@@ -18,14 +16,29 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
     int mode, 
-    RpcServerConnectionConfig* img_server_config)
+    sf1r::RpcServerConnectionConfig* img_server_config)
 :odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
+,attr_(matcher->GetAttributeNormalize())
+//,attr_(NULL)
+//, stat1_(0), stat2_(0), stat3_(0)
 {
+    status_.AddCategoryGroup("^电脑办公.*$","电脑办公", 0.001);
+    status_.AddCategoryGroup("^手机数码>手机$","手机", 0.001);
+    status_.AddCategoryGroup("^手机数码>摄像摄影.*$","摄影", 0.001);
+    status_.AddCategoryGroup("^家用电器.*$","家用电器", 0.001);
+    status_.AddCategoryGroup("^服装服饰.*$","服装服饰", 0.0001);
+    status_.AddCategoryGroup("^鞋包配饰.*$","鞋包配饰", 0.0001);
+    status_.AddCategoryGroup("^运动户外.*$","运动户外", 0.0001);
+    status_.AddCategoryGroup("^母婴童装.*$","母婴童装", 0.0001);
 }
 
+B5moProcessor::~B5moProcessor()
+{
+}
 void B5moProcessor::LoadMobileSource(const std::string& file)
 {
     std::ifstream ifs(file.c_str());
@@ -109,7 +122,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     std::string old_spid;
     if(type==RTYPE_SCD)
     {
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
             doc.property("uuid") = str_to_propstr(spid);
@@ -132,7 +145,7 @@ void B5moProcessor::Process(ScdDocument& doc)
     else
     {
         doc.clearExceptDOCID();
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
         if(spid.empty()) type=NOT_SCD;
@@ -183,7 +196,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     std::string old_spid;
     bool is_human_edit = false;
     {
-        boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
             OfferDb::FlagType flag = 0;
@@ -208,10 +221,28 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         need_do_match = true;
     }
-    ProductMatcher::Product product;
+    Product product;
+    if(attr_!=NULL)
+    {
+        std::string sattr;
+        doc.getString("Attribute", sattr);
+        if(!sattr.empty())
+        {
+            //{
+            //    boost::unique_lock<boost::shared_mutex> lock(mutex_);
+            //    std::cerr<<"normalizing "<<sattr<<std::endl;
+            //}
+            sattr = attr_->attr_normalize(sattr);
+        }
+        if(!sattr.empty())
+        {
+            doc.property("Attribute") = str_to_propstr(sattr);
+        }
+    }
     if(need_do_match)
     {
         matcher_->Process(doc, product, true);
+        status_.Insert(doc, product);
     }
     else
     {
@@ -223,9 +254,18 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     std::string original_attribute;
     doc.getString("Attribute", original_attribute);
-    doc.eraseProperty("Attribute");
+    if(attr_!=NULL)
+    {
+    }
+    else
+    {
+        doc.eraseProperty("Attribute");
+    }
     if(!product.spid.empty())
     {
+        //if(product.type==1) stat1_+=1;
+        //else if(product.type==2) stat2_+=1;
+        //else if(product.type==3) stat3_+=1;
         //has SPU matched
         spid = product.spid;
         if(!title.empty()) 
@@ -240,52 +280,86 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
                     //doc.property(tcp) = front;
                 //}
             //}
-            if(!product.display_attributes.empty()||!product.filter_attributes.empty())
+            if(attr_==NULL)
             {
-                if(!product.display_attributes.empty())
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
                 {
-                    doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
+                    if(!product.display_attributes.empty())
+                    {
+                        doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
+                    }
+                    if(!product.filter_attributes.empty())
+                    {
+                        doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
+                        doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
+                    }
                 }
-                if(!product.filter_attributes.empty())
+                else
                 {
-                    doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
-                    doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
+                    const std::vector<Attribute>& attributes = product.attributes;
+                    const std::vector<Attribute>& dattributes = product.dattributes;
+                    if(!attributes.empty()||!dattributes.empty())
+                    {
+                        if(!dattributes.empty())
+                        {
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
+                        }
+                        else if(!attributes.empty())
+                        {
+                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
+                        }
+                        //else
+                        //{
+                            //std::vector<ProductMatcher::Attribute> eattributes;
+                            //UString attrib_ustr;
+                            //doc.getProperty("Attribute", attrib_ustr);
+                            //std::string attrib_str;
+                            //attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                            //boost::algorithm::trim(attrib_str);
+                            //if(!attrib_str.empty())
+                            //{
+                                //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                            //}
+                            //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
+                            ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
+                            //ProductMatcher::MergeAttributes(new_attributes, eattributes);
+                            //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                        //}
+                    }
                 }
             }
             else
             {
-                const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
-                const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
-                if(!attributes.empty()||!dattributes.empty())
+                std::vector<Attribute> eattributes;
+                std::string sattrib;
+                doc.getString("Attribute", sattrib);
+                boost::algorithm::trim(sattrib);
+                if(!sattrib.empty())
                 {
-                    if(!dattributes.empty())
-                    {
-                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                        doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                    }
-                    else if(!attributes.empty())
-                    {
-                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                        doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                    }
-                    //else
-                    //{
-                        //std::vector<ProductMatcher::Attribute> eattributes;
-                        //UString attrib_ustr;
-                        //doc.getProperty("Attribute", attrib_ustr);
-                        //std::string attrib_str;
-                        //attrib_ustr.convertString(attrib_str, UString::UTF_8);
-                        //boost::algorithm::trim(attrib_str);
-                        //if(!attrib_str.empty())
-                        //{
-                            //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
-                        //}
-                        //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
-                        ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
-                        //ProductMatcher::MergeAttributes(new_attributes, eattributes);
-                        //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
-                    //}
+                    UString uattrib(sattrib, UString::UTF_8);
+                    ProductMatcher::ParseAttributes(uattrib, eattributes);
                 }
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
+                {
+                    std::vector<Attribute> v;
+                    ProductMatcher::ParseAttributes(product.filter_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                    v.clear();
+                    ProductMatcher::ParseAttributes(product.display_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                }
+                else
+                {
+                    ProductMatcher::MergeAttributes(eattributes, product.attributes);
+                    ProductMatcher::MergeAttributes(eattributes, product.dattributes);
+                }
+                UString new_uattrib = ProductMatcher::AttributesText(eattributes);
+                std::string new_sattrib;
+                new_uattrib.convertString(new_sattrib, UString::UTF_8);
+                new_sattrib = attr_->attr_normalize(new_sattrib);
+                doc.property("Attribute") = str_to_propstr(new_sattrib);
             }
 
         }
@@ -293,6 +367,10 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     else
     {
+        if(attr_==NULL&&!original_attribute.empty())
+        {
+            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
+        }
         spid = sdocid;
     }
     if(!product.stitle.empty() && !title.empty())
@@ -331,12 +409,12 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     }
     if(old_spid!=spid)
     {
-        boost::unique_lock<boost::shared_mutex> lock(mutex_);
+        //boost::unique_lock<boost::shared_mutex> lock(mutex_);
         odb_->insert(sdocid, spid);
         //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
     }
     doc.property("uuid") = str_to_propstr(spid);
-    if(!original_attribute.empty())
+    if(!original_attribute.empty()&&attr_==NULL)
     {
         std::string nda;
         doc.getString("DisplayAttribute", nda);
@@ -354,7 +432,7 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
             old_doc.type=DELETE_SCD;
             //last_ts_?
-            sorter_->Append(old_doc, ts_);
+            sorter_->Append(old_doc, ts_, 1);
         }
         ScdDocument sdoc(doc, type);
         //if(!original_attribute.empty())
@@ -373,6 +451,19 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     //}
 }
 
+void B5moProcessor::OMapperChange_(LastOMapperItem& item)
+{
+    boost::algorithm::trim(item.text);
+    B5moSorter::Value value;
+    Json::Reader json_reader;
+    if(!value.Parse(item.text, &json_reader)) return;
+    if(!OMap_(*(item.last_omapper), value.doc)) return;
+    value.doc.type = UPDATE_SCD;
+    ProcessIU_(value.doc, true);
+    boost::unique_lock<boost::shared_mutex> lock(mutex_);
+    item.writer->Append(value.doc, value.doc.type);
+}
+
 bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
 {
     if(!odb_->is_open())
@@ -383,6 +474,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             LOG(ERROR)<<"odb open fail"<<std::endl;
             return false;
         }
+        LOG(INFO)<<"odb open successfully"<<std::endl;
     }
     namespace bfs = boost::filesystem;
     std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
@@ -394,7 +486,9 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     if(bfs::exists(omapper_path))
     {
         omapper_ = new OriginalMapper();
+        LOG(INFO)<<"Opening omapper"<<std::endl;
         omapper_->Open(omapper_path);
+        LOG(INFO)<<"Omapper opened"<<std::endl;
     }
     boost::shared_ptr<ScdTypeWriter> writer(new ScdTypeWriter(output_dir));
     ts_ = bfs::path(mdb_instance).filename().string();
@@ -412,23 +506,38 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 last_omapper.Diff(omapper_path);
                 if(last_omapper.Size()>0)
                 {
+                    LOG(INFO)<<"Omapper changed, size "<<last_omapper.Size()<<std::endl;
+                    last_omapper.Show();
                     std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_mdb_instance);
                     std::string last_block = last_mirror+"/block";
                     std::ifstream ifs(last_block.c_str());
                     std::string line;
-                    Json::Reader json_reader;
+                    B5mThreadPool<LastOMapperItem> pool(thread_num, boost::bind(&B5moProcessor::OMapperChange_, this, _1));
+                    std::size_t p=0;
                     while( getline(ifs, line))
                     {
-                        boost::algorithm::trim(line);
-                        B5moSorter::Value value;
-                        if(!value.Parse(line, &json_reader)) continue;
-                        if(!OMap_(last_omapper, value.doc)) continue;
-                        value.doc.type = UPDATE_SCD;
-                        ProcessIU_(value.doc, true);
-                        writer->Append(value.doc, value.doc.type);
+                        ++p;
+                        if(p%100000==0)
+                        {
+                            LOG(INFO)<<"Processing omapper change "<<p<<std::endl;
+                        }
+                        LastOMapperItem* item = new LastOMapperItem;
+                        item->last_omapper = &last_omapper;
+                        item->writer = writer.get();
+                        item->text = line;
+                        pool.schedule(item);
+                        //boost::algorithm::trim(line);
+                        //B5moSorter::Value value;
+                        //if(!value.Parse(line, &json_reader)) continue;
+                        //if(!OMap_(last_omapper, value.doc)) continue;
+                        //value.doc.type = UPDATE_SCD;
+                        //ProcessIU_(value.doc, true);
+                        //writer->Append(value.doc, value.doc.type);
                     }
+                    pool.wait();
                     ifs.close();
                     odb_->flush();
+                    LOG(INFO)<<"Omapper changing finished"<<std::endl;
                 }
             }
 
@@ -519,6 +628,9 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         delete omapper_;
         omapper_ = NULL;
     }
+    std::string status_path = mdb_instance+"/status";
+    status_.Flush(status_path);
+    //LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<","<<stat3_<<std::endl;
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())

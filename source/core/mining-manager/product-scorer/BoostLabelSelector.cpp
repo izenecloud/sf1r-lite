@@ -132,7 +132,7 @@ bool BoostLabelSelector::classifyQueryToLabel_(
         return false;
 
     izenelib::util::UString frontendCategory;
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
 
     if (!matcher->GetFrontendCategory(backendCategory, frontendCategory))
         return false;

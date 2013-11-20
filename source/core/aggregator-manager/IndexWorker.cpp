@@ -255,6 +255,7 @@ bool IndexWorker::buildCollection(const std::string& scd_path, unsigned int numd
         return false;
     }
 
+    LOG(INFO) << "begin build at time: " << reqlog.timestamp;
     bool ret = buildCollection(numdoc, scdList, reqlog.timestamp);
 
     DISTRIBUTE_WRITE_FINISH(ret);
@@ -276,7 +277,7 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
         return false;
     }
 
-    LOG(INFO) << "got index from primary/log, scd list is : ";
+    LOG(INFO) << "got index from primary/log at time " << reqlog.timestamp << ", scd list is : ";
     for (size_t i = 0; i < reqlog.scd_list.size(); ++i)
     {
         LOG(INFO) << reqlog.scd_list[i];
@@ -420,7 +421,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
                     numdoc = 0;
                 }
 
-                doBuildCollection_(*scd_it, scdType, numdoc);
+                doBuildCollection_(*scd_it, scdType, numdoc, timestamp);
                 LOG(INFO) << "Indexing Finished";
 
                 parser.load(*scd_it);
@@ -889,6 +890,12 @@ bool IndexWorker::updateDocument(const Value& documentValue)
                 return false;
             }
         }
+
+        if (!idManager_->getDocIdByDocName(num_docid, olddocid, false))
+        {
+            LOG(INFO) << "update failed for the doc does not existed.";
+            return false;
+        }
     }
 
     CreateOrUpdateDocReqLog reqlog;
@@ -1211,7 +1218,8 @@ bool IndexWorker::getPropertyValue_(const PropertyValue& value, std::string& val
 bool IndexWorker::doBuildCollection_(
         const std::string& fileName,
         SCD_TYPE scdType,
-        uint32_t numdoc)
+        uint32_t numdoc,
+        int64_t timestamp)
 {
     ScdParser parser(bundleConfig_->encoding_);
     if (!parser.load(fileName))
@@ -1240,21 +1248,21 @@ bool IndexWorker::doBuildCollection_(
     }
     catch (const std::exception& ex)
     {}
-    time_t timestamp = Utilities::createTimeStamp(pt);
-    if (timestamp == -1)
+    time_t timestamp_fromscd = Utilities::createTimeStamp(pt);
+    if (timestamp_fromscd == -1)
     {
         LOG(WARNING) << "!!!! create time from scd fileName failed. " << ss.str();
-        timestamp = Utilities::createTimeStamp();
+        timestamp_fromscd = timestamp;
     }
 
     if (scdType == DELETE_SCD)
     {
-        if (!deleteSCD_(parser, timestamp))
+        if (!deleteSCD_(parser, timestamp_fromscd))
             return false;
     }
     else
     {
-        if (!insertOrUpdateSCD_(parser, scdType, numdoc, timestamp))
+        if (!insertOrUpdateSCD_(parser, scdType, numdoc, timestamp_fromscd))
             return false;
     }
     searchWorker_->reset_all_property_cache();

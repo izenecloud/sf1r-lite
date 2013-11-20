@@ -67,7 +67,6 @@
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
-#include "query-abbreviation/QueryStatistics.h"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -152,6 +151,7 @@ bool greater_pair(const std::pair<std::string, double>& obj1, const std::pair<st
 
 using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
+using namespace sf1r::b5m;
 namespace bfs = boost::filesystem;
 
 std::string MiningManager::system_resource_path_;
@@ -205,7 +205,6 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , queryIntentManager_(NULL)
-    , queryStatistics_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
     , summarizationManagerTask_(NULL)
@@ -252,7 +251,6 @@ MiningManager::~MiningManager()
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
     if (adIndexManager_) delete adIndexManager_;
-    if (queryStatistics_) delete queryStatistics_;
 
     close();
 }
@@ -710,7 +708,7 @@ bool MiningManager::open()
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
-            ProductMatcher* matcher = ProductMatcherInstance::get();
+            b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
             if (!matcher->Open(res_path))
             {
                 std::cerr<<"product matcher open failed"<<std::endl;
@@ -782,10 +780,6 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-
-        /** query statistics */
-        queryStatistics_ = new QueryStatistics(this, collectionName_);
-
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -2294,6 +2288,7 @@ bool MiningManager::GetSuffixMatch(
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
+        bool isAnalyzeQuery,
         UString& analyzedQuery,
         std::string& pruneQueryString_,
         DistKeywordSearchInfo& distSearchInfo,
@@ -2361,7 +2356,7 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         double rank_boundary;
-        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery, rank_boundary);
+        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery, rank_boundary);
 
         double queryScore = 0;
         suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
@@ -2505,7 +2500,7 @@ bool MiningManager::GetSuffixMatch(
               << ", suffix: " << suffixMatchTime
               << ", product score: " << productScoreTime
               << ", group: " << groupTime
-              << ", topk count: " << docIdList.size()
+              << ", res_list.size(): " << res_list.size()
               << ", query: " << actionOperation.actionItem_.env_.queryString_;
 
     if (!totalCount ||res_list.empty()) return false;
@@ -2634,7 +2629,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
         doc.property("Title") = ustr_to_propstr(query);
-        ProductMatcher::Product result_product;
+        Product result_product;
         if (matcher->Process(doc, result_product))
         {
             const std::string& category_name = result_product.scategory;
@@ -2674,7 +2669,7 @@ bool MiningManager::GetProductFrontendCategory(
         ProductMatcher* matcher = ProductMatcherInstance::get();
         Document doc;
         doc.property("Title") = ustr_to_propstr(query);
-        std::vector<ProductMatcher::Product> result_products;
+        std::vector<Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {
             for (uint32_t i = 0; i < result_products.size(); ++i)
