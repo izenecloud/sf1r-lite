@@ -149,6 +149,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     std::vector<sf1r::workerid_t> workeridList;
     actionItem.getDocWorkerIdLists(idList, workeridList);
 
+    LOG(INFO) << "get docs by ids, idlist: " << idList.size() << ", docidlist:" << actionItem.docIdList_.size();
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
     sf1r::docid_t internalId;
@@ -159,11 +160,18 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
         {
             if(!documentManager_->isDeleted(internalId))
                 idList.push_back(internalId);
+            else
+                LOG(INFO) << "doc is deleted while try to get." << *it << ", " << internalId;
+        }
+        else
+        {
+            LOG(INFO) << "get doc not found: " << *it;
         }
     }
 
+    LOG(INFO) << "after convert, get docs by ids idlist: " << idList.size();
     // get docids by property value
-    collectionid_t colId = 1;
+    //collectionid_t colId = 1;
     if (!actionItem.propertyName_.empty())
     {
         std::vector<PropertyValue>::const_iterator property_value;
@@ -173,7 +181,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
             boost::apply_visitor(converter, (*property_value).getVariant());
-            invertedIndexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
+            invertedIndexManager_->getDocsByPropertyValue(actionItem.propertyName_, value, idList);
         }
     }
 

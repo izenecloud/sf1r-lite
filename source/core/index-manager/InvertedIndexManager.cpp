@@ -242,6 +242,35 @@ void InvertedIndexManager::convertData(const std::string& property, const Proper
         boost::apply_visitor(converter, in.getVariant());
 }
 
+void InvertedIndexManager::getDocsByPropertyValue(const std::string& property, const PropertyType& value, std::vector<docid_t>& idlist, uint16_t max_return)
+{
+    BTreeIndexerManager::ValueType data;
+    Indexer::getDocsByPropertyValue(1, property, value, data);
+    size_t actual_size = 0;
+    if (data.which() == 0)
+    {
+        idlist = boost::get<BTreeIndexerManager::VecValueType>(data);
+        actual_size = idlist.size();
+        idlist.resize(std::min((uint16_t)idlist.size(), max_return));
+    }
+    else
+    {
+        BitVector& tmp = boost::get<BitVector>(data);
+        for(size_t i = 0; i < tmp.size(); ++i)
+        {
+            if (idlist.size() >= max_return)
+            {
+                actual_size = tmp.count();
+                break;
+            }
+            if (tmp.test(i))
+                idlist.push_back(i);
+        }
+    }
+    if (idlist.size() >= max_return)
+        LOG(WARNING) << "the returned doclist num is restricted. " << idlist.size() << " VS " << actual_size;
+}
+
 void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
         const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap)
 {
@@ -257,7 +286,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL,filterParam[0], value);
-        getDocsByPropertyValue(colId, property, value, *filterBitMap);
+        Indexer::getDocsByPropertyValue(colId, property, value, *filterBitMap);
         return;
     }
     case QueryFiltering::INCLUDE:

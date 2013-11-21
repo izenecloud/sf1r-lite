@@ -93,21 +93,18 @@ void ZambeziManager::NormalizeScore(
 
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
+        int32_t itemcount = 1;
+        if (numericTable)
+            numericTable->getInt32Value(docids[i], itemcount, false);
+
         uint32_t attr_size = 1;
         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size += std::min(attrvids.size(), size_t(20));
+            attr_size += std::min(attrvids.size(), size_t(30));
         }
-
-        int32_t itemcount = 1;
-        if (numericTable)
-        {
-            numericTable->getInt32Value(docids[i], itemcount, false);
-            //attr_size += std::min(itemcount, 50);
-        }
-
+/*
         if (numericTable_comment)
         {
             int32_t commentcount = 0;
@@ -121,17 +118,14 @@ void ZambeziManager::NormalizeScore(
             numericTable_sales->getInt32Value(docids[i], salescount, false);
             attr_size += (double)salescount/itemcount;
         }
-
-        //add salesAmount/itemcount to attr_size
-        scores[i] = scores[i] + std::min(attr_size, (uint32_t)1000);
+*/
+        scores[i] = scores[i] * attr_size;
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
 
     for (unsigned int i = 0; i < scores.size(); ++i)
-    {
-        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
-    }
+        scores[i] = int(scores[i] / maxScore * 100) + productScores[i]*13;
 }
 
 }
