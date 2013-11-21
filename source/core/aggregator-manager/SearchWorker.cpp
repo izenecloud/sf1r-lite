@@ -1031,7 +1031,9 @@ uint32_t SearchWorker::getDocNum()
 
 uint32_t SearchWorker::getKeyCount(const std::string& property_name)
 {
-    return invertedIndexManager_->getBTreeIndexer()->count(property_name);
+    if (bundleConfig_->isNormalSchemaEnable_)
+        return invertedIndexManager_->getBTreeIndexer()->count(property_name);
+    return 0;
 }
 
 }

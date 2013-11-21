@@ -790,7 +790,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     docid_t oldId = 0;
     IndexWorker::UpdateType updateType = INSERT;
     time_t timestamp = reqlog.timestamp;
-    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD, /////XXX also need to update;...
+    if (!prepareDocIdAndUpdateType_(asString(documentValue["DOCID"]), scddoc, INSERT_SCD,
             oldId, docid, updateType))
     {
         return false;
@@ -800,15 +800,9 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, timestamp, true);//TODO test is there is no filter ...
+    bool ret = insertDoc_(0, document, timestamp, true);//not support filter, there is no rtype property in document;
     if (ret)
     {
-        // api_indexdoc_number_++;
-        // if (api_indexdoc_number_ == MAX_API_INDEXDOC)
-        // {
-        //     inc_supported_index_manager_.postProcessForAPI();
-        //     api_indexdoc_number_ = 0;
-        // }
         doMining_(reqlog.timestamp);
     }
     //flush();
@@ -1588,7 +1582,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     return true;
 }
 
-bool IndexWorker::insertDoc_(//
+bool IndexWorker::insertDoc_(
         size_t wid,
         Document& document,
         time_t timestamp,
@@ -1618,7 +1612,7 @@ bool IndexWorker::insertDoc_(//
     return true;
 }
 
-bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp) ////
+bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
@@ -1629,7 +1623,7 @@ bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp) ////
         STOP_PROFILER(proDocumentIndexing);
 
         START_PROFILER(proIndexing);
-        inc_supported_index_manager_.insertDocument(document, timestamp); ///
+        inc_supported_index_manager_.insertDocument(document, timestamp);
         STOP_PROFILER(proIndexing);
         //indexStatus_.numDocs_ = inc_supported_index_manager_.numDocs();
         return true;
@@ -2077,7 +2071,7 @@ bool IndexWorker::prepareDocument_(
     }
     else
     {
-        /*time_t tm = timestamp / 1000000;
+        time_t tm = timestamp / 1000000;
         boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable
             = documentManager_->getNumericPropertyTable(dateProperty_.getName());
 
@@ -2085,7 +2079,7 @@ bool IndexWorker::prepareDocument_(
         numericPropertyTable->getStringValue(docId, rtypevalue);
         old_rtype_doc.property(dateProperty_.getName()) = str_to_propstr(rtypevalue);
 
-        numericPropertyTable->setInt64Value(docId, tm);*/
+        numericPropertyTable->setInt64Value(docId, tm);
     }
 
     return true;

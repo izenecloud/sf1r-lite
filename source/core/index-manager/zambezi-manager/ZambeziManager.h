@@ -30,6 +30,7 @@ class ZambeziTokenizer;
 class DocumentManager;
 
 typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
+
 class ZambeziManager
 {
 public:

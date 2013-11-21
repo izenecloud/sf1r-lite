@@ -62,11 +62,11 @@ void IndexBundleConfiguration::setZambeziSchema(const DocumentSchema& documentSc
             PropertyConfig updatedDatePropertyConfig(*iter);
             updatedDatePropertyConfig.setIsIndex(true);
             updatedDatePropertyConfig.setIsFilter(true);
-            //eraseProperty(iter->propertyName_);
             zambeziConfig_.zambeziIndexSchema.insert(updatedDatePropertyConfig);
         }
     }
 }
+
 
 std::set<PropertyConfig, PropertyComp>::const_iterator 
 IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, bool& isIndexSchema) const
@@ -87,7 +87,7 @@ IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, b
         }
     }
     // ZambeziIndex Schema
-    if (isZambeziSchemaEnable_) //TO UPDATE
+    if (isZambeziSchemaEnable_)
     {
         std::set<PropertyConfig, PropertyComp>::const_iterator iter
         = zambeziConfig_.zambeziIndexSchema.find(tempPropertyConfig);
@@ -96,24 +96,6 @@ IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, b
         {
             isIndexSchema = true;
             return iter;
-        }
-
-        // search virtual property
-        for (std::vector<ZambeziVirtualProperty>::const_iterator i = zambeziConfig_.virtualPropeties.begin(); 
-            i != zambeziConfig_.virtualPropeties.end(); ++i)
-        {
-            for (std::vector<std::string>::const_iterator j = i->subProperties.begin();
-             j != i->subProperties.end(); ++j)
-                if (*j == tempPropertyConfig.getName())
-                {
-                    isIndexSchema = true;
-
-                    PropertyConfig tempConfig;
-                    tempConfig.propertyName_ = tempPropertyConfig.getName();
-                    std::set<PropertyConfig, PropertyComp>::const_iterator iter
-                    = zambeziConfig_.zambeziIndexSchema.find(tempConfig);
-                    return iter;
-                }
         }
     }
 

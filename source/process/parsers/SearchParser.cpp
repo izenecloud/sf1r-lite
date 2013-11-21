@@ -334,6 +334,12 @@ bool SearchParser::parse(const Value& search)
             warning() = "Unknown searchingMode. Default searching mode is used.";
         }
 
+        if (indexSchema_.empty() && searchingModeInfo_.mode_ !=SearchingMode::ZAMBEZI)
+        {
+            error() = "IndexSchema is not in xml config, the search mode is wrong";
+            return false;
+        }
+
         if (searching_mode.hasKey(Keys::threshold))
         {
             float threshold = (float)asDouble(searching_mode[Keys::threshold]);

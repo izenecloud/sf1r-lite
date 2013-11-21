@@ -340,8 +340,11 @@ bool IndexBundleActivator::init_()
 
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index worker.."<<std::endl;
     // add all kinds of index that will support increment build.
-    indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+    if (config_->isNormalSchemaEnable_)
+        indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+
     indexWorker_->getIncSupportedIndexManager().setDocumentManager(documentManager_);
+    
     if (config_->isZambeziSchemaEnable_)
         indexWorker_->getIncSupportedIndexManager().addIndex(zambeziIndexManager_);
 

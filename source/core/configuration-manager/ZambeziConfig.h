@@ -43,8 +43,11 @@ struct ZambeziProperty
     void display()
     {
         std::cout << "name:" << name 
-            << " ,poolSize:" << poolSize << " ,weight:" << weight << " ,isFilter:" << isFilter 
-            << ",isTokenizer:" << isTokenizer <<std::endl;   
+            << " ,poolSize:" << poolSize 
+            << " ,weight:" << weight 
+            << " ,isFilter:" << isFilter 
+            << ",isTokenizer:" << isTokenizer 
+            <<std::endl;   
     }
 };
 
@@ -56,22 +59,27 @@ class ZambeziVirtualProperty : public ZambeziProperty
 {
 public:
     /*
-    * @brief: all the property used to build virtual property must be put in subProperties;
+    * @brief: all the property used to build virtual property 
+    *         must be put in subProperties;
     */
     std::vector<std::string> subProperties;
     sf1r::PropertyDataType type;
     bool isAttrToken;
 
     ZambeziVirtualProperty()
+    : type(sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
+    , isAttrToken(false)
     {
     }
 
     void display()
     {
         std::cout << "name:" << name
-            << " ,poolSize:" << poolSize << " ,weight:" << weight
+            << " ,poolSize:" << poolSize 
+            << " ,weight:" << weight
             << " ,isFilter:" << isFilter
-            << " ,isAttrToken" << isAttrToken << std::endl;
+            << " ,isAttrToken" << isAttrToken
+            << std::endl;
         std::cout << "subProperties:";
         for (unsigned int i = 0; i < subProperties.size(); ++i)
         {
@@ -97,7 +105,8 @@ struct PropertyStatus
 
     void display()
     {
-        std::cout << "  isCombined:" << isCombined << "  ,isAttr:" << isAttr << std::endl; 
+        std::cout << "  isCombined:" << isCombined 
+        << "  ,isAttr:" << isAttr << std::endl; 
     }
 };
 
@@ -105,6 +114,10 @@ struct PropertyStatus
  * @brief the integrated configuration for zambezi index;
  *
  */
+
+typedef std::set<PropertyConfig, PropertyComp> ZambeziIndexSchema;
+typedef std::map<std::string, PropertyStatus> ZambeziStatusMap;
+
 class ZambeziConfig
 {
 public:
@@ -127,12 +140,12 @@ public:
     std::vector<ZambeziProperty> properties;
     std::vector<ZambeziVirtualProperty> virtualPropeties;
 
-    std::map<std::string, PropertyStatus> property_status_map;
+    ZambeziStatusMap property_status_map;
 
     /**
      * @brief: it it used in document-manager and docuemntSearch handler;
      */
-    std::set<PropertyConfig, PropertyComp> zambeziIndexSchema;
+    ZambeziIndexSchema zambeziIndexSchema;
 
     bool hasAttrtoken;
 
@@ -155,13 +168,16 @@ public:
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
 
-        for (std::vector<ZambeziProperty>::iterator i = properties.begin(); i != properties.end(); ++i)
+        for (std::vector<ZambeziProperty>::iterator i = properties.begin();
+             i != properties.end(); ++i)
             i->display();
 
-        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
+        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); 
+            i != virtualPropeties.end(); ++i)
             i->display();
 
-        for (std::map<std::string, PropertyStatus>::iterator i = property_status_map.begin(); i != property_status_map.end(); ++i)
+        for (ZambeziStatusMap::iterator i = property_status_map.begin();
+             i != property_status_map.end(); ++i)
         {
             std::cout << "Property:" << i->first; 
             i->second.display();
@@ -169,8 +185,9 @@ public:
     }
 
     /**
-     * @breif set zambezi schema, and make sure attr_token can not use together will other property;
-     *
+     * @breif set ZambeziIndexSchema, 
+     * and make sure if used attr_token, properties must be empty;
+     * 
      **/
     bool checkConfig()
     {
@@ -196,7 +213,7 @@ public:
     }
 
     /**
-     * @brief set zambezi Index Schema after zambezi config is parsered;
+     * @brief set ZambeziIndexSchema after zambezi config is parsered;
      *        and, check there is no vialid property in zambezi config;
      *
      */
@@ -207,7 +224,7 @@ public:
             PropertyConfig tmpConfig;
             tmpConfig.setName(i->name);
 
-            std::set<PropertyConfig, PropertyComp>::iterator sp = zambeziIndexSchema.find(tmpConfig);
+            ZambeziIndexSchema::iterator sp = zambeziIndexSchema.find(tmpConfig);
             if (sp == zambeziIndexSchema.end())
             {
                 LOG(ERROR) << "[ERROR]: the property:<" << i->name << "> does not exsit in document Schema";
@@ -227,15 +244,18 @@ public:
 
         for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
         {
-            // to support only config virtual config; 
-            // only when the subProperty has not exsit in properties, add this subProperty to zambezIndexSchema;
+            /**
+             * @to support only Virtual Search;
+             * only when the subProperty has not exsit in properties, 
+             * add this subProperty to zambezIndexSchema;
+             **/
             for (std::vector<std::string>::iterator j = i->subProperties.begin(); j != i->subProperties.end(); ++j)
             {
                 if (!checkValidationConfig(*j))
                 {
                     PropertyConfig tmpConfig;
                     tmpConfig.setName(i->name);
-                    std::set<PropertyConfig, PropertyComp>::iterator sp = zambeziIndexSchema.find(tmpConfig);
+                    ZambeziIndexSchema::iterator sp = zambeziIndexSchema.find(tmpConfig);
                     if (sp == zambeziIndexSchema.end())
                     {
                         LOG(ERROR) << "[ERROR]: the property:" << i->name << "> does not exsit in document Schema";
