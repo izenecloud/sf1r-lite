@@ -57,7 +57,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     std::string sort_bin = sorter_bin_;
     if(sort_bin.empty()) sort_bin = "sort";
     LOG(INFO)<<"sorter bin : "<<sort_bin<<std::endl;
-    std::string cmd = sort_bin+" --stable -t$'\\t' -k1,1 --buffer-size="+buffer_size+" -T "+tmp_path+" "+sorter_path+"/block > "+sorter_path+"/block.sort";
+    std::string cmd = sort_bin+" --stable --field-separator='\t' -k1,1 --buffer-size="+buffer_size+" -T "+tmp_path+" "+sorter_path+"/block > "+sorter_path+"/block.sort";
     LOG(INFO)<<"cmd : "<<cmd<<std::endl;
     int status = system(cmd.c_str());
     LOG(INFO)<<"cmd finished : "<<status<<std::endl;
