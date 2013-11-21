@@ -215,6 +215,12 @@ public:
         return p;
     }
 
+    static std::string GetCommentCountPropertyName()
+    {
+        static std::string p("CommentCount");
+        return p;
+    }
+
     static std::string BookCategoryName()
     {
         static std::string name("书籍/杂志/报纸");
