@@ -53,7 +53,7 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
         ts_ = bfs::path(m_).parent_path().filename().string();
     }
     std::string buffer_size = buffer_size_;
-    if(buffer_size.empty()) buffer_size = "30G";
+    if(buffer_size.empty()) buffer_size = "30%";
     std::string sort_bin = sorter_bin_;
     if(sort_bin.empty()) sort_bin = "sort";
     LOG(INFO)<<"sorter bin : "<<sort_bin<<std::endl;
