@@ -232,12 +232,19 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             //    boost::unique_lock<boost::shared_mutex> lock(mutex_);
             //    std::cerr<<"normalizing "<<sattr<<std::endl;
             //}
-            sattr = attr_->attr_normalize(sattr);
-        }
-        if(!sattr.empty())
-        {
+            try {
+                sattr = attr_->attr_normalize(sattr);
+            }
+            catch(std::exception& ex)
+            {
+                sattr = "";
+            }
             doc.property("Attribute") = str_to_propstr(sattr);
         }
+        //if(!sattr.empty())
+        //{
+        //    doc.property("Attribute") = str_to_propstr(sattr);
+        //}
     }
     if(need_do_match)
     {
@@ -358,7 +365,13 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
                 UString new_uattrib = ProductMatcher::AttributesText(eattributes);
                 std::string new_sattrib;
                 new_uattrib.convertString(new_sattrib, UString::UTF_8);
-                new_sattrib = attr_->attr_normalize(new_sattrib);
+                try {
+                    new_sattrib = attr_->attr_normalize(new_sattrib);
+                }
+                catch(std::exception& ex)
+                {
+                    //TODO do nothing, keep new_sattrib not change
+                }
                 doc.property("Attribute") = str_to_propstr(new_sattrib);
             }
 
