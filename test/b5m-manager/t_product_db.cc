@@ -16,6 +16,7 @@
 #include <boost/test/unit_test.hpp>
 #include <stdlib.h>
 using namespace sf1r;
+using namespace sf1r::b5m;
 using namespace std;
 using namespace boost;
 ProductProperty pp;

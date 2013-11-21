@@ -2,6 +2,7 @@
 #include <common/ScdWriter.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
+using namespace sf1r::b5m;
 namespace po = boost::program_options;
 
 int main(int ac, char** av)
@@ -43,12 +44,12 @@ int main(int ac, char** av)
         {
             for(uint32_t i=0;i<keyword.category_name_apps.size();i++)
             {
-                const ProductMatcher::Category& c = matcher.GetCategory(keyword.category_name_apps[i].cid);
+                const Category& c = matcher.GetCategory(keyword.category_name_apps[i].cid);
                 std::cout<<"CategoryApp "<<c.name<<std::endl;
             }
             for(uint32_t i=0;i<keyword.attribute_apps.size();i++)
             {
-                const ProductMatcher::Product& p = matcher.GetProduct(keyword.attribute_apps[i].spu_id);
+                const Product& p = matcher.GetProduct(keyword.attribute_apps[i].spu_id);
                 std::cout<<"AttributeApp "<<p.stitle<<":"<<keyword.attribute_apps[i].attribute_name<<std::endl;
             }
         }

@@ -17,7 +17,7 @@
 
  	ExtractKeywordsController::ExtractKeywordsController()
  	{
- 		matcher_ = ProductMatcherInstance::get();
+ 		matcher_ = b5m::ProductMatcherInstance::get();
  		if ( !(matcher_->IsOpen()))
  		{
  			std::string system_resource_path_ = SF1Config::get()->getResourceDir();

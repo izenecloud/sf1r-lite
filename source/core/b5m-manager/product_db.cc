@@ -4,6 +4,7 @@
 #include <mining-manager/util/split_ustr.h>
 #include <sstream>
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 B5mpDocGenerator::B5mpDocGenerator()
 {
@@ -26,12 +27,17 @@ B5mpDocGenerator::B5mpDocGenerator()
     subdoc_weighter_.insert(std::make_pair("京东商城", 9));
     subdoc_weighter_.insert(std::make_pair("天猫", 8));
     subdoc_weighter_.insert(std::make_pair("淘宝网", 0));
+    pic_weighter_.insert(std::make_pair("卓越亚马逊", 10));
+    pic_weighter_.insert(std::make_pair("京东商城", 9));
+    pic_weighter_.insert(std::make_pair("天猫", 0));
+    pic_weighter_.insert(std::make_pair("淘宝网", 0));
 }
 void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
 {
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
     std::set<std::string> psource;
+    std::set<std::string> pcountry;
     std::vector<Document> subdocs;
     ProductPrice pprice;
     Document::doc_prop_value_strtype pdate;
@@ -46,6 +52,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     odocs.front().getProperty("uuid", pid);
     std::size_t sales_amount = 0;
     bool has_sales_amount = false;
+    std::vector<Attribute> attributes;
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
@@ -95,6 +102,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         //doc.getProperty("Attribute", uattribute);
         doc.getProperty("DATE", udate);
         doc.getProperty("Url", uurl);
+
+        UString uattrib;
+        doc.getString("Attribute", uattrib);
+        std::vector<Attribute> av;
+        ProductMatcher::ParseAttributes(uattrib, av);
+        ProductMatcher::MergeAttributes(attributes, av);
+
         if(udate.compare(pdate)>0) pdate=udate;
         ProductPrice price;
         price.Parse(uprice);
@@ -117,6 +131,9 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             std::string ssource = propstr_to_str(usource);
             psource.insert(ssource);
         }
+        std::string country;
+        doc.getString("Country", country);
+        if(!country.empty()) pcountry.insert(country);
         std::string samount;
         doc.getString(B5MHelper::GetSalesAmountPropertyName(), samount);
         if(!samount.empty())
@@ -131,12 +148,11 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
                 std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
             }
         }
-        //if(!uattribute.empty())
-        //{
-            //std::vector<ProductMatcher::Attribute> attributes;
-            //ProductMatcher::ParseAttributes(uattribute, attributes);
-            //ProductMatcher::MergeAttributes(pattributes, attributes);
-        //}
+    }
+    UString uattrib = ProductMatcher::AttributesText(attributes);
+    if(!uattrib.empty())
+    {
+        pdoc.property("Attribute") = ustr_to_propstr(uattrib);
     }
     pdoc.property("Url") = url;
     if(!spu_title.empty())
@@ -147,6 +163,40 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     if(!spu_pic.empty())
     {
         pdoc.property("Picture") = spu_pic;
+    }
+    else
+    {
+        std::pair<std::string, int> select_pic("", -1);
+        for(uint32_t i=0;i<odocs.size();i++)
+        {
+            const ScdDocument& doc=odocs[i];
+            if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
+            {
+                continue;
+            }
+            std::string pic;
+            doc.getString("Picture", pic);
+            if(pic.empty()) continue;
+            std::string source;
+            doc.getString("Source", source);
+            if(source.empty()) continue;
+            int weight = default_source_weight_;
+            boost::unordered_map<std::string, int>::const_iterator it = pic_weighter_.find(source);
+            if(it!=pic_weighter_.end())
+            {
+                weight = it->second;
+            }
+            if(weight>select_pic.second)
+            {
+                select_pic.first = pic;
+                select_pic.second = weight;
+            }
+        }
+        if(!select_pic.first.empty())
+        {
+            pdoc.property("Picture") = str_to_propstr(select_pic.first);
+        }
+
     }
     if(!spu_url.empty())
     {
@@ -175,6 +225,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         ssource+=*it;
     }
     if(!ssource.empty()) pdoc.property("Source") = str_to_propstr(ssource, UString::UTF_8);
+    std::string scountry;
+    for(std::set<std::string>::const_iterator it=pcountry.begin();it!=pcountry.end();++it)
+    {
+        if(!scountry.empty()) scountry+=",";
+        scountry+=*it;
+    }
+    if(!scountry.empty()) pdoc.property("Country") = str_to_propstr(scountry, UString::UTF_8);
     if(has_sales_amount)
     {
         pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;

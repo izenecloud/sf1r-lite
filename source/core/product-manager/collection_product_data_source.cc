@@ -50,7 +50,7 @@ void CollectionProductDataSource::GetRTypePropertiesForDocument(uint32_t docid, 
 void CollectionProductDataSource::GetDocIdList(const Document::doc_prop_value_strtype& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
 {
     PropertyType value(uuid);
-    index_manager_->getDocsByPropertyValue(1, config_.uuid_property_name, value, docid_list);
+    index_manager_->getDocsByPropertyValue(config_.uuid_property_name, value, docid_list);
     docid_list.erase( std::remove(docid_list.begin(), docid_list.end(), exceptid),docid_list.end());
 
 }

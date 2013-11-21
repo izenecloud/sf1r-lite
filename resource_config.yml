@@ -17,6 +17,7 @@ sub_modules:
     - dict
     - query-intent
     - query_correction
+    - query_abbreviation
 push_sub_modules:
     - ise
     - kpe
@@ -26,3 +27,4 @@ push_sub_modules:
     - qa
     - dict
     - query_correction
+    - query_abbreviation

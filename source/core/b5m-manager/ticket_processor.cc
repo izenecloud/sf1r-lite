@@ -14,6 +14,7 @@
 //#define TICKET_DEBUG
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 TicketProcessor::TicketProcessor()
 {
