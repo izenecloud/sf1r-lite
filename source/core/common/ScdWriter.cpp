@@ -88,6 +88,16 @@ bool ScdWriter::Append(const Document& doc)
     }
     return true;
 }
+bool ScdWriter::Append(const std::string& str)
+{
+    if(str.empty()) return false;
+    if(!ofs_.is_open())
+    {
+        Open_();
+    }
+    ofs_<<str;
+    return true;
+}
 
 bool ScdWriter::Append(const SCDDoc& doc)
 {
@@ -151,3 +161,31 @@ void ScdWriter::Close()
         ofs_.close();
     }
 }
+void ScdWriter::DocToString(const Document& doc, std::string& str)
+{
+    std::stringstream ss;
+    DocumentOutputVisitor visitor(&ss);
+    const static std::string DOCID = "DOCID";
+    Document::property_const_iterator docid_it = doc.findProperty(DOCID);
+    if(docid_it == doc.propertyEnd())
+    {
+        return;
+    }
+    std::string sdocid = propstr_to_str(docid_it->second.getPropertyStrValue());
+    ss<<"<"<<DOCID<<">"<<sdocid<<std::endl;
+    Document::property_const_iterator it = doc.propertyBegin();
+    while(it!=doc.propertyEnd())
+    {
+        if(it->first==DOCID)
+        {
+            ++it;
+            continue;
+        }
+        ss<<"<"<<it->first<<">";
+        boost::apply_visitor( visitor, it->second.getVariant());
+        ss<<std::endl;
+        ++it;
+    }
+    str = ss.str();
+}
+
