@@ -172,14 +172,12 @@ bool ZambeziSearch::search(
     zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
                             candidates, scores);
 
-    if (candidates.empty())
+    if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
-        if (AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList))
-        {
-            zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
+        AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
+        zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
                                     candidates, scores);
-        }
     }
 
     if (candidates.empty())

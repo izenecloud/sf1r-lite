@@ -35,7 +35,7 @@ bool BoostLabelSelector::selectLabel(
     std::size_t limit,
     std::vector<category_id_t>& boostLabels)
 {
-    if (scoreParam.searchMode_ == SearchingMode::ZAMBEZI)
+    if (scoreParam.searchMode_ == SearchingMode::ZAMBEZI) // TODO: for ProductRanking -> Category
         return convertZambeziLabelIds_(scoreParam, limit, boostLabels);
 
     if (convertLabelIds_(scoreParam.groupParam_.boostGroupLabels_, boostLabels) ||
