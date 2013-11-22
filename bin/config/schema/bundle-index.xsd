@@ -50,6 +50,7 @@
                         <xs:attribute name="reverse" type="YesNoType" use="optional"/>
                         <xs:attribute name="poolSize" type="xs:string" use="optional"/>
                         <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
+                        <xs:attribute name="vocabSize" type="xs:integer" use="optional"/>
                     </xs:complexType>
                 </xs:element>
 

@@ -2360,6 +2360,7 @@ void CollectionConfig::parseZambeziNode(
     getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
     getAttribute_ByteSize(zambeziNode, "poolSize", zambeziConfig.poolSize, true);
     getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, true);
+    getAttribute_ByteSize(zambeziNode, "vocabSize", zambeziConfig.vocabSize, false);
     zambeziConfig.isEnable = true;
     //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
     zambeziConfig.system_resource_path_ = SF1Config::get()->getResourceDir();

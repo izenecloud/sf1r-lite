@@ -34,14 +34,14 @@ void ZambeziManager::init()
         if (i->isTokenizer)
         {
             propertyList_.push_back(i->name);
-            property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+            property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.vocabSize, config_.reverse)));
         }
     }
 
     for (std::vector<ZambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
     {
         propertyList_.push_back(i->name);
-        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.vocabSize, config_.reverse)));
     }
 }
 

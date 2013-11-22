@@ -126,6 +126,7 @@ public:
 
     uint32_t poolSize;
     uint32_t poolCount;
+    uint32_t vocabSize;
 
     std::string tokenPath;
     std::string indexFilePath;
@@ -151,7 +152,9 @@ public:
 
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
+                    , poolSize(0)
                     , poolCount(0)
+                    , vocabSize(1U << 25) // 32M terms in default
                     , hasAttrtoken(false)
     {}
 
@@ -163,6 +166,7 @@ public:
         std::cout << "reverse:" << reverse << std::endl;
         std::cout << "poolSize: "<< poolSize << std::endl;
         std::cout << "poolCount: "<< poolCount << std::endl;
+        std::cout << "vocabSize: "<< vocabSize << std::endl;
         std::cout << "indexFilePath: "<< indexFilePath << std::endl;
         std::cout << "tokenPath: "<< tokenPath << std::endl;
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
@@ -286,7 +290,9 @@ private:
     {
         ar & isEnable;
         ar & reverse;
+        ar & poolSize;
         ar & poolCount;
+        ar & vocabSize;
     }
 };
 
