@@ -145,6 +145,8 @@ public:
     virtual bool updateDocument(const Document& olddoc, const Document& old_rtype_doc, const Document& newdoc, int updateType, time_t timestamp);
     virtual void removeDocument(docid_t docid, time_t timestamp);
 
+    void getDocsByPropertyValue(const std::string& property, const PropertyType& value, std::vector<docid_t>& idlist, uint16_t max_return = 10000);
+
 private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);
     bool makeForwardIndex_(

@@ -1,5 +1,5 @@
-#ifndef SF1R_QUERY_ABBREVIATION_H
-#define SF1R_QUERY_ABBREVIATION_H
+#ifndef SF1R_QA_HOT_TOKENS_H
+#define SF1R_QA_HOT_TOKENS_H
 
 #include <boost/unordered_map.hpp>
 
