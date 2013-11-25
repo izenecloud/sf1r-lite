@@ -25,6 +25,12 @@ ZambeziManager::~ZambeziManager()
 {
     if (zambeziTokenizer_)
         delete zambeziTokenizer_;
+
+    for (unsigned int i = 0; i < propertyList_.size(); ++i)
+    {
+        if (property_index_map_[propertyList_[i]] != NULL)
+            delete property_index_map_[propertyList_[i]];
+    }
 }
 
 void ZambeziManager::init()
@@ -34,14 +40,30 @@ void ZambeziManager::init()
         if (i->isTokenizer)
         {
             propertyList_.push_back(i->name);
-            property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+            ZambeziBaseIndex* zambeziIndex = NULL;
+            createZambeziIndex_(zambeziIndex, i->poolSize);
+            property_index_map_.insert(std::make_pair(i->name, zambeziIndex));
         }
     }
 
     for (std::vector<ZambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
     {
         propertyList_.push_back(i->name);
-        property_index_map_.insert(std::make_pair(i->name, AttrIndex(i->poolSize, config_.poolCount, config_.reverse)));
+        ZambeziBaseIndex* zambeziIndex = NULL;
+        createZambeziIndex_(zambeziIndex, i->poolSize);
+        property_index_map_.insert(std::make_pair(i->name, zambeziIndex));
+    }
+}
+
+void ZambeziManager::createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex, unsigned int poolSize)
+{
+    if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
+    {
+        zambeziIndex = new AttrIndex(poolSize, config_.poolCount, config_.reverse);
+    }
+    else if (config_.indexType_ == ZambeziIndexType::PostionIndexType)
+    {
+        zambeziIndex = new PositionalIndex(izenelib::ir::Zambezi::NON_POSITIONAL, poolSize, config_.poolCount);
     }
 }
 
@@ -83,7 +105,7 @@ bool ZambeziManager::open()
 
         try
         {
-            property_index_map_[*i].load(ifs);
+            property_index_map_[*i]->load(ifs);
         }
         catch (const std::exception& e)
         {
@@ -98,11 +120,79 @@ bool ZambeziManager::open()
     return true;
 }
 
-void ZambeziManager::merge_(
-        const std::vector<std::vector<docid_t> >& docidsList, //docid 自增
-        const std::vector<std::vector<uint32_t> >& scoresList,
+void ZambeziManager::search(
+        const std::vector<std::pair<std::string, int> >& tokens,
+        uint32_t limit,
+        const std::vector<std::string>& propertyList,
         std::vector<docid_t>& docids,
-        std::vector<uint32_t>& scores)
+        std::vector<float>& scores)
+{
+    std::cout <<"[ZambeziManager::search] Search tokens: ";
+    for (unsigned int i = 0; i < tokens.size(); ++i)
+    {
+        std::cout << tokens[i].first <<" , ";
+    }
+    std::cout << std::endl;
+
+    izenelib::util::ClockTimer timer;
+    // in one property
+    if (propertyList.size() == 1)
+    {    
+        property_index_map_[propertyList[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, true, docids, scores);
+        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+                  << ", costs :" << timer.elapsed() << " seconds";
+        return;
+    }
+
+    // only one property
+    if (propertyList_.size() == 1)
+    {    
+        property_index_map_[propertyList_[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, true, docids, scores);
+        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+                  << ", costs :" << timer.elapsed() << " seconds";
+        return;
+    }
+
+    std::vector<std::string> searchPropertyList = propertyList;
+    if (searchPropertyList.empty())
+        searchPropertyList = propertyList_;
+
+    std::vector<std::vector<docid_t> > docidsList;
+    docidsList.resize(searchPropertyList.size());
+    std::vector<std::vector<float> > scoresList;
+    scoresList.resize(searchPropertyList.size());
+
+    for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
+    {
+        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(kAlgorithm, tokens, limit, true, docidsList[i], scoresList[i]);
+    }
+
+    izenelib::util::ClockTimer timer_merge;
+
+    for (unsigned int i = 0; i < docidsList.size(); ++i)
+    {
+        if (docidsList[i].size() != scoresList[i].size())
+        {
+            LOG(INFO) << "[ERROR] dismatch doclist and scorelist";
+            return;
+        }
+    }
+
+    merge_(docidsList, scoresList, docids, scores);
+
+    LOG(INFO) << "zambezi merge " << docidsList.size()
+              << " properties, costs :" << timer_merge.elapsed() << " seconds";
+
+    LOG(INFO) << "zambezi returns docid num: " << docids.size()
+              << ", costs :" << timer.elapsed() << " seconds";
+}
+
+// to do, add weight to each posting
+void ZambeziManager::merge_(
+        const std::vector<std::vector<docid_t> >& docidsList,
+        const std::vector<std::vector<float> >& scoresList,
+        std::vector<docid_t>& docids,
+        std::vector<float>& scores)
 {
     // init
     unsigned int docidsListSize = docidsList.size();

@@ -26,7 +26,7 @@ public:
     ZambeziIndexManager(
         const ZambeziConfig& config,
         const std::vector<std::string>& properties,
-        std::map<std::string, AttrIndex>& property_index_map,
+        std::map<std::string, ZambeziBaseIndex*>& property_index_map,
         ZambeziTokenizer* zambeziTokenizer,
         boost::shared_ptr<DocumentManager> documentManager
         );
@@ -84,7 +84,7 @@ private:
     const ZambeziConfig& config_;
     const std::vector<std::string>& properties_;
     ZambeziTokenizer* zambeziTokenizer_;
-    std::map<std::string, AttrIndex>& property_index_map_;
+    std::map<std::string, ZambeziBaseIndex*>& property_index_map_;
     boost::shared_ptr<DocumentManager> documentManager_;
 
 

@@ -8,7 +8,9 @@
 
 #include <common/inttypes.h>
 #include <configuration-manager/ZambeziConfig.h>
+#include <ir/Zambezi/ZambeziIndex.hpp>
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
+#include <ir/Zambezi/PositionalInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
@@ -29,7 +31,9 @@ class AttrManager;
 class ZambeziTokenizer;
 class DocumentManager;
 
-typedef  izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
+typedef izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
+typedef izenelib::ir::Zambezi::PositionalInvertedIndex PositionalIndex;
+typedef izenelib::ir::Zambezi::ZambeziIndex ZambeziBaseIndex;
 
 class ZambeziManager
 {
@@ -41,76 +45,14 @@ public:
 
     bool open();
 
-    template <class FilterType>
     void search(
         const std::vector<std::pair<std::string, int> >& tokens,
-        const FilterType& filter,
         uint32_t limit,
         const std::vector<std::string>& propertyList,
         std::vector<docid_t>& docids,
-        std::vector<uint32_t>& scores)
-    {
-        std::cout <<"[ZambeziManager::search] Search tokens: ";
-        for (unsigned int i = 0; i < tokens.size(); ++i)
-        {
-            std::cout << tokens[i].first <<" , ";
-        }
-        std::cout << std::endl;
+        std::vector<float>& scores);
 
-        izenelib::util::ClockTimer timer;
-        // in one property
-        if (propertyList.size() == 1)
-        {    
-            property_index_map_[propertyList[0]].retrievalAndFiltering(tokens, filter, limit, true, docids, scores);// if need to use filter;
-            LOG(INFO) << "zambezi returns docid num: " << docids.size()
-                      << ", costs :" << timer.elapsed() << " seconds";
-            return;
-        }
-
-        // only one property
-        if (propertyList_.size() == 1)
-        {    
-            property_index_map_[propertyList_[0]].retrievalAndFiltering(tokens, filter, limit, true, docids, scores);// if need to use filter;
-            LOG(INFO) << "zambezi returns docid num: " << docids.size()
-                      << ", costs :" << timer.elapsed() << " seconds";
-            return;
-        }
-
-        std::vector<std::string> searchPropertyList = propertyList;
-        if (searchPropertyList.empty())
-            searchPropertyList = propertyList_;
-
-        std::vector<std::vector<docid_t> > docidsList;
-        docidsList.resize(searchPropertyList.size());
-        std::vector<std::vector<uint32_t> > scoresList;
-        scoresList.resize(searchPropertyList.size());
-
-        for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
-        {
-            property_index_map_[searchPropertyList[i]].retrievalAndFiltering(tokens, filter, limit, true, docidsList[i], scoresList[i]); // add new interface;
-        }
-
-        izenelib::util::ClockTimer timer_merge;
-
-        for (unsigned int i = 0; i < docidsList.size(); ++i)
-        {
-            if (docidsList[i].size() != scoresList[i].size())
-            {
-                LOG(INFO) << "[ERROR] dismatch doclist and scorelist";
-                return;
-            }
-        }
-
-        merge_(docidsList, scoresList, docids, scores);
-
-        LOG(INFO) << "zambezi merge " << docidsList.size()
-                  << " properties, costs :" << timer_merge.elapsed() << " seconds";
-
-        LOG(INFO) << "zambezi returns docid num: " << docids.size()
-                  << ", costs :" << timer.elapsed() << " seconds";
-    }
-
-    inline std::map<std::string, AttrIndex>& getIndexMap()
+    inline std::map<std::string, ZambeziBaseIndex*>& getIndexMap()
     {
         return property_index_map_;
     }
@@ -132,17 +74,21 @@ public:
 private:
     void merge_(
         const std::vector<std::vector<docid_t> >& docidsList,
-        const std::vector<std::vector<uint32_t> >& scoresList,
+        const std::vector<std::vector<float> >& scoresList,
         std::vector<docid_t>& docids,
-        std::vector<uint32_t>& scores);
+        std::vector<float>& scores);
+
+    void createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex,
+                    unsigned int poolSize);
 
 private:
     const ZambeziConfig& config_;
+
     ZambeziTokenizer* zambeziTokenizer_;
 
     std::vector<std::string> propertyList_;
 
-    std::map<std::string, AttrIndex> property_index_map_;
+    std::map<std::string, ZambeziBaseIndex*> property_index_map_;
 };
 
 } // namespace sf1r

@@ -125,7 +125,7 @@ bool ZambeziSearch::search(
         return false;
 
     std::vector<docid_t> candidates;
-    std::vector<uint32_t> scores;
+    std::vector<float> scores;
 
     if (!zambeziManager_)
     {
@@ -169,14 +169,14 @@ bool ZambeziSearch::search(
     else
         zambeziManager_->getTokenizer()->GetTokenResults(query, tokenList);
     
-    zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
+    zambeziManager_->search(tokenList, kZambeziTopKNum, search_in_properties,
                             candidates, scores);
 
     if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
         AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
-        zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum, search_in_properties,
+        zambeziManager_->search(subTokenList, kZambeziTopKNum, search_in_properties,
                                     candidates, scores);
     }
 

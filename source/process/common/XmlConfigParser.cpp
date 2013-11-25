@@ -2360,6 +2360,20 @@ void CollectionConfig::parseZambeziNode(
     getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
     getAttribute_ByteSize(zambeziNode, "poolSize", zambeziConfig.poolSize, true);
     getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, true);
+
+    std::string indexType;
+    getAttribute(zambeziNode, "indexType", indexType, false);
+    if (indexType.empty() || indexType == "ATTR")
+        zambeziConfig.indexType_ = ZambeziIndexType::DefultIndexType;
+    else if (indexType == "POSITION")
+        zambeziConfig.indexType_ = ZambeziIndexType::PostionIndexType;
+    else
+    {
+        stringstream message;
+        message << "zambeziConfig indexType is wrong: default is AttrScoreIndex, or use indexType = \"ATTR\" / \"POSITION\"";
+        throw XmlConfigParserException(message.str());
+    }
+
     zambeziConfig.isEnable = true;
     //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
     zambeziConfig.system_resource_path_ = SF1Config::get()->getResourceDir();

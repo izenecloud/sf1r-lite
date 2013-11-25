@@ -12,7 +12,7 @@ using namespace sf1r;
 ZambeziIndexManager::ZambeziIndexManager(
     const ZambeziConfig& config,
     const std::vector<std::string>& properties,
-    std::map<std::string, AttrIndex>& property_index_map,
+    std::map<std::string, ZambeziBaseIndex*>& property_index_map,
     ZambeziTokenizer* zambeziTokenizer,
     boost::shared_ptr<DocumentManager> documentManager)
     : indexDocCount_(0)
@@ -45,9 +45,9 @@ void ZambeziIndexManager::postProcessForAPI()
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 {
-    for (std::map<std::string, AttrIndex>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
+    for (std::map<std::string, ZambeziBaseIndex*>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
     {
-        i->second.flush();
+        i->second->flush();
         
         std::string indexPath = config_.indexFilePath + "_" + i->first;
         std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
@@ -59,7 +59,7 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 
         try
         {
-            i->second.save(ofs);
+            i->second->save(ofs);
         }
         catch (const std::exception& e)
         {
@@ -106,7 +106,7 @@ bool ZambeziIndexManager::insertDocIndex_(
         tokenList.push_back(it->first);
         scoreList.push_back(uint32_t(it->second));
     }
-    property_index_map_[property].insertDoc(docId, tokenList, scoreList);
+    property_index_map_[property]->insertDoc(docId, tokenList, scoreList);
 
     return true; 
 }

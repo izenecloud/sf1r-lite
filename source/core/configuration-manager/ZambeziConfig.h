@@ -19,6 +19,16 @@
 
 namespace sf1r
 {
+
+struct ZambeziIndexType
+{
+    enum IndexType
+    {
+        DefultIndexType = 0,
+        PostionIndexType
+    };
+};
+
 /**
  * @brief : this is the base configuration for Zambezi index;
  *
@@ -132,6 +142,10 @@ public:
 
     std::string system_resource_path_;
 
+    ZambeziIndexType::IndexType indexType_;
+
+    bool hasAttrtoken;
+
     /**
      * @brief: @properties, and @virtualPropeties
      * this is used to build zambezi index, and to build zambeziIndexSchema;
@@ -147,11 +161,11 @@ public:
      */
     ZambeziIndexSchema zambeziIndexSchema;
 
-    bool hasAttrtoken;
 
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
                     , poolCount(0)
+                    , indexType_(ZambeziIndexType::DefultIndexType)
                     , hasAttrtoken(false)
     {}
 
@@ -165,6 +179,7 @@ public:
         std::cout << "poolCount: "<< poolCount << std::endl;
         std::cout << "indexFilePath: "<< indexFilePath << std::endl;
         std::cout << "tokenPath: "<< tokenPath << std::endl;
+        std::cout << "indexType_" << indexType_ << std::endl;
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
 
