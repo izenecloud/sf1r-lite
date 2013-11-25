@@ -115,8 +115,11 @@ struct PropertyStatus
 
     void display()
     {
-        std::cout << "  isCombined:" << isCombined 
-        << "  ,isAttr:" << isAttr << std::endl; 
+        std::cout << " :isCombined:" << isCombined 
+        << " ,isAttr:" << isAttr
+        << " ,isFilter:" << isFilter
+        << " ,isTokenizer:" << isTokenizer
+        << std::endl;
     }
 };
 
@@ -167,8 +170,8 @@ public:
                     , reverse(false)
                     , poolSize(0)
                     , poolCount(0)
-					, vocabSize(1U << 25) // 32M terms in default
-					, indexType_(ZambeziIndexType::DefultIndexType)
+                    , vocabSize(1U << 25) // 32M terms in default
+                    , indexType_(ZambeziIndexType::DefultIndexType)
                     , hasAttrtoken(false)
     {}
 
@@ -187,13 +190,13 @@ public:
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
 
-        for (std::vector<ZambeziProperty>::iterator i = properties.begin();
+        /*for (std::vector<ZambeziProperty>::iterator i = properties.begin();
              i != properties.end(); ++i)
             i->display();
 
         for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); 
             i != virtualPropeties.end(); ++i)
-            i->display();
+            i->display();*/
 
         for (ZambeziStatusMap::iterator i = property_status_map.begin();
              i != property_status_map.end(); ++i)
@@ -273,7 +276,7 @@ public:
                 if (!checkValidationConfig(*j))
                 {
                     PropertyConfig tmpConfig;
-                    tmpConfig.setName(i->name);
+                    tmpConfig.setName(*j);
                     ZambeziIndexSchema::iterator sp = zambeziIndexSchema.find(tmpConfig);
                     if (sp == zambeziIndexSchema.end())
                     {

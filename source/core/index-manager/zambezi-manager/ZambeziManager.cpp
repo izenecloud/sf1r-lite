@@ -59,11 +59,11 @@ void ZambeziManager::createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex, unsign
 {
     if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
     {
-        zambeziIndex = new AttrIndex(poolSize, config_.poolCount, config_.reverse);
+        zambeziIndex = new AttrIndex(poolSize, config_.poolCount, config_.vocabSize, config_.reverse);
     }
     else if (config_.indexType_ == ZambeziIndexType::PostionIndexType)
     {
-        zambeziIndex = new PositionalIndex(izenelib::ir::Zambezi::NON_POSITIONAL, poolSize, config_.poolCount);
+        zambeziIndex = new PositionalIndex(izenelib::ir::Zambezi::NON_POSITIONAL, poolSize, config_.poolCount, config_.vocabSize);
     }
 }
 
@@ -75,7 +75,7 @@ void ZambeziManager::buildTokenizeDic()
 
     ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
 
-    zambeziTokenizer_ = new ZambeziTokenizer(); // this is true;
+    zambeziTokenizer_ = new ZambeziTokenizer();
     zambeziTokenizer_->InitWithCMA_(type, cma_index_dic.c_str());
 }
 

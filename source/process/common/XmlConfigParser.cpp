@@ -2411,7 +2411,7 @@ void CollectionConfig::parseZambeziNode(
 
             // tokenizer
             bool istokenizer;
-            getAttribute(property.Get(), "tokenizer", istokenizer, false);
+            getAttribute(property.Get(), "tokenizer", istokenizer, true);
             zProperty.isTokenizer = istokenizer;
             sProperty.isTokenizer = istokenizer;
 
@@ -2429,7 +2429,7 @@ void CollectionConfig::parseZambeziNode(
 
             // filter
             bool isFilter;
-            getAttribute(property.Get(), "filter", isFilter, false);
+            getAttribute(property.Get(), "filter", isFilter, true);
             zProperty.isFilter = isFilter;
             sProperty.isFilter = isFilter;
             if (isFilter)
@@ -2503,7 +2503,10 @@ void CollectionConfig::parseZambeziNode(
                 vProperty.subProperties.push_back(subPropName);
             }
             vProperty.type = dataType;
-
+            /// add default config
+            sProperty.isFilter = false;
+            sProperty.isTokenizer = true;
+            
             zambeziConfig.virtualPropeties.push_back(vProperty);
             zambeziConfig.property_status_map.insert(std::make_pair(vProperty.name, sProperty));
         }
