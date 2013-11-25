@@ -86,6 +86,13 @@ private:
         return indexSchema_.erase(config);
     }
 
+    bool eraseZambeziProperty(const std::string& name)
+    {
+        PropertyConfig config;
+        config.propertyName_ = name;
+        return zambeziConfig_.zambeziIndexSchema.erase(config);
+    }
+
 public:
     std::string collectionName_;
 

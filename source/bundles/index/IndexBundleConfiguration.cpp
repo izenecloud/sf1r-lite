@@ -62,6 +62,7 @@ void IndexBundleConfiguration::setZambeziSchema(const DocumentSchema& documentSc
             PropertyConfig updatedDatePropertyConfig(*iter);
             updatedDatePropertyConfig.setIsIndex(true);
             updatedDatePropertyConfig.setIsFilter(true);
+            eraseZambeziProperty(iter->propertyName_);
             zambeziConfig_.zambeziIndexSchema.insert(updatedDatePropertyConfig);
         }
     }

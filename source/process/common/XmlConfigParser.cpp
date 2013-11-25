@@ -1365,7 +1365,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
 
     indexBundleConfig.isSchemaEnable_ = true;
     indexBundleConfig.isNormalSchemaEnable_ = true;
-    indexBundleConfig.setSchema(collectionMeta.documentSchema_); // setZambeziSchema.
+    indexBundleConfig.setSchema(collectionMeta.documentSchema_);
 
     Iterator<Element> property("Property");
 
