@@ -2373,6 +2373,7 @@ void CollectionConfig::parseZambeziNode(
         message << "zambeziConfig indexType is wrong: default is AttrScoreIndex, or use indexType = \"ATTR\" / \"POSITION\"";
         throw XmlConfigParserException(message.str());
     }
+	getAttribute_ByteSize(zambeziNode, "vocabSize", zambeziConfig.vocabSize, false);
 
     zambeziConfig.isEnable = true;
     //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
