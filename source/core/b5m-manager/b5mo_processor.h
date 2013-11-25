@@ -11,6 +11,7 @@
 #include "b5mo_sorter.h"
 #include "original_mapper.h"
 #include "matcher_status.h"
+#include "b5m_m.h"
 #include <knlp/attr_normalize.h>
 #include <boost/atomic.hpp>
 #include <sf1r-net/RpcServerConnectionConfig.h>
@@ -24,7 +25,7 @@ class B5moProcessor {
         std::string text;
     };
 public:
-    B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
+    B5moProcessor(ProductMatcher* matcher,
         int mode,
         sf1r::RpcServerConnectionConfig* img_server_config);
     ~B5moProcessor();
@@ -47,11 +48,11 @@ private:
 private:
     OfferDb* odb_;
     ProductMatcher* matcher_;
-    //BrandDb* bdb_;
     std::string ts_;
     std::string last_ts_;
     B5moSorter* sorter_;
     OriginalMapper* omapper_;
+    B5mM b5mm_;
     int mode_;
     std::string human_match_file_;
     boost::unordered_set<std::string> mobile_source_;

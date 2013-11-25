@@ -295,7 +295,6 @@ int do_main(int ac, char** av)
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
-        ("last-odb", po::value<std::string>(), "specify last offer db path")
         ("bdb", po::value<std::string>(), "specify brand db path")
         ("cdb", po::value<std::string>(), "specify comment db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
@@ -331,6 +330,7 @@ int do_main(int ac, char** av)
         ("cr-train", "do category recognizer training")
         ("cr", "do category recognizer")
         ("odb-test", "do odb test")
+        ("m-test", "do b5mm test")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -352,7 +352,6 @@ int do_main(int ac, char** av)
     std::string output;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
-    boost::shared_ptr<OfferDb> last_odb;
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<CommentDb> cdb;
 
@@ -441,12 +440,6 @@ int do_main(int ac, char** av)
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
-    if(vm.count("last-odb"))
-    {
-        std::string last_odb_path = vm["last-odb"].as<std::string>();
-        std::cout << "last odb path: " << last_odb_path <<std::endl;
-        last_odb.reset(new OfferDb(last_odb_path));
-    }
     if (vm.count("bdb")) {
         std::string bdb_path = vm["bdb"].as<std::string>();
         std::cout << "bdb path: " << bdb_path <<std::endl;
@@ -560,6 +553,13 @@ int do_main(int ac, char** av)
         std::string pid;
         odb->get(name, pid);
         std::cout<<"pid:"<<pid<<std::endl;
+    }
+    if(vm.count("m-test"))
+    {
+        if(mdb_instance.empty()) return EXIT_FAILURE;
+        B5mM b5mm;
+        b5mm.Load(mdb_instance);
+        b5mm.Show();
     }
     if(vm.count("isbn-test"))
     {
@@ -983,7 +983,7 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mo-generate") && !scd_path.empty())
     {
-        if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
+        if( scd_path.empty() || mdb_instance.empty() || knowledge_dir.empty())
         {
             return EXIT_FAILURE;
         }
@@ -995,7 +995,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
+        B5moProcessor processor(matcher.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))

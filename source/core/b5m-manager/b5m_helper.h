@@ -135,6 +135,10 @@ public:
         boost::algorithm::split(str_list, str, boost::algorithm::is_any_of("/"));
     }
 
+    static std::string GetOdbPath(const std::string& mdb_instance)
+    {
+        return mdb_instance+"/odb";
+    }
     static std::string GetRawPath(const std::string& mdb_instance)
     {
         return mdb_instance+"/raw";
