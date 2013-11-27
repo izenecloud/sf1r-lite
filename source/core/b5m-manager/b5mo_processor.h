@@ -25,9 +25,7 @@ class B5moProcessor {
         std::string text;
     };
 public:
-    B5moProcessor(ProductMatcher* matcher,
-        int mode,
-        sf1r::RpcServerConnectionConfig* img_server_config);
+    B5moProcessor(const B5mM& b5mm);
     ~B5moProcessor();
 
     void LoadMobileSource(const std::string& file);
@@ -35,7 +33,7 @@ public:
 
     void Process(ScdDocument& doc);
 
-    bool Generate(const std::string& scd_file, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num=1);
+    bool Generate(const std::string& mdb_instance, const std::string& last_mdb_instance);
 
 private:
 
@@ -46,13 +44,13 @@ private:
     bool OMap_(const OriginalMapper& omapper, Document& doc) const;
 
 private:
+    B5mM b5mm_;
     OfferDb* odb_;
     ProductMatcher* matcher_;
     std::string ts_;
     std::string last_ts_;
     B5moSorter* sorter_;
     OriginalMapper* omapper_;
-    B5mM b5mm_;
     int mode_;
     std::string human_match_file_;
     boost::unordered_set<std::string> mobile_source_;

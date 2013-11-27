@@ -19,13 +19,9 @@
 using namespace sf1r;
 using namespace sf1r::b5m;
 
-B5moProcessor::B5moProcessor(ProductMatcher* matcher,
-    int mode, 
-    sf1r::RpcServerConnectionConfig* img_server_config)
-:odb_(NULL), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
-,attr_(matcher->GetAttributeNormalize())
-//,attr_(NULL)
-//, stat1_(0), stat2_(0), stat3_(0)
+B5moProcessor::B5moProcessor(const B5mM& b5mm)
+:b5mm_(b5mm), odb_(NULL), matcher_(NULL), sorter_(NULL), omapper_(NULL), mode_(0), img_server_cfg_(NULL)
+,attr_(NULL)
 {
     status_.AddCategoryGroup("^电脑办公.*$","电脑办公", 0.001);
     status_.AddCategoryGroup("^手机数码>手机$","手机", 0.001);
@@ -40,6 +36,7 @@ B5moProcessor::B5moProcessor(ProductMatcher* matcher,
 B5moProcessor::~B5moProcessor()
 {
     if(odb_!=NULL) delete odb_;
+    if(matcher_!=NULL) delete matcher_;
 }
 void B5moProcessor::LoadMobileSource(const std::string& file)
 {
@@ -479,23 +476,30 @@ void B5moProcessor::OMapperChange_(LastOMapperItem& item)
     item.writer->Append(value.doc, value.doc.type);
 }
 
-bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
+bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string& last_mdb_instance)
 {
-    if(!b5mm_.Load(mdb_instance))
-    {
-        LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
-        return false;
-    }
-    b5mm_.Show();
-    if(!b5mm_.mobile_source.empty())
+    namespace bfs = boost::filesystem;
+    if(!b5mm_.mobile_source.empty()&&bfs::exists(b5mm_.mobile_source))
     {
         LoadMobileSource(b5mm_.mobile_source);
     }
-    if(!b5mm_.human_match.empty())
+    if(!b5mm_.human_match.empty()&&bfs::exists(b5mm_.human_match))
     {
         SetHumanMatchFile(b5mm_.human_match);
     }
-    namespace bfs = boost::filesystem;
+    const std::string& scd_path = b5mm_.scd_path;
+    int thread_num = b5mm_.thread_num;
+    const std::string& knowledge = b5mm_.knowledge;
+    matcher_ = new ProductMatcher;
+    matcher_->SetCmaPath(b5mm_.cma_path);
+    if(knowledge.empty()) matcher_->ForceOpen();
+    else
+    {
+        if(!matcher_->Open(knowledge)) return false;
+    }
+    attr_ = matcher_->GetAttributeNormalize();
+    mode_ = b5mm_.mode;
+    LOG(INFO)<<"B5moGenerator start, mode "<<mode_<<", thread_num "<<thread_num<<", scd "<<scd_path<<std::endl;
     std::string odb_path = B5MHelper::GetOdbPath(mdb_instance);
     if(bfs::exists(odb_path))
     {
@@ -524,7 +528,8 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         }
         LOG(INFO)<<"odb open successfully"<<std::endl;
     }
-    std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
+    //std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
+    std::string output_dir = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(output_dir);
     std::string sorter_path = B5MHelper::GetB5moBlockPath(mdb_instance); 
     B5MHelper::PrepareEmptyDir(sorter_path);

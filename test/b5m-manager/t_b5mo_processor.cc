@@ -101,10 +101,6 @@ public:
     {
         //mdb_ = boost::filesystem::absolute(boost::filesystem::path(mdb_)).string();
         B5MHelper::PrepareEmptyDir(mdb_);
-        std::string cma_path= IZENECMA_KNOWLEDGE ;
-        matcher_.reset(new ProductMatcher());
-        matcher_->SetCmaPath(cma_path);
-        matcher_->ForceOpen();
     }
 
     ~ScdTester()
@@ -118,7 +114,6 @@ public:
         int mode = 0;
         if(step==1) mode = 1;
         std::cerr<<"test step "<<step<<", mode "<<mode<<std::endl;
-        processor_.reset(new B5moProcessor(matcher_.get(), mode, NULL));
         string input_dir="./input_scd";
         B5MHelper::PrepareEmptyDir(input_dir);
         {
@@ -131,6 +126,14 @@ public:
         }
         std::string mdb_instance = mdb_+"/"+mdb_ts(step);
         std::cerr<<"mdb dir "<<mdb_instance<<std::endl;
+        B5mM b5mm;
+        b5mm.path = mdb_instance;
+        //set b5mm value
+        b5mm.mode = mode;
+        b5mm.thread_num = 2;
+        b5mm.scd_path = input_dir;
+        b5mm.Gen();
+        processor_.reset(new B5moProcessor(b5mm));
         boost::filesystem::create_directories(mdb_instance);
         std::string omapper_path = B5MHelper::GetOMapperPath(mdb_instance);
         if(!item.omapper.empty())
@@ -145,9 +148,9 @@ public:
             }
             ofs.close();
         }
-        processor_->Generate(input_dir, mdb_instance, last_mdb_instance_);
-        B5mpProcessor2 pprocessor(mdb_instance, last_mdb_instance_);
-        pprocessor.Generate();
+        BOOST_CHECK(processor_->Generate(mdb_instance, last_mdb_instance_));
+        B5mpProcessor2 pprocessor(b5mm);
+        BOOST_CHECK(pprocessor.Generate(mdb_instance, last_mdb_instance_));
         std::vector<ScdDocument> odocs;
         GetAllDocs(B5MHelper::GetB5moPath(mdb_instance), odocs);
         std::cerr<<"start to do batch test on b5mo"<<std::endl;
@@ -304,7 +307,6 @@ public:
     }
 
 private:
-    boost::shared_ptr<ProductMatcher> matcher_;
     boost::shared_ptr<B5moProcessor> processor_;
     int step_;
     std::string mdb_;

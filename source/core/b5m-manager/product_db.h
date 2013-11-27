@@ -27,7 +27,7 @@ class B5mpDocGenerator
 {
 public:
     B5mpDocGenerator();
-    void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only=false);
+    void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
 private:
     void SelectSubDocs_(std::vector<Document>& subdocs) const;
     static bool SubDocCompare_(const Document& x, const Document& y);

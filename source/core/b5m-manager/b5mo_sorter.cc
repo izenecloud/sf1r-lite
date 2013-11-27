@@ -40,9 +40,8 @@ bool B5moSorter::StageOne()
     //}
     return true;
 }
-bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_num)
+bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
 {
-    spu_only_ = spu_only;
     namespace bfs=boost::filesystem;    
     std::string tmp_path = B5MHelper::GetTmpPath(m_);
     B5MHelper::PrepareEmptyDir(tmp_path);
@@ -82,7 +81,8 @@ bool B5moSorter::StageTwo(bool spu_only, const std::string& last_m, int thread_n
     }
     std::string mirror_path = B5MHelper::GetB5moMirrorPath(m_);
     B5MHelper::PrepareEmptyDir(mirror_path);
-    std::string b5mp_path = B5MHelper::GetB5mpPath(m_);
+    //std::string b5mp_path = B5MHelper::GetB5mpPath(m_);
+    std::string b5mp_path = b5mm_.b5mp_path;
     B5MHelper::PrepareEmptyDir(b5mp_path);
     pwriter_.reset(new ScdTypeWriter(b5mp_path));
     std::string mirror_file = mirror_path+"/block";
@@ -310,7 +310,7 @@ void B5moSorter::OBag_(PItem& pitem)
             {
                 prev_odocs.push_back(prev_ovalues[i].doc);
             }
-            pgenerator_.Gen(odocs, pdoc, spu_only_);
+            pgenerator_.Gen(odocs, pdoc);
             if(!prev_odocs.empty())
             {
                 pgenerator_.Gen(prev_odocs, prev_pdoc);
