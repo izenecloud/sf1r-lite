@@ -167,7 +167,7 @@ bool ZambeziSearch::search(
     if (zambeziManager_->isAttrTokenize())
         AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict 
     else
-        zambeziManager_->getTokenizer()->GetTokenResults(query, tokenList);
+        zambeziManager_->getTokenizer()->getTokenResults(query, tokenList);
     
     zambeziManager_->search(tokenList, kZambeziTopKNum, search_in_properties,
                             candidates, scores);

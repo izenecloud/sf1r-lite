@@ -76,7 +76,8 @@ void ZambeziManager::buildTokenizeDic()
     ZambeziTokenizer::TokenizerType type = ZambeziTokenizer::CMA_MAXPRE;
 
     zambeziTokenizer_ = new ZambeziTokenizer();
-    zambeziTokenizer_->InitWithCMA_(type, cma_index_dic.c_str());
+    zambeziTokenizer_->initWithCMA_(type, cma_index_dic.c_str());
+    zambeziTokenizer_->setItemUnique(config_.indexType_ == ZambeziIndexType::DefultIndexType);
 }
 
 ZambeziTokenizer* ZambeziManager::getTokenizer()
@@ -127,7 +128,7 @@ void ZambeziManager::search(
         std::vector<docid_t>& docids,
         std::vector<float>& scores)
 {
-    std::cout <<"[ZambeziManager::search] Search tokens: ";
+    LOG(INFO) << "[ZambeziManager::search] Search tokens: ";
     for (unsigned int i = 0; i < tokens.size(); ++i)
     {
         std::cout << tokens[i].first <<" , ";
@@ -139,7 +140,8 @@ void ZambeziManager::search(
     if (propertyList.size() == 1)
     {    
         property_index_map_[propertyList[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, true, docids, scores);
-        LOG(INFO) << "zambezi returns docid num: " << docids.size()
+        LOG(INFO) << "Search property:" << propertyList[0] 
+                  << " ,zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
     }
@@ -162,9 +164,12 @@ void ZambeziManager::search(
     std::vector<std::vector<float> > scoresList;
     scoresList.resize(searchPropertyList.size());
 
+
+    std::vector<float> weightList;
     for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
         property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(kAlgorithm, tokens, limit, true, docidsList[i], scoresList[i]);
+        weightList.push_back(config_.getWeight(searchPropertyList[i]));
     }
 
     izenelib::util::ClockTimer timer_merge;
@@ -178,7 +183,8 @@ void ZambeziManager::search(
         }
     }
 
-    merge_(docidsList, scoresList, docids, scores);
+    //set weightList of preproty;
+    merge_(docidsList, scoresList, weightList, docids, scores);
 
     LOG(INFO) << "zambezi merge " << docidsList.size()
               << " properties, costs :" << timer_merge.elapsed() << " seconds";
@@ -191,6 +197,7 @@ void ZambeziManager::search(
 void ZambeziManager::merge_(
         const std::vector<std::vector<docid_t> >& docidsList,
         const std::vector<std::vector<float> >& scoresList,
+        const std::vector<float>& weightList,
         std::vector<docid_t>& docids,
         std::vector<float>& scores)
 {
@@ -244,7 +251,7 @@ void ZambeziManager::merge_(
                 existingList.erase(minDocList[i]);
 
             docids[docCount] = docidsList[k][j];
-            scores[docCount] += scoresList[k][j];
+            scores[docCount] += scoresList[k][j]*weightList[k];
         }
         docCount++;
     }
@@ -255,7 +262,7 @@ void ZambeziManager::merge_(
         for (unsigned int i = existingList.begin()->second; i < docidsList[k].size(); ++i)
         {
             docids[docCount] = docidsList[k][i];
-            scores[docCount++] = scoresList[k][i];
+            scores[docCount++] = scoresList[k][i]*weightList[k];
         }
     }
     docids.resize(docCount);

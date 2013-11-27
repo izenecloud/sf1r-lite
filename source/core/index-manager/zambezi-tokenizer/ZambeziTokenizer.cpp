@@ -13,6 +13,7 @@ namespace sf1r
 {
 ZambeziTokenizer::ZambeziTokenizer()
     : isInit_(false)
+    , isItemUnique_(true)
     , type_(ZambeziTokenizer::CMA_MAXPRE)
     , analyzer_(NULL)
     , knowledge_(NULL)
@@ -24,12 +25,12 @@ ZambeziTokenizer::~ZambeziTokenizer()
     if (analyzer_) delete analyzer_;
 }
 
-ZambeziTokenizer* ZambeziTokenizer::get()
+void ZambeziTokenizer::setItemUnique(bool isUnique)
 {
-    return izenelib::util::Singleton<ZambeziTokenizer>::get();
+    isItemUnique_ = isUnique;
 }
 
-void ZambeziTokenizer::InitWithCMA_(TokenizerType type, const std::string& dict_path)
+void ZambeziTokenizer::initWithCMA_(TokenizerType type, const std::string& dict_path)
 {
     if (isInit_)
         return;
@@ -54,34 +55,45 @@ void ZambeziTokenizer::InitWithCMA_(TokenizerType type, const std::string& dict_
     analyzer_->setKnowledge(knowledge_);
 }
 
-bool ZambeziTokenizer::GetTokenResults(
+bool ZambeziTokenizer::getTokenResults(
         const std::string& pattern,
         std::vector<std::pair<std::string, int> >& token_results)
 {
-        return GetTokenResultsByCMA_(pattern,
+        return getTokenResultsByCMA_(pattern,
                                      token_results);
 }
 
 //make sure the term is unique;
-bool ZambeziTokenizer::GetTokenResultsByCMA_(
+bool ZambeziTokenizer::getTokenResultsByCMA_(
         const std::string& pattern,
         std::vector<std::pair<string, int> >& token_results)
 {
     std::set<std::pair<string, int> > token_set;
     Sentence pattern_sentence(pattern.c_str());
     analyzer_->runWithSentence(pattern_sentence);
+
+    if (!isItemUnique_)
+    {
+        for (int i = 0; i < pattern_sentence.getCount(0); ++i)
+            token_results.push_back(std::make_pair(pattern_sentence.getLexicon(0, i), 2));
+        for (int i = 0; i < pattern_sentence.getCount(1); i++)
+            token_results.push_back(std::make_pair(pattern_sentence.getLexicon(1, i), 1));
+
+        return true;
+    }
+
     //LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); ++i)
     {
         if(!token_set.insert(std::make_pair(pattern_sentence.getLexicon(0, i), 2)).second)
-            token_set.insert(std::make_pair(pattern_sentence.getLexicon(0, i), 2)).first->second + 2;
+            token_set.insert(std::make_pair(pattern_sentence.getLexicon(0, i), 2));
     }
 
     //LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
     for (int i = 0; i < pattern_sentence.getCount(1); i++)
     {
         if(!token_set.insert(std::make_pair(pattern_sentence.getLexicon(1, i), 1)).second)
-            token_set.insert(std::make_pair(pattern_sentence.getLexicon(1, i), 1)).first->second + 1;
+            token_set.insert(std::make_pair(pattern_sentence.getLexicon(1, i), 1));
     }
     
     for (std::set<std::pair<string, int> >::iterator i = token_set.begin(); i != token_set.end(); ++i)

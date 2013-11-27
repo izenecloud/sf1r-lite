@@ -119,7 +119,7 @@ bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::
     std::vector<std::pair<std::string, int> > tokenScoreList;
     if (!proValue.empty())
     {
-        zambeziTokenizer_->GetTokenResults(proValue, tokenScoreList);
+        zambeziTokenizer_->getTokenResults(proValue, tokenScoreList);
         docid_t docId = doc.getId();
         insertDocIndex_(docId, property, tokenScoreList);
     }
@@ -151,7 +151,7 @@ bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std
     if (!combined_proValue.empty())
     {
         std::vector<std::pair<std::string, int> > tokenScoreList;
-        zambeziTokenizer_->GetTokenResults(combined_proValue, tokenScoreList);
+        zambeziTokenizer_->getTokenResults(combined_proValue, tokenScoreList);
         docid_t docId = doc.getId();
         insertDocIndex_(docId, property, tokenScoreList);        
     }

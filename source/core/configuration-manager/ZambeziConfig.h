@@ -105,11 +105,13 @@ struct PropertyStatus
     bool isAttr;
     bool isFilter;
     bool isTokenizer;
+    float weight;
     PropertyStatus()
     : isCombined(false)
     , isAttr(false)
     , isFilter(false)
     , isTokenizer(false)
+    , weight(0)
     {
     }
 
@@ -119,6 +121,7 @@ struct PropertyStatus
         << " ,isAttr:" << isAttr
         << " ,isFilter:" << isFilter
         << " ,isTokenizer:" << isTokenizer
+        << " ,weight:" << weight
         << std::endl;
     }
 };
@@ -298,6 +301,16 @@ public:
             }
         }
         return true;
+    }
+
+    float getWeight(const std::string& property) const
+    {
+        ZambeziStatusMap::const_iterator iter = property_status_map.find(property);
+        if (iter != property_status_map.end())
+        {
+            return iter->second.weight;
+        }
+        return 0;
     }
 
 private:

@@ -72,9 +72,6 @@ void IndexBundleConfiguration::setZambeziSchema(const DocumentSchema& documentSc
 std::set<PropertyConfig, PropertyComp>::const_iterator 
 IndexBundleConfiguration::findIndexProperty(PropertyConfig tempPropertyConfig, bool& isIndexSchema) const
 {
-    // TODO:: to check this is no dupilcate property in different schema;
-    // the correct way is merge the two schema;
-
     // InvertedIndex Schema
     if (isNormalSchemaEnable_)
     {

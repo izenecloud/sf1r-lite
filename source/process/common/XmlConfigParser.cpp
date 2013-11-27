@@ -2418,8 +2418,11 @@ void CollectionConfig::parseZambeziNode(
             // weight
             float propertyWeight;
             if (getAttribute_FloatType(property.Get(), "weight", propertyWeight, false))
+            {
                 zProperty.weight = propertyWeight;
-
+                sProperty.weight = propertyWeight;
+            }
+            
             // poolSize
             uint32_t poolsize = 0;
             if (getAttribute_ByteSize(property.Get(), "poolSize", poolsize, false))

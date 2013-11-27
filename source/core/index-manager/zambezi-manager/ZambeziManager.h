@@ -75,6 +75,7 @@ private:
     void merge_(
         const std::vector<std::vector<docid_t> >& docidsList,
         const std::vector<std::vector<float> >& scoresList,
+        const std::vector<float>& weightList,
         std::vector<docid_t>& docids,
         std::vector<float>& scores);
 

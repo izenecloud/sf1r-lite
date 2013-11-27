@@ -29,25 +29,26 @@ public:
 
     ZambeziTokenizer();
 
-    static ZambeziTokenizer* get();
-
     ~ZambeziTokenizer();
 
-    bool GetTokenResults(
+    void setItemUnique(bool isUnique);
+
+    bool getTokenResults(
             const std::string& pattern,
             std::vector<std::pair<std::string, int> >& token_results);
     
-    void InitWithCMA_(
+    void initWithCMA_(
             TokenizerType type,
             const std::string& dict_path);
 
 private:
-    bool GetTokenResultsByCMA_(
+    bool getTokenResultsByCMA_(
             const std::string& pattern,
             std::vector<std::pair<std::string, int> >& token_results);
 
 private:
     bool isInit_;
+    bool isItemUnique_;
     TokenizerType type_;
 
     cma::Analyzer* analyzer_;
