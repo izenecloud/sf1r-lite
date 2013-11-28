@@ -9,14 +9,16 @@
 #include "comment_db.h"
 #include "offer_db.h"
 #include "offer_db_recorder.h"
+#include "b5m_m.h"
 #include <document-manager/ScdDocument.h>
 
 NS_SF1R_B5M_BEGIN
 class B5mcScdGenerator {
 public:
-    B5mcScdGenerator(int mode, ProductMatcher* matcher = NULL);
+    B5mcScdGenerator(const B5mM& b5mm);
+    ~B5mcScdGenerator();
 
-    bool Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance = "", int thread_num=1);
+    bool Generate(const std::string& mdb_instance, const std::string& last_mdb_instance = "");
 
     void Process(ScdDocument& doc);
 
@@ -28,6 +30,7 @@ private:
 
 private:
     //BrandDb* bdb_;
+    B5mM b5mm_;
     int mode_;
     ProductMatcher* matcher_;
     boost::shared_ptr<CommentDb> cdb_;

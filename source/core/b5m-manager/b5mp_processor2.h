@@ -8,6 +8,7 @@
 #include "product_db.h"
 #include "offer_db.h"
 #include "brand_db.h"
+#include "b5m_m.h"
 //#include "history_db_helper.h"
 #include <common/ScdMerger.h>
 #include <common/PairwiseScdMerger.h>
@@ -19,8 +20,7 @@ NS_SF1R_B5M_BEGIN
 ///B5mpProcessor is responsibility to generate b5mp scds and also b5mo_mirror scd
 class B5mpProcessor2{
 public:
-    B5mpProcessor2(const std::string& m, const std::string& last_m)
-    :m_(m), last_m_(last_m)
+    B5mpProcessor2(const B5mM& b5mm): b5mm_(b5mm)
     {
     }
 
@@ -33,20 +33,21 @@ public:
         sorter_bin_ = bin;
     }
 
-    bool Generate(bool spu_only=false, int thread_num=1)
+    bool Generate(const std::string& m, const std::string& last_m)
     {
         LOG(INFO)<<"b5mp merger begin"<<std::endl;
-        B5moSorter sorter(m_);
-        if(!buffer_size_.empty())
+        B5moSorter sorter(m);
+        sorter.SetB5mM(b5mm_);
+        if(!b5mm_.buffer_size.empty())
         {
-            sorter.SetBufferSize(buffer_size_);
+            sorter.SetBufferSize(b5mm_.buffer_size);
         }
-        if(!sorter_bin_.empty())
+        if(!b5mm_.sorter_bin.empty())
         {
-            sorter.SetSorterBin(sorter_bin_);
+            sorter.SetSorterBin(b5mm_.sorter_bin);
         }
 
-        bool succ = sorter.StageTwo(spu_only, last_m_, thread_num);
+        bool succ = sorter.StageTwo(last_m, b5mm_.thread_num);
         LOG(INFO)<<"b5mp merger finish"<<std::endl;
         return succ;
     }
@@ -54,6 +55,7 @@ public:
 private:
 
 private:
+    B5mM b5mm_;
     std::string m_;
     std::string last_m_;
     std::string buffer_size_;

@@ -319,7 +319,14 @@ public:
             price.GetMid(dp);
             if(dp>0.0)
             {
-                std::string ap = attr_->cluster_detect(stitle, scategory, sattr, (float)dp);
+                std::string ap;
+                try {
+                    ap = attr_->cluster_detect(stitle, scategory, sattr, (float)dp);
+                }
+                catch(std::exception& ex)
+                {
+                    ap = "";
+                }
                 if(!ap.empty())
                 {
                     //std::cerr<<"attr result "<<stitle<<" : "<<ap<<std::endl;

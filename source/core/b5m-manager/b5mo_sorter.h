@@ -13,6 +13,8 @@
 #include <boost/atomic.hpp>
 #include "b5m_helper.h"
 #include "product_db.h"
+#include "ordered_writer.h"
+#include "b5m_m.h"
 
 NS_SF1R_B5M_BEGIN
 using izenelib::util::UString;
@@ -38,6 +40,13 @@ public:
             doc.merge(value.doc);
             ts = value.ts;
             flag = value.flag;
+        }
+        bool ParsePid(const std::string& str)
+        {
+            if(str.length()<32) return false;
+            spid = str.substr(0, 32);
+            text = str;
+            return true;
         }
         bool Parse(const std::string& str, Json::Reader* json_reader)
         {
@@ -80,6 +89,8 @@ public:
     };
     B5moSorter(const std::string& m, uint32_t mcount=100000);
 
+    void SetB5mM(const B5mM& b5mm) { b5mm_ = b5mm; }
+
     void SetBufferSize(const std::string& bs)
     {
         buffer_size_ = bs;
@@ -92,7 +103,7 @@ public:
     void Append(const ScdDocument& doc, const std::string& ts, int flag=0);
 
     bool StageOne();
-    bool StageTwo(bool spu_only, const std::string& last_m, int thread_num=1);
+    bool StageTwo(const std::string& last_m, int thread_num=1);
 
 private:
     void WriteValue_(std::ofstream& ofs, const Value& value);
@@ -137,19 +148,20 @@ private:
     void WritePItem_(PItem& pitem);
 
 private:
+    B5mM b5mm_;
     std::string m_;
     std::string ts_;
     std::ofstream ofs_;
-    bool spu_only_;
     std::string sorter_bin_;
     uint32_t mcount_;
     uint32_t index_;
     std::string buffer_size_;
-    boost::atomic<uint32_t> last_pitemid_;
+    //boost::atomic<uint32_t> last_pitemid_;
     //uint32_t last_pitemid_;
     std::vector<Value> buffer_;
     boost::thread* sort_thread_;
-    std::ofstream mirror_ofs_;
+    //std::ofstream mirror_ofs_;
+    boost::shared_ptr<OrderedWriter> ordered_writer_;
     boost::shared_ptr<ScdTypeWriter> pwriter_;
     B5mpDocGenerator pgenerator_;
     Json::Reader json_reader_;
