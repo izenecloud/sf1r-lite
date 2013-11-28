@@ -672,7 +672,7 @@ bool MasterManagerBase::isAllShardNodeOK(const std::vector<shardid_t>& shardids)
         {
             LOG(INFO) << "shardid not found while check for ok. " << getShardidStr(shardids[i]);
         }
-        if (!it->second->worker_.isGood_)
+        else if (!it->second->worker_.isGood_)
         {
             LOG(INFO) << "shardid not ready." << getShardidStr(shardids[i]);
             return false;
