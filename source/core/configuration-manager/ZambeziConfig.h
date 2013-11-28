@@ -72,7 +72,7 @@ public:
     * @brief: all the property used to build virtual property 
     *         must be put in subProperties;
     */
-    std::vector<std::string> subProperties;
+    std::set<std::string> subProperties;
     sf1r::PropertyDataType type;
     bool isAttrToken;
 
@@ -90,12 +90,11 @@ public:
             << " ,isFilter:" << isFilter
             << " ,isAttrToken" << isAttrToken
             << std::endl;
-        std::cout << "subProperties:";
-        for (unsigned int i = 0; i < subProperties.size(); ++i)
-        {
-            std::cout << subProperties[i] << '\t';   
-        }
-        std::cout << std::endl;
+        std::cout << "subProperties: size:" << subProperties.size() << std::endl;
+        // for (unsigned int i = 0; i < subProperties.size(); ++i)
+        // {
+        //     std::cout << subProperties[i] << '\t';   
+        // }
     }
 };
 
@@ -167,7 +166,6 @@ public:
      * @brief: it it used in document-manager and docuemntSearch handler;
      */
     ZambeziIndexSchema zambeziIndexSchema;
-
 
     ZambeziConfig() : isEnable(false)
                     , reverse(false)
@@ -274,7 +272,7 @@ public:
              * only when the subProperty has not exsit in properties, 
              * add this subProperty to zambezIndexSchema;
              **/
-            for (std::vector<std::string>::iterator j = i->subProperties.begin(); j != i->subProperties.end(); ++j)
+            for (std::set<std::string>::const_iterator j = i->subProperties.begin(); j != i->subProperties.end(); ++j)
             {
                 if (!checkValidationConfig(*j))
                 {

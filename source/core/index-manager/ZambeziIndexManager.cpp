@@ -129,7 +129,7 @@ bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::
 
 bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std::string& property)
 {   
-    std::vector<string> subProperties;
+    std::set<string> subProperties;
     for (unsigned int i = 0; i < config_.virtualPropeties.size(); ++i)
     {
         if (config_.virtualPropeties[i].name == property)
@@ -141,10 +141,11 @@ bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std
 
     std::string proValue;
     std::string combined_proValue;
-    for (unsigned int i = 0; i < subProperties.size(); ++i)
+    for (std::set<string>::const_iterator i = subProperties.begin();
+         i != subProperties.end(); ++i)
     {
         proValue.clear();
-        doc.getProperty(subProperties[i], proValue);
+        doc.getProperty(*i, proValue);
         combined_proValue += proValue;
     }
 
@@ -163,6 +164,8 @@ bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::st
 {
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
+    
+
     propNameList.push_back("Title");
     propNameList.push_back("Attribute");
     propNameList.push_back("Category");
@@ -173,7 +176,10 @@ bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::st
          i != propNameList.end(); ++i)
     {
         std::string propValue;
-        doc.getProperty(*i, propValue);
+        if (config_.virtualPropeties[0].subProperties.find(*i) != 
+            config_.virtualPropeties[0].subProperties.end())
+            doc.getProperty(*i, propValue);
+
         if (*i == "Attribute")
         {
             std::string brand;

@@ -2422,7 +2422,7 @@ void CollectionConfig::parseZambeziNode(
                 zProperty.weight = propertyWeight;
                 sProperty.weight = propertyWeight;
             }
-            
+
             // poolSize
             uint32_t poolsize = 0;
             if (getAttribute_ByteSize(property.Get(), "poolSize", poolsize, false))
@@ -2503,7 +2503,7 @@ void CollectionConfig::parseZambeziNode(
                     throw XmlConfigParserException("VirtualProperty's subproperty only support STRING type!!!");
                 }
 
-                vProperty.subProperties.push_back(subPropName);
+                vProperty.subProperties.insert(subPropName);
             }
             vProperty.type = dataType;
             /// add default config
@@ -2520,7 +2520,7 @@ void CollectionConfig::parseZambeziNode(
     }
 
     std::string DictionaryPath;
-    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary");
+    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", false);
     if (subNode)
     {
         std::string DictionaryPath;
@@ -2529,7 +2529,8 @@ void CollectionConfig::parseZambeziNode(
     }
     else
     {
-        throw XmlConfigParserException("[TokenizeDictionary] used in ZambeziConfig is missing.");
+        if (!zambeziConfig.hasAttrtoken)
+            throw XmlConfigParserException("[TokenizeDictionary] used in ZambeziConfig is missing.");
     }
 
     zambeziConfig.display();

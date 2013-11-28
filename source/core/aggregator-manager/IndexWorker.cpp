@@ -1395,7 +1395,7 @@ bool IndexWorker::insertOrUpdateSCD_(
             {
                 uint128_t scdDocId = Utilities::md5ToUint128(p->second);
 
-                if (!prepareDocIdAndUpdateType_(scdDocId, *docptr, scdType, //xxxx
+                if (!prepareDocIdAndUpdateType_(scdDocId, *docptr, scdType,
                         oldId, docId, updateType))
                     break;
 
@@ -2103,7 +2103,6 @@ bool IndexWorker::mergeDocument_(
     return true;
 }
 
-///TODO XXXXXXXXXXXXXX
 IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         const uint128_t& scdDocId,
         const SCDDoc& doc,
@@ -2135,7 +2134,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
             continue;
 
         tempPropertyConfig.propertyName_ = fieldName;
-        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig); //X//XXX
+        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
         if (iter == bundleConfig_->indexSchema_.end())
             continue;
