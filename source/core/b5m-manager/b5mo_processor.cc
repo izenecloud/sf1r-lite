@@ -249,6 +249,26 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         matcher_->Process(doc, product, true);
         status_.Insert(doc, product);
+        if(product.type==Product::BOOK)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("BOOK");
+        }
+        else if(product.type==Product::SPU)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("SPU");
+        }
+        else if(product.type==Product::FASHION)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("FASHION");
+        }
+        else if(product.type==Product::ATTRIB)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("ATTRIB");
+        }
+        else
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("NOTP");
+        }
     }
     else
     {

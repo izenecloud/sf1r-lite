@@ -224,6 +224,11 @@ public:
         static std::string p("CommentCount");
         return p;
     }
+    static std::string GetProductTypePropertyName()
+    {
+        static std::string p("ProductType");
+        return p;
+    }
 
     static std::string BookCategoryName()
     {
