@@ -16,12 +16,14 @@
 using namespace sf1r;
 using namespace sf1r::b5m;
 
-TicketProcessor::TicketProcessor()
+TicketProcessor::TicketProcessor(const B5mM& b5mm): b5mm_(b5mm)
 {
 }
 
-bool TicketProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
+bool TicketProcessor::Generate(const std::string& mdb_instance)
 {
+    SetCmaPath(b5mm_.cma_path);
+    const std::string& scd_path = b5mm_.scd_path;
     namespace bfs = boost::filesystem;
     std::vector<std::string> scd_list;
     B5MHelper::GetIUScdList(scd_path, scd_list);
@@ -141,7 +143,8 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
         }
     }
     LOG(INFO)<<"match result size "<<match_result.size()<<std::endl;
-    std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
+    //std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
+    const std::string& b5mo_path = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(b5mo_path);
     ScdWriter writer(b5mo_path, UPDATE_SCD);
 
@@ -195,7 +198,8 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
     merger.SetMProperty("uuid");
     merger.SetOutputer(boost::bind( &TicketProcessor::B5moOutput_, this, _1, _2));
     merger.SetMEnd(boost::bind( &TicketProcessor::POutputAll_, this));
-    std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance);
+    //std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance);
+    const std::string& p_output_dir = b5mm_.b5mp_path;
     B5MHelper::PrepareEmptyDir(p_output_dir);
     pwriter_.reset(new ScdWriter(p_output_dir, UPDATE_SCD));
     merger.Run();

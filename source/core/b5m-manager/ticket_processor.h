@@ -5,6 +5,7 @@
 #include <product-manager/product_price.h>
 #include "b5m_types.h"
 #include "b5m_helper.h"
+#include "b5m_m.h"
 #include <boost/unordered_map.hpp>
 #include <common/ScdWriter.h>
 #include <common/PairwiseScdMerger.h>
@@ -71,8 +72,8 @@ class TicketProcessor{
     typedef boost::unordered_map<uint128_t, SValueType> CacheType;
 
 public:
-    TicketProcessor();
-    bool Generate(const std::string& scd_path, const std::string& mdb_instance);
+    TicketProcessor(const B5mM& b5mm);
+    bool Generate(const std::string& mdb_instance);
 
     void SetCmaPath(const std::string& path)
     { cma_path_ = path; }
@@ -86,6 +87,7 @@ private:
     void ProductMerge_(SValueType& value, const SValueType& another_value);
 
 private:
+    B5mM b5mm_;
     std::string cma_path_;
     CacheType cache_;
     boost::shared_ptr<ScdWriter> pwriter_;
