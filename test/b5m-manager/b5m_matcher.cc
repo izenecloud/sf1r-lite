@@ -942,13 +942,18 @@ int do_main(int ac, char** av)
     }
     if(vm.count("ticket-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TicketProcessor processor;
-        processor.SetCmaPath(cma_path);
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TicketProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"ticket generator fail"<<std::endl;
             return EXIT_FAILURE;
@@ -956,13 +961,18 @@ int do_main(int ac, char** av)
     }
     if(vm.count("tuan-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TuanProcessor processor;
-        processor.SetCmaPath(cma_path);
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TuanProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"tuan generator fail"<<std::endl;
             return EXIT_FAILURE;
@@ -970,12 +980,18 @@ int do_main(int ac, char** av)
     }
     if(vm.count("tour-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TourProcessor processor;
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TourProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"tour generator fail"<<std::endl;
             return EXIT_FAILURE;

@@ -38,16 +38,12 @@ struct B5mM
         if(path_of.Type()==YAML::NodeType::Undefined) return false;
         YAML::Node indexer = config["indexer"];
         if(indexer.Type()==YAML::NodeType::Undefined) return false;
-        YAML::Node mobile_source_node = path_of["mobile_source"];
-        scd_path = path_of["scd"].as<std::string>();
-        if(path_of["comment_scd"].Type()!=YAML::NodeType::Undefined)
-        {
-            comment_scd_path = path_of["comment_scd"].as<std::string>();
-        }
-        mobile_source = mobile_source_node.as<std::string>();
-        human_match = path_of["human_match"].as<std::string>();
-        knowledge = path_of["knowledge"].as<std::string>();
-        cma_path = path_of["cma"].as<std::string>();
+        SetValue_(path_of["scd"], scd_path);
+        SetValue_(path_of["comment_scd"], comment_scd_path);
+        SetValue_(path_of["mobile_source"], mobile_source);
+        SetValue_(path_of["human_match"], human_match);
+        SetValue_(path_of["knowledge"], knowledge);
+        SetValue_(path_of["cma"], cma_path);
         if(indexer["type"].as<std::string>()=="hdfs")
         {
             std::string cname = config["schema"].as<std::string>();
@@ -56,24 +52,15 @@ struct B5mM
                 cname = indexer["collection_name"].as<std::string>();
             }
             std::string hdfs_dir = indexer["hdfs_mnt"].as<std::string>()+"/"+indexer["hdfs_prefix"].as<std::string>()+"/"+cname+"/"+ts;
-            b5mo_path = hdfs_dir+"/b5mo";
-            b5mp_path = hdfs_dir+"/b5mp";
-            b5mc_path = hdfs_dir+"/b5mc";
+            b5mo_path = hdfs_dir+"/"+cname+"o";
+            b5mp_path = hdfs_dir+"/"+cname+"p";
+            b5mc_path = hdfs_dir+"/"+cname+"c";
         }
-        mode = config["mode"].as<int>();
-        cmode = config["cmode"].as<int>();
-        if(config["thread_num"].Type()!=YAML::NodeType::Undefined)
-        {
-            thread_num = config["thread_num"].as<int>();
-        }
-        if(config["buffer_size"].Type()!=YAML::NodeType::Undefined)
-        {
-            buffer_size = config["buffer_size"].as<std::string>();
-        }
-        if(config["sorter_bin"].Type()!=YAML::NodeType::Undefined)
-        {
-            sorter_bin = config["sorter_bin"].as<std::string>();
-        }
+        SetValue_(config["mode"], mode);
+        SetValue_(config["cmode"], cmode);
+        SetValue_(config["thread_num"], thread_num);
+        SetValue_(config["buffer_size"], buffer_size);
+        SetValue_(config["sorter_bin"], sorter_bin);
         return true;
     }
     void Gen()
@@ -117,6 +104,13 @@ struct B5mM
     std::string buffer_size;
     std::string sorter_bin;
 private:
+    template <typename T>
+    bool SetValue_(const YAML::Node& node, T& value)
+    {
+        if(node.Type()==YAML::NodeType::Undefined) return false;
+        value = node.as<T>();
+        return true;
+    }
     void ShowNode_(const YAML::Node& node)
     {
         for(YAML::const_iterator it = node.begin();it!=node.end();++it)

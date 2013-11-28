@@ -12,7 +12,7 @@
 using namespace sf1r;
 using namespace sf1r::b5m;
 
-TourProcessor::TourProcessor()
+TourProcessor::TourProcessor(const B5mM& b5mm): b5mm_(b5mm)
 {
 }
 
@@ -34,8 +34,9 @@ void TourProcessor::Destroy()
 	}
 }
 
-bool TourProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
+bool TourProcessor::Generate(const std::string& mdb_instance)
 {
+    const std::string& scd_path = b5mm_.scd_path;
 	//scan all the *.scd
     m_ = mdb_instance;
     ScdDocProcessor::ProcessorType p = boost::bind(&TourProcessor::Insert_, this, _1);
@@ -268,10 +269,12 @@ void TourProcessor::AggregateSimilarFromTo()
 void TourProcessor::Finish_()
 {
 	AggregateSimilarFromTo();
-    std::string odir = m_+"/b5mo";
-    std::string pdir = m_+"/b5mp";
-    boost::filesystem::create_directories(odir);
-    boost::filesystem::create_directories(pdir);
+    //std::string odir = m_+"/b5mo";
+    //std::string pdir = m_+"/b5mp";
+    std::string odir = b5mm_.b5mo_path;
+    std::string pdir = b5mm_.b5mp_path;
+    B5MHelper::PrepareEmptyDir(odir);
+    B5MHelper::PrepareEmptyDir(pdir);
 	ScdWriter owriter(odir, UPDATE_SCD);
     ScdWriter pwriter(pdir, UPDATE_SCD);
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
