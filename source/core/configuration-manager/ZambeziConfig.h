@@ -290,7 +290,7 @@ public:
 
                     propertyConfig.setRankWeight(i->weight);
                     propertyConfig.setIsFilter(i->isFilter);
-                    propertyConfig.setName(i->name);
+                    propertyConfig.setName(*j);
                     propertyConfig.setType(i->type);
                     propertyConfig.setIsIndex(true);
 
