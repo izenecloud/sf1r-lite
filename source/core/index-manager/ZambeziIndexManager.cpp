@@ -47,7 +47,7 @@ void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 {
     for (std::map<std::string, ZambeziBaseIndex*>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
     {
-        i->second->flush();
+        //i->second->flush();
         
         std::string indexPath = config_.indexFilePath + "_" + i->first;
         std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
