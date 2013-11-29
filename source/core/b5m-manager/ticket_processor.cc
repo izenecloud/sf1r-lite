@@ -65,27 +65,31 @@ bool TicketProcessor::Generate(const std::string& mdb_instance)
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
+                Document doc;
                 for(; p!=scddoc.end(); ++p)
                 {
                     const std::string& property_name = p->first;
-                    doc[property_name] = p->second;
+                    doc.property(property_name) = p->second;
                 }
-                //if(doc["uuid"].length()>0) continue;
-                Document::doc_prop_value_strtype category = doc["Category"];
-                Document::doc_prop_value_strtype city = doc["PlayCity"];
-                Document::doc_prop_value_strtype address = doc["PlayAddress"];
-                Document::doc_prop_value_strtype time = doc["PlayTime"];
-                Document::doc_prop_value_strtype name = doc["PlayName"];
-                if(category.empty()||city.empty()||address.empty()||time.empty()||name.empty())
+                std::string soid;
+                std::string category;
+                std::string city;
+                std::string name;
+                std::string sprice;
+                std::string address;
+                std::string time;
+                doc.getString("DOCID", soid);
+                doc.getString("Category", category);
+                doc.getString("PlayCity", city);
+                doc.getString("PlayName", name);
+                doc.getString("PlayAddress", address);
+                doc.getString("PlayTime", time);
+                if(soid.empty()||category.empty()||city.empty()||address.empty()||time.empty()||name.empty())
                 {
                     continue;
                 }
-                std::string scategory = propstr_to_str(category);
-                std::string soid;
-                soid = propstr_to_str(doc["DOCID"]);
                 const DocIdType& id = soid;
 
                 TicketProcessorAttach attach;
@@ -93,8 +97,7 @@ bool TicketProcessor::Generate(const std::string& mdb_instance)
                 sid_str.append(UString("|", UString::UTF_8));
                 sid_str.append(propstr_to_ustr(city));
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
-                std::string stime = propstr_to_str(time);
-                boost::algorithm::split(attach.time_array, stime, boost::is_any_of(",;"));
+                boost::algorithm::split(attach.time_array, time, boost::is_any_of(",;"));
                 std::sort(attach.time_array.begin(), attach.time_array.end());
 
                 UString text = propstr_to_ustr(name);

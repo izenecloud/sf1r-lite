@@ -19,17 +19,18 @@ class TuanProcessor{
     public:
         uint32_t sid; //sid should be same
         ProductPrice price;
+        std::vector<std::string> area_array;//sorted, should be at least one same
 
         template<class Archive>
         void serialize(Archive& ar, const unsigned int version)
         {
-            ar & sid & price;
+            ar & sid & price & area_array;
         }
 
         bool dd(const TuanProcessorAttach& other) const
         {
             if(sid!=other.sid) return false;
-            return true;
+            //return true;
             ProductPriceType mid1;
             ProductPriceType mid2;
             if(!price.GetMid(mid1)) return false;
@@ -38,7 +39,27 @@ class TuanProcessor{
             ProductPriceType min = std::min(mid1, mid2);
             if(min<=0.0) return false;
             double ratio = max/min;
-            if(ratio>1.5) return false;
+            if(ratio>2.0) return false;
+            if(area_array.empty()&&other.area_array.empty()) return true;
+            bool found = false;
+            uint32_t i=0,j=0;
+            while(i<area_array.size()&&j<other.area_array.size())
+            {
+                if(area_array[i]==other.area_array[j])
+                {
+                    found = true;
+                    break;
+                }
+                else if(area_array[i]<other.area_array[j])
+                {
+                    ++i;
+                }
+                else
+                {
+                    ++j;
+                }
+            }
+            if(!found) return false;
             return true;
         }
     };

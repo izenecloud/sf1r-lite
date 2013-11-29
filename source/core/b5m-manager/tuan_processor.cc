@@ -64,35 +64,54 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
+                Document doc;
                 for(; p!=scddoc.end(); ++p)
                 {
                     const std::string& property_name = p->first;
-                    doc[property_name] = p->second;
+                    doc.property(property_name) = p->second;
                 }
-                //if(doc["uuid"].length()>0) continue;
-                Document::doc_prop_value_strtype category = doc["Category"];
-                Document::doc_prop_value_strtype city = doc["City"];
-                Document::doc_prop_value_strtype title = doc["Title"];
-                if(category.empty()||city.empty()||title.empty())
+                std::string soid;
+                std::string category;
+                std::string city;
+                std::string title;
+                std::string sprice;
+                std::string address;
+                std::string area;
+                doc.getString("DOCID", soid);
+                doc.getString("Category", category);
+                doc.getString("City", city);
+                doc.getString("Title", title);
+                doc.getString("MerchantAddr", address);
+                doc.getString("MerchantArea", area);
+                if(category.empty()||city.empty()||title.empty()||area.empty())
                 {
                     continue;
                 }
-                std::string scategory = propstr_to_str(category);
-                std::string soid;
-                soid = propstr_to_str(doc["DOCID"]);
+                doc.getString("Price", sprice);
+                ProductPrice pprice;
+                pprice.Parse(sprice);
                 const DocIdType& id = soid;
 
                 TuanProcessorAttach attach;
-                UString sid_str = propstr_to_ustr(category);
+                if(pprice.Positive()) attach.price = pprice;
+                UString sid_str = UString(category, UString::UTF_8);
                 sid_str.append(UString("|", UString::UTF_8));
-                sid_str.append(propstr_to_ustr(city));
+                sid_str.append(UString(city, UString::UTF_8));
+                std::vector<std::string> area_array;
+                boost::algorithm::split(area_array, area, boost::is_any_of(",;"));
+                if(area_array.size()!=1) continue;
+                sid_str.append(UString("|", UString::UTF_8));
+                sid_str.append(UString(area_array.front(), UString::UTF_8));
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
+                //std::sort(area_array.begin(), area_array.end());
+                std::string text = title;
+                //if(!address.empty()) text+="\t"+address;
+                
 
                 std::vector<std::pair<std::string, double> > doc_vector;
-                analyzer.Analyze(propstr_to_ustr(title), doc_vector);
+                analyzer.Analyze(UString(text, UString::UTF_8), doc_vector);
 
                 if( doc_vector.empty() )
                 {
