@@ -52,9 +52,18 @@ struct B5mM
                 cname = indexer["collection_name"].as<std::string>();
             }
             std::string hdfs_dir = indexer["hdfs_mnt"].as<std::string>()+"/"+indexer["hdfs_prefix"].as<std::string>()+"/"+cname+"/"+ts;
-            b5mo_path = hdfs_dir+"/"+cname+"o";
-            b5mp_path = hdfs_dir+"/"+cname+"p";
-            b5mc_path = hdfs_dir+"/"+cname+"c";
+            if(cname=="tuan")
+            {
+                b5mo_path = hdfs_dir+"/"+cname+"m";
+                b5mp_path = hdfs_dir+"/"+cname+"a";
+                b5mc_path = hdfs_dir+"/"+cname+"c";
+            }
+            else
+            {
+                b5mo_path = hdfs_dir+"/"+cname+"o";
+                b5mp_path = hdfs_dir+"/"+cname+"p";
+                b5mc_path = hdfs_dir+"/"+cname+"c";
+            }
         }
         SetValue_(config["mode"], mode);
         SetValue_(config["cmode"], cmode);
