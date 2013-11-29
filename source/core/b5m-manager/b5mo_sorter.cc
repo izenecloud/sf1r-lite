@@ -316,8 +316,8 @@ void B5moSorter::OBag_(PItem& pitem)
                 pgenerator_.Gen(prev_odocs, prev_pdoc);
             }
         }
-        SetAttributes_(ovalues, pdoc);
-        SetAttributes_(prev_ovalues, prev_pdoc);
+        //SetAttributes_(ovalues, pdoc);
+        //SetAttributes_(prev_ovalues, prev_pdoc);
         {
             std::size_t j=0;
             for(std::size_t i=0;i<ovalues.size();i++)
