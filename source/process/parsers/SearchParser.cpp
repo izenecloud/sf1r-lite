@@ -429,7 +429,17 @@ bool SearchParser::parse(const Value& search)
             // validation
             PropertyConfig propertyConfig;
             propertyConfig.setName(properties_[i]);
-            if (!getPropertyConfig(indexSchema_, propertyConfig) && !zambeziConfig_.checkValidationConfig(properties_[i]))
+
+            if (searchingModeInfo_.mode_ == SearchingMode::ZAMBEZI)
+            {
+                if (!zambeziConfig_.checkValidationConfig(properties_[i]))
+                {
+                    error() = "Unknown property in search/in Using zambezi: " +
+                      propertyConfig.getName();
+                    return false;
+                }
+            }
+            else if (!getPropertyConfig(indexSchema_, propertyConfig) )
             {
                 error() = "Unknown property in search/in: " +
                       propertyConfig.getName();
