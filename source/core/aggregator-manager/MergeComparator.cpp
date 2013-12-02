@@ -156,7 +156,7 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, docid_t left_docid,
         }
     }
 
-    std::cerr << "all sort data is the same, just sort by docid : " << left_docid << " VS " << right_docid << std::endl;
+    //std::cerr << "all sort data is the same, just sort by docid : " << left_docid << " VS " << right_docid << std::endl;
     return left_docid > right_docid;
 }
 
