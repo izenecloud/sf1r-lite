@@ -22,9 +22,7 @@ namespace sf1r{
 class ScdSharder
 {
 public:
-    ScdSharder();
-
-    bool init(ShardingConfig& shardingConfig);
+    ScdSharder(boost::shared_ptr<ShardingStrategy> shardingStrategy);
 
 public:
     /**
@@ -34,20 +32,21 @@ public:
      */
     shardid_t sharding(SCDDoc& scdDoc);
 
-    ShardingConfig& getShardingConfig() { return shardingConfig_; }
-
-    unsigned int getMinShardID() { return 1; }
-    unsigned int getMaxShardID() { return shardingConfig_.totalShardNum_; }
+    const std::vector<shardid_t> getShardingIdList()
+    {
+        static const std::vector<shardid_t> empty_list;
+        if (!shardingStrategy_)
+            return empty_list;
+        return shardingStrategy_->shard_cfg_.shardidList_; 
+    }
 
 private:
     bool initShardingStrategy();
 
-    void setShardKeyValues(SCDDoc& scdDoc);
+    void setShardKeyValues(SCDDoc& scdDoc, ShardingStrategy::ShardFieldListT& shard_fieldlist);
 
 private:
-    ShardingConfig shardingConfig_;
     boost::shared_ptr<ShardingStrategy> shardingStrategy_;
-    ShardingStrategy::ShardFieldListT ShardFieldList_;
 };
 
 }

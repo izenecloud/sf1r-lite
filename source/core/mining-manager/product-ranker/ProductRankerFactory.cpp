@@ -2,12 +2,15 @@
 #include "ProductRanker.h"
 #include "ProductRankParam.h"
 #include "CategoryScoreEvaluator.h"
-#include "MerchantCountEvaluator.h"
+#include "OfferItemCountEvaluator.h"
 #include "DiversityRoundEvaluator.h"
 #include "MerchantScoreEvaluator.h"
 #include "RandomScoreEvaluator.h"
 #include "../group-manager/PropValueTable.h"
+#include "../product-scorer/CategoryClassifyScorer.h"
 #include <configuration-manager/ProductRankingConfig.h>
+#include <common/NumericPropertyTableBase.h>
+#include <common/QueryNormalizer.h>
 #include <memory> // auto_ptr
 #include <algorithm> // min
 
@@ -15,6 +18,8 @@ using namespace sf1r;
 
 namespace
 {
+/** in zambezi mode, under the same relevance score, run merchant diversity */
+const score_t kZambeziCategoryScoreWeight = 1;
 
 score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 {
@@ -34,12 +39,14 @@ score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 
 ProductRankerFactory::ProductRankerFactory(
     const ProductRankingConfig& config,
-    const faceted::PropValueTable* merchantValueTable,
     const faceted::PropValueTable* categoryValueTable,
+    const boost::shared_ptr<const NumericPropertyTableBase>& offerItemCountTable,
+    const faceted::PropValueTable* diversityValueTable,
     const MerchantScoreManager* merchantScoreManager)
     : config_(config)
-    , merchantValueTable_(merchantValueTable)
     , categoryValueTable_(categoryValueTable)
+    , offerItemCountTable_(offerItemCountTable)
+    , diversityValueTable_(diversityValueTable)
     , merchantScoreManager_(merchantScoreManager)
     , isRandomScoreConfig_(config.scores[RANDOM_SCORE].weight != 0)
 {
@@ -47,10 +54,11 @@ ProductRankerFactory::ProductRankerFactory(
 
 ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param)
 {
+    const bool diverseInPage = isDiverseInPage_(param);
     std::auto_ptr<ProductRanker> ranker(
         new ProductRanker(param, config_.isDebug));
 
-    addCategoryEvaluator_(*ranker);
+    addCategoryEvaluator_(*ranker, diverseInPage);
 
     if (param.isRandomRank_)
     {
@@ -58,17 +66,43 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     }
     else
     {
+        addOfferItemCountEvaluator_(*ranker, diverseInPage);
         addDiversityEvaluator_(*ranker);
+        addMerchantScoreEvaluator_(*ranker);
     }
 
     return ranker.release();
 }
 
-void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker) const
+bool ProductRankerFactory::isDiverseInPage_(const ProductRankParam& param) const
 {
-    const score_t minWeight = minCustomCategoryWeight(config_);
+    return QueryNormalizer::get()->isLongQuery(param.query_);
+}
 
-    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight));
+void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
+{
+    SearchingMode::SearchingModeType searchMode = ranker.getParam().searchMode_;
+    score_t weight = 0;
+
+    if (searchMode == SearchingMode::ZAMBEZI)
+    {
+        weight = kZambeziCategoryScoreWeight;
+        isDiverseInPage = false;
+    }
+    else if (isDiverseInPage)
+    {
+        weight = config_.scores[CUSTOM_SCORE].weight;
+    }
+    else if (searchMode == SearchingMode::SUFFIX_MATCH)
+    {
+        weight = CategoryClassifyScorer::kMinClassifyScore;
+    }
+    else
+    {
+        weight = minCustomCategoryWeight(config_);
+    }
+
+    ranker.addEvaluator(new CategoryScoreEvaluator(weight, isDiverseInPage));
 }
 
 void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
@@ -79,15 +113,29 @@ void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
     ranker.addEvaluator(new RandomScoreEvaluator);
 }
 
-void ProductRankerFactory::addDiversityEvaluator_(ProductRanker& ranker) const
+void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker, bool isDiverseInPage) const
 {
-    if (!merchantValueTable_)
+    SearchingMode::SearchingModeType searchMode = ranker.getParam().searchMode_;
+
+    if (!offerItemCountTable_ ||
+        isDiverseInPage ||
+        searchMode == SearchingMode::ZAMBEZI)
         return;
 
-    ranker.addEvaluator(new MerchantCountEvaluator(*merchantValueTable_));
-    ranker.addEvaluator(new DiversityRoundEvaluator);
+   ranker.addEvaluator(new OfferItemCountEvaluator(offerItemCountTable_));
+}
 
-    if (!merchantScoreManager_)
+void ProductRankerFactory::addDiversityEvaluator_(ProductRanker& ranker) const
+{
+    if (!diversityValueTable_)
+        return;
+
+    ranker.addEvaluator(new DiversityRoundEvaluator(*diversityValueTable_));
+}
+
+void ProductRankerFactory::addMerchantScoreEvaluator_(ProductRanker& ranker) const
+{
+    if (!diversityValueTable_ || !merchantScoreManager_)
         return;
 
     MerchantScoreEvaluator* merchantScoreEvaluator = categoryValueTable_ ?

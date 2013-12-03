@@ -45,7 +45,7 @@ public:
 public:
     SynchroProducer(
             boost::shared_ptr<ZooKeeper>& zookeeper,
-            const std::string& syncZkNode,
+            const std::string& syncID,
             DataTransferPolicy transferPolicy = DATA_TRANSFER_POLICY_SOCKET);
 
     ~SynchroProducer();
@@ -105,6 +105,7 @@ private:
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    std::string syncID_;
     std::string syncZkNode_;
     std::string producerZkNode_;
 
@@ -120,6 +121,10 @@ private:
 
     boost::mutex produce_mutex_;
     boost::mutex consumers_mutex_;
+    boost::condition_variable cond_;
+    bool stopping_;
+    bool reconnectting_;
+
 };
 
 typedef boost::shared_ptr<SynchroProducer> SynchroProducerPtr;

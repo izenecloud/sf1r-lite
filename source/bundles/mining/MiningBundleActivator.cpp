@@ -1,10 +1,6 @@
 #include "MiningBundleActivator.h"
 
-#include <common/SFLogger.h>
 #include <bundles/index/IndexSearchService.h>
-
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <aggregator-manager/SearchWorker.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -90,6 +86,7 @@ bool MiningBundleActivator::addingService( const ServiceReference& ref )
             searchService_->bundleConfig_ = config_;
             searchService_->miningManager_ = miningManager_;
             searchService_->searchAggregator_ = service->searchAggregator_;
+            searchService_->ro_searchAggregator_ = service->ro_searchAggregator_;
             searchService_->searchWorker_ = service->searchWorker_;
 
             taskService_ = new MiningTaskService(config_);
@@ -141,7 +138,7 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
                 config_->collPath_,
                 indexService->searchWorker_->documentManager_,
                 indexService->searchWorker_->laManager_,
-                indexService->searchWorker_->indexManager_,
+                indexService->searchWorker_->invertedIndexManager_,
                 indexService->searchWorker_->searchManager_,
                 indexService->searchWorker_->searchCache_,
                 indexService->searchWorker_->idManager_,

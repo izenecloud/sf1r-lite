@@ -387,7 +387,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                 }
                 else
                 {
-                    UString text = dit->second.get<UString>();
+                    UString text = propstr_to_ustr(dit->second.getPropertyStrValue());
                     Algorithm<UString>::to_lower(text);
                     text = Algorithm<UString>::padForAlphaNum(text);
                     for(size_t c_i = 0; c_i < text.length(); ++c_i)
@@ -602,6 +602,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
         const std::vector<RangeListT> &filter_ranges,
         const RangeListT &raw_range_list,
         const std::vector<double> &score_list,
+        size_t thres,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> > &res_list) const
 {
@@ -629,6 +630,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 false,
                 raw_range_list,
                 score_list,
+                thres,
                 max_docs,
                 res_list);
     }
@@ -650,6 +652,71 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 true,
                 raw_range_list,
                 score_list,
+                thres,
+                max_docs,
+                res_list);
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
+//yy
+void FMIndexManager::getTopKDocIdListByFilter(
+        const std::string& property,
+        const std::vector<size_t> &prop_id_list,
+        const std::vector<RangeListT> &filter_ranges,
+        const std::vector<std::vector<boost::tuple<size_t, size_t, double> > > &synonym_range_list,
+        size_t thres,
+        size_t max_docs,
+        std::vector<std::pair<double, uint32_t> > &res_list) const
+{
+    if (doc_count_ == 0)
+        return;
+
+    FMIndexConstIter cit = all_fmi_.find(property);
+    if (cit == all_fmi_.end())
+    {
+        LOG(INFO) << "get topk failed for not exist property : " << property;
+        return;
+    }
+    if (cit->second.type == COMMON)
+    {
+        LOG(INFO) << "get topk in common property : " << property;
+        if (cit->second.docarray_mgr_index == (size_t)-1)
+        {
+            LOG(ERROR) << "the common property: " << property << " not found in doc array.";
+            return;
+        }
+        docarray_mgr_.getTopKDocIdListByFilter(
+                prop_id_list,
+                filter_ranges,
+                cit->second.docarray_mgr_index,
+                false,
+                synonym_range_list,
+                thres,
+                max_docs,
+                res_list);
+    }
+    else if (cit->second.type == LESS_DV)
+    {
+        if (!filter_manager_) return;
+
+        LOG(INFO) << "get topk in LESS_DV property : " << property;
+        size_t match_filter_index = filter_manager_->getPropertyId(property);
+        if (match_filter_index == (size_t)-1)
+        {
+            LOG(ERROR) << "the LESS_DV property: " << property << " not found in filter.";
+            return;
+        }
+        docarray_mgr_.getTopKDocIdListByFilter(
+                prop_id_list,
+                filter_ranges,
+                match_filter_index,
+                true,
+                synonym_range_list,
+                thres,
                 max_docs,
                 res_list);
     }

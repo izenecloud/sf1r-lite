@@ -23,6 +23,7 @@ public:
     DEFINE_RDB_RECORD_COMMON_ROUTINES(SystemEvent)
 
     SystemEvent() : RDbRecordBase(),
+            collection_("system-event-c"),
             levelPresent_(false),
             sourcePresent_(false),
             contentPresent_(false),
@@ -98,7 +99,12 @@ public:
 
     void load( const std::map<std::string, std::string> & rawdata );
 
+    void save_to_logserver();
+
 private:
+
+    static const std::string service_;
+    std::string collection_;
 
     std::string level_;
     bool levelPresent_;

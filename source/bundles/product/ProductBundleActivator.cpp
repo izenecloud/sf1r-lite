@@ -7,10 +7,10 @@
 #include <bundles/index/IndexSearchService.h>
 
 #include <common/SFLogger.h>
-#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
@@ -40,7 +40,6 @@ ProductBundleActivator::ProductBundleActivator()
     , refIndexTaskService_(0)
     , config_(0)
     , data_source_(0)
-    , op_processor_(0)
     , price_trend_(0)
     , scd_receiver_(0)
 {
@@ -52,17 +51,9 @@ ProductBundleActivator::~ProductBundleActivator()
     {
         delete data_source_;
     }
-    if (op_processor_)
-    {
-        delete op_processor_;
-    }
     if (price_trend_)
     {
         delete price_trend_;
-    }
-    if (scd_receiver_)
-    {
-        delete scd_receiver_;
     }
 }
 
@@ -109,6 +100,10 @@ void ProductBundleActivator::stop( IBundleContext::ConstPtr context )
         delete taskService_;
         taskServiceReg_ = 0;
         taskService_ = 0;
+    }
+    if (scd_receiver_)
+    {
+        delete scd_receiver_;
     }
 }
 
@@ -157,6 +152,13 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
                 {
                     addIndexHook_(refIndexTaskService_);
                 }
+                //if (config_->mode_ == "o")
+                //{
+                //    std::string offer_syncid = config_->productId_ + "_offer_comment";
+                //    LOG(INFO)<<"Scd Reciever init with offer syncid : "<< offer_syncid << std::endl;
+                //    scd_receiver_ = new ProductScdReceiver(offer_syncid, config_->collectionName_, config_->callback_);
+                //    scd_receiver_->Set(refIndexTaskService_);
+                //}
             }
             else if(config_->mode_=="a")//in a
             {
@@ -189,13 +191,12 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string scd_dir =  config_->collPath_.getScdPath() +"/product_scd";
     boost::filesystem::create_directories(scd_dir);
     data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_,
-                                                   indexService->searchWorker_->indexManager_,
+                                                   indexService->searchWorker_->invertedIndexManager_,
                                                    indexService->searchWorker_->idManager_,
                                                    indexService->searchWorker_->searchManager_,
                                                    config_->pm_config_,
                                                    config_->indexSchema_);
     LOG(INFO)<<"Scd Processor init with id : "<<config_->productId_<<std::endl;
-    op_processor_ = new ScdOperationProcessor(config_->productId_, config_->collectionName_, scd_dir);
     if (config_->pm_config_.enable_price_trend)
     {
         price_trend_ = new ProductPriceTrend(config_->cassandraConfig_,
@@ -210,18 +211,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
         handler->addCollection(price_trend_);
     }
     std::string work_dir = dir+"/work_dir";
-    if(config_->mode_ == "m")
-    {
-        config_->pm_config_.enable_clustering_algo = true;
-    }
-    else if(config_->mode_ == "o")
-    {
-        config_->pm_config_.enable_clustering_algo = false;
-    }
     boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir,
                                                                          indexService->searchWorker_->documentManager_,
                                                                          data_source_,
-                                                                         op_processor_,
                                                                          price_trend_,
                                                                          config_->pm_config_));
     return product_manager;

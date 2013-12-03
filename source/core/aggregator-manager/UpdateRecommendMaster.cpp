@@ -72,7 +72,7 @@ void UpdateRecommendMaster::HookDistributeCBRequestForUpdateRec(const std::strin
     if (hooktype == Request::FromDistribute)
     {
         LOG(INFO) << "a callback write send to sharding : " << callback_data;
-        aggregator_->distributeRequestWithoutLocal(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype,
+        aggregator_->distributeRequestWithoutLocal(collection_, 0, "HookDistributeRequestForUpdateRec", (int)hooktype,
             callback_data, ret);
     }
     else
@@ -93,7 +93,7 @@ void UpdateRecommendMaster::updatePurchaseMatrix(
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
-        aggregator_->distributeRequest(collection_, "updatePurchaseMatrix", oldItems, newItems, result);
+        aggregator_->distributeRequest(collection_, 0, "updatePurchaseMatrix", oldItems, newItems, result);
     else
     {
         if (hooktype == Request::FromDistribute)
@@ -122,7 +122,7 @@ void UpdateRecommendMaster::updatePurchaseCoVisitMatrix(
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
-        aggregator_->distributeRequest(collection_, "updatePurchaseCoVisitMatrix", oldItems, newItems, result);
+        aggregator_->distributeRequest(collection_, 0, "updatePurchaseCoVisitMatrix", oldItems, newItems, result);
     else
     {
         if (hooktype == Request::FromDistribute)
@@ -154,7 +154,7 @@ void UpdateRecommendMaster::buildPurchaseSimMatrix(bool& result)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
-        aggregator_->distributeRequest(collection_, "buildPurchaseSimMatrix", result);
+        aggregator_->distributeRequest(collection_, 0, "buildPurchaseSimMatrix", result);
     else
     {
         if (hooktype == Request::FromDistribute)
@@ -182,7 +182,7 @@ void UpdateRecommendMaster::updateVisitMatrix(
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
-        aggregator_->distributeRequest(collection_, "updateVisitMatrix", oldItems, newItems, result);
+        aggregator_->distributeRequest(collection_, 0, "updateVisitMatrix", oldItems, newItems, result);
     else
     {
         if (hooktype == Request::FromDistribute)
@@ -206,7 +206,7 @@ void UpdateRecommendMaster::updateVisitMatrix(
 
 void UpdateRecommendMaster::flushRecommendMatrix(bool& result)
 {
-    aggregator_->distributeRequest(collection_, "flushRecommendMatrix", result);
+    aggregator_->distributeRequest(collection_, 0, "flushRecommendMatrix", result);
     printError(result, "flushRecommendMatrix");
 }
 

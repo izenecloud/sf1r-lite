@@ -15,6 +15,7 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <mining-manager/query-abbreviation/AbbrEngine.h>
 
 #include "CollectionHandler.h"
 #include "DocumentsGetHandler.h"
@@ -57,6 +58,31 @@ void CollectionHandler::search(::izenelib::driver::Request& request, ::izenelib:
 {
     DocumentsSearchHandler handler(request,response,*this);
     handler.search();
+    if (response.success() && (0 == asInt(response[Keys::total_count])) && (request[Keys::search].hasKey("query_abbreviation")))
+    {
+        std::string keywords = asString(request[Keys::search][Keys::keywords]);
+        int toSuccess = 0;
+        toSuccess = asInt(request[Keys::search]["query_abbreviation"]) - 1;
+        std::vector<std::string> abbrs;
+        QA::AbbrEngine::get()->abbreviation(keywords, abbrs);
+        int success = 0;
+        for (std::size_t i = 0; i < abbrs.size(); ++i)
+        {
+            //std::cout<<abbrs[i]<<"\n";
+            request[Keys::search][Keys::keywords] = abbrs[i];
+            ::izenelib::driver::Response newResponse;
+            DocumentsSearchHandler sHandler(request, newResponse, *this);
+            sHandler.search();
+            if (response.success() && (0 != asInt(newResponse[Keys::total_count])))
+            {
+                ::izenelib::driver::Value& value = response["removed_keywords"]();
+                newResponse["new_query"] = abbrs[i];
+                value.assign(newResponse.get());
+                if (++success > toSuccess)
+                    break;
+            }
+        }
+    }
 }
 
 void CollectionHandler::get(::izenelib::driver::Request& request, ::izenelib::driver::Response& response)

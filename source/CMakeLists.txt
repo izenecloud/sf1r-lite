@@ -439,6 +439,14 @@ IF(VERBOSE)
     MESSAGE(STATUS "libcurl: not found!")
   ENDIF(LibCURL_FOUND)
 
+  IF(OpenSSL_FOUND)
+    MESSAGE(STATUS "OpenSSL:")
+    MESSAGE(STATUS "  header: ${OpenSSL_INCLUDE_DIR}")
+    MESSAGE(STATUS "  lib: ${OpenSSL_LIBRARIES}")
+  ELSE(OpenSSL_FOUND)
+    MESSAGE(STATUS "OpenSSL: not found")
+  ENDIF(OpenSSL_FOUND)
+
   MESSAGE(STATUS "========================================")
 
 ENDIF(VERBOSE)

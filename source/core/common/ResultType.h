@@ -15,6 +15,7 @@
 #define _RESULTTYPE_H_
 
 #include <common/type_defs.h>
+#include <common/PropertyValue.h>
 #include <common/sf1_msgpack_serialization_types.h>
 #include <query-manager/ConditionInfo.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
@@ -91,9 +92,9 @@ public:
 
     KeywordSearchResult()
         : encodingType_(izenelib::util::UString::UTF_8)
-        , totalCount_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
+        , totalCount_(0), docsInPage_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
         , start_(0), count_(0)
-        , timeStamp_(0)
+        , timeStamp_(0), TOP_K_NUM(0)
     {
     }
 
@@ -104,6 +105,7 @@ public:
         ss << "==== Class KeywordSearchResult ====" << endl;
         ss << "-----------------------------------" << endl;
         ss << "rawQueryString_    : " << rawQueryString_ << endl;
+        ss << "pruneQueryString_  : " << pruneQueryString_ << endl;
         ss << "encodingType_      : " << encodingType_ << endl;
         ss << "collectionName_    : " << collectionName_ << endl;
         ss << "analyzedQuery_     : " ;
@@ -118,6 +120,7 @@ public:
         }
         ss << endl;
         ss << "totalCount_        : " << totalCount_ << endl;
+        ss << "docsInPage         : " << docsInPage_.size() << endl;
         ss << "topKDocs_          : " << topKDocs_.size() << endl;
         for (size_t i = 0; i < topKDocs_.size(); i ++)
         {
@@ -221,24 +224,18 @@ public:
             for (size_t j = 0; j < docCategories_[i].size(); j++)
             {
                 string s;
-                docCategories_[i][j].convertString(s, izenelib::util::UString::UTF_8);
+                s = propstr_to_str(docCategories_[i][j]);
                 ss << s << ", ";
             }
             ss << endl;
         }
         ss << endl;
-        //               ss << "imgs_        : " << imgs_.size() << endl;
-        //               for (size_t i = 0; i < imgs_.size(); i ++)
-        //               {
-        //                   ss << imgs_[i] << ", ";
-        //               }
-        //               ss << endl;
 
         ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
         for (size_t i = 0; i < taxonomyString_.size(); i++)
         {
             string s;
-            taxonomyString_[i].convertString(s, izenelib::util::UString::UTF_8);
+            s = propstr_to_str(taxonomyString_[i]);
             ss << s << ", ";
         }
         ss << endl;
@@ -261,6 +258,7 @@ public:
         ss << "autoSelectGroupLabels_:" << endl;
         ss << autoSelectGroupLabels_ << endl;
 
+        ss << "TOP_K_NUM : " << TOP_K_NUM << endl;
         ss << "Finish time : " << std::ctime(&timeStamp_) << endl;
 
         ss << "===================================" << endl;
@@ -268,6 +266,8 @@ public:
     }
 
     std::string rawQueryString_;
+
+    std::string pruneQueryString_;
 
     /// Distributed search info
     DistKeywordSearchInfo distSearchInfo_;
@@ -288,6 +288,7 @@ public:
 
     std::map<std::string,uint32_t> counterResults_;
 
+    std::vector<docid_t> docsInPage_;
     /// A list of ranked docId. First docId gets high rank score.
     std::vector<docid_t> topKDocs_;
 
@@ -323,7 +324,7 @@ public:
     /// ProtoType : fullTextOfDocumentInPage_[DISPLAY PROPERTY Order][DOC Order]
     /// - DISPLAY PROPERTY Order : The sequence which follows the order in displayPropertyList_
     /// - DOC Order : The sequence which follows the order in topKDocs_
-    std::vector<std::vector<izenelib::util::UString> >  fullTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  fullTextOfDocumentInPage_;
 
     /// @brief Displayed text of documents in one page.
     /// @see pageInfo_
@@ -333,7 +334,7 @@ public:
     /// order.
     ///
     /// The inner vector is raw text for documents in current page.
-    std::vector<std::vector<izenelib::util::UString> >  snippetTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  snippetTextOfDocumentInPage_;
 
     /// @brief Summary of documents in one page.
     /// @see pageInfo_
@@ -351,23 +352,21 @@ public:
     ///      rawTextOfSummaryInPage_[1][3] -> summary of fourth document[3] of attach property[0].
     ///
     ///
-    std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummaryInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  rawTextOfSummaryInPage_;
 
 
     std::vector<count_t> numberOfDuplicatedDocs_;
 
     std::vector<count_t> numberOfSimilarDocs_;
 
-    std::vector<std::vector<izenelib::util::UString> > docCategories_;
-
-    std::vector<uint32_t> imgs_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> > docCategories_;
 
     // --------------------------------[ Taxonomy List ]
 
     idmlib::cc::CCInput32 tg_input;
 
     /// Taxonomy string list.
-    std::vector<izenelib::util::UString> taxonomyString_;
+    std::vector<PropertyValue::PropertyValueStrType> taxonomyString_;
 
     /// A list which stores the number of documents which are related to the specific TG item.
     std::vector<count_t> numOfTGDocs_;
@@ -400,7 +399,7 @@ public:
     sf1r::faceted::OntologyRep attrRep_;
 
     // auto selected top group labels
-    sf1r::faceted::GroupParam::GroupLabelMap autoSelectGroupLabels_;
+    sf1r::faceted::GroupParam::GroupLabelScoreMap autoSelectGroupLabels_;
 
     /// A list of related query string.
     std::deque<izenelib::util::UString> relatedQueryList_;
@@ -410,6 +409,9 @@ public:
 
     /// Finish time of searching
     std::time_t timeStamp_;
+
+    // the max possible returned result.
+    int TOP_K_NUM;
 
     void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
     {
@@ -451,12 +453,15 @@ public:
     {
         using std::swap;
         rawQueryString_.swap(other.rawQueryString_);
+        pruneQueryString_.swap(other.pruneQueryString_);
+        distSearchInfo_.swap(other.distSearchInfo_);
         swap(encodingType_, other.encodingType_);
         collectionName_.swap(other.collectionName_);
         analyzedQuery_.swap(other.analyzedQuery_);
         queryTermIdList_.swap(other.queryTermIdList_);
         swap(totalCount_, other.totalCount_);
         counterResults_.swap(other.counterResults_);
+        docsInPage_.swap(other.docsInPage_);
         topKDocs_.swap(other.topKDocs_);
         topKWorkerIds_.swap(other.topKWorkerIds_);
         topKtids_.swap(other.topKtids_);
@@ -467,9 +472,9 @@ public:
         swap(count_, other.count_);
         pageOffsetList_.swap(other.pageOffsetList_);
         propertyQueryTermList_.swap(other.propertyQueryTermList_);
-//      fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
-//      snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
-//      rawTextOfSummaryInPage_.swap(other.rawTextOfSummaryInPage_);
+        fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
+        snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
+        rawTextOfSummaryInPage_.swap(other.rawTextOfSummaryInPage_);
         numberOfDuplicatedDocs_.swap(other.numberOfDuplicatedDocs_);
         numberOfSimilarDocs_.swap(other.numberOfSimilarDocs_);
         docCategories_.swap(other.docCategories_);
@@ -486,25 +491,26 @@ public:
         relatedQueryList_.swap(other.relatedQueryList_);
         rqScore_.swap(other.rqScore_);
         swap(timeStamp_, other.timeStamp_);
+        TOP_K_NUM = other.TOP_K_NUM;
     }
 
 //  DATA_IO_LOAD_SAVE(KeywordSearchResult,
 //          &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
 //          &queryTermIdList_&totalCount_
-//          &topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
+//          &docsInPage_&topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
 //          &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
 //          &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
 //          &errno_&error_
-//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
+//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
 
     MSGPACK_DEFINE(
-            rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
-            queryTermIdList_, totalCount_, counterResults_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+            rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
+            queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,
-            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_);
+            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
 };
 
 
@@ -520,21 +526,19 @@ public:
     /// ProtoType : fullTextOfDocumentInPage_[DISPLAY PROPERTY Order][DOC Order]
     /// - DISPLAY PROPERTY Order : The sequence which follows the order in displayPropertyList_
     /// - DOC Order : The sequence which follows the order of docIdList
-    std::vector<std::vector<izenelib::util::UString> >  fullTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  fullTextOfDocumentInPage_;
 
     /// Raw Text of Document is used for generating resultXML of "KeywordSearch" query.
     /// And the first index is following the sequence of the displayPropertyList in KeywordSearchActionItem.
     /// The second index is following the sequence of the rankedDocIdList_;
-    //std::vector<std::vector<izenelib::util::UString> >  rawTextOfDocument_;
-    std::vector<std::vector<izenelib::util::UString> >  snippetTextOfDocumentInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  snippetTextOfDocumentInPage_;
 
 
     /// Raw Text of Document is used for generating resultXML of "KeywordSearch" query.
     /// And the first index is following the sequence of the
     /// displayPropertyList(which is set to generate summary) in KeywordSearchActionItem.
     /// The second index is following the sequence of the rankedDocIdList_;
-    //std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummary_;
-    std::vector<std::vector<izenelib::util::UString> >  rawTextOfSummaryInPage_;
+    std::vector<std::vector<PropertyValue::PropertyValueStrType> >  rawTextOfSummaryInPage_;
 
     /// internal IDs of the documents
     std::vector<docid_t> idList_;

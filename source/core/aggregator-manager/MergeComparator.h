@@ -21,7 +21,8 @@ public:
         DATA_TYPE_NONE,
         DATA_TYPE_INT32,
         DATA_TYPE_INT64,
-        DATA_TYPE_FLOAT
+        DATA_TYPE_FLOAT,
+        DATA_TYPE_STRING
     };
 
 public:
@@ -77,10 +78,12 @@ public:
 private:
     std::vector<SortPropertyData*> sortProperties_;
 
-    friend bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* comp2, size_t idx2);
+    friend bool greaterThan(DocumentComparator* comp1, size_t idx1, docid_t left_docid,
+       DocumentComparator* comp2, size_t idx2, docid_t right_docid);
 };
 
-bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* comp2, size_t idx2);
+bool greaterThan(DocumentComparator* comp1, size_t idx1, docid_t left_docid,
+    DocumentComparator* comp2, size_t idx2, docid_t right_docid);
 
 }
 

@@ -8,6 +8,7 @@
 #include <iostream>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 #define RETURN_ON_FAILURE(condition)                                        \
 if (! (condition))                                                          \

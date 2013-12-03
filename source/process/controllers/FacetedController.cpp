@@ -2,6 +2,7 @@
 #include "CollectionHandler.h"
 
 #include <common/Keys.h>
+#include <common/QueryNormalizer.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/merchant-score-manager/MerchantScore.h>
 #include <mining-manager/merchant-score-manager/MerchantScoreParser.h>
@@ -411,9 +412,9 @@ void FacetedController::manmade()
         if (izenelib::driver::nullValue( manmades() )) break;
         faceted::ManmadeDocCategoryItem item;
         item.docid = asUint(manmades()[Keys::_id]);
-        item.str_docid = asString(manmades()[Keys::docid]);
+        item.str_docid = izenelib::util::UString(asString(manmades()[Keys::docid]), izenelib::util::UString::UTF_8);
         item.cid = asUint(manmades()[Keys::cid]);
-        item.cname = asString(manmades()[Keys::cname]);
+        item.cname = izenelib::util::UString(asString(manmades()[Keys::cname]), izenelib::util::UString::UTF_8);
         items.push_back(item);
     }
     bool requestSent = miningSearchService_->DefineDocCategory(items);
@@ -653,7 +654,10 @@ void FacetedController::set_custom_rank()
         getDocIdList_(Keys::top_docid_list, customDocStr.topIds) &&
         getDocIdList_(Keys::exclude_docid_list, customDocStr.excludeIds))
     {
-        if (! miningSearchService_->setCustomRank(query, customDocStr))
+        std::string normalizedQuery;
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
+
+        if (! miningSearchService_->setCustomRank(normalizedQuery, customDocStr))
         {
             response().addError("failed to set custom rank for some DOCIDs.");
         }
@@ -718,11 +722,14 @@ void FacetedController::get_custom_rank()
     if (requireKeywords_(query) &&
         getPropNameList_(propNameList))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
+
         std::vector<Document> topDocList;
         std::vector<Document> excludeDocList;
 
-        if (miningSearchService_->getCustomRank(query,
-            topDocList, excludeDocList))
+        if (miningSearchService_->getCustomRank(normalizedQuery,
+                                                topDocList, excludeDocList))
         {
             renderCustomRank_(Keys::top_docs, topDocList, propNameList);
             renderCustomRank_(Keys::exclude_docs, excludeDocList, propNameList);
@@ -847,11 +854,7 @@ void FacetedController::renderDoc_(
         if (findIt == endIt)
             continue;
 
-        const izenelib::util::UString& ustr =
-            findIt->second.get<izenelib::util::UString>();
-        ustr.convertString(utf8, ENCODING_TYPE);
-
-        docValue[propName] = utf8;
+        docValue[propName] = propstr_to_str(findIt->second.get<PropertyValue::PropertyValueStrType>());
     }
 }
 

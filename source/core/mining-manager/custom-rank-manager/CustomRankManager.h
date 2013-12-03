@@ -29,7 +29,7 @@ public:
     CustomRankManager(
         const std::string& dbPath,
         CustomDocIdConverter& docIdConverter,
-        const DocumentManager* docManager = NULL
+        DocumentManager* docManager = NULL
     );
 
     void flush();
@@ -73,7 +73,7 @@ private:
 
     CustomDocIdConverter& docIdConverter_;
 
-    const DocumentManager* docManager_;
+    DocumentManager* docManager_;
 };
 
 } // namespace sf1r

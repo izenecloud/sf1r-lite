@@ -78,7 +78,13 @@ public:
 
     void load( const std::map<std::string, std::string> & rawdata );
 
+    void save_to_logserver();
+    static void get_from_logserver(const std::string& collection,
+        std::list<std::map<std::string, std::string> >& res);
+    static void del_from_logserver(const std::string& collection);
 private:
+
+    static const std::string service_;
 
     std::string collection_;
     bool collectionPresent_;

@@ -35,7 +35,9 @@ bool TopKReranker::rerank(
 
         ProductRankParam rankParam(resultItem.topKDocs_,
                                    resultItem.topKRankScoreList_,
-                                   actionItem.isRandomRank_);
+                                   actionItem.isRandomRank_,
+                                   actionItem.env_.normalizedQueryString_,
+                                   actionItem.searchingMode_.mode_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankParam));
@@ -43,7 +45,8 @@ bool TopKReranker::rerank(
         productRanker->rank();
 
         LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
-                  << ", product rerank costs: " << timer.elapsed()
+                  << ", rerank doc num: " << rankParam.docNum_
+                  << ", rerank costs: " << timer.elapsed()
                   << " seconds";
 
         return true;

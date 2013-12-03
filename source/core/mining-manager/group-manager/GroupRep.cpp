@@ -353,7 +353,7 @@ void GroupRep::ResizeTo(const std::map<std::string, int>& grouptop_for_props)
             topk_doc_count_queue.back().pop();
         }
     }
-    if(topk_doc_count_queue.size() > 0)
+    if(topk_doc_count_queue.size() > 0 && topk_doc_count_queue.back().size() > 0)
         cout << "topk group doc_count in property : " << last_property << ", " << topk_doc_count_queue.back().top() << std::endl;
 
     std::list<OntologyRepItem>::iterator prop_erase_start = stringGroupRep_.begin();

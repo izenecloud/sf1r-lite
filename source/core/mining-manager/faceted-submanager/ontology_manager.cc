@@ -14,15 +14,12 @@
 #include <la/common/Term.h>
 
 #include <ir/index_manager/index/LAInput.h>
-#include <index-manager/IndexManager.h>
-
 #include <idmlib/util/idm_analyzer.h>
 
 #include <boost/unordered_map.hpp>
 #include <algorithm>
 
 using namespace sf1r::faceted;
-using namespace izenelib::ir::indexmanager;
 
 bool myfunction (std::pair<uint32_t, uint32_t> p1,std::pair<uint32_t, uint32_t> p2)
 {
@@ -49,68 +46,6 @@ OntologyManager::OntologyManager(
         faceted_properties_.insert( properties[i], 0);
     }
 }
-
-//used for new ontology_manager
-//Can not work, bad design
-#if 0
-OntologyManager::OntologyManager(
-    std::string& facetedPath,
-    std::string& tgLabelPath,
-    // collectionid_t collectionId,
-    std::string& collectionName,
-    const DocumentSchema& documentSchema,
-    const MiningSchema& mining_schema,
-    boost::shared_ptr<DocumentManager>& document_manager,
-    // std::vector<std::string>& properties,
-    idmlib::util::IDMAnalyzer* analyzer,
-    boost::shared_ptr<IndexManager>& index_manager,
-    boost::shared_ptr<LabelManager>&  labelManager,
-    boost::shared_ptr<IDManager>& idManager,
-    boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader,
-    boost::shared_ptr<LAManager>& laManager
-)
-        : container_(facetedPath)
-        , collectionName_(collectionName)
-        , documentSchema_(documentSchema)
-        , mining_schema_(mining_schema)
-        , document_manager_(document_manager)
-        , analyzer_(analyzer), service_(NULL), searcher_(new OntologySearcher())
-        , manmade_(new ManmadeDocCategory(container_+"/manmade"))
-        , index_manager_(index_manager)
-        , labelManager_(labelManager)
-        , idManager_(idManager)
-        , reader_(reader)
-        ,laManager_(laManager)
-        , max_docid_file_(container_+"/max_id")
-        , docItemListFile_(tgLabelPath+"/docItemList")
-        ,maxDocid_(0)
-//, cooccurenceFile_(container_+"/cooccurence")
-{
-
-    std::vector<std::string> properties= mining_schema_.faceted_properties;
-
-    for (uint32_t i=0;i<properties.size();i++)
-    {
-        faceted_properties_.insert( properties[i], 0);
-        PropertyConfigBase byName;
-        byName.propertyName_ = properties[i];
-        DocumentSchema::const_iterator it(documentSchema_.find(byName));
-        if (it != documentSchema_.end())
-        {
-            property_ids_.push_back (it->propertyId_);
-            property_names_.push_back(properties[i]);
-            std::cout<<"[Faceted] find property : "<<it->propertyId_<<","<<properties[i]<<std::endl;
-        }
-        else assert(false);
-    }
-    collectionId_ = 1;
-    //cout<<"constructor collectionId is "<<collectionId_<<endl;
-    string sdbfile(tgLabelPath+"/doc_label_tf.dat");
-
-    docRuleTFSDB_ = new IndexSDB<unsigned int, unsigned int,izenelib::util::ReadWriteLock> (sdbfile);
-    docRuleTFSDB_->initialize(20, 8, 1024, 1000000);
-}
-#endif
 
 OntologyManager::~OntologyManager()
 {
@@ -156,7 +91,7 @@ int OntologyManager::getDocTermsCount(Document& doc)
     std::cout<<"OntologyManager::getDocTermsCount"<<std::endl;
     uint32_t doc_terms_cnt = 0;
     Document::property_iterator property_it =doc.findProperty("Content");
-    izenelib::util::UString content = property_it->second.get<izenelib::util::UString>();
+    Document::doc_prop_value_strtype content = property_it->second.getPropertyStrValue();
 
     std::vector<idmlib::util::IDMTerm> term_list;
 #ifdef DEBUG_ONTOLOTY
@@ -164,7 +99,7 @@ int OntologyManager::getDocTermsCount(Document& doc)
     content.convertString(str,UString::UTF_8);
     cout<<"content is "<<str<<endl;
 #endif
-    analyzer_->GetStemTermList( content, term_list );
+    analyzer_->GetStemTermList( propstr_to_ustr(content), term_list );
     //analyzer_->GetTermList(content, term_list);
     doc_terms_cnt+=term_list.size();
 #ifdef DEBUG_ONTOLOTY
@@ -173,35 +108,6 @@ int OntologyManager::getDocTermsCount(Document& doc)
 
     return doc_terms_cnt;
 }
-
-/*
- * calculate the total count of terms in one collection
- * @param document_manager : it is used to deal with documents such as read, write.
- * @return the total count of term in this collection.
- */
-int OntologyManager::getCollectionTermsCount()
-{
-    std::cout<<"OntologyManager::getCollectionTermsCount()"<<std::endl;
-    uint32_t max_docid = 0;
-    uint32_t collection_terms_cnt = 0;
-    IndexReader* pIndexReader =0;
-    if (index_manager_)
-    {
-        pIndexReader = index_manager_->getIndexReader();
-        for ( uint32_t docid = max_docid+1; docid<=document_manager_->getMaxDocId(); docid++)
-        {
-            uint32_t docTermCount=pIndexReader->docLength(docid,1);
-            collection_terms_cnt +=docTermCount;
-        }
-#ifdef DEBUG_ONTOLOTY
-        cout<<"getCollectionTermsCount is "<<collection_terms_cnt<<endl;
-#endif
-    }
-
-
-    return collection_terms_cnt;
-}
-
 
 std::map<std::pair<uint32_t, uint32_t>, int> coOccurence;
 
@@ -428,7 +334,6 @@ void OntologyManager::calculateCoOccurenceBySearchManager(Ontology* ontology)
 bool OntologyManager::SetXML(const std::string& xml)
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
-//     return SetXMLWithSmooth_(xml);
     return SetXMLSimple_(xml);
 }
 
@@ -438,304 +343,6 @@ bool OntologyManager::ProcessCollection(bool rebuild)
 //     return ProcessCollectionWithSmooth_(rebuild);
     return ProcessCollectionSimple_(rebuild);
 }
-
-
-
-/*    *
- * Process documents with smoother. It is dependent of Other components such as documentManager and labelManager,
- * in other word, it will make use of the results of mining and KPE.
- * @param rebuild : if we should rebuild faceted search.
- * @return true if it is successful, otherwise false.
-*/
-bool OntologyManager::ProcessCollectionWithSmooth_(bool rebuild)
-{
-    return false;
-#if 0
-    //do on documents
-    MEMLOG("[Mining] FACETED starting, rebuild=%d",rebuild);
-    izenelib::util::ClockTimer timer;
-
-    Ontology* ontology = service_;
-    if (rebuild) ontology = edit_;
-    if (ontology==NULL)
-    {
-        std::cerr<<"No ontology available."<<std::endl;
-        return false;
-    }
-
-    //get predefined categories
-    izenelib::am::rde_hash<izenelib::util::UString, CategoryIdType> manmade_categories;
-    std::vector<ManmadeDocCategoryItem> items;
-    if (!manmade_->Get(items))
-    {
-        std::cerr<<"Get manmade categories failed"<<std::endl;
-    }
-    else
-    {
-        if (ontology->GenCategoryId(items))
-        {
-            for (uint32_t i=0;i<items.size();i++)
-            {
-                if (items[i].cid!=0)
-                {
-                    manmade_categories.insert(items[i].str_docid, items[i].cid);
-                }
-            }
-        }
-        else
-        {
-            std::cerr<<"generate category id for manmade failed"<<std::endl;
-        }
-    }
-
-
-    if (!rebuild)
-    {
-        maxDocid_ = GetProcessedMaxId_();
-    }
-
-    std::cout<<"last max docid : "<<maxDocid_<<std::endl;
-
-    uint32_t process_count = 0;
-    Document doc;
-
-
-
-#ifdef SMOOTHER
-    uint32_t collectionTermCount =getCollectionTermsCount();
-    cout<<"collectionTermCount  is "<<collectionTermCount<<endl;
-    double bkgCoefficient = 0.5;
-    double dirichletCoefficient =750;
-    bool first = true;
-#endif
-
-    //calculateCoOccurenceByIndexManager(ontology);
-    calculateCoOccurenceBySearchManager(ontology);
-    cout<<"calculateCoOccurence() is successful."<<",time elasped "<<timer.elapsed()<<endl;
-    IndexReader* pIndexReader=0;
-
-    if (index_manager_)
-    {
-        pIndexReader = index_manager_->getIndexReader();
-    }
-    uint32_t propertyId = property_ids_[0];
-
-    izenelib::util::ClockTimer timer2;
-    std::cout<<"Will processing from "<<maxDocid_+1<<" to "<<document_manager_->getMaxDocId()<<" documents"<<std::endl;
-    if (!reader_->isOpen())
-    {
-        reader_->open();
-    }
-    for( uint32_t docid = maxDocid_+1; docid<=document_manager_->getMaxDocId(); docid++)
-    {
-
-        process_count++;
-#ifdef DEBUG_ONTOLOTY
-        cout<<"Process doc "<<process_count<<endl;
-#endif
-        if ( process_count %1000 == 0 )
-        {
-            MEMLOG("[FACETED] inserted %d. docid: %d", process_count, docid);
-        }
-        bool b = document_manager_->getDocument(docid, doc);
-        if (!b)
-        {
-            continue;
-
-        }
-
-        uint32_t docTermCount=pIndexReader->docLength(docid,propertyId);
-        if (docTermCount <1)
-            continue;
-
-#ifdef DEBUG_ONTOLOTY
-        cout<<"docTermCount is "<<docTermCount<<endl;
-        cout<<"collectionTermCount  is "<<collectionTermCount<<endl;
-        //JMSmoother  jms(docTermCount ,collectionTermCount,bkgCoefficient,dirichletCoefficient);
-        //TwoStageSmoother tws(docTermCount ,collectionTermCount,bkgCoefficient,dirichletCoefficient);
-#endif
-        Document::property_iterator property_it = doc.findProperty("DOCID");
-        if (property_it!=doc.propertyEnd())
-        {
-            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
-            CategoryIdType* cid = manmade_categories.find(str_docid);
-            if (cid!=NULL)
-            {
-                std::cout<<"Manmade category: "<<docid<<" -> "<<*cid<<std::endl;
-                ontology->InsertDoc(*cid, docid);
-                continue;
-            }
-        }
-        std::vector<std::pair<uint32_t, uint32_t> > topicItemList;
-
-        reader_->next(docid, topicItemList);
-        uint32_t min_topic = topicItemList.size()<10? topicItemList.size():10;
-        std::partial_sort (topicItemList.begin(), topicItemList.begin()+min_topic, topicItemList.end(),myfunction);
-
-        std::vector<std::pair<double,CategoryIdType> > score_item;
-
-        std::vector<unsigned int> vectfs;
-        if (docRuleTFSDB_->getValue(docid,vectfs)==false)
-        {
-            continue;
-        }
-
-        uint32_t ruleId =0;
-        for (CategoryIdType cid = 0; cid<ontology->GetCidCount(); cid++)
-        {
-            if (!ontology->IsLeafCategory(cid))
-            {
-                continue;
-            }
-
-            OntologyNodeRule rule;
-            if ( !ontology->GetCategoryRule(cid, rule) )
-            {
-                std::cout<<"No rule for cid: "<<cid<<std::endl;
-                continue;
-            }
-            double score = 0.0;
-            double probBasic =0.0;
-            double probTopic = 0.0;
-            double delta =0.5;
-
-
-            for (uint32_t l=0;l<rule.labels.size();l++,ruleId++)
-            {
-                uint32_t tfInDoc=0;
-                izenelib::util::UString ruleLabel = rule.labels[l];
-
-                tfInDoc = vectfs[ruleId];
-
-                /* std::map<std::pair<uint32_t,uint32_t>, uint32_t>::iterator iter
-                  = docLabelTF.find(make_pair(docid,ruleId));
-
-                 if( iter!=docLabelTF.end())
-                 {
-                     tfInDoc =iter->second;
-                     cout<<"tf is "<<tfInDoc<<endl;
-                 }
-                 else
-                     continue;*/
-
-                probBasic += (tfInDoc*1.0)/docTermCount;
-
-                for (uint32_t k=0;k< min_topic; k++)
-                {
-
-                    uint32_t topicDF=0;
-                    //cout<<"topicItemList[k].second is "<<topicItemList[k].second<<endl;
-                    /* if(labelDF.find(topicItemList[k].first) != labelDF.end())
-                       topicDF =labelDF.find(topicItemList[k].first)->second;
-                    else
-                        continue;*/
-                    labelManager_->getLabelDF(topicItemList[k].first, topicDF);
-                    if (topicDF <1)
-                        continue;
-                    uint32_t topic_label=0 ;
-                    topic_label =getCoOccurence(ruleId,topicItemList[k].first);
-
-#ifdef DEBUG_ONTOLOTY
-                    std::string str;
-                    topic.convertString(str, izenelib::util::UString::UTF_8);
-                    cout<<"topicID is "<<topicItemList[k].first<<", topic is "<<str<<"and df is "<<topicDF<<endl;;
-                    if (topic_label>0)
-                        cout<<"topicID is "<<topicItemList[k].first<<"and df is "<<topicDF<<", tf is "<<topicItemList[k].second<<endl;;
-#endif
-
-                    probTopic += (1.0*topic_label)/(topicDF+1)
-                                 *( 1.0*topicItemList[k].second/(docTermCount+1));
-
-                }
-
-
-            }
-
-
-            score =delta*probBasic;
-            score +=(1-delta)*probTopic;
-            score_item.push_back(std::make_pair(score, cid));
-#ifdef DEBUG_ONTOLOTY
-            cout<<"cid is "<<cid<<",probBasic is "<<probBasic<<", probTopic is "<<probTopic<<endl;
-            cout<<"process_count is "<<process_count<<", score is "<<score<<endl;
-            //cout<<"probBasic is "<<probBasic<<", probTopic is "<<probTopic<<",score is "<<score<<endl;
-
-#endif
-        }
-
-        if (score_item.size()>0)
-        {
-            std::sort(score_item.begin(), score_item.end(), std::greater<std::pair<double,CategoryIdType> >());
-
-            if (abs(score_item[0].first-score_item[score_item.size()-1].first) <= numeric_limits<float>::epsilon())
-                continue;
-            ontology->InsertDoc(score_item[0].second, docid);
-#ifdef DEBUG_ONTOLOTY
-            UString cname;
-            ontology->GetCategoryName(score_item[0].second,cname);
-            std::string name;
-            cname.convertString(name,UString::UTF_8);
-            Document::property_iterator property_it = doc.findProperty("Title");
-            izenelib::util::UString ustr_title = property_it->second.get<izenelib::util::UString>();
-            std::string title;
-            ustr_title.convertString(title, UString::UTF_8);
-            std::cout<<"doc "<<docid<<":"<<title<<" in cname: "<<name<<std::endl;
-#endif
-            for (uint32_t i=1; i< score_item.size(); i++)
-            {
-                if (score_item[i].first > (score_item[i-1].first*0.95))
-                {
-                    CategoryIdType c = score_item[i].second;
-                    ontology->InsertDoc(c, docid);
-#ifdef DEBUG_ONTOLOTY
-                    UString cname;
-                    ontology->GetCategoryName(c,cname);
-                    std::string name;
-                    cname.convertString(name,UString::UTF_8);
-                    Document::property_iterator property_it = doc.findProperty("Title");
-                    izenelib::util::UString ustr_title = property_it->second.get<izenelib::util::UString>();
-                    std::string title;
-                    ustr_title.convertString(title, UString::UTF_8);
-                    std::cout<<"doc "<<docid<<":"<<title<<" in cname: "<<name<<std::endl;
-#endif
-                }
-                else
-                    break;
-            }
-
-#ifdef DEBUG_ONTOLOTY
-            UString cname;
-            ontology->GetCategoryName(c,cname);
-            std::string name;
-            cname.convertString(name,UString::UTF_8);
-            Document::property_iterator property_it = doc.findProperty("Title");
-            izenelib::util::UString ustr_title = property_it->second.get<izenelib::util::UString>();
-            std::string title;
-            ustr_title.convertString(title, UString::UTF_8);
-            std::cout<<"doc "<<docid<<":"<<title<<" in cname: "<<name<<std::endl;
-#endif
-            //ontology->InsertDoc(c, docid);
-            //std::cout<<"insert doc into ontology time is "<<timer.elapsed()<<endl;
-
-        }
-    }
-    //std::cout<<"after facted, time is  "<<timer.elapsed()<<endl;
-    if (!ontology->ApplyModification())
-    {
-        std::cerr<<"[FACETED] apply modification failed."<<std::endl;
-        return false;
-    }
-    max_docid_file_.SetValue(document_manager_->getMaxDocId());
-    max_docid_file_.Save();
-    // reader_->close();
-    MEMLOG("[Mining] FACETED finished.");
-    std::cout<<"classfication time is "<<timer2.elapsed()<<endl;
-    std::cout<<"total time is "<<timer.elapsed()<<endl;
-    //std::cout<<"average time is "<<timer.elapsed()*1.0/document_manager_->getMaxDocId()<<" second."<<std::endl;
-    return true;
-#endif
-}
-
 
 bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
 {
@@ -858,8 +465,8 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         Document::property_iterator property_it = doc.findProperty("DOCID");
         if (property_it!=doc.propertyEnd())
         {
-            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
-            CategoryIdType* cid = manmade_categories.find(str_docid);
+            Document::doc_prop_value_strtype str_docid = property_it->second.getPropertyStrValue();
+            CategoryIdType* cid = manmade_categories.find(propstr_to_ustr(str_docid));
             if (cid!=NULL)
             {
                 std::cout<<"Manmade category: "<<docid<<" -> "<<*cid<<std::endl;
@@ -870,14 +477,14 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         uint32_t terms_count = 0;
         CountingTrie trie;
         property_it = doc.propertyBegin();
-        izenelib::util::UString last_faceted_property;
+        Document::doc_prop_value_strtype last_faceted_property;
         while (property_it != doc.propertyEnd())
         {
             if (faceted_properties_.find(property_it->first))
             {
-                const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+                const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
                 std::vector<idmlib::util::IDMTerm> term_list;
-                analyzer_->GetStemTermList( content, term_list );
+                analyzer_->GetStemTermList( propstr_to_ustr(content), term_list );
 //              std::cout<<"after la "<<term_list.size()<<std::endl;
 //              if(term_list.size()>100000)
 //              {
@@ -934,8 +541,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
             CategoryIdType c = score_item[0].second;
             if ( score_item[0].first>0.0)
             {
-                std::string t;
-                last_faceted_property.convertString(t, izenelib::util::UString::UTF_8);
+                std::string t = propstr_to_str(last_faceted_property);
                 izenelib::util::UString cn;
                 ontology->GetCategoryName(c, cn);
                 std::string cns;
@@ -968,88 +574,6 @@ bool OntologyManager::GetXML(std::string& xml)
 {
     if (service_==NULL) return false;
     return service_->GetXML(xml);
-}
-bool OntologyManager::SetXMLWithSmooth_(const std::string& xml)
-{
-    std::string edit_dir = container_+"/edit";
-    std::string service_dir = container_+"/service";
-    try
-    {
-        boost::filesystem::remove_all(edit_dir);
-    }
-    catch (std::exception& ex)
-    {
-        std::cerr<<"boost error "<<ex.what()<<std::endl;
-        return false;
-    }
-
-    Ontology* edit = new Ontology();
-
-    if (!edit->InitOrLoad(edit_dir))
-    {
-        std::cerr<<"Ontology InitOrLoad failed"<<std::endl;
-        delete edit;
-        return false;
-    }
-    if (!edit->SetXML(xml))
-    {
-        std::cerr<<"Ontology SetXML failed"<<std::endl;
-        delete edit;
-        return false;
-    }
-    //do not copy docs from service, just rebuild
-//   if( service_!=NULL)
-//   {
-//     if(!edit->CopyDocsFrom(service_))
-//     {
-//       std::cerr<<"Ontology CopyDocsFrom failed"<<std::endl;
-//       delete edit;
-//       return false;
-//     }
-//   }
-
-    //TODO Rebuild the collection on edit
-    edit_ = edit;
-
-    if (ProcessCollectionWithSmooth_(true))
-    {
-        delete edit;
-        if (service_!=NULL) delete service_;
-        try
-        {
-            boost::filesystem::remove_all(service_dir);
-            boost::filesystem::rename(edit_dir, service_dir);
-        }
-
-        catch (std::exception& ex)
-        {
-            std::cerr<<"service error: "<<ex.what()<<std::endl;
-            return false;
-        }
-        service_ = new Ontology();
-        if (!service_->Load(service_dir))
-        {
-            std::cerr<<"Ontology service load failed"<<std::endl;
-            return false;
-        }
-        searcher_->SetOntology(service_);
-    }
-    else
-    {
-        std::cerr<<"Process collection on new ontology failed"<<std::endl;
-        delete edit;
-        try
-        {
-            boost::filesystem::remove_all(edit_dir);
-        }
-        catch (std::exception& ex)
-        {
-            std::cerr<<"boost remove_all error"<<ex.what()<<std::endl;
-        }
-        return false;
-    }
-    std::cout<<"SetXMLWithSmooth_ finished succ"<<std::endl;
-    return true;
 }
 
 bool OntologyManager::SetXMLSimple_(const std::string& xml)
@@ -1223,9 +747,8 @@ void OntologyManager::OutputToFile_(const std::string& file, Ontology* ontology)
         Document::property_iterator property_it = doc.findProperty("DOCID");
         if (property_it!=doc.propertyEnd())
         {
-            izenelib::util::UString str_docid = property_it->second.get<izenelib::util::UString>();
-            std::string s_docid;
-            str_docid.convertString(s_docid, izenelib::util::UString::UTF_8);
+            Document::doc_prop_value_strtype str_docid = property_it->second.getPropertyStrValue();
+            std::string s_docid = propstr_to_str(str_docid);
             std::list<uint32_t> cid_list;
             ontology->GetCategories(docid, cid_list);
             if(cid_list.size()==0) continue;

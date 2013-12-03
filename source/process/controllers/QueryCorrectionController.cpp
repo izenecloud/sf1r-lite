@@ -5,6 +5,7 @@
 #include <common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
 
 #include <util/ustring/UString.h>
 
@@ -68,7 +69,7 @@ void QueryCorrectionController::index()
 {
     std::string queryString = asString(request()[Keys::keywords]);
 
-    UString queryUString(queryString, UString::UTF_8);
+    /*UString queryUString(queryString, UString::UTF_8);
     UString refinedQueryUString;
 
     if (collectionName_.empty())
@@ -84,8 +85,37 @@ void QueryCorrectionController::index()
 
     std::string refinedQueryString;
     refinedQueryUString.convertString(refinedQueryString,
-                                     izenelib::util::UString::UTF_8);
-    response()[Keys::refined_query] = refinedQueryString;
+                                     izenelib::util::UString::UTF_8);*/
+    std::string refinedQueryString;
+    double factor = 0.0;
+    if (CorrectionEngineWrapper::getInstance().correct(queryString, refinedQueryString, factor))
+        response()[Keys::refined_query] = refinedQueryString;
+    else
+        response()[Keys::refined_query] = "";
+        
 }
 
+/*
+ * @brief Evaluate QueryCorrection Unit Internal
+ */
+void QueryCorrectionController::evaluate()
+{
+    std::string sResult = "";
+    CorrectionEngineWrapper::getInstance().evaluate(sResult);
+    std::size_t pos = 0;
+    izenelib::driver::Value& v = response()["Evaluate Result"];
+    while (true)
+    {
+        std::size_t found = sResult.find('\n', pos);
+        if (std::string::npos == found)
+            break;
+        std::string sItem = sResult.substr(pos, found - pos);
+        pos = found + 1;
+
+        std::size_t seq = sItem.find(":");
+        if (std::string::npos == seq)
+            continue;
+        v[sItem.substr(0, seq)] = sItem.substr(seq+2);
+    }
+}
 } // namespace sf1r

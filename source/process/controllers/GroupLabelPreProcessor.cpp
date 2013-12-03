@@ -3,6 +3,8 @@
 
 #include <glog/logging.h>
 
+using namespace faceted;
+
 namespace sf1r
 {
 
@@ -10,19 +12,17 @@ void GroupLabelPreProcessor::process(
     KeywordSearchActionItem& actionItem,
     KeywordSearchResult& searchResult)
 {
-    faceted::GroupParam& groupParam = actionItem.groupParam_;
-    typedef faceted::GroupParam::AutoSelectLimitMap LimitMap;
-    LimitMap& limitMap = groupParam.autoSelectLimits_;
+    GroupParam& groupParam = actionItem.groupParam_;
+    GroupParam::AutoSelectLimitMap& limitMap = groupParam.autoSelectLimits_;
 
     if (limitMap.empty())
         return;
 
-    const std::string& query = actionItem.env_.queryString_;
-    typedef faceted::GroupParam::GroupLabelMap GroupLabelMap;
-    GroupLabelMap& totalLabels = groupParam.groupLabels_;
-    GroupLabelMap& autoSelectLabels = searchResult.autoSelectGroupLabels_;
+    const std::string& query = actionItem.env_.normalizedQueryString_;
+    GroupParam::GroupLabelMap& totalLabels = groupParam.groupLabels_;
+    GroupParam::GroupLabelScoreMap& autoSelectLabels = searchResult.autoSelectGroupLabels_;
 
-    for (LimitMap::const_iterator limitIt = limitMap.begin();
+    for (GroupParam::AutoSelectLimitMap::const_iterator limitIt = limitMap.begin();
          limitIt != limitMap.end(); ++limitIt)
     {
         pushTopLabels_(totalLabels, autoSelectLabels,
@@ -32,13 +32,12 @@ void GroupLabelPreProcessor::process(
 
 void GroupLabelPreProcessor::pushTopLabels_(
     faceted::GroupParam::GroupLabelMap& totalLabels,
-    faceted::GroupParam::GroupLabelMap& autoSelectLabels,
+    faceted::GroupParam::GroupLabelScoreMap& autoSelectLabels,
     const std::string& query,
     const std::string& propName,
     int limit)
 {
-    typedef faceted::GroupParam::GroupPathVec GroupPathVec;
-    GroupPathVec pathVec;
+    GroupParam::GroupPathVec pathVec;
     std::vector<int> freqVec;
 
     if (! miningSearchService_->getFreqGroupLabel(
@@ -54,12 +53,15 @@ void GroupLabelPreProcessor::pushTopLabels_(
         miningSearchService_->GetProductCategory(query, limit, pathVec);
     }
 
-    for (GroupPathVec::const_iterator pathIt = pathVec.begin();
+    GroupParam::GroupPathScoreVec pathScoreVec;
+    pathScoreVec.reserve(pathVec.size());
+    for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
          pathIt != pathVec.end(); ++pathIt)
     {
         totalLabels[propName].push_back(*pathIt);
+        pathScoreVec.push_back(std::make_pair(*pathIt, 0));
     }
-    autoSelectLabels[propName].swap(pathVec);
+    autoSelectLabels[propName].swap(pathScoreVec);
 }
 
 } // namespace sf1r

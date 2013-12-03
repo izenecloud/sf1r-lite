@@ -12,6 +12,7 @@
 #include <license-manager/LicenseCustManager.h>
 #include <license-manager/LicenseTool.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -32,8 +33,10 @@ CollectionManager::CollectionManager()
         boost::bind(&CollectionManager::stopCollection, this, _1, _2));
 
     RecoveryChecker::get()->setColCallback(
-        boost::bind(&CollectionManager::reopenCollection, this, _1),
         boost::bind(&CollectionManager::flushCollection, this, _1));
+
+    DistributeFileSyncMgr::get()->setGenMigrateScdCB(
+        boost::bind(&CollectionManager::generateMigrateSCD, this, _1, _2, _3, _4));
 }
 
 CollectionManager::~CollectionManager()
@@ -61,6 +64,43 @@ CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::s
     }
 
     return mutex;
+}
+
+bool CollectionManager::checkConfig(const string& collectionName,
+    const std::string& configFileName, bool check_exist)
+{
+    try
+    {
+        if (check_exist)
+        {
+            ScopedWriteLock lock(*getCollectionMutex(collectionName));
+            if (findHandler(collectionName) != NULL)
+                return false;
+        }
+        std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
+        boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
+        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
+        boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
+        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
+
+        CollectionMeta collectionMeta;
+        collectionMeta.indexBundleConfig_ = indexBundleConfig;
+        collectionMeta.productBundleConfig_ = productBundleConfig;
+        collectionMeta.miningBundleConfig_ = miningBundleConfig;
+        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
+
+        if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
+        {
+            LOG(WARNING) << "error in parsing " + configFileName;
+            return false;
+        }
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "check config error: " << e.what();
+        return false;
+    }
+    return true;
 }
 
 bool CollectionManager::startCollection(const string& collectionName,
@@ -122,15 +162,15 @@ bool CollectionManager::startCollection(const string& collectionName,
         if (config_meta_it != collectionMetaMap.end())
         {
             LOG(INFO) << "replacing some meta config with original coll : " << config_col;
-            indexBundleConfig->isMasterAggregator_ = config_meta_it->second.indexBundleConfig_->isMasterAggregator_;
-            indexBundleConfig->isWorkerNode_ = config_meta_it->second.indexBundleConfig_->isWorkerNode_;
-            recommendBundleConfig->recommendNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isMasterNode_;
-            recommendBundleConfig->recommendNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isWorkerNode_;
-            recommendBundleConfig->recommendNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isSingleNode_;
-            recommendBundleConfig->searchNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isMasterNode_;
-            recommendBundleConfig->searchNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isWorkerNode_;
-            recommendBundleConfig->searchNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isSingleNode_;
-            miningBundleConfig->isMasterAggregator_ = indexBundleConfig->isMasterAggregator_;
+            //indexBundleConfig->isMasterAggregator_ = config_meta_it->second.indexBundleConfig_->isMasterAggregator_;
+            //indexBundleConfig->isWorkerNode_ = config_meta_it->second.indexBundleConfig_->isWorkerNode_;
+            //recommendBundleConfig->recommendNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isMasterNode_;
+            //recommendBundleConfig->recommendNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isWorkerNode_;
+            //recommendBundleConfig->recommendNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isSingleNode_;
+            //recommendBundleConfig->searchNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isMasterNode_;
+            //recommendBundleConfig->searchNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isWorkerNode_;
+            //recommendBundleConfig->searchNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isSingleNode_;
+            //miningBundleConfig->isMasterAggregator_ = indexBundleConfig->isMasterAggregator_;
         }
         bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
         if (basePath.filename().string() == ".")
@@ -292,7 +332,13 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
         collectionMetaMap.erase(findIt);
     }
     if (SF1Config::get()->isDistributedNode())
+    {
         RecoveryChecker::get()->removeCollection(collectionName);
+        SF1Config::get()->removeServiceMaster(Sf1rTopology::getServiceName(Sf1rTopology::SearchService), collectionName);
+        SF1Config::get()->removeServiceMaster(Sf1rTopology::getServiceName(Sf1rTopology::RecommendService), collectionName);
+        SF1Config::get()->removeServiceWorker(Sf1rTopology::getServiceName(Sf1rTopology::SearchService), collectionName);
+        SF1Config::get()->removeServiceWorker(Sf1rTopology::getServiceName(Sf1rTopology::RecommendService), collectionName);
+    }
     if (clear)
     {
         namespace bfs = boost::filesystem;
@@ -328,18 +374,6 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
             std::cerr<<"clear collection "<<collectionName<<" error: "<<ex.what()<<std::endl;
             return false;
         }
-    }
-    return true;
-}
-
-bool CollectionManager::reopenCollection(const std::string& collectionName)
-{
-    handler_const_iterator iter = collectionHandlers_.find(collectionName);
-    if (iter != collectionHandlers_.end())
-    {
-        if (iter->second->indexTaskService_ && !iter->second->indexTaskService_->reload())
-            return false;
-        // reopen other service data if needed.
     }
     return true;
 }
@@ -381,6 +415,41 @@ std::string CollectionManager::checkCollectionConsistency(const std::string& col
 void CollectionManager::deleteCollection(const std::string& collectionName)
 {
 
+}
+
+bool CollectionManager::addNewShardingNodes(const std::string& collectionName,
+    const std::vector<shardid_t>& new_sharding_nodes, bool do_remove)
+{
+    ScopedReadLock lock(*getCollectionMutex(collectionName));
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if (iter != collectionHandlers_.end())
+    {
+        if (iter->second->indexTaskService_)
+        {
+            if (do_remove)
+                return iter->second->indexTaskService_->removeShardingNodes(new_sharding_nodes);
+            return iter->second->indexTaskService_->addNewShardingNodes(new_sharding_nodes);
+        }
+    }
+    return false;
+}
+
+bool CollectionManager::generateMigrateSCD(const std::string& collectionName,
+    const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+    std::map<shardid_t, std::string>& generated_insert_scds,
+    std::map<shardid_t, std::string>& generated_del_scds)
+{
+    ScopedReadLock lock(*getCollectionMutex(collectionName));
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if (iter != collectionHandlers_.end())
+    {
+        if (iter->second->indexTaskService_)
+        {
+            return iter->second->indexTaskService_->generateMigrateSCD(vnode_list, generated_insert_scds, generated_del_scds);
+        }
+    }
+    LOG(INFO) << "collection not found : " << collectionName;
+    return false;
 }
 
 CollectionHandler* CollectionManager::findHandler(const std::string& key) const

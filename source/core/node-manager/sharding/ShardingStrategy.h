@@ -10,44 +10,88 @@
 #include "ShardingConfig.h"
 
 #include <util/ustring/UString.h>
+#include <common/Utilities.h>
 
 #include <boost/uuid/sha1.hpp>
 
 #include <vector>
+#include <map>
 
 #include <stdint.h>
 
 namespace sf1r{
 
-typedef uint32_t shardid_t; // xxx, shard id start with 1 (1, ..., n)
+inline size_t convertUniqueIDForSharding(const std::string& uid)
+{
+    size_t tmp = 0;
+    if (uid.length() == 32)
+        tmp = (size_t)Utilities::uuidToUint128(uid);
+    else
+    {
+        try
+        {
+            tmp = boost::lexical_cast<size_t>(uid);
+        }
+        catch(const std::exception& e)
+        {
+            tmp = (size_t)uid[uid.length() - 1];
+        }
+    }
+
+    return tmp;
+}
 
 class ShardingStrategy
 {
 public:
-    typedef std::vector<std::pair<std::string, std::string> > ShardFieldListT;
+    typedef std::map<std::string, std::string> ShardFieldListT;
+    typedef std::vector<shardid_t>  ShardIDListT;
 
-    struct ShardingParams
+    ShardingStrategy()
     {
-        unsigned int shardNum_;
-    };
-
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig) = 0;
+    }
+    virtual bool init() = 0;
+    virtual shardid_t sharding_for_write(const ShardFieldListT& shardFieldList) = 0;
+    virtual ShardIDListT sharding_for_get(const ShardFieldListT& shardFieldList) = 0;
+    virtual void save() = 0;
 
     virtual ~ShardingStrategy(){}
+
+    ShardingConfig shard_cfg_;
 };
 
 class HashShardingStrategy : public ShardingStrategy
 {
 public:
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig);
+    virtual bool init() { return true; }
+    virtual shardid_t sharding_for_write(const ShardFieldListT& shardFieldList);
+    virtual ShardIDListT sharding_for_get(const ShardFieldListT& shardFieldList);
+    virtual void save() {}
+};
 
+class MapShardingStrategy : public ShardingStrategy
+{
+public:
+    MapShardingStrategy(const std::string& map_file)
+        :map_file_path_(map_file)
+    {
+    }
+
+    virtual bool init();
+    virtual shardid_t sharding_for_write(const ShardFieldListT& shardFieldList);
+    virtual ShardIDListT sharding_for_get(const ShardFieldListT& shardFieldList);
+    virtual void save();
+
+    static void readShardingMapFile(const std::string& fullpath,
+        std::vector<shardid_t>& sharding_map);
+    static void saveShardingMapToFile(const std::string& fullpath,
+        const std::vector<shardid_t>& sharding_map);
+
+    static const size_t MAX_MAP_SIZE = 0xFFFF;
 private:
-    uint64_t hashmd5(const char* data, unsigned long len);
-
-    uint64_t hashsha(const char* data, unsigned long len);
-
-private:
-    boost::uuids::detail::sha1 sha1_;
+    shardid_t sharding_for_write(const std::string& uid, const ShardingConfig& shardingConfig);
+    std::vector<shardid_t>  saved_sharding_map_;
+    std::string map_file_path_;
 };
 
 }

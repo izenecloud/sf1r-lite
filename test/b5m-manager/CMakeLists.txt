@@ -15,24 +15,36 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 # if a dpendes b, a must precede b
 SET(libs
-  sf1r_b5m_manager
   sf1r_mining_manager
-  sf1r_search_manager
+  sf1r_b5m_manager
+  sf1r_log_manager
   sf1r_query_manager
   sf1r_product_manager
-  sf1r_node_manager
-  sf1r_ranking_manager
-  sf1r_document_manager
-  sf1r_directory_manager
-
-  sf1r_log_manager
-  sf1r_license_manager
   sf1r_la_manager
   sf1r_configuration_manager
+  sf1r_mining_manager
+  sf1r_b5m_manager
+  sf1r_log_manager
+  sf1r_query_manager
+  sf1r_product_manager
+  sf1r_la_manager
+
+  sf1r_directory_manager
+  sf1r_license_manager
+  sf1r_search_manager
+  sf1r_document_manager
   sf1r_index_manager
+  sf1r_ranking_manager
+  sf1r_node_manager
   sf1r_common
   sf1r_image_manager
   sf1r_net
+  
+  sf1r_bundle_index
+  sf1r_aggregator_manager
+  sf1r_bundle_mining
+  sf1r_bundle_recommend
+  sf1r_recommend_manager
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
@@ -69,6 +81,34 @@ TARGET_LINK_LIBRARIES(b5m_matcher  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs}
 SET_TARGET_PROPERTIES(b5m_matcher PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+ADD_EXECUTABLE(categorize_test
+categorize_test.cc
+)
+TARGET_LINK_LIBRARIES(categorize_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(categorize_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
+ADD_EXECUTABLE(spu_match_test
+spu_match_test.cc
+)
+TARGET_LINK_LIBRARIES(spu_match_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(spu_match_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
+ADD_EXECUTABLE(keywords_test
+keywords_test.cc
+)
+TARGET_LINK_LIBRARIES(keywords_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(keywords_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
+ADD_EXECUTABLE(keyword_found_test
+keyword_found_test.cc
+)
+TARGET_LINK_LIBRARIES(keyword_found_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(keyword_found_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
 ADD_EXECUTABLE(t_commentdb
 Runner.cpp
 t_commentdb.cc
@@ -94,6 +134,15 @@ TARGET_LINK_LIBRARIES(b5m_search_keyword  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  
 SET_TARGET_PROPERTIES(b5m_search_keyword PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+ADD_EXECUTABLE(b5m_extract_keyword
+b5m_extract_keyword.cc
+)
+TARGET_LINK_LIBRARIES(b5m_extract_keyword  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(b5m_extract_keyword PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
+
 
 ADD_EXECUTABLE(b5m_category_mapper
 b5m_category_mapper.cc
@@ -163,13 +212,6 @@ SET_TARGET_PROPERTIES(b5m_psm PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
 
-ADD_EXECUTABLE(simhash_train_id
-simhash_train_id.cc
-)
-TARGET_LINK_LIBRARIES(simhash_train_id ${libs})
-SET_TARGET_PROPERTIES(simhash_train_id PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
 
 ADD_TEST(t_commentdb "${SF1RENGINE_ROOT}/testbin/t_commentdb")
 ADD_TEST(t_offerdb "${SF1RENGINE_ROOT}/testbin/t_offerdb")

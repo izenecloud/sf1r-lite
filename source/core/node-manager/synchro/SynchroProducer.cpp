@@ -2,6 +2,7 @@
 
 #include <node-manager/SuperNodeManager.h>
 #include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeFileSys.h>
 #include <net/distribute/DataTransfer2.hpp>
 
 #include <boost/thread.hpp>
@@ -15,12 +16,15 @@ using namespace sf1r;
 
 SynchroProducer::SynchroProducer(
         boost::shared_ptr<ZooKeeper>& zookeeper,
-        const std::string& syncZkNode,
+        const std::string& syncID,
         DataTransferPolicy transferPolicy)
 : transferPolicy_(transferPolicy)
 , zookeeper_(zookeeper)
-, syncZkNode_(syncZkNode)
+, syncID_(syncID)
+, syncZkNode_(ZooKeeperNamespace::getSynchroPath() + "/" + syncID)
 , isSynchronizing_(false)
+, stopping_(false)
+, reconnectting_(false)
 {
     if (zookeeper_)
         zookeeper_->registerEventHandler(this);
@@ -33,6 +37,16 @@ SynchroProducer::SynchroProducer(
 SynchroProducer::~SynchroProducer()
 {
     zookeeper_->deleteZNode(syncZkNode_, true);
+    {
+        boost::unique_lock<boost::mutex> lock(produce_mutex_);
+        while(reconnectting_)
+        {
+            LOG(INFO) << "wait reconnect finish while stop.";
+            cond_.timed_wait(lock, boost::posix_time::seconds(1));
+        }
+        stopping_ = true;
+    }
+    zookeeper_->disconnect();
 }
 
 /**
@@ -62,6 +76,32 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
         syncData.setValue(SynchroData::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
         syncData_ = syncData;
         init();
+    }
+
+    std::string dataPath = syncData.getStrValue(SynchroData::KEY_DATA_PATH);
+    std::string dataType = syncData.getStrValue(SynchroData::KEY_DATA_TYPE);
+    if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX)
+    {
+        if(!DistributeFileSys::get()->copyToDFS(dataPath, syncID_ + "/produce/index_scd/"))
+        {
+            LOG(WARNING) << "copy file to dfs failed.";
+            return false;
+        }
+        LOG(INFO) << "copy scd files to dfs success : " << dataPath;
+        syncData.setValue(SynchroData::KEY_DATA_PATH, dataPath);
+        syncData_ = syncData;
+    }
+
+    if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::TOTAL_COMMENT_SCD)
+    {
+        if (!DistributeFileSys::get()->copyToDFS(dataPath, syncID_ + "/produce/total_comment_scd/"))
+        {
+            LOG(WARNING) << "copy file to dfs failed.";
+            return false;
+        }
+        LOG(INFO) << "copy total comment scd files to dfs success : " << dataPath;
+        syncData.setValue(SynchroData::KEY_DATA_PATH, dataPath);
+        syncData_ = syncData;
     }
 
     // produce
@@ -114,11 +154,17 @@ bool SynchroProducer::wait(int timeout)
     }
 
     // wait synchronizing to finish
-    while (isSynchronizing_ && zookeeper_->isConnected())
+    while (isSynchronizing_ )
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, finished - total :" <<
             consumedCount_ << " - " << consumersMap_.size() << ",sleeping for 1 second ...";
         //boost::this_thread::sleep(boost::posix_time::seconds(1));
+        if (!zookeeper_->isConnected())
+        {
+            LOG(ERROR) << "zookeeper is lost while waiting .";
+            endSynchroning("Connection lost.");
+            break;
+        }
         ::sleep(1);
     }
 
@@ -128,13 +174,27 @@ bool SynchroProducer::wait(int timeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-    boost::lock_guard<boost::mutex> lock(produce_mutex_);
-    DLOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
+    LOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
         LOG(WARNING) << "SynchroProducer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        {
+            boost::unique_lock<boost::mutex> lock(produce_mutex_);
+            if (stopping_)
+                return;
+            reconnectting_ = true;
+        }
         zookeeper_->disconnect();
         zookeeper_->connect(true);
+        endSynchroning("Reconnect after connection lost.");
+
+        boost::lock_guard<boost::mutex> lock(produce_mutex_);
+        reconnectting_ = false;
+    }
+    else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
+    {
+        watchConsumers();
+        checkConsumers();
     }
 }
 
@@ -298,7 +358,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
     bool ret = true;
     // to local host
-    if (consumerHost == SuperNodeManager::get()->getLocalHostIP())
+    if (consumerHost == SuperNodeManager::get()->getLocalHostIP()) // call_back
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " consumerHost: " << consumerHost << " is on localhost";
         ret = true;
@@ -330,6 +390,10 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             {
                 recvDir = consumerCollection+"/scd/summarization";
             }
+            else if (dataType == SynchroData::TOTAL_COMMENT_SCD)
+            {
+                recvDir = consumerCollection+"/scd/rebuild_scd";
+            }
             else
             {
                 //xx extend;
@@ -337,10 +401,19 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
             LOG(INFO) << SYNCHRO_PRODUCER << " transfer data " << dataPath
                       << " to " << consumerHost << ":" <<consumerPort;
-            izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
-            if (not transfer.syncSend(dataPath, recvDir, false))
+            if ( (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX) ||
+                (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::TOTAL_COMMENT_SCD) )
             {
-                ret = false;
+                LOG(INFO) << "scd file no need transfer while DFS enabled .";
+                ret = true;
+            }
+            else
+            {
+                izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
+                if (not transfer.syncSend(dataPath, recvDir, false))
+                {
+                    ret = false;
+                }
             }
         }
     }
@@ -465,8 +538,8 @@ void SynchroProducer::init()
 
 void SynchroProducer::endSynchroning(const std::string& info)
 {
-    // Synchronizing finished
-    isSynchronizing_ = false;
     zookeeper_->deleteZNode(syncZkNode_, true);
     LOG(INFO) << SYNCHRO_PRODUCER << " synchronizing finished - "<< info;
+    // Synchronizing finished
+    isSynchronizing_ = false;
 }

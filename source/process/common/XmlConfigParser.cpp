@@ -24,7 +24,8 @@
 #include <sstream>
 
 #include <boost/asio.hpp>
-
+#include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
+#include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 using namespace std;
 using namespace izenelib::util::ticpp;
 
@@ -324,6 +325,7 @@ void SF1Config::parseFirewall(const ticpp::Element * fireElement)
     for (deny_it = deny_it.begin(fireElement); deny_it != deny_it.end(); deny_it++)
     {
         string ipAddress;
+
 
         getAttribute(deny_it.Get(), "value", ipAddress, false);
 
@@ -657,6 +659,9 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "masterport", distributedCommonConfig_.masterPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     getAttribute(distributedCommon, "filesyncport", distributedCommonConfig_.filesync_rpcport_);
+
+    distributedCommonConfig_.check_level_ = 2;
+    getAttribute(distributedCommon, "check_level_", distributedCommonConfig_.check_level_, false);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 
     if (!net::distribute::Util::getLocalHostIp(distributedCommonConfig_.localHost_))
@@ -668,6 +673,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
         std::cout << "local host ip : " << distributedCommonConfig_.localHost_ << std::endl;
 
     std::cout << "cluster id : " << distributedCommonConfig_.clusterId_ << std::endl;
+    std::cout << "check level : " << distributedCommonConfig_.check_level_ << std::endl;
 }
 
 void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
@@ -684,7 +690,7 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
         Sf1rTopology& sf1rTopology = topologyConfig_.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
-        getAttribute(topology, "nodenum", sf1rTopology.nodeNum_);
+        //getAttribute(topology, "nodenum", sf1rTopology.nodeNum_);
 
         Sf1rNode& sf1rNode = sf1rTopology.curNode_;
         sf1rNode.userName_ = distributedCommonConfig_.userName_;
@@ -694,7 +700,9 @@ void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 
         ticpp::Element * sf1rNodeElem = getUniqChildElement(topology, "CurrentSf1rNode");
         getAttribute(sf1rNodeElem, "replicaid", sf1rNode.replicaId_);
-        getAttribute(sf1rNodeElem, "nodeid", sf1rNode.nodeId_);
+        uint32_t nodeid;
+        getAttribute(sf1rNodeElem, "nodeid", nodeid);
+        sf1rNode.nodeId_ = (shardid_t)nodeid;
 
         Sf1rNodeMaster& sf1rNodeMaster = sf1rNode.master_;
         sf1rNodeMaster.port_ = distributedCommonConfig_.masterPort_;
@@ -716,11 +724,11 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
         getAttribute(master, "name", sf1rNodeMaster.name_);
         //getAttribute(master, "shardnum", sf1rNodeMaster.totalShardNum_);
 
-        Iterator<Element> service_it("DistributedService");
-        for (service_it = service_it.begin(master); service_it != service_it.end(); service_it++)
-        {
-            parseServiceMaster(service_it.Get(), sf1rNodeMaster);
-        }
+        //Iterator<Element> service_it("DistributedService");
+        //for (service_it = service_it.begin(master); service_it != service_it.end(); service_it++)
+        //{
+        //    parseServiceMaster(service_it.Get(), sf1rNodeMaster);
+        //}
     }
 }
 
@@ -730,86 +738,50 @@ void SF1Config::parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& s
     {
         getAttribute(worker, "enable", sf1rNodeWorker.enabled_);
 
-        Iterator<Element> service_it("DistributedService");
-        for (service_it = service_it.begin(worker); service_it != service_it.end(); service_it++)
-        {
-            parseServiceWorker(service_it.Get(), sf1rNodeWorker);
-        }
+        //Iterator<Element> service_it("DistributedService");
+        //for (service_it = service_it.begin(worker); service_it != service_it.end(); service_it++)
+        //{
+        //    parseServiceWorker(service_it.Get(), sf1rNodeWorker);
+        //}
    }
 }
 
-void SF1Config::parseServiceMaster(const ticpp::Element * service, Sf1rNodeMaster& sf1rNodeMaster)
+void SF1Config::addServiceMaster(const std::string& serviceName, const MasterCollection& masterCollection)
 {
-    MasterServiceInfo service_info;
-    getAttribute(service, "type", service_info.serviceName_);
-
-    Iterator<Element> collection_it("Collection");
-    for (collection_it = collection_it.begin(service); collection_it != collection_it.end(); collection_it++)
-    {
-        MasterCollection masterCollection;
-        getAttribute(collection_it.Get(), "name", masterCollection.name_);
-        getAttribute(collection_it.Get(), "distributive", masterCollection.isDistributive_, false);
-        if (masterCollection.isDistributive_)
-        {
-            std::string shardids;
-            if (getAttribute(collection_it.Get(), "shardids", shardids, false))
-            {
-                boost::char_separator<char> sep(", ");
-                boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
-
-                boost::tokenizer<boost::char_separator<char> >::iterator it;
-                for (it = tokens.begin(); it != tokens.end(); ++it)
-                {
-                    shardid_t shardid;
-                    try
-                    {
-                        shardid = boost::lexical_cast<shardid_t>(*it);
-                        if (shardid < 1 || shardid > topologyConfig_.sf1rTopology_.nodeNum_)
-                        {
-                            std::stringstream ss;
-                            ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
-                               << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
-                            throw std::runtime_error(ss.str());
-                        }
-                    }
-                    catch (const std::exception& e)
-                    {
-                        throw std::runtime_error(
-                            std::string("failed to parse shardids: ") + shardids + ", " + e.what());
-                    }
-                    masterCollection.shardList_.push_back(shardid);
-                }
-            }
-            else
-            {
-                // set to all shards as default
-                for (uint32_t i = 1; i <= topologyConfig_.sf1rTopology_.nodeNum_; i++)
-                {
-                    masterCollection.shardList_.push_back(i);
-                }
-            }
-        }
-
-        downCase(masterCollection.name_);
-        service_info.collectionList_.push_back(masterCollection);
-    }
-    sf1rNodeMaster.masterServices_[service_info.serviceName_] = service_info;
+    bool ret = topologyConfig_.sf1rTopology_.addServiceMaster(serviceName, masterCollection);
+    if (!ret)
+        std::cerr << "failed add service master for collection: " << masterCollection.name_;
 }
 
-void SF1Config::parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker)
+void SF1Config::removeServiceMaster(const std::string& service, const std::string& coll)
 {
-    WorkerServiceInfo service_info;
-    getAttribute(service, "type", service_info.serviceName_);
-    Iterator<Element> collection_it("Collection");
-    for (collection_it = collection_it.begin(service); collection_it != collection_it.end(); collection_it++)
-    {
-        std::string collection;
-        getAttribute(collection_it.Get(), "name", collection);
-        downCase(collection);
-        service_info.collectionList_.push_back(collection);
-    }
-    sf1rNodeWorker.workerServices_[service_info.serviceName_] = service_info;
+    topologyConfig_.sf1rTopology_.removeServiceMaster(service, coll);
 }
+
+void SF1Config::addServiceWorker(const std::string& service, const std::string& coll)
+{
+    topologyConfig_.sf1rTopology_.addServiceWorker(service, coll);
+}
+
+void SF1Config::removeServiceWorker(const std::string& service, const std::string& coll)
+{
+    topologyConfig_.sf1rTopology_.removeServiceWorker(service, coll);
+}
+
+//void SF1Config::parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker)
+//{
+//    WorkerServiceInfo service_info;
+//    getAttribute(service, "type", service_info.serviceName_);
+//    Iterator<Element> collection_it("Collection");
+//    for (collection_it = collection_it.begin(service); collection_it != collection_it.end(); collection_it++)
+//    {
+//        std::string collection;
+//        getAttribute(collection_it.Get(), "name", collection);
+//        downCase(collection);
+//        service_info.collectionList_.push_back(collection);
+//    }
+//    sf1rNodeWorker.workerServices_[service_info.serviceName_] = service_info;
+//}
 
 void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
 {
@@ -823,7 +795,7 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
     ticpp::Element* dfs = getUniqChildElement(distributedUtil, "DFS");
     getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
     getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
-    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, false);
     getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
     getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
@@ -952,6 +924,11 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
         parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
         parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema", false), collectionMeta);
         parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
+
+        IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
+        const std::string& collectionName = collectionMeta.getName();
+        indexBundleConfig.isMasterAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionName);
+        indexBundleConfig.isWorkerNode_ = SF1Config::get()->checkSearchWorker(collectionName);
     }
 
     // ProductBundle
@@ -1176,7 +1153,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     int64_t memorypool = 0;
     params.Get<int64_t>("IndexStrategy/memorypoolsize", memorypool);
     indexmanager_config.indexStrategy_.memory_ = memorypool;
-    indexmanager_config.indexStrategy_.indexDocLength_ = true;
+    indexmanager_config.indexStrategy_.indexDocLength_ = false;
     indexmanager_config.indexStrategy_.skipInterval_ = 8;
     indexmanager_config.indexStrategy_.maxSkipLevel_ = 3;
     indexmanager_config.storeStrategy_.param_ = "file";
@@ -1204,6 +1181,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get("CollectionDataDirectory", directories);
     params.Get("IndexStrategy/logcreateddoc", indexBundleConfig.logCreatedDoc_);
     params.Get("IndexStrategy/autorebuild", indexBundleConfig.isAutoRebuild_);
+    params.Get("IndexStrategy/indexdoclength", indexmanager_config.indexStrategy_.indexDocLength_);
 
     if (!directories.empty())
     {
@@ -1217,7 +1195,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get("Sia/refreshsearchcache", indexBundleConfig.refreshSearchCache_);
-    params.Get<time_t>("Sia/refreshcacheinterval", indexBundleConfig.refreshCacheInterval_);	
+    params.Get<time_t>("Sia/refreshcacheinterval", indexBundleConfig.refreshCacheInterval_);
     params.Get<std::size_t>("Sia/filtercachenum", indexBundleConfig.filterCacheNum_);
     params.Get<std::size_t>("Sia/mastersearchcachenum", indexBundleConfig.masterSearchCacheNum_);
     params.Get<std::size_t>("Sia/topknum", indexBundleConfig.topKNum_);
@@ -1227,10 +1205,6 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     LAPool::getInstance()->setLangIdDbPath(indexBundleConfig.languageIdentifierDbPath_);
-
-    const std::string& collectionName = collectionMeta.getName();
-    indexBundleConfig.isMasterAggregator_ = sf1Config->checkSearchMasterAggregator(collectionName);
-    indexBundleConfig.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);
 
     indexBundleConfig.localHostUsername_ = sf1Config->distributedCommonConfig_.userName_;
     indexBundleConfig.localHostIp_ = sf1Config->distributedCommonConfig_.localHost_;
@@ -1267,6 +1241,11 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
     if (!shardSchema)
         return;
 
+    if (!SF1Config::get()->topologyConfig_.enabled_)
+    {
+        throw XmlConfigParserException("ShardSchema found but the distribute is disabled!");
+    }
+
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
 
     Iterator<Element> keyElem("ShardKey");
@@ -1276,7 +1255,105 @@ void CollectionConfig::parseIndexShardSchema(const ticpp::Element * shardSchema,
         getAttribute(keyElem.Get(), "name", key);
         indexBundleConfig.indexShardKeys_.push_back(key);
     }
+
+    if (SF1Config::get()->isMasterEnabled() || SF1Config::get()->isWorkerEnabled())
+    {
+        Iterator<Element> service_it("DistributedService");
+        for (service_it = service_it.begin(shardSchema); service_it != service_it.end(); service_it++)
+        {
+            parseServiceMaster(service_it.Get(), collectionMeta);
+        }
+        if (!SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.master_.hasAnyService() &&
+            !SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.worker_.hasAnyService())
+        {
+            throw XmlConfigParserException("no distributed service configured while master/worker is enabled.");
+        }
+    }
 }
+
+void CollectionConfig::parseServiceMaster(const ticpp::Element * service, CollectionMeta& collectionMeta)
+{
+    std::string service_type;
+    getAttribute(service, "type", service_type, true);
+    MasterCollection masterCollection;
+    masterCollection.name_ = collectionMeta.getName();
+
+    if (SF1Config::get()->isWorkerEnabled())
+    {
+        SF1Config::get()->addServiceWorker(service_type, masterCollection.name_);
+    }
+
+    Sf1rTopology& sf1rTopology = SF1Config::get()->topologyConfig_.sf1rTopology_;
+
+    std::string shardids;
+    if (getAttribute(service, "shardids", shardids, false))
+    {
+        boost::char_separator<char> sep(", ");
+        boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
+
+        boost::tokenizer<boost::char_separator<char> >::iterator it;
+        std::set<shardid_t> shardid_set;
+        for (it = tokens.begin(); it != tokens.end(); ++it)
+        {
+            uint32_t shardid;
+            try
+            {
+                shardid = boost::lexical_cast<uint32_t>(*it);
+                if (shardid < 1)
+                {
+                    std::stringstream ss;
+                    ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                        << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                    throw std::runtime_error(ss.str());
+                }
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error(
+                    std::string("failed to parse shardids: ") + shardids + ", " + e.what());
+            }
+            if (shardid == sf1rTopology.curNode_.nodeId_ &&
+                !SF1Config::get()->isWorkerEnabled())
+            {
+                throw XmlConfigParserException("The shard id include myself, but myself worker is disabled.");
+            }
+            shardid_set.insert((shardid_t)shardid);
+        }
+        masterCollection.shardList_.insert(masterCollection.shardList_.end(),
+            shardid_set.begin(), shardid_set.end());
+    }
+
+    if (masterCollection.shardList_.empty())
+    {
+        if (!SF1Config::get()->isWorkerEnabled())
+        {
+            throw XmlConfigParserException("no sharding id configured and current node is not a worker");
+        }
+        // set to current as default
+        masterCollection.shardList_.push_back(sf1rTopology.curNode_.nodeId_);
+    }
+
+    if (service_type == Sf1rTopology::getServiceName(Sf1rTopology::SearchService))
+    {
+        IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+        indexBundleConfig.col_shard_info_ = masterCollection;
+    }
+    else if (service_type == Sf1rTopology::getServiceName(Sf1rTopology::RecommendService))
+    {
+        RecommendBundleConfiguration& recommendConfig = *(collectionMeta.recommendBundleConfig_);
+        recommendConfig.col_shard_info_ = masterCollection;
+    }
+    else
+    {
+        throw XmlConfigParserException("Unsupported distributed service type: " + service_type);
+    }
+
+    if (!SF1Config::get()->isMasterEnabled())
+        return;
+
+    SF1Config::get()->addServiceMaster(service_type, masterCollection);
+}
+
 
 void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta)
 {
@@ -1460,24 +1537,6 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
         }
         std::sort(pm_config.time_interval_days.begin(), pm_config.time_interval_days.end());
     }
-
-    ticpp::Element* backup_node = getUniqChildElement(product_schema, "Backup", false);
-    if (backup_node)
-    {
-        getAttribute(backup_node, "path", pm_config.backup_path);
-    }
-
-    ticpp::Element* uuidmap_node = getUniqChildElement(product_schema, "UuidMap", false);
-    if (uuidmap_node)
-    {
-        getAttribute(uuidmap_node, "path", pm_config.uuid_map_path);
-    }
-
-    ticpp::Element* algo_node = getUniqChildElement(product_schema, "ComparisonAlgorithm", false);
-    if (algo_node)
-    {
-        getAttribute(algo_node, "fixk", pm_config.algo_fixk);
-    }
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
@@ -1501,7 +1560,16 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
 
     //for autofill
     params.GetString("AutofillPara/cron", mining_config.autofill_param.cron);
-
+    bool enableUpdateHitnumget=params.Get("AutofillPara/enableUpdateHitnum", mining_config.autofill_param.enableUpdateHitnum);
+    if(!enableUpdateHitnumget)
+    {
+        AutoFillChildManager::enableUpdateHitnum_=false;
+        mining_config.autofill_param.enableUpdateHitnum=false;
+    }
+    else
+    {
+        AutoFillChildManager::enableUpdateHitnum_= mining_config.autofill_param.enableUpdateHitnum;
+    }
     //for fuzzy search
     params.GetString("FuzzyIndexMergePara/cron", mining_config.fuzzyIndexMerge_param.cron);
 
@@ -1524,10 +1592,25 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for query correction
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
+    bool fromDbget=params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
+    if(!fromDbget)
+    {
+        mining_config.query_correction_param.fromDb=false;
+        QueryCorrectionSubmanager::system_fromDb_=false;
+    }
+    else
+    {
+        QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
+    }
+    QueryCorrectionSubmanager::getInstance();
 
     // for product ranking
     params.GetString("ProductRankingPara/cron",
                      mining_config.product_ranking_param.cron);
+
+    // for mining task
+    params.Get<std::size_t>("MiningTaskPara/threadnum",
+                            mining_config.mining_task_param.threadNum);
 
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
@@ -1638,7 +1721,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.summarization_schema.isSyncSCDOnly= true;
         else
             mining_schema.summarization_schema.isSyncSCDOnly= false;
-    
+
         {
             Iterator<Element> it("DocidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1665,6 +1748,16 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.uuidPropName = property_name;
             }
         }
+
+        {
+            Iterator<Element> it("OfferIdProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.offerIdPropName = property_name;
+            }
+        }
+
         {
             Iterator<Element> it("ContentProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1738,6 +1831,16 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 mining_schema.summarization_schema.commentCountPropName = property_name;
+            }
+        }
+
+        {
+            Iterator<Element> it("RecentCommentCountProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.recentCommentCountPropName = property_name;
+                getAttribute(it.Get(), "days", mining_schema.summarization_schema.recent_days, false);
             }
         }
 
@@ -1966,6 +2069,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             mining_schema.recommend_querylog = true;
         }
+        intern_node = getUniqChildElement(task_node, "AutoFill", false);
+        if (intern_node)
+        {
+            mining_schema.recommend_autofill = true;
+            getAttribute(intern_node, "days", mining_schema.recommend_autofill_days, false);
+        }
     }
 
     task_node = getUniqChildElement(mining_schema_node, "SuffixMatch", false);
@@ -1983,6 +2092,22 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
             mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
             mining_schema.suffixmatch_schema.suffix_match_enable = true;
+
+            PropertyConfig property;
+            property.setName(property_name);
+            IndexBundleSchema::iterator sp = collectionMeta.indexBundleConfig_->indexSchema_.find(property);
+            if ( collectionMeta.indexBundleConfig_->indexSchema_.end() != sp)
+            {
+                PropertyConfig p(*sp);
+                p.bSuffixIndex_ = true;
+                collectionMeta.indexBundleConfig_->indexSchema_.erase(sp);
+                collectionMeta.indexBundleConfig_->indexSchema_.insert(p);
+            }
+            else
+            {
+                property.bSuffixIndex_ = true;
+                collectionMeta.indexBundleConfig_->indexSchema_.insert(property);
+            }
         }
 
         std::sort(mining_schema.suffixmatch_schema.suffix_match_properties.begin(), mining_schema.suffixmatch_schema.suffix_match_properties.end());
@@ -2120,12 +2245,122 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         std::sort(mining_schema.suffixmatch_schema.date_filter_properties.begin(), mining_schema.suffixmatch_schema.date_filter_properties.end());
         std::sort(mining_schema.suffixmatch_schema.num_filter_properties.begin(), mining_schema.suffixmatch_schema.num_filter_properties.end());
     }
+
     task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
     if (task_node)
     {
         mining_schema.product_matcher_enable = true;
         getAttribute(task_node, "mode", mining_schema.product_categorizer_mode, false);
     }
+
+    task_node = getUniqChildElement(mining_schema_node, "QueryIntent", false);
+    mining_schema.query_intent_enable = false;
+    if (task_node)
+    {
+        mining_schema.query_intent_enable = true;
+        Iterator<Element> it("Property");
+        for (it = it.begin(task_node); it != it.end(); ++it)
+        {
+            const ticpp::Element* cate_node = it.Get();
+            std::string prop_name, type, op;
+            int operands;
+            getAttribute(cate_node, "name", prop_name);
+            getAttribute(cate_node, "type", type);
+            getAttribute(cate_node, "operator", op);
+            getAttribute_IntType(cate_node, "operands", operands);
+
+            IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+            PropertyConfig p;
+            p.setName(prop_name);
+            IndexBundleSchema::iterator sp = indexSchema.find(p);
+            if (sp == indexSchema.end())
+            {
+                throw XmlConfigParserException("Property ["+prop_name+"] in <Query_intent> is not define in IndexBundle.");
+            }
+            if (!sp->getIsFilter())
+            {
+                throw XmlConfigParserException("Property ["+prop_name+"] in <Query_intent> is not filter type.");
+            }
+
+            if (mining_schema.suffixmatch_schema.suffix_match_enable)
+            {
+                std::vector<std::string>::iterator it = mining_schema.suffixmatch_schema.group_filter_properties.begin();
+                for(; it != mining_schema.suffixmatch_schema.group_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.attr_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.attr_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.str_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.str_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                it = mining_schema.suffixmatch_schema.date_filter_properties.begin();
+                for (; it != mining_schema.suffixmatch_schema.date_filter_properties.end(); it++)
+                {
+                    if (*it == prop_name)
+                        goto NEXT;
+                }
+                std::vector<NumericFilterConfig>::iterator numIt = mining_schema.suffixmatch_schema.num_filter_properties.begin();
+                for (; numIt != mining_schema.suffixmatch_schema.num_filter_properties.end(); numIt++)
+                {
+                    if (numIt->property == prop_name)
+                        goto NEXT;
+                }
+                LOG(WARNING)<<"Property ["<<prop_name<<"] in <Query_intent> is not filter type in <SuffixMatch>.";
+            }
+NEXT:
+            mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op, operands);
+        }
+    }
+
+    task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
+    parseZambeziNode(task_node, collectionMeta);
+
+    task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
+    parseAdIndexNode(task_node, collectionMeta);
+}
+
+void CollectionConfig::parseAdIndexNode(
+        const ticpp::Element* adIndexNode,
+        CollectionMeta& collectionMeta) const
+{
+    if(!adIndexNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+
+    AdIndexConfig& adIndexConfig = miningSchema.ad_index_config;
+
+    getAttribute(adIndexNode, "ctrpath", adIndexConfig.clickPredictorWorkingPath);
+    miningSchema.ad_index_config.isEnable = true;
+}
+
+void CollectionConfig::parseZambeziNode(
+    const ticpp::Element* zambeziNode,
+    CollectionMeta& collectionMeta) const
+{
+    if (!zambeziNode)
+        return;
+
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
+
+    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+
+    getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
+    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
+    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
+    zambeziConfig.isEnable = true;
 }
 
 void CollectionConfig::parseProductRankingNode(
@@ -2189,6 +2424,9 @@ void CollectionConfig::parseScoreAttr(
 {
     getAttribute(scoreNode, "property", scoreConfig.propName, false);
     getAttribute_FloatType(scoreNode, "weight", scoreConfig.weight, false);
+    getAttribute_FloatType(scoreNode, "min", scoreConfig.minLimit, false);
+    getAttribute_FloatType(scoreNode, "max", scoreConfig.maxLimit, false);
+    getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)
@@ -2525,12 +2763,12 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
 
     // handle exceptions
     //
-    if (!bFilter && analyzer.empty())
-    {
-        stringstream msg;
-        msg << propertyConfig.getName() << ": filter=\"yes/no\" or analyzer=\"\" required.";
-        throw XmlConfigParserException(msg.str());
-    }
+    //if (!bFilter && analyzer.empty())
+    //{
+    //    stringstream msg;
+    //    msg << propertyConfig.getName() << ": filter=\"yes/no\" or analyzer=\"\" required.";
+    //    throw XmlConfigParserException(msg.str());
+    //}
 
     if (propertyConfig.propertyType_ != STRING_PROPERTY_TYPE && !analyzer.empty())
     {

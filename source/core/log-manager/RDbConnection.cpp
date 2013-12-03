@@ -2,14 +2,17 @@
 #include "RDbConnectionBase.h"
 #include "Sqlite3DbConnection.h"
 #include "MysqlDbConnection.h"
+#include "LogAnalysisConnection.h"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 using namespace std;
 
 namespace sf1r {
 
 RDbConnection::RDbConnection()
-:impl_(NULL)
+:impl_(NULL),
+logserver_(false)
 {
 }
 
@@ -33,6 +36,7 @@ bool RDbConnection::init(const std::string& str )
 {
     std::string sqlite3_prefix = "sqlite3://";
     std::string mysql_prefix = "mysql://";
+    std::string logserver_prefix = "logserver://";
     if(boost::algorithm::starts_with(str, sqlite3_prefix))
     {
         impl_ = new Sqlite3DbConnection();
@@ -44,6 +48,23 @@ bool RDbConnection::init(const std::string& str )
         impl_ = new MysqlDbConnection();
         std::string mysql_str = str.substr(mysql_prefix.length());
         return impl_->init(mysql_str);
+    }
+    else if(boost::algorithm::starts_with(str, logserver_prefix))
+    {
+
+        logserver_ = true;
+        LogServerConnectionConfig lscfg;
+        std::vector<std::string> strs;
+        std::string conf = str.substr(logserver_prefix.length());
+        boost::split(strs, conf, boost::is_any_of(","));
+        if(strs.size() != 4)
+            std::cerr <<"[LogAnalysisConnection::init] "<<str <<" error"<<endl;
+        lscfg.host = strs[0];
+        lscfg.rpcPort = boost::lexical_cast<unsigned int>(strs[1]);
+        lscfg.rpcThreadNum = boost::lexical_cast<unsigned int>(strs[2]);
+        lscfg.driverPort = boost::lexical_cast<unsigned int>(strs[3]);
+        LogAnalysisConnection::instance().init(lscfg);
+        return true;
     }
     else
     {

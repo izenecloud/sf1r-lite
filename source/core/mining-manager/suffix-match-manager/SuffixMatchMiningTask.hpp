@@ -27,6 +27,7 @@ namespace sf1r
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
+class ProductTokenizer;
 namespace faceted
 {
     class GroupManager;
@@ -47,7 +48,7 @@ public:
     ~SuffixMatchMiningTask();
 
     bool buildDocument(docid_t docID, const Document& doc);
-    bool preProcess();
+    bool preProcess(int64_t timestamp);
     bool postProcess();
     docid_t getLastDocId();
 

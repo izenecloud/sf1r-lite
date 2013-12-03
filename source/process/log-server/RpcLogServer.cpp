@@ -196,24 +196,6 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             GetOldDocId(reqdata);
             req.result(reqdata);
         }
-        else if(method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_FREQ_USER_QUERIES])
-        {
-            msgpack::type::tuple<GetFreqUserQueriesData> params;
-            req.params().convert(&params);
-            GetFreqUserQueriesData reqdata = params.get<0>();
-            std::list< std::map<std::string, std::string> > response;
-            GetFreqUserQueries(reqdata, response);
-            req.result(response);
-        }
-        else if(method == LogServerRequest::method_names[LogServerRequest::METHOD_INJECT_USER_QUERY])
-        {
-            msgpack::type::tuple<InjectUserQueryData> params;
-            req.params().convert(&params);
-            InjectUserQueryData reqdata = params.get<0>();
-            bool response = true;
-            InjectUserQuery(reqdata, response);
-            req.result(response);
-        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -272,26 +254,6 @@ void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
     reqdata.success_ = LogServerStorage::get()->historyDB()->get_olddocid(reqdata.uuid_, reqdata.olddocid_);
 }
 
-void RpcLogServer::GetFreqUserQueries(GetFreqUserQueriesData& reqdata, std::list< std::map<std::string, std::string> > & results)
-{
-    LogServerStorage::get()->sketchManager()->getFreqUserQueries(reqdata.collection_,
-            reqdata.begin_time_,
-            reqdata.end_time_,
-            reqdata.limit_,
-            results);
-}
-
-void RpcLogServer::InjectUserQuery(InjectUserQueryData& reqdata, bool & result)
-{
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->sketchManagerMutex());
-    result = LogServerStorage::get()->sketchManager()->injectUserQuery(reqdata.query_,
-            reqdata.collection_,
-            reqdata.hitnum_,
-            reqdata.page_start_,
-            reqdata.page_count_,
-            reqdata.duration_,
-            reqdata.timestamp_);
-}
 
 void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
 {

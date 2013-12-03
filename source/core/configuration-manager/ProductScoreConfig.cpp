@@ -7,7 +7,33 @@ using namespace sf1r;
 ProductScoreConfig::ProductScoreConfig()
     : type(PRODUCT_SCORE_NUM)
     , weight(0)
+    , minLimit(0)
+    , maxLimit(0)
+    , isDebug(false)
 {}
+
+void ProductScoreConfig::limitScore(score_t& score) const
+{
+    if (minLimit != 0 && score < minLimit)
+    {
+        score = minLimit;
+    }
+    else if (maxLimit != 0 && score > maxLimit)
+    {
+        score = maxLimit;
+    }
+}
+
+bool ProductScoreConfig::isValidScore(score_t score) const
+{
+    if (minLimit != 0 && score < minLimit)
+        return false;
+
+    if (maxLimit != 0 && score > maxLimit)
+        return false;
+
+    return true;
+}
 
 std::string ProductScoreConfig::toStr() const
 {
@@ -21,7 +47,9 @@ std::string ProductScoreConfig::toStr() const
         oss << "property: " << propName << ", ";
     }
 
-    oss << "weight: " << weight << std::endl;
+    oss << "weight: " << weight
+        << ", min: " << minLimit
+        << ", max: " << maxLimit << std::endl;
 
     if (!factors.empty())
     {

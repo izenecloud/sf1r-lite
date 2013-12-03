@@ -2,6 +2,7 @@
 #include <stack>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 CategoryMapper::CategoryMapper(): root_classifier_(NULL)
 {
@@ -108,11 +109,11 @@ bool CategoryMapper::Index(const std::string& path, const std::string& scd_path)
                 const std::string& property_name = p->first;
                 if(property_name=="OriginalCategory")
                 {
-                    ocategory = p->second;
+                    ocategory = propstr_to_ustr(p->second);
                 }
                 else if(property_name=="Category")
                 {
-                    category = p->second;
+                    category = propstr_to_ustr(p->second);
                 }
             }
             UString::algo::compact(ocategory);
@@ -524,11 +525,11 @@ bool CategoryMapper::DoMap(const std::string& scd_path)
                 const std::string& property_name = p->first;
                 if(property_name=="OriginalCategory")
                 {
-                    ocategory = p->second;
+                    ocategory = propstr_to_ustr(p->second);
                 }
                 else if(property_name=="Category")
                 {
-                    category = p->second;
+                    category = propstr_to_ustr(p->second);
                 }
             }
             UString::algo::compact(ocategory);
@@ -607,7 +608,7 @@ void CategoryMapper::CombineCategory_(const std::vector<std::string>& texts, std
 }
 void CategoryMapper::Analyze_(const std::string& text, std::vector<std::string>& terms)
 {
-    izenelib::util::UString utext(text);
+    izenelib::util::UString utext(text, izenelib::util::UString::UTF_8);
     utext.toLowerString();
     std::vector<idmlib::util::IDMTerm> term_list;
     analyzer_->GetTermList(utext, term_list);

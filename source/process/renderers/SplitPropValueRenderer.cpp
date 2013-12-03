@@ -37,7 +37,7 @@ SplitPropValueRenderer::SplitPropValueRenderer(const MiningSchema& miningSchema)
 
 void SplitPropValueRenderer::renderPropValue(
     const std::string& propName,
-    const izenelib::util::UString& origText,
+    const PropertyValue::PropertyValueStrType& origText,
     izenelib::driver::Value& resourceValue
 )
 {
@@ -53,19 +53,18 @@ void SplitPropValueRenderer::renderPropValue(
         return;
     }
 
-    std::string buffer;
-    renderUStrValue(origText, buffer, resourceValue);
+    resourceValue = propstr_to_str(origText);
 }
 
 void SplitPropValueRenderer::renderGroupValue_(
-    const izenelib::util::UString& origText,
+    const PropertyValue::PropertyValueStrType& origText,
     izenelib::driver::Value& groupValue
 )
 {
     typedef std::vector<izenelib::util::UString> GroupNodes;
     typedef std::vector<GroupNodes> GroupPaths;
     GroupPaths groupPaths;
-    split_group_path(origText, groupPaths);
+    split_group_path(propstr_to_ustr(origText), groupPaths);
 
     std::string buffer;
     for (GroupPaths::const_iterator pathIt = groupPaths.begin();
@@ -82,13 +81,13 @@ void SplitPropValueRenderer::renderGroupValue_(
 }
 
 void SplitPropValueRenderer::renderAttrValue_(
-    const izenelib::util::UString& origText,
+    const PropertyValue::PropertyValueStrType& origText,
     izenelib::driver::Value& attrValue
 )
 {
     typedef std::vector<izenelib::util::UString> AttrValues;
     std::vector<AttrPair> attrPairs;
-    split_attr_pair(origText, attrPairs);
+    split_attr_pair(propstr_to_ustr(origText), attrPairs);
 
     std::string buffer;
     for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();

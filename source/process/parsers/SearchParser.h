@@ -119,6 +119,10 @@ public:
     {
         return attrLabels_;
     }
+    std::vector<std::pair<std::string, std::string> >& adSearch()
+    {
+        return adSearch_;
+    }
     const faceted::GroupParam::AttrLabelMap& attrLabels() const
     {
         return attrLabels_;
@@ -178,6 +182,7 @@ public:
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
+    bool parseAdSearch_(const Value& search);
     bool parseBoostGroupLabel_(const Value& search);
 
 private:
@@ -190,6 +195,7 @@ private:
     std::string nameEntityType_;
     std::string nameEntityItem_;
 
+    std::vector<std::pair<std::string, std::string> > adSearch_;
     faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AutoSelectLimitMap groupLabelAutoSelectLimits_;
     faceted::GroupParam::GroupPathVec boostGroupLabels_;
@@ -205,6 +211,7 @@ private:
     bool isRandomRank_;
     std::string querySource_;
     bool requireRelatedQueries_;
+    //bool requireRefinedQuery_;
 };
 
 /// @}

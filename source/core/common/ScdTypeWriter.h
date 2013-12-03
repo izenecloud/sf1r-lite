@@ -3,6 +3,7 @@
 
 #include "ScdWriter.h"
 #include <document-manager/Document.h>
+#include <document-manager/ScdDocument.h>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
@@ -36,12 +37,25 @@ public:
         //if(dwriter_!=NULL) delete dwriter_;
     }
 
+    bool Append(const ScdDocument& doc)
+    {
+        return Append(doc, doc.type);
+    }
+
     bool Append(const Document& doc, SCD_TYPE scd_type)
     {
         if(scd_type==NOT_SCD) return false;
         ScdWriter* writer = GetWriter_(scd_type);
         if(writer==NULL) return false;
         return writer->Append(doc);
+    }
+
+    bool Append(const std::string& doctext, SCD_TYPE scd_type)
+    {
+        if(scd_type==NOT_SCD) return false;
+        ScdWriter* writer = GetWriter_(scd_type);
+        if(writer==NULL) return false;
+        return writer->Append(doctext);
     }
 
     void Close()

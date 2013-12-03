@@ -22,6 +22,8 @@ namespace sf1r
 
 class SearchWorker;
 class MiningManager;
+class ShardingStrategy;
+
 class MiningSearchService : public ::izenelib::osgi::IService
 {
 public:
@@ -41,14 +43,14 @@ public:
             const std::string& collectionName,
             uint64_t wdocId);
 
-    bool getDocLabelList(
+    bool getLabelListByDocId(
             const std::string& collectionName,
-            uint32_t docid,
+            uint64_t wdocId,
             std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
 
     bool getLabelListWithSimByDocId(
             const std::string& collectionName,
-            uint32_t docid,
+            uint64_t wdocId,
             std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
 public:
@@ -62,7 +64,7 @@ public:
 
     bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realtimeQueries);
 
-    bool getDocLabelList(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
+    bool getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
 
     bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& label_list );
 
@@ -184,7 +186,7 @@ public:
 
     bool GetSummarizationByRawKey(
             const std::string& collection,
-            const izenelib::util::UString& rawKey,
+            const std::string& rawKey,
             Summarization& result);
 
     bool SetKV(const std::string& key, const std::string& value);
@@ -200,6 +202,11 @@ public:
             int limit,
             std::vector<std::vector<std::string> >& pathVec);
 
+    void setShardingStrategy(boost::shared_ptr<ShardingStrategy> shardingstrategy)
+    {
+        sharding_strategy_ = shardingstrategy;
+    }
+
 private:
     bool HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;
@@ -207,6 +214,8 @@ private:
 
     boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    boost::shared_ptr<SearchAggregator> ro_searchAggregator_;
+    boost::shared_ptr<ShardingStrategy> sharding_strategy_;
 
     friend class MiningBundleActivator;
 };

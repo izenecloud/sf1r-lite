@@ -23,6 +23,7 @@ namespace sf1r
  */
 void setupDefaultSignalHandlers();
 
+void waitSignalThread();
 /**
  * Handler accepts one argument which indicates the system signal number. 0
  * indicates the process exits normally.
@@ -38,11 +39,6 @@ typedef boost::function1<void, int> OnSignalHook;
 void addExitHook(const OnSignalHook& hook);
 
 /**
- * @brief Run all registered exist hooks
- */
-void gRunHooksOnExit();
-
-/**
  * @brief register signal number
  *
  * Use 0 to register hooks using stdlib atexit.
@@ -51,15 +47,6 @@ void gRunHooksOnExit();
  * undefined.
  */
 void registerExitSignal(int signal);
-
-
-/**
- * @brief register signal number
- *
- * Throw exception when if sigbus occurs.
- */
-
-void registerExceptionSignal(int signal);
 
 } // namespace sf1v5
 

@@ -13,6 +13,7 @@
 
 #include <common/Keys.h>
 #include <common/Utilities.h>
+#include <common/QueryNormalizer.h>
 
 namespace sf1r
 {
@@ -171,20 +172,21 @@ bool DocumentsController::checkCollectionService(std::string& error)
  *     - @b sub_labels (@c Array): Array of sub labels. It has the same
  *       structure of the top @b labels field.
  * - @b attr (@c Array): Every item represents the group result for one attribute.
- *   They are sorted by @b document_count decreasingly.
+ *   They are sorted by @b score decreasingly.
  *   - @b attr_name (@c String): Attribute name.
  *   - @b document_count (@c Uint): Number of result documents which has value on
  *     this attribute.
+ *   - @b score (@c Double): Score of the attribute name.
  *   - @b labels (@c Array): Group labels. Every item is an object representing
- *     a label for an attribute value. The item has following fields.
+ *     a label for an attribute value. The item has following fields. They are
+ *     sorted by @b score decreasingly.
  *     - @b label (@c String): Name of this label, it represents an attribute value.
  *     - @b document_count (@c Uint): Number of result documents in this label.
- * - @b top_group_label (@c Array): Every item represents the auto selected group
- *   labels for one property.@n
- *   This would be returned only when @b request["search"]["group_label"]["value"]
- *   is an empty array.
+ *     - @b score (@c Double): Score of the attribute value.
+ * - @b top_group_label (@c Array): Every item represents the top group labels
+ *   for one property.@n
  *   - @b group_property (@c String): Property name.
- *   - @b group_label (@c Array): An array of auto selected group labels.@n
+ *   - @b group_label (@c Array): An array of top group labels.@n
  *     Each element is a group label, which is a @c String array of the path from
  *     root to leaf node.
  *
@@ -621,7 +623,7 @@ void DocumentsController::get_topic()
     }
 
     std::vector<std::pair<uint32_t, izenelib::util::UString> > label_list;
-    bool requestSent = miningSearchService_->getDocLabelList(
+    bool requestSent = miningSearchService_->getLabelListByDocId(collectionName_, 
         internal_id, label_list
     );
 
@@ -687,7 +689,7 @@ void DocumentsController::get_topic_with_sim()
     }
 
     std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > > label_list;
-    bool requestSent = miningSearchService_->getLabelListWithSimByDocId(
+    bool requestSent = miningSearchService_->getLabelListWithSimByDocId(collectionName_,
         internal_id, label_list
     );
 
@@ -759,8 +761,11 @@ void DocumentsController::log_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabel(groupPath))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
+
         if (! miningSearchService_->clickGroupLabel(
-            query, propName, groupPath))
+                normalizedQuery, propName, groupPath))
         {
             response().addError("Request Failed.");
         }
@@ -827,10 +832,13 @@ void DocumentsController::get_freq_group_labels()
     Value& input = request()[Keys::resource];
     int limit = asUintOr(input[Keys::limit], 1);
 
+    std::string normalizedQuery;
+    QueryNormalizer::get()->normalize(query, normalizedQuery);
+
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
     if (! miningSearchService_->getFreqGroupLabel(
-        query, propName, limit, pathVec, freqVec))
+            normalizedQuery, propName, limit, pathVec, freqVec))
     {
         response().addError("Request Failed.");
         return;
@@ -898,8 +906,11 @@ void DocumentsController::set_top_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabelVec(groupPathVec))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
+
         if (! miningSearchService_->setTopGroupLabel(
-            query, propName, groupPathVec))
+                normalizedQuery, propName, groupPathVec))
         {
             response().addError("Request Failed.");
         }
@@ -1017,10 +1028,9 @@ void DocumentsController::get_summarization()
     Value& input = request()[Keys::resource];
     Value& docid_value = input[Keys::DOCID];
     std::string sdocid = asString(docid_value);
-    izenelib::util::UString udocid(sdocid, izenelib::util::UString::UTF_8);
 
     Summarization result;
-    bool success = miningSearchService_->GetSummarizationByRawKey(collectionName_, udocid, result);
+    bool success = miningSearchService_->GetSummarizationByRawKey(collectionName_, sdocid, result);
     if (!success)
     {
         response().addError("Cannot get results for " + sdocid);
@@ -1068,7 +1078,7 @@ void DocumentsController::get_summarization()
  */
 void DocumentsController::get_doc_count()
 {
-    uint32_t doc_count = indexTaskService_->getDocNum();
+    uint32_t doc_count = indexSearchService_->getDocNum(collectionName_);
     response()[Keys::count] = doc_count;
 }
 
@@ -1103,7 +1113,7 @@ void DocumentsController::get_key_count()
         response().addError("Expect property name!");
         return;
     }
-    uint32_t doc_count = indexTaskService_->getKeyCount(property_name);
+    uint32_t doc_count = indexSearchService_->getKeyCount(collectionName_, property_name);
     response()[Keys::count] = doc_count;
 }
 

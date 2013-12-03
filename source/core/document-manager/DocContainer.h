@@ -73,7 +73,10 @@ public:
     {
         CREATE_SCOPED_PROFILER(insert_document, "Index:SIAProcess", "Indexer : insert_document")
         CREATE_PROFILER(proDocumentCompression, "Index:SIAProcess", "Indexer : DocumentCompression")
-        maxDocID_ = docId>maxDocID_? docId:maxDocID_;
+        {
+            boost::unique_lock<boost::shared_mutex> guard(shared_mutex_);
+            maxDocID_ = docId>maxDocID_? docId:maxDocID_;
+        }
         izenelib::util::izene_serialization<Document> izs(doc);
         char* src;
         size_t srcLen;
@@ -103,9 +106,12 @@ public:
     {
         //CREATE_SCOPED_PROFILER(get_document, "Index:SIAProcess", "Indexer : get_document")
         //CREATE_PROFILER(proDocumentDecompression, "Index:SIAProcess", "Indexer : DocumentDecompression")
-        if (docId > maxDocID_ )
         {
-            return false;
+            boost::shared_lock<boost::shared_mutex> guard(shared_mutex_);
+            if (docId > maxDocID_ )
+            {
+                return false;
+            }
         }
         Lux::IO::data_t *val_p = NULL;
         if (!containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM))
@@ -146,8 +152,11 @@ public:
 
     bool exist(const unsigned int docId)
     {
-        if (docId > maxDocID_ )
-            return false;
+        {
+            boost::shared_lock<boost::shared_mutex> guard(shared_mutex_);
+            if (docId > maxDocID_ )
+                return false;
+        }
         Lux::IO::data_t *val_p = NULL;
         bool ret = containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM);
         containerPtr_->clean_data(val_p);
@@ -156,15 +165,21 @@ public:
 
     bool del(const unsigned int docId)
     {
-        if (docId > maxDocID_ )
-            return false;
+        {
+            boost::shared_lock<boost::shared_mutex> guard(shared_mutex_);
+            if (docId > maxDocID_ )
+                return false;
+        }
         return containerPtr_->del(docId);
     }
 
     bool update(const unsigned int docId, const Document& doc)
     {
-        if (docId > maxDocID_)
-            return false;
+        {
+            boost::shared_lock<boost::shared_mutex> guard(shared_mutex_);
+            if (docId > maxDocID_)
+                return false;
+        }
 
         izenelib::util::izene_serialization<Document> izs(doc);
         char* src;
@@ -188,8 +203,9 @@ public:
         return ret;
     }
 
-    docid_t getMaxDocId() const
+    docid_t getMaxDocId()
     {
+        boost::shared_lock<boost::shared_mutex> guard(shared_mutex_);
         return maxDocID_;
     }
 
@@ -199,12 +215,27 @@ public:
     }
 
 private:
-    bool saveMaxDocDb_() const
+    bool saveMaxDocDb_()
     {
+        boost::unique_lock<boost::shared_mutex> guard(shared_mutex_);
         try
         {
             ///Not Used. Array[0] could be used to store maxDocID since all doc ids start from 1
-            containerPtr_->put(0, &maxDocID_, sizeof(unsigned int), Lux::IO::OVERWRITE);
+            bool need_update_db = true;
+            Lux::IO::data_t *val_p = NULL;
+            if (containerPtr_->get(0, &val_p, Lux::IO::SYSTEM))
+            {
+                if ( val_p->size == sizeof(maxDocID_) )
+                {
+                    need_update_db = maxDocID_ != *((docid_t*)val_p->data);
+                }
+            }
+            containerPtr_->clean_data(val_p);
+
+            if (need_update_db)
+            {
+                containerPtr_->put(0, &maxDocID_, sizeof(unsigned int), Lux::IO::OVERWRITE);
+            }
             std::ofstream ofs(maxDocIdDb_.c_str());
             if (ofs)
             {
@@ -250,6 +281,7 @@ private:
     containerType* containerPtr_;
     docid_t maxDocID_;
     DocumentCompressor compressor_;
+    boost::shared_mutex shared_mutex_;
 };
 
 }

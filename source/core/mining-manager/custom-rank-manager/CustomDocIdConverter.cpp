@@ -1,6 +1,5 @@
 #include "CustomDocIdConverter.h"
 #include <common/Utilities.h>
-#include <util/ClockTimer.h>
 
 namespace sf1r
 {
@@ -10,14 +9,8 @@ bool CustomDocIdConverter::convert(
     CustomRankDocId& customDocId
 )
 {
-    izenelib::util::ClockTimer timer;
-
     bool topResult = convertDocIdList_(customDocStr.topIds, customDocId.topIds);
     bool excludeResult = convertDocIdList_(customDocStr.excludeIds, customDocId.excludeIds);
-
-    LOG(INFO) << "top num: " << customDocId.topIds.size()
-              << ", exclude num: " << customDocId.excludeIds.size()
-              << ", id conversion costs: " << timer.elapsed() << " seconds";
 
     return topResult && excludeResult;
 }

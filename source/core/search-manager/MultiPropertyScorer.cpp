@@ -69,3 +69,30 @@ void MultiPropertyScorer::print(int level)
         }
     }
 }
+
+void MultiPropertyScorer::setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
+{
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for( ; iter != docIteratorList_.end(); ++iter )
+    {
+        DocumentIterator* pEntry = (*iter);
+        if (pEntry)
+        {
+            pEntry->setUB(useOriginalQuery, ubmap);
+        }
+    }
+}
+
+void MultiPropertyScorer::initThreshold(float threshold)
+{
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for( ; iter != docIteratorList_.end(); ++iter )
+    {
+        DocumentIterator* pEntry = (*iter);
+        if (pEntry)
+        {
+            pEntry->initThreshold(threshold);
+        }
+    }
+
+}

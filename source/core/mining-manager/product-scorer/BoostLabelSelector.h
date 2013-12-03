@@ -31,6 +31,8 @@ struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
 
+using faceted::category_id_t;
+using faceted::merchant_id_t;
 class BoostLabelSelector
 {
 public:
@@ -46,6 +48,11 @@ public:
         std::vector<category_id_t>& boostLabels);
 
 private:
+    bool convertZambeziLabelIds_(    
+        const ProductScoreParam& scoreParam,
+        std::size_t limit,
+        std::vector<category_id_t>& boostLabels);
+
     bool convertLabelIds_(
         const faceted::GroupParam::GroupPathVec& groupPathVec,
         std::vector<category_id_t>& boostLabels);

@@ -19,6 +19,7 @@
 #include "summarization-submanager/Summarization.h" //Summarization
 #include "custom-rank-manager/CustomRankValue.h"
 #include "merchant-score-manager/MerchantScore.h"
+#include "ad-index-manager/AdIndexManager.h"
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -94,7 +95,7 @@ class TaxonomyInfo;
 class Document;
 class DocumentManager;
 class LAManager;
-class IndexManager;
+class InvertedIndexManager;
 class SearchManager;
 class SearchCache;
 class MultiDocSummarizationSubManager;
@@ -104,17 +105,25 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class CategoryClassifyTable;
+class TitleScoreList;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalFuzzyManager;
-class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
+class MultiThreadMiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
-
+class QueryIntentManager;
+class ZambeziManager;
+class AdIndexManager;
+namespace b5m
+{
+class ProductMatcher;
+}
 namespace sim
 {
 class SimilarityIndex;
@@ -128,6 +137,7 @@ class OntologyManager;
 class CTRManager;
 class GroupFilterBuilder;
 }
+
 
 /**
  * @brief MiningManager manages all the data mining tasks.
@@ -155,7 +165,7 @@ public:
                   const CollectionPath& collectionPath,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<LAManager>& laManager,
-                  const boost::shared_ptr<IndexManager>& index_manager,
+                  const boost::shared_ptr<InvertedIndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
                   const boost::shared_ptr<SearchCache>& searchCache,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
@@ -174,11 +184,9 @@ public:
     bool DoMiningCollection(int64_t timestamp);
     bool DoMiningCollectionFromAPI();
 
-    bool DOMiningTask();
+    bool DOMiningTask(int64_t timestamp);
 
     void DoContinue();
-
-    void DoSyncFullSummScd();
 
     const MiningSchema& getMiningSchema() const { return mining_schema_; }
 
@@ -354,7 +362,7 @@ public:
 
     void FinishQueryRecommendInject();
 
-    bool GetSummarizationByRawKey(const izenelib::util::UString& rawKey, Summarization& result);
+    bool GetSummarizationByRawKey(const std::string& rawKey, Summarization& result);
 
     uint32_t GetSignatureForQuery(
             const KeywordSearchActionItem& item,
@@ -385,7 +393,11 @@ public:
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
-            UString& analyzedQuery);
+            bool isAnalyzeQuery,
+            UString& analyzedQuery,
+            std::string& pruneQuery,
+            DistKeywordSearchInfo& distSearchInfo,
+            faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
@@ -463,6 +475,16 @@ public:
         return productScoreManager_;
     }
 
+    CategoryClassifyTable* GetCategoryClassifyTable()
+    {
+        return categoryClassifyTable_;
+    }
+
+    TitleScoreList* GetTitleScoreList()
+    {
+        return titleScoreList_;
+    }
+
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
@@ -484,10 +506,32 @@ public:
     }
 
     void updateMergeFuzzyIndex(int calltype);
+
     RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
     {
         return rtypeStringPropTableBuilder_;
     }
+
+    SuffixMatchManager* getSuffixManager()
+    {
+        return suffixMatchManager_;
+    }
+
+    QueryIntentManager* getQueryIntentManager()
+    {
+        return queryIntentManager_;
+    }
+
+    ZambeziManager* getZambeziManager()
+    {
+        return zambeziManager_;
+    }
+
+    AdIndexManager* getAdIndexManager()
+    {
+        return adIndexManager_;
+    }
+
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -537,8 +581,10 @@ private:
      *@param topDocIdList The top docs from the search result.
      *@param queryList The recommended queries as the result.
      */
+    //bool getRecommendQuery_(const izenelib::util::UString& queryStr,
+    //                        QueryRecommendRep & recommendRep);
     bool getRecommendQuery_(const izenelib::util::UString& queryStr,
-                            const std::vector<sf1r::docid_t>& topDocIdList, QueryRecommendRep & recommendRep);
+                            std::deque<izenelib::util::UString >& recommendQueries);
 
     bool isMiningProperty_(const std::string& name);
 
@@ -562,6 +608,12 @@ private:
 
     void doTgInfoRelease_();
 
+    bool propValuePaths_(
+        const std::string& propName,
+        const std::vector<faceted::PropValueTable::pvid_t>& pvIds,
+        std::vector<std::vector<std::string> >& paths,
+        bool isLock);
+
     faceted::PropValueTable::pvid_t propValueId_(
             const std::string& propName,
             const std::vector<std::string>& groupPath
@@ -572,10 +624,30 @@ private:
         std::vector<Document>& docList
     );
 
+    void getGroupAttrRep_(
+        const std::vector<std::pair<double, uint32_t> >& res_list,
+        faceted::GroupParam& groupParam,
+        faceted::GroupRep& groupRep,
+        sf1r::faceted::OntologyRep& attrRep,
+        const std::string& topPropName,
+        faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
+
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
     bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
+    bool initCategoryClassifyTable_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+    bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
+
+    bool initZambeziManager_(ZambeziConfig& zambeziConfig);
+
+    bool initAdIndexManager_(AdIndexConfig& adIndexConfig);
+
+    const std::string& getOfferItemCountPropName_() const;
+
+    void StartSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
+    void UpdateSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
+    void RunUpdateSynonym_(b5m::ProductMatcher* matcher, const std::string& path);
 
 public:
     /// Should be initialized after construction
@@ -610,7 +682,7 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<LAManager> laManager_;
-    boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<InvertedIndexManager> index_manager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<SearchCache> searchCache_;
 
@@ -648,7 +720,7 @@ private:
     boost::shared_ptr<faceted::CTRManager> ctrManager_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
-    
+
     RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 
     /** GROUP BY */
@@ -677,6 +749,12 @@ private:
     /** Product Score Table Manager */
     ProductScoreManager* productScoreManager_;
 
+    /** Table stores one classified category for each doc */
+    CategoryClassifyTable* categoryClassifyTable_;
+
+    /** list stores all the documents' productTokenizer score*/
+    TitleScoreList* titleScoreList_;
+
     /** the knowledge of top labels for category boosting */
     GroupLabelKnowledge* groupLabelKnowledge_;
 
@@ -685,6 +763,9 @@ private:
 
     /** For Merchant Diversity */
     ProductRankerFactory* productRankerFactory_;
+
+    /** For Query Intent */
+    QueryIntentManager* queryIntentManager_;
 
     /** TDT */
     std::string tdt_path_;
@@ -709,10 +790,24 @@ private:
     std::string kv_path_;
     KVSubManager* kvManager_;
 
+    /** Zambezi */
+    ZambeziManager* zambeziManager_;
+
+    /** AdIndexManager */
+    AdIndexManager* adIndexManager_;
+
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+
+    /** MultiThreadMiningTaskBuilder */
+    MultiThreadMiningTaskBuilder* multiThreadMiningTaskBuilder_;
+
     izenelib::util::CronExpression cronExpression_;
-#if BOOST_VERSION >= 105300	
+
+    static bool startSynonym_;
+    long lastModifiedTime_;
+
+#if BOOST_VERSION >= 105300
     boost::atomic_bool hasDeletedDocDuringMining_;
 #else
 	bool hasDeletedDocDuringMining_;

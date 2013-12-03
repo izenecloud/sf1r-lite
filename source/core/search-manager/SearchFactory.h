@@ -9,14 +9,14 @@
 #define SF1R_SEARCH_FACTORY_H
 
 #include "QueryBuilder.h"
-
+#include "../query-manager/SearchingEnumerator.h"
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
 class IndexBundleConfiguration;
 class DocumentManager;
-class IndexManager;
+class InvertedIndexManager;
 class RankingManager;
 class SearchBase;
 class SearchManagerPreProcessor;
@@ -27,13 +27,14 @@ public:
     SearchFactory(
         const IndexBundleConfiguration& config,
         const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
+        const boost::shared_ptr<InvertedIndexManager>& indexManager,
         const boost::shared_ptr<RankingManager>& rankingManager);
 
     QueryBuilder* createQueryBuilder(
         const QueryBuilder::schema_map& schemaMap) const;
 
     SearchBase* createSearchBase(
+        SearchingMode::SearchingModeType mode,
         SearchManagerPreProcessor& preprocessor,
         QueryBuilder& queryBuilder) const;
 
@@ -42,7 +43,7 @@ private:
 
     const boost::shared_ptr<DocumentManager>& documentManager_;
 
-    const boost::shared_ptr<IndexManager>& indexManager_;
+    const boost::shared_ptr<InvertedIndexManager>& indexManager_;
 
     const boost::shared_ptr<RankingManager>& rankingManager_;
 };

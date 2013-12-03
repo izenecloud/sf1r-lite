@@ -4,6 +4,8 @@
 
 JOB_NUM=2
 [ $# -gt 0 ] && JOB_NUM=$1
+SF1R_DIR=${PWD##*/}
+echo "SF1R_DIR: $SF1R_DIR"
 
 cd ..
 CODEBASE_DIR="$(pwd)"
@@ -31,7 +33,7 @@ else
   exit 1
 fi
 
-dependencie=(izenelib icma ijma ilplib imllib idmlib sf1r-engine)
+dependencie=(izenelib icma ijma ilplib imllib idmlib $SF1R_DIR)
 
 element_count=${#dependencie[@]}
 index=0
@@ -51,6 +53,10 @@ do
   cd $BUILD_PATH
 
   git pull
+
+  if [ $? -ne 0 ];then
+      exit $?
+  fi
 
   if [ -f CMakeCache.txt ];then
     rm CMakeCache.txt

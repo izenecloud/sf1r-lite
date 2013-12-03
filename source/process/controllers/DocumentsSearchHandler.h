@@ -112,7 +112,7 @@ private:
     bool validateSearchResult(const KeywordSearchResult& siaResult);
 //     bool validateMiningResult(const KeywordSearchResult& miaResult);
     bool validateTextList(
-        const std::vector<std::vector<izenelib::util::UString> >& textList,
+        const std::vector<std::vector<PropertyValue::PropertyValueStrType> >& textList,
         std::size_t row,
         std::size_t column
     );
@@ -136,8 +136,6 @@ private:
     const MiningSchema& miningSchema_;
 
     KeywordSearchActionItem actionItem_;
-
-    bool returnAnalyzerResult_;
 
     int TOP_K_NUM;
 

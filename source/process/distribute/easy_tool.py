@@ -15,22 +15,35 @@ import ast
 import subprocess
 import shlex
 
+# one of each different master and one of different shard 
+master_node_list = []
+# b5mo master list.
+master_node_list += [{'loginuser':'lscm', 'master':['10.10.99.119', '10.10.99.120']}]
+# stage cluster
+master_node_list += [{'loginuser':'lscm', 'master':['10.10.96.9']}]
 
 replica_set_list = []
 replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.121'], 'replica': ['10.10.99.122', '10.10.99.123']}]
 replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.127'], 'replica': ['10.10.99.128', '10.10.99.129']}]
 replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.131'], 'replica': ['10.10.99.132', '10.10.99.133']}]
 replica_set_list += [{ 'loginuser':'lscm', 'primary': ['172.16.5.195'], 'replica': ['172.16.5.192', '172.16.5.194']}]
+replica_set_list += [{ 'loginuser':'lscm', 'primary': ['10.10.99.156'], \
+        'replica': ['10.10.99.158', '10.10.99.140', '10.10.99.141', '10.10.99.142', \
+                    '10.10.99.143', '10.10.99.119', '10.10.99.120', '10.10.99.114', \
+                    '10.10.99.115', '10.10.99.116', '10.10.99.117', '10.10.99.118']}]
+replica_set_list += [{ 'loginuser':'lscm', 'primary': ['10.10.99.157'], 'replica': ['10.10.99.159', '10.10.99.113']}]
 
 all_primary_host = []
 all_replicas_host = []
 loginuser = 'ops'
 
+inc_num = 0
 for replica_set in replica_set_list:
     all_primary_host += replica_set['primary']
     all_replicas_host += replica_set['replica']
-    print 'replica set hosts : ' 
+    print 'replica set hosts : ' + str(inc_num)
     print replica_set
+    inc_num += 1
 
 cur_replica_set = 0
 cur_replica_set = int(raw_input( 'please set the replica set you want to use, -1 for all replica set: '))
@@ -49,18 +62,23 @@ if len(tmp_base) > 0:
     local_base = tmp_base
 print 'local code base is : ' + local_base
 
-base_dir = '/home/' + loginuser + '/codebase'
-sf1r_dir = base_dir + '/sf1r-engine'
+#base_dir = '/home/' + loginuser + '/codebase'
+base_dir = '/opt/sf1r-engine/apps'
+sf1r_dir = base_dir + '/sf1r'
 izenelib_dir = base_dir + '/izenelib'
 sf1r_bin_dir = sf1r_dir + '/bin'
-start_prog = './sf1-revolution.sh start'
-stop_prog = './sf1-revolution.sh stop'
+#start_prog = './sf1-revolution.sh start'
+#stop_prog = './sf1-revolution.sh stop'
+start_prog = './sf1r-engine start'
+stop_prog = './sf1r-engine stop'
 update_src_prog = 'git pull '
 driver_ruby_dir = local_base + 'driver-ruby/'
 driver_ruby_tool = driver_ruby_dir + 'bin/distribute_tools.rb'
 driver_ruby_index = driver_ruby_dir + 'bin/distribute_test/index_col.json'
 driver_ruby_check = driver_ruby_dir + 'bin/distribute_test/check_col.json'
 driver_ruby_getstate = driver_ruby_dir + 'bin/distribute_test/get_status.json'
+driver_ruby_updateconf = driver_ruby_dir + 'bin/distribute_test/update_conf.json'
+driver_ruby_backup_data = driver_ruby_dir + 'bin/distribute_test/backup_data.json'
 ruby_bin = 'ruby1.9.1'
 auto_testfile_dir = './auto_test_file/'
 
@@ -150,10 +168,13 @@ def start_all(args):
     printtofile ('start all finished.')
 
 def stop_all(args):
-    # stop replicas first.
-    send_cmd_andstay(replicas_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
-    time.sleep(5)
-    send_cmd_afterssh(primary_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+    if len(args) > 2:
+        send_cmd_andstay(args[2:],  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+    else:
+        # stop replicas first.
+        send_cmd_andstay(replicas_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+        time.sleep(5)
+        send_cmd_afterssh(primary_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
     printtofile ('stop all finished.')
 
 def update_src(args):
@@ -262,6 +283,113 @@ def auto_restart(args):
             start_all(args)
         else:
             send_cmd_andstay(args[2:],  'cd ' + sf1r_bin_dir + ';' + start_prog)
+
+def get_current_primary(any_replica_ip, col):
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, any_replica_ip, '18181', driver_ruby_getstate, col])
+    if out.find('\"CurrentPrimary\":') != -1:
+        print error
+        out = "-".join(out.splitlines())
+        return re.match(r'^.*"CurrentPrimary":.*? : (\d.*?\d)",.*?$', out).group(1)
+    print 'current primary not found for ip: ' + any_replica_ip
+    return ""
+
+def get_primary_sharding_nodes(master_ip, col):
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, master_ip, '18181', driver_ruby_getstate, col])
+    if out.find('\"PrimaryShardingNodeList\":') != -1:
+        print error
+        out = "-".join(out.splitlines())
+        ip_list = re.match(r'^.*"PrimaryShardingNodeList":.*?(\d.*?\d, )".*?$', out).group(1)
+        return ip_list.rstrip(', ').split(', ')
+
+    print 'primary sharding nodes not found for master: ' + master_ip
+    return []
+
+def master_update_conf(args):
+    i = 0
+    for master_info in master_node_list:
+        print str(i) + " : "
+        print master_info
+        i = i + 1
+    chose_i = 0
+    chose_i = int(raw_input( 'please chose master list to do the update config: '))
+    if chose_i >= len(master_node_list):
+        print 'chose index out of range!'
+        sys.exit(0);
+    chose_master_info = master_node_list[chose_i]
+    primary_master_ip = ""
+    col = args[2]
+    for master_ip in chose_master_info['master']:
+        primary_master_ip = get_current_primary(master_ip, col)
+        if len(primary_master_ip) > 0:
+            print 'do update config on primary master: ' + primary_master_ip
+            break
+    if len(primary_master_ip) == 0:
+        print 'no primary master, update failed.'
+        sys.exit(0)
+
+    primary_sharding_nodes = []
+    primary_sharding_nodes = get_primary_sharding_nodes(primary_master_ip, col)
+    print primary_sharding_nodes
+    if len(primary_sharding_nodes) == 0:
+        sys.exit(0)
+
+    (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, primary_master_ip, '18181', driver_ruby_updateconf, col])
+    print error
+    if len(error) > 0:
+        print 'update conf on master failed. exited.'
+        sys.exit(0)
+
+    cmdstr = 'cd ~/script; ./distribute_tools.sh sync_conf ' + col
+    for shardip in primary_sharding_nodes:
+        # copy config from master to primary shard nodes.
+        send_cmd_andstay([primary_master_ip], cmdstr + ' ' + shardip + ' >> sync_conf.log 2>&1 &')
+        time.sleep(3)
+        # send api to shard node.
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, shardip, '18181', driver_ruby_updateconf, col])
+        print error
+
+def simple_update(args):
+    if len(args) < 4:
+        print 'host and tar file should be given!'
+        sys.exit(0)
+    tarfile = args[2]
+    hosts = args[3:]
+    
+    for host in hosts:
+        print 'transferring file to dest host: ' + host
+        (out, error) = run_prog_and_getoutput(["rsync", "-av", tarfile, loginuser+'@'+host+':/opt'])
+        print error
+        print out
+        if len(error) > 0:
+        	print "error transfer, not update."
+        	sys.exit(0)
+
+    cmdstr = 'cd ~/script; ./distribute_tools.sh simple_update /opt/' + tarfile + ' >> simple_update.log 2>&1 &'
+    send_cmd_afterssh(hosts, cmdstr)
+
+def get_all_status(args):
+    col = args[2]
+    hosts = []
+    if len(args) <= 3:
+        print 'try get status from all hosts.'
+        hosts = primary_host + replicas_host
+    else:
+        hosts = args[3:]
+
+    for host in hosts:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate, col])
+        printtofile(host + ' info : ' + error)
+        printtofile(out)
+
+def backup_data(args):
+    if len(args) < 3:
+        print 'no host given'
+        sys.exit(0)
+    hosts = args[2:]
+    for host in hosts:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_backup_data])
+        print host + ' info : ' + error
+        print out
 
 def mv_scd_to_index(args):
     cmdstr = ' cd ' + sf1r_bin_dir + '/collection/b5mp/scd/index/; mv backup/*.SCD .' 
@@ -484,6 +612,10 @@ handler_dict = { 'syncfile':syncfiles,
         'read_cmd_from_file':read_cmd_from_file,
         'set_fail_test_conf':set_fail_test_conf,
         'auto_restart':auto_restart,
+        'simple_update':simple_update,
+        'master_update_conf':master_update_conf,
+        'get_all_status':get_all_status,
+        'backup_data':backup_data,
         'run_auto_fail_test':run_auto_fail_test
         }
 
@@ -518,11 +650,19 @@ print ''
 print 'check_running host logfile_name  # check the host running status by tail the running log on host. \
         if no logfile_name, the newest log will be checked.'
 print ''
-print 'send_cmd cmdstr  # send cmdstr to all hosts'
+print 'send_cmd cmdstr host1 host2 # send cmdstr to given hosts'
 print ''
 print 'read_cmd_from_file cmdfile  # read cmd from cmdfile and send cmdstr. each cmd in a line.'
 print ''
 print 'set_fail_test_conf conf_file  # read fail test configure from conf_file and set this configure to all host.'
+print ''
+print 'auto_restart # period check sf1r and restart it if failed.'
+print ''
+print 'simple_update sf1r_tar_file host1 host2 # simple update the sf1r on the given host list using the given tar file.'
+print ''
+print 'get_all_status collection host1 host2 # get the node running status on the given host list from the given collection.'
+print ''
+print 'backup_data host1 host2 # backup the data for the given host list.'
 print ''
 print 'auto_restart host1 host2 # make sure the sf1r in host list is running, check in every 60s and try restart if not started.'
 print ''

@@ -13,6 +13,7 @@
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <log-manager/LogManager.h>
 #include <log-manager/LogAnalysis.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <cache/IzeneCache.h>
 
@@ -270,6 +271,16 @@ void KeywordsController::inject_query_correction()
         input.push_back(std::make_pair(query, result) );
 
     }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
     if(!input.empty())
     {
         if (collectionName_.empty())
@@ -289,6 +300,8 @@ void KeywordsController::inject_query_correction()
             miningSearchService_->FinishQueryCorrectionInject();
        }
     }
+
+    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 
@@ -353,6 +366,16 @@ void KeywordsController::inject_query_recommend()
 
     }
 
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+    NoAdditionNoRollbackReqLog reqlog;
+
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
     if(!input.empty())
     {
         for(uint32_t i=0;i<input.size();i++)
@@ -362,6 +385,7 @@ void KeywordsController::inject_query_recommend()
         miningSearchService_->FinishQueryRecommendInject();
     }
 
+    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 } // namespace sf1r

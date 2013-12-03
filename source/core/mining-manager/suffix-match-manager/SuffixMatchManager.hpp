@@ -2,7 +2,6 @@
 #define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 
 #include "SuffixMatchMiningTask.hpp"
-
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
@@ -11,6 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <list>
 
 namespace sf1r
 {
@@ -19,7 +19,10 @@ class DocumentManager;
 class FilterManager;
 class FMIndexManager;
 class ProductTokenizer;
+namespace b5m {
 class ProductMatcher;
+}
+class CategoryClassifyTable;
 
 namespace faceted
 {
@@ -42,7 +45,7 @@ public:
 
     ~SuffixMatchManager();
 
-    void setProductMatcher(ProductMatcher* matcher);
+    void setProductMatcher(b5m::ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
     void buildTokenizeDic();
@@ -55,26 +58,53 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
-            const std::string& pattern,
+            bool use_synonym,            
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
             std::vector<std::pair<double, uint32_t> >& res_list,
-            UString& analyzedQuery) const;
+            double rank_boundary);
+
+    void GetTokenResults(const std::string& pattern,
+                    std::list<std::pair<UString, double> >& major_tokens,
+                    std::list<std::pair<UString, double> >& manor_tokens,
+                    bool isAnalyzeQuery,
+                    UString& analyzedQuery,
+                    double& rank_boundary);
 
     SuffixMatchMiningTask* getMiningTask();
+    
     bool buildMiningTask();
 
     boost::shared_ptr<FilterManager>& getFilterManager();
 
     void updateFmindex();
 
+    double getSuffixSearchRankThreshold(
+            const std::list<std::pair<UString, double> >& major_tokens,
+            const std::list<std::pair<UString, double> >& minor_tokens,
+            std::list<std::pair<UString, double> >& boundary_minor_tokens);
+
+    void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
+                        double& rank_boundary);
+
+    void GetQuerySumScore(const std::string& pattern, double &sum_score);
+
+    ProductTokenizer* getProductTokenizer()
+    {
+        return tokenizer_;
+    }
+
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;
-
+    bool GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
+    bool GetSynonymId_(const UString& pattern, int& setid);
+    void ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size);
     bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
             std::vector<size_t>& prop_id_list,

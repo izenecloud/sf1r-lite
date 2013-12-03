@@ -75,7 +75,8 @@ public:
         // waiting recovery replica to finish sync to latest.
         NODE_STATE_RECOVER_WAIT_REPLICA_FINISH,
         // recovery finished correctly.
-        NODE_STATE_RECOVER_FINISH,
+        NODE_STATE_RECOVER_FINISHING,
+        NODE_STATE_ABORTING,
 
         NODE_STATE_UNKNOWN,
     };
@@ -109,17 +110,19 @@ public:
         return sf1rTopology_.curNode_;
     }
 
-    unsigned int getTotalShardNum() const
-    {
-        return sf1rTopology_.nodeNum_;
-    }
+    void updateTopologyCfg(const Sf1rTopology& cfg);
+    //unsigned int getTotalShardNum() const
+    //{
+        //return sf1rTopology_.nodeNum_;
+    //}
 
     bool isPrimary();
     bool isOtherPrimaryAvailable();
     bool isConnected();
 
+    bool isAnyWriteRunningInReplicas();
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
-    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
+    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false, bool force = false);
     bool getCurrPrimaryInfo(std::string& primary_host);
 
     void setSlowWriting();
@@ -127,6 +130,10 @@ public:
     void notifyMasterReadyForNew();
     void abortRequest();
     void finishLocalReqProcess(int type, const std::string& reqdata);
+    inline std::string getSavedPackedData()
+    {
+        return saved_packed_reqdata_;
+    }
 
     void setCallback(NoFailCBFuncT on_elect_finished, NoFailCBFuncT on_wait_finish_process,
         NoFailCBFuncT on_wait_finish_log, NoFailCBFuncT on_wait_primary, NoFailCBFuncT on_abort_request,
@@ -172,6 +179,7 @@ public:
     void updateLastWriteReqId(uint32_t req_id);
     uint32_t getLastWriteReqId();
     bool checkElectingInAsyncMode(uint32_t newest_logid);
+    bool isPrimaryReadyForCheckLog();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -218,7 +226,7 @@ protected:
     void updateSelfPrimaryNodeState();
 
     std::string findReCreatedSelfPrimaryNode();
-    void resetWriteState();
+    void resetWriteState(bool need_re_enter = false);
     bool isNeedReEnterCluster();
     bool isNeedCheckElecting();
     NodeStateType getPrimaryState();

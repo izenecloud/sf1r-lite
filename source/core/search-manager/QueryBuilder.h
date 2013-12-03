@@ -15,7 +15,7 @@
 #include "WANDDocumentIterator.h"
 #include "VirtualPropertyScorer.h"
 #include "VirtualPropertyTermDocumentIterator.h"
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <document-manager/DocumentManager.h>
 
 #include <boost/shared_ptr.hpp>
@@ -43,7 +43,7 @@ public:
 
     QueryBuilder(
         const boost::shared_ptr<DocumentManager> documentManager,
-        const boost::shared_ptr<IndexManager> indexManager,
+        const boost::shared_ptr<InvertedIndexManager> indexManager,
         const schema_map& schemaMap,
         size_t filterCacheNum
     );
@@ -151,7 +151,7 @@ private:
         std::vector<PropertyDataType>& propertyDataTypes,
         bool isNumericFilter,
         bool isReadPosition,
-        std::map<termid_t, unsigned> termIndexMap,
+        const std::map<termid_t, unsigned>& termIndexMap,
         DocumentIteratorPointer& pDocIterator,
         std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList,
         bool hasUnigramProperty,
@@ -210,7 +210,7 @@ private:
 private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
 
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
+    boost::shared_ptr<InvertedIndexManager> indexManagerPtr_;
 
     IndexReader* pIndexReader_;
 

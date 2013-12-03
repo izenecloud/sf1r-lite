@@ -23,6 +23,8 @@ class Document
     typedef property_named_map::iterator property_mutable_iterator;
 
 public:
+    typedef PropertyValue::PropertyValueStrType doc_prop_value_strtype;
+    typedef PropertyValue::PropertyValueStrType str_type;
     typedef property_named_map::const_iterator property_const_iterator;
     typedef property_named_map::iterator property_iterator;
 
@@ -110,13 +112,44 @@ public:
         return true;
     }
 
-    bool getString(const std::string& pname, std::string& value) const
+    // interface for property internal string with UString type
+    //bool getString(const std::string& pname, std::string& value) const
+    //{
+    //    doc_prop_value_strtype propstr;
+    //    if(!getProperty(pname, propstr)) return false;
+    //    value = propstr_to_str(propstr);
+    //    return true;
+    //}
+
+    bool getString(const std::string& pname, izenelib::util::UString& value) const
     {
-        izenelib::util::UString ustr;
-        if(!getProperty(pname, ustr)) return false;
-        ustr.convertString(value, izenelib::util::UString::UTF_8);
+        str_type s;
+        if(!getProperty(pname, s)) return false;
+        value = propstr_to_ustr(s);
         return true;
     }
+    bool getString(const std::string& pname, doc_prop_value_strtype& value) const
+    {
+        //izenelib::util::UString ustr;
+        //if(!getProperty(pname, ustr)) return false;
+        //ustr.convertString(value, izenelib::util::UString::UTF_8);
+
+        //
+        // the newest code has changed document property internal value to std::string 
+        if(!getProperty(pname, value)) return false;
+        return true;
+    }
+
+    doc_prop_value_strtype& getString(const std::string& pname)
+    {
+        return property(pname).get<doc_prop_value_strtype>();
+    }
+
+    const doc_prop_value_strtype& getString(const std::string& pname) const
+    {
+        return property(pname).get<doc_prop_value_strtype>();
+    }
+
 
     property_iterator propertyBegin()
     {
@@ -148,7 +181,7 @@ public:
 
     void clearExceptDOCID()
     {
-        izenelib::util::UString docid;
+        doc_prop_value_strtype docid;
         getProperty("DOCID", docid);
         clear();
         property("DOCID") = docid;
@@ -182,6 +215,64 @@ public:
             }
         }
         return modified;
+    }
+    void merge(const Document& doc)
+    {
+        copyPropertiesFromDocument(doc, true);
+    }
+
+    void diff(const Document& doc, Document& diff_doc) const
+    {
+        for(property_const_iterator it=propertyBegin();it!=propertyEnd();++it)
+        {
+            const std::string& key=it->first;
+            property_const_iterator ait=doc.findProperty(key);
+            bool dd=true;
+            if(key=="DOCID"||ait==doc.propertyEnd())
+            {
+                dd=false;
+            }
+            else
+            {
+                if(it->second!=ait->second)
+                {
+                    dd=false;
+                }
+            }
+            if(!dd)
+            {
+                diff_doc.property(key)=it->second;
+            }
+        }
+    }
+    void diff(const Document& doc)
+    {
+        std::vector<std::string> erase_vec;
+        for(property_const_iterator it=propertyBegin();it!=propertyEnd();++it)
+        {
+            const std::string& key=it->first;
+            property_const_iterator ait=doc.findProperty(key);
+            bool dd=true;
+            if(key=="DOCID"||ait==doc.propertyEnd())
+            {
+                dd=false;
+            }
+            else
+            {
+                if(it->second!=ait->second)
+                {
+                    dd=false;
+                }
+            }
+            if(dd)
+            {
+                erase_vec.push_back(key);
+            }
+        }
+        for(uint32_t i=0;i<erase_vec.size();i++)
+        {
+            eraseProperty(erase_vec[i]);
+        }
     }
 
 private:

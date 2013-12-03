@@ -64,13 +64,13 @@ void GetRecommendMaster::recommendPurchase(
 )
 {
     std::set<itemid_t> candidateSet;
-    aggregator_->distributeRequest(collection_, "getCandidateSet",
+    aggregator_->distributeRequest(collection_, 0, "getCandidateSet",
                                    inputParam.inputItemIds, candidateSet);
 
     if (candidateSet.empty())
         return;
 
-    aggregator_->distributeRequest(collection_, "recommendFromCandidateSet",
+    aggregator_->distributeRequest(collection_, 0, "recommendFromCandidateSet",
                                    inputParam, candidateSet, results);
 
     limitSize(results, inputParam.limit);
@@ -82,13 +82,13 @@ void GetRecommendMaster::recommendPurchaseFromWeight(
 )
 {
     std::set<itemid_t> candidateSet;
-    aggregator_->distributeRequest(collection_, "getCandidateSetFromWeight",
+    aggregator_->distributeRequest(collection_, 0, "getCandidateSetFromWeight",
                                    inputParam.itemWeightMap, candidateSet);
 
     if (candidateSet.empty())
         return;
 
-    aggregator_->distributeRequest(collection_, "recommendFromCandidateSetWeight",
+    aggregator_->distributeRequest(collection_, 0, "recommendFromCandidateSetWeight",
                                    inputParam, candidateSet, results);
 
     limitSize(results, inputParam.limit);
@@ -100,7 +100,7 @@ void GetRecommendMaster::recommendVisit(
 )
 {
     shardid_t workerId = shardStrategy_->getShardId(inputParam.inputItemIds[0]);
-    aggregator_->singleRequest(collection_, "recommendVisit", inputParam, results, workerId);
+    aggregator_->singleRequest(collection_, 0, "recommendVisit", inputParam, results, workerId);
 
     limitSize(results, inputParam.limit);
 }

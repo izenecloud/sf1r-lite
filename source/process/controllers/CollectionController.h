@@ -53,6 +53,9 @@ public:
 
     void load_license();
 
+    void update_sharding_conf();
+    void add_sharding_nodes();
+
     bool preprocess();
     bool callDistribute();
     void postprocess();

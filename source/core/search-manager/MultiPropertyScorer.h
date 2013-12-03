@@ -39,6 +39,21 @@ public:
                 it->second.clear();
             }
         }
+
+        for(size_t i = 0; i < termDocReadersListVirtual_.size(); i++)
+        {
+            std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders
+            = termDocReadersListVirtual_[i];
+            for(std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >::iterator it = termDocReaders.begin();
+                    it != termDocReaders.end(); ++it)
+            {
+                for(size_t j =0; j<it->second.size(); j ++ )
+                {
+                    delete it->second[j];
+                }
+                it->second.clear();
+            }
+        }
     }
 
 public:
@@ -59,6 +74,15 @@ public:
         docIteratorList_[index] = pDocIterator;
         termDocReadersList_[index] = termDocReaders;
     }
+
+    void add(std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList)
+    {
+        termDocReadersListVirtual_ = termDocReadersList;
+    }
+
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap);
+
+    void initThreshold(float threshold);
 
     /**
      * @warn not thread-safe, use multiple instances in multiple threads.
@@ -106,6 +130,7 @@ private:
     std::vector<propertyid_t> indexPropertyIdList_;
     std::vector<double> propertyWeightList_;
     std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > > termDocReadersList_;
+    std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > > termDocReadersListVirtual_;
     boost::mutex mutex_;
 
     ///@brief reuse in score() for performance, so score() is not thread-safe

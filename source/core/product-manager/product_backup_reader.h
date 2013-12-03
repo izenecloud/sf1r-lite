@@ -137,9 +137,8 @@ public:
             {
                 ProductUpdateItem uitem = boost::get<ProductUpdateItem>(item);
                 Document& doc = uitem.doc;
-                izenelib::util::UString uuid = doc.property(DOCID).get<izenelib::util::UString>();
-                std::string suuid;
-                uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+                Document::doc_prop_value_strtype uuid = doc.property(DOCID).getPropertyStrValue();
+                std::string suuid = propstr_to_str(uuid);
                 ProductBackupDataType::iterator it = data.find(suuid);
                 if(it==data.end())
                 {

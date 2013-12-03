@@ -6,18 +6,22 @@
 #include <common/Utilities.h>
 
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/product/ProductBundleActivator.h>
 #include <core/license-manager/LicenseCustManager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeFileSys.h>
+#include <aggregator-manager/MasterNotifier.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 namespace bfs = boost::filesystem;
 
 const static std::string collectionCronJobName = "CollectionTaskScheduler-";
+static const std::string syncID_totalComment = "TOTAL_COMMENT";
 namespace sf1r
 {
 
@@ -41,6 +45,15 @@ void CollectionTask::cronTask(int calltype)
 
         doTask();
     }
+}
+
+void RebuildTask::clearMasterCache()
+{
+    LOG(INFO) << "notify master to clear cache.";
+    NotifyMSG msg;
+    msg.collection = collectionName_;
+    msg.method = "CLEAR_SEARCH_CACHE";
+    MasterNotifier::get()->notify(msg);
 }
 
 void RebuildTask::doTask()
@@ -109,6 +122,8 @@ void RebuildTask::doTask()
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
         throw -1;
     }
+    if (NodeManagerBase::get()->isDistributed())
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
     rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -161,6 +176,11 @@ void RebuildTask::doTask()
     LOG(INFO) << "## end RebuildTask for " << collectionName_;
     //isRunning_ = false;
     //
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        clearMasterCache();
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
@@ -173,36 +193,115 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
         return false;
     }
 
-    // search the directory for files
-    static const bfs::directory_iterator kItrEnd;
-    ScdParser parser(encoding);
-    for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
+    try
     {
-        if (bfs::is_regular_file(itr->status()))
+        static const bfs::directory_iterator kItrEnd;
+        ScdParser parser(encoding);
+        for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
+            if (bfs::is_regular_file(itr->status()))
             {
-                LOG(INFO) << "found a SCD File for rebuild:" << fileName;
-                scd_list.push_back(itr->path().string());
-                //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
-                //        scd_list.back()))
-                //{
-                //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
-                //}
-                //else
-                //{
-                //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
-                //}
-            }
-            else
-            {
-                LOG(WARNING) << "SCD File not valid " << fileName;
+                std::string fileName = itr->path().filename().string();
+                if (parser.checkSCDFormat(fileName))
+                {
+                    LOG(INFO) << "found a SCD File for rebuild:" << fileName;
+                    scd_list.push_back(itr->path().string());
+                }
+                else
+                {
+                    LOG(WARNING) << "SCD File not valid " << fileName;
+                }
             }
         }
     }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "error while get rebuild scd: " << e.what();
+        return false;
+    }
+
+    if (scd_list.empty())
+        return false;
+    //copy Total_Comment_SCD to rebuild_scd_src
+    if( DistributeFileSys::get()->isEnabled())
+    {
+        static const bfs::directory_iterator kItrEnd;
+
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
+        std::string productID;
+        bool doAddCommentSCD = false;
+        if (collectionHandler != NULL)
+        {
+            ProductTaskService* productTaskService = collectionHandler->productTaskService_;
+            if (productTaskService != NULL)
+            {
+                ProductBundleConfiguration* bundleConfig = productTaskService->getbundleConfig();
+                if (bundleConfig != NULL && bundleConfig->mode_ == "a")
+                {
+                    productID = bundleConfig->productId_;
+                }
+            }
+        }
+
+        if (!productID.empty())
+        {
+            LOG(INFO) << "productID: " << productID << std::endl;
+            doAddCommentSCD = true;
+        }
+        
+        if(doAddCommentSCD)
+        {
+            std::string dfs_total_comment_path = productID+syncID_totalComment + "/produce/total_comment_scd/";
+            std::string local_total_comment_path = DistributeFileSys::get()->getFixedCopyPath(dfs_total_comment_path);
+            local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(local_total_comment_path);
+            std::string last_dir = "";
+            if (bfs::exists(local_total_comment_path) && !local_total_comment_path.empty())
+            {
+                 for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+                {
+                    if (bfs::is_directory(itr->status()))
+                    {
+                        std::string fileName = itr->path().filename().string();
+                        if (fileName > last_dir)
+                        {
+                            last_dir = fileName;
+                        }
+                    }
+                }
+                LOG (INFO) << "Get comment SCD from dir :" << last_dir ;
+
+                local_total_comment_path += last_dir;
+                local_total_comment_path += "/";
+     
+                if (!last_dir.empty())
+                {
+                    try
+                    {
+                        for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+                        {
+                            if (bfs::is_regular_file(itr->status()))
+                            {
+                                std::string fileName = itr->path().filename().string();
+                                bfs::path from_file(local_total_comment_path + fileName);
+                                LOG(INFO) << "Comment SCD: " << from_file.string();
+                                scd_list.push_back(from_file.string());
+                            }
+                        }
+                    }
+                    catch(std::exception& ex)
+                    {
+                        LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src  <<", exception: " << ex.what();
+                    }
+                }
+            }
+            else
+                LOG(WARNING) << "there is no total comment scd files" ;
+        }
+    }// there is no else, the total comment is already in rebuild_scd ;
+
     sort(scd_list.begin(), scd_list.end(), ScdParser::compareSCD);
-    return !scd_list.empty();
+    return true;
+
 }
 
 void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_list)
@@ -239,7 +338,7 @@ void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_lis
     }
 }
 
-bool RebuildTask::rebuildFromSCD()
+bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
 {
     LOG(INFO) << "## start rebuild from scd for " << collectionName_;
 
@@ -254,6 +353,7 @@ bool RebuildTask::rebuildFromSCD()
     RebuildFromSCDReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
 
+    bool failed = false;
     {
         // check collection resource
         CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
@@ -264,6 +364,32 @@ bool RebuildTask::rebuildFromSCD()
             LOG(ERROR) << "Not found collection: " << collectionName_;
             return false;
         }
+
+        if (collectionHandler->indexTaskService_->isNeedSharding())
+        {
+            if (!MasterManagerBase::get()->isAllShardNodeOK(collectionHandler->indexTaskService_->getShardidListForSearch()))
+            {
+                LOG(ERROR) << "some of sharding node is not ready for rebuild.";
+                return false;
+            }
+
+            std::string map_dir = collectionHandler->indexTaskService_->getShardingMapDir();
+
+            if (bfs::exists(map_dir + collectionName_))
+            {
+                DistributeFileSys::copy_dfs_file(map_dir + collectionName_,
+                    map_dir + rebuildCollectionName_);
+            }
+            LOG(INFO) << "distribute rebuild_from_scd to sharding nodes.";
+            collectionHandler->indexTaskService_->HookDistributeRequestForIndex();
+        }
+
+        if (!collectionHandler->indexTaskService_->isNeedDoLocal())
+        {
+            LOG(INFO) << "local worker is disabled while rebuilding.";
+            return false;
+        }
+
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
 
         bfs::path tmppath = bfs::path(collPath.getCollectionDataPath());
@@ -277,9 +403,23 @@ bool RebuildTask::rebuildFromSCD()
         bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
         if (is_primary)
         {
-            if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
-                    rebuild_scd_src, reqlog.scd_list))
+            if (DistributeFileSys::get()->isEnabled())
+            {
+                rebuild_scd_src = DistributeFileSys::get()->getDFSPathForLocal(scd_path);
+                LOG(INFO) << "rebuild from dfs path : " << rebuild_scd_src;
+            }
+
+            try
+            {
+                if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
+                        rebuild_scd_src, reqlog.scd_list))
+                    return false;
+            }
+            catch(const std::exception& e)
+            {
+                LOG(ERROR) << "failed to rebuild: " << e.what();
                 return false;
+            }
         }
 
         // move rebuild scd files to rebuild collection master_index.
@@ -321,6 +461,9 @@ bool RebuildTask::rebuildFromSCD()
             LOG(ERROR) << "start collection for rebuilding failed: " << rebuildCollectionName_;
             return false;
         }
+        if (NodeManagerBase::get()->isDistributed())
+            NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+
         CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
         CollectionManager::ScopedReadLock recollLock(*recollMutex);
         rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -328,15 +471,17 @@ bool RebuildTask::rebuildFromSCD()
 
 
         LOG(INFO) << "# # # #  start rebuilding from scd.";
-        if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list, reqlog.timestamp))
-        {
-            CollectionManager::get()->stopCollection(rebuildCollectionName_);
-            return false;
-        }
+        failed = !rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list, reqlog.timestamp);
 
         rebuildCollDir = bfs::path(rebuildCollPath.getCollectionDataPath()).string();
         rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
+
+    if (failed)
+    {
+        CollectionManager::get()->stopCollection(rebuildCollectionName_);
+        return false;
+    }
 
     if (NodeManagerBase::get()->isDistributed())
     {
@@ -378,6 +523,11 @@ bool RebuildTask::rebuildFromSCD()
     CollectionManager::get()->startCollection(collectionName_, configFile);
     LOG(INFO) << "## end rebuild from scd for " << collectionName_;
 
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        clearMasterCache();
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
     return true;
 }

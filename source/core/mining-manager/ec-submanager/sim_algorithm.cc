@@ -315,8 +315,8 @@ void SimAlgorithm::KpeTask_(const boost::shared_ptr<DocumentManager>& document_m
         Document doc;
         for (uint32_t docid = start_docid; docid<=process_max_docid; docid++)
         {
-            StringType title;
-            StringType content;
+            PropertyValue::PropertyValueStrType title;
+            PropertyValue::PropertyValueStrType content;
             process_count++;
             start_docid = docid;
             if (process_count==step) break;
@@ -333,16 +333,16 @@ void SimAlgorithm::KpeTask_(const boost::shared_ptr<DocumentManager>& document_m
                 std::string str_property = property_it->first;
                 if (str_property == title_property.second)
                 {
-                    title = property_it->second.get<izenelib::util::UString>();
+                    title = property_it->second.getPropertyStrValue();
                 }
                 else if (str_property == content_property.second)
                 {
-                    content = property_it->second.get<izenelib::util::UString>();
+                    content = property_it->second.getPropertyStrValue();
                 }
 
                 property_it++;
             }
-            task.Insert(docid, title, content);
+            task.Insert(docid, propstr_to_ustr(title), propstr_to_ustr(content));
         }
         task.Close();
         if (start_docid == process_max_docid) break;

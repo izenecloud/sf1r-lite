@@ -29,6 +29,7 @@ int main(int argc, char* argv[])
             {
                 imgDupProcess.start();
                 imgDupProcess.join();
+                waitSignalThread();
             }
             else
             {

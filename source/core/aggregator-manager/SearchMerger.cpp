@@ -4,6 +4,7 @@
 #include <common/ResultType.h>
 #include <common/Utilities.h>
 #include <mining-manager/MiningManager.h>
+#include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
 
@@ -48,7 +49,21 @@ void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKe
                 mergeResult.ctfmap_[property][iter_->first] += iter_->second;
             }
         }
+
+        MaxTermFrequencyInProperties::iterator maxtf_it;
+        for (maxtf_it = wResult.maxtfmap_.begin(); maxtf_it != wResult.maxtfmap_.end(); maxtf_it++)
+        {
+            const std::string& property = maxtf_it->first;
+
+            ID_FREQ_MAP_T& maxtf = wResult.maxtfmap_[property];
+            ID_FREQ_UNORDERED_MAP_T::iterator iter_;
+            for (iter_ = maxtf.begin(); iter_ != maxtf.end(); iter_++)
+            {
+                mergeResult.maxtfmap_[property][iter_->first] += iter_->second;
+            }
+        }
     }
+    LOG(INFO) << "#[SearchMerger::getDistSearchInfo] end" << endl;
 }
 
 void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -56,6 +71,23 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
+    if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
+        mergeResult.error_ = "empty worker.";
+        return;
+    }
+
+    for(size_t workerId = 0; workerId < workerNum; ++workerId)
+    {
+        if(!workerResults.result(workerId).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(workerId).error_;
+            LOG(ERROR) << "!!! getDistSearchResult error for worker: " << workerId << ", error: " << mergeResult.error_;
+            return;
+        }
+    }
+
     const KeywordSearchResult& result0 = workerResults.result(0);
 
     // only one result
@@ -76,13 +108,22 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.queryTermIdList_ = result0.queryTermIdList_;
     mergeResult.propertyQueryTermList_ = result0.propertyQueryTermList_;
     mergeResult.totalCount_ = 0;
+    mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
+    mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
+
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
+    mergeResult.attrRep_ = result0.attrRep_;
+    std::list<const faceted::OntologyRep*> otherAttrReps;
+    bool is_need_get_docs = false;
     for (size_t i = 0; i < workerNum; i++)
     {
         const KeywordSearchResult& wResult = workerResults.result(i);
         //wResult.print();
+
+        if (!wResult.distSearchInfo_.include_summary_data_)
+            is_need_get_docs = true;
 
         mergeResult.totalCount_ += wResult.totalCount_;
         totalTopKCount += wResult.topKDocs_.size();
@@ -98,21 +139,37 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         {
             rangeHigh = wResult.propertyRange_.highValue_;
         }
+
         mergeResult.groupRep_.merge(wResult.groupRep_);
+        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_);
+
         std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
         for(; cit != wResult.counterResults_.end(); ++cit)
         {
             mergeResult.counterResults_[cit->first] += cit->second;
         }
+        if (i > 0)
+        {
+            otherAttrReps.push_back(&wResult.attrRep_);
+        }
     }
     mergeResult.propertyRange_.lowValue_ = rangeLow;
     mergeResult.propertyRange_.highValue_ = rangeHigh;
+    mergeResult.attrRep_.merge(0, otherAttrReps);
 
-    size_t endOffset = mergeResult.start_ + mergeResult.count_;
-    size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
-    size_t topKCount = std::min(endTopK, totalTopKCount);
+    //size_t endOffset = mergeResult.start_ + mergeResult.count_;
+    size_t topKStart = Utilities::roundDown(mergeResult.start_, mergeResult.TOP_K_NUM);
+    size_t topKCount = 0;
+    if (topKStart < totalTopKCount)
+        topKCount = totalTopKCount - topKStart;
 
-    LOG(INFO) << "SearchMerger topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    topKCount = std::min((size_t)mergeResult.TOP_K_NUM, topKCount);
+
+    LOG(INFO) << "SearchMerger topKStart : << " << topKStart
+        << ", topKCount: " << topKCount
+        << ", totalTopKCount: " << totalTopKCount
+        << ", TOP_K_NUM: " << mergeResult.TOP_K_NUM
+        << ", top label num: " << mergeResult.autoSelectGroupLabels_["Category"].size() << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
@@ -131,6 +188,9 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
+    std::vector<std::pair<size_t, size_t> > pageOffsetInWorker;
+    pageOffsetInWorker.resize(topKCount);
+
     for (size_t cnt = 0; cnt < topKCount; cnt++)
     {
         // find doc which should be merged firstly from heads of multiple doc lists (sorted).
@@ -147,13 +207,16 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
                 continue;
             }
 
-            if (greaterThan(docComparators[i], iter[i], docComparators[maxi], iter[maxi]))
+            const docid_t left_docid = workerResults.result(i).topKDocs_[iter[i]];
+            const docid_t right_docid = workerResults.result(maxi).topKDocs_[iter[maxi]];
+            if (greaterThan(docComparators[i], iter[i], left_docid,
+                    docComparators[maxi], iter[maxi], right_docid))
             {
                 maxi = i;
             }
         }
 
-        //cout << "maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
+        //std::cout << "maxi: "<< maxi<<", iter[maxi]: " << iter[maxi]<<endl;
         if (maxi == size_t(-1))
         {
             break;
@@ -163,6 +226,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         const workerid_t& workerid = workerResults.workerId(maxi);
         const KeywordSearchResult& wResult = workerResults.result(maxi);
 
+        pageOffsetInWorker[cnt] = std::make_pair(maxi, iter[maxi]);
         mergeResult.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         mergeResult.topKWorkerIds_[cnt] = workerid;
         mergeResult.topKRankScoreList_[cnt] = wResult.topKRankScoreList_[iter[maxi]];
@@ -178,8 +242,71 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     {
         delete docComparators[i];
     }
-    delete docComparators;
+    delete[] docComparators;
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
+
+    getMiningResult(workerResults, mergeResult);
+
+    mergeResult.distSearchInfo_.include_summary_data_ = !is_need_get_docs;
+    if (!is_need_get_docs)
+    {
+        size_t pageCount = mergeResult.count_;
+        if( mergeResult.start_ < mergeResult.topKDocs_.size() )
+        {
+            pageCount = std::min(pageCount, mergeResult.topKDocs_.size() - mergeResult.start_);
+        }
+        else
+        {
+            pageCount = 0;
+        }
+        size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
+        size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
+        LOG(INFO) << "begin merge the documents since the data is included. "
+            << "displayPropertyNum: " << displayPropertyNum << ", summary: " << isSummaryOn;
+
+        // initialize summary info for result
+        mergeResult.snippetTextOfDocumentInPage_.clear();
+        mergeResult.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+        mergeResult.fullTextOfDocumentInPage_.clear();
+        mergeResult.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+        mergeResult.rawTextOfSummaryInPage_.clear();
+        if (isSummaryOn)
+        {
+            mergeResult.rawTextOfSummaryInPage_.resize(isSummaryOn);
+        }
+        for (size_t dis = 0; dis < displayPropertyNum; dis++)
+        {
+            mergeResult.snippetTextOfDocumentInPage_[dis].resize(pageCount);
+            mergeResult.fullTextOfDocumentInPage_[dis].resize(pageCount);
+        }
+        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        {
+            mergeResult.rawTextOfSummaryInPage_[dis].resize(pageCount);
+        }
+
+        size_t pageEnd = std::min(mergeResult.topKDocs_.size(), mergeResult.start_ + pageCount);
+        for (size_t topkIndex = mergeResult.start_; topkIndex < pageEnd; ++topkIndex)
+        {
+            std::size_t curWorker = pageOffsetInWorker[topkIndex].first;
+            std::size_t workerOffset = pageOffsetInWorker[topkIndex].second;
+            const KeywordSearchResult& workerResult = workerResults.result(curWorker);
+
+            size_t i = topkIndex - mergeResult.start_;
+
+            for (size_t dis = 0; dis < displayPropertyNum; ++dis)
+            {
+                if (workerResult.snippetTextOfDocumentInPage_.size() > dis && workerResult.snippetTextOfDocumentInPage_[dis].size() > workerOffset)
+                    mergeResult.snippetTextOfDocumentInPage_[dis][i] = workerResult.snippetTextOfDocumentInPage_[dis][workerOffset];
+                if (workerResult.fullTextOfDocumentInPage_.size() > dis && workerResult.fullTextOfDocumentInPage_[dis].size() > workerOffset)
+                    mergeResult.fullTextOfDocumentInPage_[dis][i] = workerResult.fullTextOfDocumentInPage_[dis][workerOffset];
+            }
+            for (size_t dis = 0; dis < isSummaryOn; ++dis)
+            {
+                if (workerResult.rawTextOfSummaryInPage_.size() > dis && workerResult.rawTextOfSummaryInPage_[dis].size() > workerOffset)
+                    mergeResult.rawTextOfSummaryInPage_[dis][i] = workerResult.rawTextOfSummaryInPage_[dis][workerOffset];
+            }
+        }
+    }
 }
 
 void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -187,27 +314,41 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     const size_t workerNum = workerResults.size();
 
     if (workerNum == 0)
+    {
+        LOG(ERROR) << "empty worker result .";
         return;
+    }
 
     for(size_t workerId = 0; workerId < workerNum; ++workerId)
     {
         if(!workerResults.result(workerId).error_.empty())
         {
             mergeResult.error_ = workerResults.result(workerId).error_;
+            LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
+        LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
+        LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
     }
 
-    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin";
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
 
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin. pageCount:" << pageCount
+        << ", displayPropertyNum:" << displayPropertyNum << ", summary:" << isSummaryOn
+        << ", workNum: " << workerNum;
+
     // initialize summary info for result
+    mergeResult.snippetTextOfDocumentInPage_.clear();
     mergeResult.snippetTextOfDocumentInPage_.resize(displayPropertyNum);
+    mergeResult.fullTextOfDocumentInPage_.clear();
     mergeResult.fullTextOfDocumentInPage_.resize(displayPropertyNum);
+    mergeResult.rawTextOfSummaryInPage_.clear();
     if (isSummaryOn)
+    {
         mergeResult.rawTextOfSummaryInPage_.resize(isSummaryOn);
+    }
 
     for (size_t dis = 0; dis < displayPropertyNum; dis++)
     {
@@ -263,8 +404,6 @@ void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<K
     LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
 
     getSummaryResult(workerResults, mergeResult);
-
-    getMiningResult(workerResults, mergeResult);
     LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] end";
 }
 
@@ -272,6 +411,61 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
 {
     if(!miningManager_) return;
     LOG(INFO) <<"call mergeMiningResult"<<std::endl;
+    if (workerResults.size() == 0)
+        return;
+
+    size_t workerNum = workerResults.size();
+    for(size_t i = 0; i < workerNum; ++i)
+    {
+        if(!workerResults.result(i).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(i).error_;
+            LOG(ERROR) << "getMiningResult error for worker: " << i << ", error :" << mergeResult.error_;
+            return;
+        }
+    }
+    // note : the QrResult, TgResult, FacetedResult using any single result is enough.
+    // the DupResult, SimilarityResult need to be re-design to get the right result.
+    
+    // OrResult
+    mergeResult.relatedQueryList_ = workerResults.result(0).relatedQueryList_;
+    mergeResult.rqScore_ = workerResults.result(0).rqScore_;
+    // DupResult and SimilarityResult
+    mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size(), 0);
+    mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size(), 0);
+    // the merge of duplicate and SimilarityResult should be the same as merge of rawtext.
+    //
+    //size_t dup_actual_size = 0;
+    //size_t sim_actual_size = 0;
+    //for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
+    //{
+    //    for (size_t i = 0; i < workerResults.size(); ++i)
+    //    {
+    //        const KeywordSearchResult& result = workerResults.result(i);
+    //        if (result.numberOfDuplicatedDocs_.size() > doc_i)
+    //        {
+    //            mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
+    //            dup_actual_size = doc_i + 1;
+    //        }
+    //        if (result.numberOfSimilarDocs_.size() > doc_i)
+    //        {
+    //            mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
+    //            sim_actual_size = doc_i + 1;
+    //        }
+    //    }
+    //}
+    //mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
+    //mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
+    // FacetedResult
+    mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
+    std::list<const faceted::OntologyRep*> other_onto_reps;
+    for (size_t i = 1; i < workerResults.size(); ++i)
+    {
+        other_onto_reps.push_back(&workerResults.result(i).onto_rep_);
+    }
+    mergeResult.onto_rep_.merge(0, other_onto_reps);
+
+    // TgResult.
     boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
     if(tg_manager)
     {
@@ -306,6 +500,22 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
     LOG(INFO) << "#[SearchMerger::getDocumentsByIds] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
+    if (workerNum == 0)
+    {
+        mergeResult.error_ = "empty worker result.";
+        LOG(ERROR) << "getDocumentsByIds empty worker result. ";
+        return;
+    }
+
+    for(size_t i = 0; i < workerNum; ++i)
+    {
+        if(!workerResults.result(i).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(i).error_;
+            LOG(ERROR) << "getDocumentsByIds error for worker: " << i << ", err:" << mergeResult.error_;
+            return;
+        }
+    }
 
     // only one result
     if (workerNum == 1)
@@ -322,6 +532,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
         workerid_t workerid = workerResults.workerId(w);
         const RawTextResultFromSIA& wResult = workerResults.result(w);
 
+        LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
         for (size_t i = 0; i < wResult.idList_.size(); i++)
         {
             if (mergeResult.idList_.empty())
@@ -344,7 +555,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
 
             for (size_t s = 0; s <wResult.rawTextOfSummaryInPage_.size(); s++)
             {
-                mergeResult.snippetTextOfDocumentInPage_[s].push_back(wResult.snippetTextOfDocumentInPage_[s][i]);
+                mergeResult.rawTextOfSummaryInPage_[s].push_back(wResult.rawTextOfSummaryInPage_[s][i]);
             }
         }
     }
@@ -386,25 +597,40 @@ void SearchMerger::clickGroupLabel(const net::aggregator::WorkerResults<bool>& w
 void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalResult, std::map<workerid_t, KeywordSearchResult>& resultMap)
 {
     std::size_t i = 0;
-    std::size_t topKOffset = totalResult.start_;
+    if (totalResult.TOP_K_NUM == 0 || totalResult.topKDocs_.size() == 0)
+        return;
 
-    while (i < totalResult.count_)
+    size_t start_inpage = totalResult.start_ % totalResult.TOP_K_NUM;
+
+    for (size_t topstart = start_inpage; topstart < totalResult.topKDocs_.size(); ++topstart)
     {
-        workerid_t curWorkerId = totalResult.topKWorkerIds_[topKOffset];
-        KeywordSearchResult& workerResult = resultMap[curWorkerId];
-
-        if (workerResult.count_ == 0)
+        if ( topstart >= start_inpage + totalResult.count_ )
+        {
+            break;
+        }
+        workerid_t curWorkerId = totalResult.topKWorkerIds_[topstart];
+        std::pair<std::map<workerid_t, KeywordSearchResult>::iterator, bool> inserted_ret = resultMap.insert(std::make_pair(curWorkerId, KeywordSearchResult()));
+        KeywordSearchResult& workerResult = inserted_ret.first->second;
+        if (inserted_ret.second)
         {
             workerResult.propertyQueryTermList_ = totalResult.propertyQueryTermList_;
+            workerResult.rawQueryString_ = totalResult.rawQueryString_;
+            //workerResult.pruneQueryString_ = totalResult.pruneQueryString_;
+            workerResult.encodingType_ = totalResult.encodingType_;
+            workerResult.collectionName_ = totalResult.collectionName_;
+            //workerResult.analyzedQuery_ = totalResult.analyzedQuery_;
+            //workerResult.queryTermIdList_ = totalResult.queryTermIdList_;
+            //workerResult.totalCount_ = totalResult.totalCount_;
+            workerResult.TOP_K_NUM = totalResult.TOP_K_NUM;
+            workerResult.distSearchInfo_.isDistributed_ = totalResult.distSearchInfo_.isDistributed_;
+            workerResult.docsInPage_.reserve(totalResult.topKDocs_.size()/2);
         }
-
-        workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);
-        workerResult.topKWorkerIds_.push_back(curWorkerId);
+        workerResult.docsInPage_.push_back(totalResult.topKDocs_[topstart]);
         workerResult.pageOffsetList_.push_back(i);
-        ++workerResult.count_;
-
         ++i;
-        ++topKOffset;
+        ++workerResult.count_;
+        //workerResult.topKDocs_.push_back(totalResult.topKDocs_[topstart]);
+        //workerResult.topKWorkerIds_.push_back(curWorkerId);
     }
 }
 
@@ -435,6 +661,41 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     }
 
     return true;
+}
+
+void SearchMerger::getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)
+{
+    mergeResult = 0;
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        mergeResult += workerResults.result(w);
+    }
+}
+
+void SearchMerger::getDistKeyCount(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)
+{
+    mergeResult = 0;
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        mergeResult += workerResults.result(w);
+    }
+}
+
+void SearchMerger::GetSummarizationByRawKey(const net::aggregator::WorkerResults<Summarization>& workerResults, Summarization& mergeResult)
+{
+    mergeResult.clear();
+    size_t workerNum = workerResults.size();
+    for (size_t w = 0; w < workerNum; w++)
+    {
+        // Assume and DOCID should be unique in global space
+        mergeResult = workerResults.result(w);
+        if (!mergeResult.isEmpty())
+        {
+            return;
+        }
+    }
 }
 
 void SearchMerger::HookDistributeRequestForSearch(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)

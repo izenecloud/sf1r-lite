@@ -3,6 +3,7 @@
 #include <common/Utilities.h>
 #include <log-manager/PriceHistory.h>
 #include <document-manager/DocumentManager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
@@ -124,6 +125,11 @@ bool ProductPriceTrend::Flush(time_t timestamp)
 {
     bool ret = true;
     //time_t now = Utilities::createTimeStamp();
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        if (!price_history_->updateMultiRow(price_history_buffer_))
+            ret = false;
+    }
 
     if (!prop_map_.empty())
     {
@@ -135,9 +141,6 @@ bool ProductPriceTrend::Flush(time_t timestamp)
 
         PropMapType().swap(prop_map_);
     }
-
-    if (!price_history_->updateMultiRow(price_history_buffer_))
-        ret = false;
 
     buffer_size_ = 0;
 
@@ -172,6 +175,8 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
         PropMapType::const_iterator prop_map_it = prop_map_.find(row_list[i].getDocId());
         if(prop_map_it == prop_map_.end()) continue;
         const PropItemType& prop_item = prop_map_it->second;
+        if (row_list[i].getPriceHistory().empty())
+            continue;
         const pair<time_t, ProductPrice>& price_record = row_list[i].getPriceHistory()[0];
         const ProductPriceType& old_price = price_record.second.value.first;
         float price_cut = old_price == 0 ? 0 : 1 - prop_item.first / old_price;
@@ -362,9 +367,8 @@ bool ProductPriceTrend::MigratePriceHistory(
         if (kit == doc.propertyEnd())
             continue;
 
-        const UString& key = kit->second.get<UString>();
-        string str_docid;
-        key.convertString(str_docid, UString::UTF_8);
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
+        string str_docid = propstr_to_str(key);
         docid_list.push_back(Utilities::md5ToUint128(str_docid));
         if (docid_list.size() == 1000)
         {

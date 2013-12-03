@@ -103,7 +103,7 @@ bool SimpleDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const
         uint32_t docid = docid_list[i];
         PMDocumentType doc;
         if (!GetDocument(docid, doc)) return false;
-        (*document_list_)[docid - 1].property(config_.uuid_property_name) = uuid;
+        (*document_list_)[docid - 1].property(config_.uuid_property_name) = ustr_to_propstr(uuid);
     }
     RebuildIndex_();
     return true;
@@ -122,7 +122,7 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, izenelib::util::UString& uuid)
     {
         return false;
     }
-    uuid = it->second.get<izenelib::util::UString>();
+    uuid = propstr_to_ustr(it->second.getPropertyStrValue());
     return true;
 }
 
@@ -136,9 +136,9 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, std::string& suuid)
 
 bool SimpleDataSource::GetPrice(const PMDocumentType& doc, ProductPrice& price) const
 {
-    izenelib::util::UString price_ustr;
+    Document::doc_prop_value_strtype price_ustr;
     if (!doc.getProperty(config_.price_property_name, price_ustr)) return false;
-    return price.Parse(price_ustr);
+    return price.Parse(propstr_to_ustr(price_ustr));
 }
 
 bool SimpleDataSource::GetPrice(const uint32_t& docid, ProductPrice& price) const

@@ -1,11 +1,11 @@
 #include "IndexModeSelector.h"
-#include "IndexManager.h"
+#include "InvertedIndexManager.h"
 
 namespace sf1r
 {
 
 /// @brief The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
-IndexModeSelector::IndexModeSelector(const boost::shared_ptr<IndexManager>& index_manager, double threshold, long max_realtime_msize)
+IndexModeSelector::IndexModeSelector(const boost::shared_ptr<InvertedIndexManager>& index_manager, double threshold, long max_realtime_msize)
 : index_manager_( index_manager), threshold_(threshold), max_realtime_msize_(max_realtime_msize)
 {
 }

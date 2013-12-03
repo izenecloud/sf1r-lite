@@ -20,6 +20,8 @@ const char* ProductCount::ColumnMeta[EoC] = { "TEXT", "TEXT", "integer", "TEXT",
 
 const char* ProductCount::TableName = "product_info";
 
+const std::string ProductCount::service_="product-count";
+
 void ProductCount::save( std::map<std::string, std::string> & rawdata ) {
     rawdata.clear();
     if(hasSource() )
@@ -48,6 +50,10 @@ void ProductCount::load( const std::map<std::string, std::string> & rawdata ) {
             setTimeStamp(from_iso_string(it->second));
         }
     }
+}
+
+void ProductCount::save_to_logserver()
+{
 }
 
 }

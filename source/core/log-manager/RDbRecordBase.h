@@ -2,7 +2,7 @@
 #define _RDB_RECORD_BASE_H_
 
 #include "RDbConnection.h"
-#include "LogServerConnection.h"
+#include "LogAnalysisConnection.h"
 #include "LogServerRequest.h"
 #include <iostream>
 #include <sstream>
@@ -33,24 +33,6 @@ public:
     {
         return RDbConnection::instance().exec(sql);
     }
-
-    static bool find_freq_from_logserver(const std::string & collection_name,
-        const std::string & begin_time,
-        const std::string & end_time,
-        const std::string & limit,
-        std::list< std::map<std::string, std::string> > & results)
-    {
-       LogServerConnection& conn = LogServerConnection::instance();
-       GetFreqUserQueriesRequest req;
-       req.param_.collection_ = collection_name;
-       req.param_.begin_time_ = begin_time;
-       req.param_.end_time_ = end_time;
-       req.param_.limit_ = limit;
-       conn.syncRequest(req, results);
-       return true;
-    }
-
-
 
     /// Save record into a map
     virtual void save( std::map<std::string, std::string> & ) = 0;
@@ -188,7 +170,10 @@ static bool del_record(const std::string & conditions)
     } \
     \
     void save() { \
-        ::sf1r::save(*this); \
+        if(RDbConnection::instance().logServer()) \
+            save_to_logserver(); \
+        else \
+            ::sf1r::save(*this); \
     }\
     \
     static bool del_record(const std::string & conditions) {\

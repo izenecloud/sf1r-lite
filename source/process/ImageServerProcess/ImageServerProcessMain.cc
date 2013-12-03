@@ -75,6 +75,7 @@ int main(int argc, char **argv)
             readFiles(ImageServerCfg::get()->getSCDFilePath().c_str());
 
             imageServerProcess.join();
+            waitSignalThread();
         }
         else
         {

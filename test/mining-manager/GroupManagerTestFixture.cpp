@@ -84,9 +84,8 @@ void checkProperty(
     BOOST_REQUIRE(it != doc.propertyEnd());
 
     const PropertyValue& value = it->second;
-    const izenelib::util::UString& ustr = value.get<izenelib::util::UString>();
-    std::string utf8Str;
-    ustr.convertString(utf8Str, ENCODING_TYPE);
+    const Document::doc_prop_value_strtype& ustr = value.getPropertyStrValue();
+    std::string utf8Str = propstr_to_str(ustr);
     BOOST_CHECK_EQUAL(utf8Str, propValue);
 }
 
@@ -97,17 +96,17 @@ void prepareDocument(
 {
     document.setId(docInput.docId_);
 
-    izenelib::util::UString property;
-    property.assign(lexical_cast<string>(docInput.docId_), ENCODING_TYPE);
+    Document::doc_prop_value_strtype property;
+    property = str_to_propstr(lexical_cast<string>(docInput.docId_), ENCODING_TYPE);
     document.property("DOCID") = property;
 
-    property.assign(docInput.title_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.title_, ENCODING_TYPE);
     document.property("Title") = property;
 
-    property.assign(docInput.groupStr_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.groupStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_STR) = property;
 
-    property.assign(docInput.dateStr_, ENCODING_TYPE);
+    property = str_to_propstr(docInput.dateStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_DATETIME) = property;
 
     document.property(PROP_NAME_GROUP_INT) = lexical_cast<int32_t>(docInput.groupInt_);
@@ -432,7 +431,7 @@ void GroupManagerTestFixture::createDocument(int num)
 
     checkCollection_();
 
-    BOOST_CHECK(miningTaskBuilder_->buildCollection());
+    BOOST_CHECK(miningTaskBuilder_->buildCollection(0));
 
     numericTableBuilder_->clearTableMap();
 }
@@ -464,6 +463,76 @@ void GroupManagerTestFixture::checkGetGroupRep()
 
     create_ThreeLabel_FourProperty(labels);
     createAndCheckGroupRep_(labels);
+}
+
+void GroupManagerTestFixture::checkScoreGroupLabelMerge()
+{
+    using faceted::GroupParam;
+    GroupParam::GroupLabelScoreMap left, right;
+    GroupParam::GroupPathScoreVec toplabels;
+    GroupParam::GroupPath baselabelpath;
+    baselabelpath.push_back("a");
+    baselabelpath.push_back("b");
+    baselabelpath.push_back("c");
+
+    const size_t test_num = 10;
+    for(size_t i = 0; i < test_num; ++i)
+    {
+        GroupParam::GroupPath lpath = baselabelpath;
+        lpath.push_back(std::string(1, 'd' + (char)(test_num - i - 1)));
+        toplabels.push_back(std::make_pair(lpath, test_num - i - 1));
+    }
+    right["Category"] = toplabels;
+    GroupParam::mergeScoreGroupLabel(left, right);
+    BOOST_CHECK( right == left );
+
+    right.clear();
+    toplabels.clear();
+    for (size_t i = 0; i < test_num; ++i)
+    {
+        GroupParam::GroupPath lpath = baselabelpath;
+        lpath.push_back(std::string(1, 'd' + (char)test_num - i - 1));
+        toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.5));
+    }
+    right["Category"] = toplabels;
+    GroupParam::mergeScoreGroupLabel(left, right);
+
+    stringstream ss;
+    using namespace faceted;
+    ss << left << std::endl;
+    std::cout << ss.str() << std::endl;
+    BOOST_CHECK( right == left);
+
+    right.clear();
+    toplabels.clear();
+    for (size_t i = 0; i < test_num; ++i)
+    {
+        GroupParam::GroupPath lpath = baselabelpath;
+        lpath.push_back(std::string(1, 'd' + (char)(test_num - i - 1 + test_num)));
+        toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.6));
+    }
+    right["Category"] = toplabels;
+    GroupParam::mergeScoreGroupLabel(left, right);
+    for(GroupParam::GroupLabelScoreMap::const_iterator cit = left.begin(); cit != left.end(); ++cit)
+    {
+        BOOST_CHECK_GE( cit->second.size(), test_num);
+        double max_score = 10000;
+        int part_num = 0;
+        for(size_t i = 0; i < cit->second.size(); ++i)
+        {
+            BOOST_ASSERT(cit->second[i].second <= max_score);
+            max_score = cit->second[i].second;
+            if (cit->second[i].first.back()[0] > (char)('d' + test_num))
+            {
+                ++part_num;
+            }
+        }
+        BOOST_ASSERT(part_num >= test_num/2);
+        BOOST_ASSERT(part_num <= test_num/2 + 1);
+    }
+    stringstream ss2;
+    ss2 << left << std::endl;
+    std::cout << ss2.str() << std::endl;
 }
 
 void GroupManagerTestFixture::checkGroupRepMerge()

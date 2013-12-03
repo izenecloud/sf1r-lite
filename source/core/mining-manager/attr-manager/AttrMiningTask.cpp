@@ -20,29 +20,34 @@ AttrMiningTask::AttrMiningTask(DocumentManager& documentManager
 
 }
 
-bool AttrMiningTask::processCollection_forTest()
+//bool AttrMiningTask::processCollection_forTest()
+//{
+//    preProcess(0);
+//    docid_t MaxDocid = documentManager_.getMaxDocId();
+//    const docid_t startDocId = attrTable_.docIdNum();
+//    Document doc;
+//
+//    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
+//    {
+//        if (docid % 10000 == 0)
+//        {
+//            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
+//        }
+//        documentManager_.getDocument(docid, doc);
+//        buildDocument(docid, doc);
+//    }
+//    postProcess();
+//    return true;
+//}
+
+bool AttrMiningTask::preProcess(int64_t timestamp)
 {
-    preProcess();
-    docid_t MaxDocid = documentManager_.getMaxDocId();
     const docid_t startDocId = attrTable_.docIdNum();
-    Document doc;
-
-    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
-    {
-        if (docid % 10000 == 0)
-        {
-            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
-        }
-        documentManager_.getDocument(docid, doc);
-        buildDocument(docid, doc);
-    }
-    postProcess();
-    return true;
-}
-
-bool AttrMiningTask::preProcess()
-{
     const docid_t endDocId = documentManager_.getMaxDocId();
+
+    if (startDocId > endDocId)
+        return false;
+
     attrTable_.reserveDocIdNum(endDocId + 1);
     return true;
 }
@@ -73,7 +78,7 @@ bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
     Document::property_const_iterator it = doc.findProperty(propName);
     if (it != doc.propertyEnd())
     {
-        const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+        izenelib::util::UString propValue(propstr_to_ustr(it->second.get<PropertyValue::PropertyValueStrType>()));
         std::vector<AttrPair> attrPairs;
         split_attr_pair(propValue, attrPairs);
 

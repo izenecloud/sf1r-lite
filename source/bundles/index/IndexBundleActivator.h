@@ -28,7 +28,7 @@ namespace sf1r
 {
 using namespace izenelib::osgi;
 
-class IndexManager;
+class InvertedIndexManager;
 class DocumentManager;
 class LAManager;
 class SearchManager;
@@ -62,10 +62,11 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<IndexManager> indexManager_;
+    boost::shared_ptr<InvertedIndexManager> invertedIndexManager_;
     boost::shared_ptr<RankingManager> rankingManager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;
+    boost::shared_ptr<SearchAggregator> ro_searchAggregator_;
     boost::scoped_ptr<SearchMerger> searchMerger_;
     boost::shared_ptr<SearchWorker> searchWorker_;
     boost::shared_ptr<IndexAggregator> indexAggregator_;
@@ -84,8 +85,8 @@ private:
     boost::shared_ptr<DocumentManager>
     createDocumentManager_() const;
 
-    boost::shared_ptr<IndexManager>
-    createIndexManager_() const;
+    boost::shared_ptr<InvertedIndexManager>
+    createInvertedIndexManager_() const;
 
     boost::shared_ptr<RankingManager>
     createRankingManager_() const;
@@ -96,7 +97,7 @@ private:
 
     boost::shared_ptr<SearchWorker> createSearchWorker_() ;
 
-    boost::shared_ptr<SearchAggregator> createSearchAggregator_();
+    boost::shared_ptr<SearchAggregator> createSearchAggregator_(bool readonly);
 
     boost::shared_ptr<IndexWorker> createIndexWorker_() ;
 

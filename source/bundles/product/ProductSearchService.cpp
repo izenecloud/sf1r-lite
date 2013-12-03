@@ -1,6 +1,5 @@
 #include "ProductSearchService.h"
 
-#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <product-manager/product_manager.h>
 #include <common/SFLogger.h>

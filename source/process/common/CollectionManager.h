@@ -9,6 +9,7 @@
 
 #include "XmlConfigParser.h"
 #include "OSGILauncher.h"
+#include <node-manager/sharding/ShardingConfig.h>
 
 #include <util/singleton.h>
 
@@ -45,6 +46,9 @@ public:
 
     MutexType* getCollectionMutex(const std::string& collection);
 
+    bool checkConfig(const string& collectionName,
+        const std::string& configFileName, bool check_exist = true);
+
     bool startCollection(
             const std::string& collectionName,
             const std::string& configFileName,
@@ -53,14 +57,20 @@ public:
 
     bool stopCollection(const std::string& collectionName, bool clear = false);
     void flushCollection(const std::string& collectionName);
-    bool reopenCollection(const std::string& collectionName);
     std::string checkCollectionConsistency(const std::string& collectionName);
     void deleteCollection(const std::string& collectionName);
 
     bool backup_all(bool force_remove);
 
     CollectionHandler* findHandler(const std::string& key) const;
-    
+
+    bool generateMigrateSCD(const std::string& collectionName,
+        const std::map<shardid_t, std::vector<vnodeid_t> >& vnode_list,
+        std::map<shardid_t, std::string>& generated_insert_scds,
+        std::map<shardid_t, std::string>& generated_del_scds);
+    bool addNewShardingNodes(const std::string& collectionName,
+        const std::vector<shardid_t>& new_sharding_nodes, bool do_remove = false);
+
     handler_const_iterator handlerBegin() const;
     handler_const_iterator handlerEnd() const;
 

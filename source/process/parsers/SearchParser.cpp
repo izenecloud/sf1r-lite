@@ -85,19 +85,20 @@ using driver::Keys;
  *   following searching modes are available
  *   - @b and space among terms are explained as boolean AND
  *   - @b or space among terms are explained as boolean OR
- *   - @b wand wand means weak and, and \b threshold is used to indicate 
+ *   - @b wand wand means weak and, and \b threshold is used to indicate
  *   how close it is to boolean query: the closer \b threshold to 1, the closer it
  *   is to boolean AND
- *   - @b knn: simhash based query. The query is hashed into a fingerprint, 
+ *   - @b knn: simhash based query. The query is hashed into a fingerprint,
  *   while the search results are those documents whose fingerprints are within
  *   a threshold hamming distance
- *   - @b suffix  using suffix array based succint index to perform queries. 
+ *   - @b suffix  using suffix array based succint index to perform queries.
  *   \b lucky means top K number during this retrieval, using lucky means there
- *   exists approximation since they are not the real top K results returned due 
+ *   exists approximation since they are not the real top K results returned due
  *   to performance issue.   \b use_fuzzy is a switch to indicate whether bag-of-words
  *   based fuzzy queries are enabled for this query. If it is set as false, it means
  *   the search results only contain the longest suffix of query.
  *   If this is omitted, @b and searching mode is used as the default value.
+ *   - @b zambezi search in the zambezi index (an in-memory inverted index).
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.
  * - @b analyzer (@c Object): Keywords analyzer options
@@ -190,6 +191,7 @@ bool SearchParser::parse(const Value& search)
 
     if (!parseGroupLabel_(search) ||
         !parseAttrLabel_(search) ||
+        !parseAdSearch_(search) ||
         !parseBoostGroupLabel_(search))
         return false;
 
@@ -234,7 +236,7 @@ bool SearchParser::parse(const Value& search)
                 return false;
             }
 
-            if (!propertyConfig.bIndex_)
+            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
             {
                 warning() = "Property is not indexed, ignore it: " +
                             propertyConfig.getName();
@@ -341,6 +343,10 @@ bool SearchParser::parse(const Value& search)
         if (mode == "and")
         {
             searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
+            if (searching_mode.hasKey(Keys::query_prune) && !asBool(searching_mode[Keys::query_prune]))
+            {
+                searchingModeInfo_.useQueryPrune_ = false;
+            }
         }
         else if (mode == "or")
         {
@@ -361,6 +367,18 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "suffix")
         {
             searchingModeInfo_.mode_ = SearchingMode::SUFFIX_MATCH;
+            if (searching_mode.hasKey(Keys::query_prune) && !asBool(searching_mode[Keys::query_prune]))
+            {
+                searchingModeInfo_.useQueryPrune_ = false;
+            }
+        }
+        else if (mode == "zambezi")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::ZAMBEZI;
+        }
+        else if (mode == "ad_index")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::AD_INDEX;
         }
         else
         {
@@ -419,7 +437,7 @@ bool SearchParser::parse(const Value& search)
                 warning() = "Unknown filter Mode. Default filtering mode is used.";
             }
         }
- 
+
     }
 
     return true;
@@ -515,6 +533,36 @@ bool SearchParser::parseAttrLabel_(const Value& search)
         }
 
         attrLabels_[attrName].push_back(attrValue);
+    }
+
+    return true;
+}
+
+bool SearchParser::parseAdSearch_(const Value& search)
+{
+    const Value& adSearchNode = search[Keys::ad_search];
+
+    if (nullValue(adSearchNode))
+        return true;
+
+    if (adSearchNode.type() != Value::kArrayType)
+    {
+        error() = "Require an array for attr labels.";
+        return false;
+    }
+
+    for(std::size_t i = 0; i< adSearchNode.size(); i++)
+    {
+        const Value& valuePair = adSearchNode(i);
+        std::string property = asString(valuePair[Keys::property]);
+        std::string value = asString(valuePair[Keys::value]);
+
+        if(property.empty() || value.empty())
+        {
+            error() = "Must specify both attribute name and value ";
+            return false;
+        }
+        adSearch_.push_back(std::make_pair(property, value));
     }
 
     return true;

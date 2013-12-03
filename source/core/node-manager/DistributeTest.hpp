@@ -123,6 +123,7 @@ public:
         else
             times = 1 + boost::lexical_cast<int>(memory_state_info_[key]);
         updateMemoryState(key, boost::lexical_cast<std::string>(times));
+        updateMemoryState("LastRunningRequest", key);
     }
 
     static void updateMemoryState(const std::string& key, const std::string& value)

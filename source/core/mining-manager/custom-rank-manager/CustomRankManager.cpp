@@ -33,7 +33,7 @@ namespace sf1r
 CustomRankManager::CustomRankManager(
     const std::string& dbPath,
     CustomDocIdConverter& docIdConverter,
-    const DocumentManager* docManager
+    DocumentManager* docManager
 )
     : db_(dbPath)
     , docIdConverter_(docIdConverter)

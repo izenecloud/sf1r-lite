@@ -33,7 +33,7 @@ public:
      * as 0 is reserved as invalid id, meaning no property value is availabe,
      * the valid id range is [1, 2^16) (65535 ids)
      */
-    typedef uint16_t pvid_t;
+    typedef uint32_t pvid_t;
 
     typedef PropIdTable<pvid_t, uint32_t> ValueIdTable;
     typedef ValueIdTable::PropIdList PropIdList;
@@ -48,6 +48,7 @@ public:
 
     typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
+
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
@@ -69,7 +70,11 @@ public:
     void appendPropIdList(const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
-    void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
+
+    void propValueStr(
+        pvid_t pvId,
+        izenelib::util::UString& ustr,
+        bool isLock = true) const;
 
     /**
      * Insert property value id.
@@ -95,8 +100,14 @@ public:
      * Given value id @p pvId, get its path from root node to leaf node.
      * @param pvId the value id
      * @param path store the path
+     * @param isLock whether need to create a read lock, if the caller has
+     * already created one, this parameter should be false to avoid
+     * duplicate lock.
      */
-    void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
+    void propValuePath(
+        pvid_t pvId,
+        std::vector<izenelib::util::UString>& path,
+        bool isLock = true) const;
 
     /**
      * @attention before calling below public functions,
@@ -128,6 +139,14 @@ public:
      * then @p parentIds would become [100, 10, 1].
      */
     void getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) const;
+
+    /**
+     * Get the root id of @p pvId.
+     * For example, assume @p pvId is 100, 100's parent id is 10,
+     * 10's parent id is 1, and 1 is a root id,
+     * then it would return 1.
+     */
+    pvid_t getRootValueId(pvid_t pvId) const;
 
     /**
      * Whether @p docId belongs to group label of @p labelId.

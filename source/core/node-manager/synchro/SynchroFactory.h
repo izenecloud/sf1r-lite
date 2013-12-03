@@ -33,9 +33,7 @@ public:
         if (syncProducerMap_.find(syncID) == syncProducerMap_.end())
         {
             ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
-            std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
-
-            syncProducerMap_[syncID].reset(new SynchroProducer(zkClient, syncZkNode));
+            syncProducerMap_[syncID].reset(new SynchroProducer(zkClient, syncID));
         }
 
         return syncProducerMap_[syncID];
@@ -49,9 +47,7 @@ public:
     static SynchroConsumerPtr getConsumer(const std::string& syncID)
     {
         ZooKeeperClientPtr zkClient = ZooKeeperManager::get()->createClient(NULL, true);
-        std::string syncZkNode = ZooKeeperNamespace::getSynchroPath() + "/" + syncID;
-
-        SynchroConsumerPtr ret(new SynchroConsumer(zkClient, syncZkNode));
+        SynchroConsumerPtr ret(new SynchroConsumer(zkClient, syncID));
         return ret;
     }
 

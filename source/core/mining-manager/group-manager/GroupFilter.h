@@ -24,6 +24,7 @@ class AttrLabel;
 class GroupCounter;
 class AttrCounter;
 class GroupCounterLabelBuilder;
+class PropValueTable;
 
 class GroupFilter
 {
@@ -44,6 +45,7 @@ public:
      */
     bool initAttr(
         const AttrTable& attrTable,
+        const PropValueTable* categoryTable,
         PropSharedLockSet& sharedLockSet);
 
     /**

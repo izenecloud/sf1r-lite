@@ -2,7 +2,7 @@
  * @file ProductRanker.h
  * @brief rank topK products by below scores:
  * 1. category score
- * 2. merchant count
+ * 2. offer item count
  * 3. diversity round
  * @author Jun Jiang
  * @date Created 2012-11-30
@@ -28,6 +28,8 @@ public:
         bool isDebug);
 
     ~ProductRanker();
+
+    const ProductRankParam& getParam() const { return rankParam_; }
 
     void addEvaluator(ProductScoreEvaluator* evaluator);
 

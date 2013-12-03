@@ -18,8 +18,11 @@ class ProductScorer;
 class CustomRankManager;
 class ProductRankingConfig;
 class MiningManager;
+class TitleScoreList;
 class ProductScoreConfig;
 class ProductScoreManager;
+class CategoryClassifyTable;
+class ProductScoreSum;
 struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
@@ -40,6 +43,14 @@ public:
     ProductScorer* createScorer(const ProductScoreParam& scoreParam);
 
 private:
+    void createFuzzyModeScorer_(
+        ProductScoreSum& scoreSum,
+        const ProductScoreParam& scoreParam);
+
+    void createZambeziModeScorer_(
+        ProductScoreSum& scoreSum,
+        const ProductScoreParam& scoreParam);
+
     ProductScorer* createScorerImpl_(
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);
@@ -52,12 +63,20 @@ private:
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);
 
+    ProductScorer* createCategoryClassifyScorer_(
+        const ProductScoreConfig& scoreConfig,
+        const ProductScoreParam& scoreParam);
+
     ProductScorer* createRelevanceScorer_(
         const ProductScoreConfig& scoreConfig,
         ProductScorer* relevanceScorer);
 
     ProductScorer* createPopularityScorer_(
         const ProductScoreConfig& scoreConfig);
+
+    ProductScorer* createTitleRelevanceScorer_(
+        const ProductScoreConfig& scoreConfig,
+        double score);
 
 private:
     const ProductRankingConfig& config_;
@@ -69,6 +88,10 @@ private:
     boost::scoped_ptr<BoostLabelSelector> labelSelector_;
 
     ProductScoreManager* productScoreManager_;
+
+    CategoryClassifyTable* categoryClassifyTable_;
+
+    TitleScoreList* titleScoreList_;
 };
 
 } // namespace sf1r

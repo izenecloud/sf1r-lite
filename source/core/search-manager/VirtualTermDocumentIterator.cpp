@@ -1,7 +1,5 @@
 #include "VirtualTermDocumentIterator.h"
 #include "TermDocumentIterator.h"
-#include <index-manager/IndexManager.h>
-
 #include <ir/index_manager/index/TermPositions.h>
 #include <ir/index_manager/utility/BitVector.h>
 
@@ -19,31 +17,6 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
         std::string rawTerm,
         collectionid_t colID,
         izenelib::ir::indexmanager::IndexReader* pIndexReader,
-        boost::shared_ptr<IndexManager> indexManagerPtr,
-        const std::vector<std::string>& virtualPropreties,
-        std::vector<unsigned int>& propertyIdList,
-        std::vector<sf1r::PropertyDataType>& dataTypeList,
-        unsigned int termIndex,
-        bool readPositions
-    ):termId_(termid)
-    , rawTerm_(rawTerm)
-    , colID_(colID)
-    , pIndexReader_(pIndexReader)
-    , pTermReader_(0)
-    , indexManagerPtr_(indexManagerPtr)
-    , subProperties_(virtualPropreties)
-    , propertyIdList_(propertyIdList)
-    , dataTypeList_(dataTypeList)
-    , termIndex_(termIndex)
-{
-    readPositions_ = false;
-}
-
-VirtualTermDocumentIterator::VirtualTermDocumentIterator(
-        termid_t termid,
-        std::string rawTerm,
-        collectionid_t colID,
-        izenelib::ir::indexmanager::IndexReader* pIndexReader,
         const std::vector<std::string>& virtualPropreties,
         std::vector<unsigned int>& propertyIdList,
         std::vector<sf1r::PropertyDataType>& dataTypeList,
@@ -58,22 +31,16 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
     , propertyIdList_(propertyIdList)
     , dataTypeList_(dataTypeList)
     , termIndex_(termIndex)
+    , OrDocIterator_(NULL)
 {
     readPositions_ = false;
 }
 
 VirtualTermDocumentIterator::~VirtualTermDocumentIterator()
 {
-    if (pTermReader_)
+    if (OrDocIterator_)
     {
-        delete pTermReader_;
-    }
-    for (uint32_t i = 0; i < pTermDocReaderList_.size(); ++i)
-    {
-        if (pTermDocReaderList_[i])
-        {
-            delete pTermDocReaderList_[i];
-        }
+        delete OrDocIterator_;
     }
 }
 
@@ -93,7 +60,7 @@ void VirtualTermDocumentIterator::accept()
         bool find = pTermReader_->seek(&term);
         if (find)
         {
-            df_ += pTermReader_->docFreq(&term);                
+            df_ += pTermReader_->docFreq(&term);
             if(pTermDocReaderList_[i]) 
             {
                 delete pTermDocReaderList_[i];
@@ -189,7 +156,8 @@ void VirtualTermDocumentIterator::doc_item(
         for (unsigned int i = 0; i < reinterpret_cast<ORDocumentIterator*>(OrDocIterator_)->getdocIteratorList_().size(); ++i)
         {
             sf1r::DocumentIterator* pEntry = reinterpret_cast<ORDocumentIterator*>(OrDocIterator_)->getdocIteratorList_()[i];
-            if (pEntry->doc() == docid)
+
+            if (pEntry != NULL && pEntry->doc() == docid)
             {
                 freq += (reinterpret_cast<TermDocumentIterator*>(pEntry))->tf();
             }

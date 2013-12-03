@@ -293,8 +293,7 @@ void RecommendBundleActivator::createSharder_()
     const NodeManagerBase* nodeManager = NodeManagerBase::get();
     const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
 
-    shardid_t shardNum = nodeManager->getTotalShardNum();
-    shardStrategy_.reset(new RecommendShardMod(shardNum));
+    shardStrategy_.reset(new RecommendShardMod(config_->col_shard_info_.shardList_));
 
     if (config_->recommendNodeConfig_.isWorkerNode_)
     {
@@ -380,7 +379,8 @@ void RecommendBundleActivator::createService_(IndexSearchService* indexSearchSer
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
                                                 *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
-                                                *updateRecommendBase_, updateRecommendWorker_.get()));
+                                                *updateRecommendBase_, updateRecommendWorker_.get(),
+                                                shardStrategy_.get()));
 
     searchService_.reset(new RecommendSearchService(*config_, *userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_,

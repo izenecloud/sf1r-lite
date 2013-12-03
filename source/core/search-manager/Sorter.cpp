@@ -3,7 +3,7 @@
 #include "RTypeStringPropTableBuilder.h"
 
 #include <document-manager/DocumentManager.h>
-#include <index-manager/IndexManager.h>
+//#include <index-manager/IndexManager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <common/PropSharedLockSet.h>
 #include <common/RTypeStringPropTable.h>

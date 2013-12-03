@@ -11,6 +11,11 @@
 #include <memory> // auto_ptr
 #include <glog/logging.h>
 
+namespace
+{
+const std::string kCategoryPropName("Category");
+}
+
 NS_FACETED_BEGIN
 
 GroupFilterBuilder::GroupFilterBuilder(
@@ -50,7 +55,10 @@ GroupFilter* GroupFilterBuilder::createFilter(
             return NULL;
         }
 
-        if (!groupFilter->initAttr(*attrTable_, sharedLockSet))
+        const PropValueTable* categoryTable = groupManager_ ?
+            groupManager_->getPropValueTable(kCategoryPropName) : NULL;
+
+        if (!groupFilter->initAttr(*attrTable_, categoryTable, sharedLockSet))
             return NULL;
     }
 

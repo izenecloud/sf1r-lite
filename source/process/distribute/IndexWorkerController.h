@@ -29,7 +29,7 @@ public:
         ADD_WORKER_HANDLER_END()
     }
 
-    WORKER_CONTROLLER_METHOD_2(index, indexWorker_->index, unsigned int, bool)
+    WORKER_CONTROLLER_METHOD_3(index, indexWorker_->index, std::string, unsigned int, bool)
     WORKER_CONTROLLER_METHOD_3(HookDistributeRequestForIndex, indexWorker_->HookDistributeRequestForIndex, int, std::string, bool)
 
 protected:

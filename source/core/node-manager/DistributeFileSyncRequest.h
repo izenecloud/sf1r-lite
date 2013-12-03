@@ -16,6 +16,13 @@ struct GetReqLogData : public RpcServerRequestData
     MSGPACK_DEFINE(success, start_inc, end_inc, logdata_list);
 };
 
+struct GetRunningReqLogData : public RpcServerRequestData
+{
+    bool success;
+    std::string  running_logdata;
+    MSGPACK_DEFINE(success, running_logdata);
+};
+
 struct GetSCDListData : public RpcServerRequestData
 {
     bool success;
@@ -69,7 +76,9 @@ struct ReportStatusReqData : public RpcServerRequestData
     std::vector<std::string> check_file_list;
     std::vector<std::string> check_key_list;
     uint32_t check_log_start_id;
-    MSGPACK_DEFINE(req_host, check_file_list, check_key_list, check_log_start_id);
+    unsigned int file_check_level;
+    MSGPACK_DEFINE(req_host, check_file_list, check_key_list, check_log_start_id,
+        file_check_level);
 };
 
 struct ReportStatusRspData : public RpcServerRequestData
@@ -80,8 +89,27 @@ struct ReportStatusRspData : public RpcServerRequestData
     std::vector<std::string> check_key_result;
     std::vector<uint32_t> check_logid_list;
     std::vector<std::string> check_collection_list;
-    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list, check_collection_list);
+    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list,
+        check_collection_list);
 };
+
+struct GenerateSCDReqData : public RpcServerRequestData
+{
+    std::string req_host;
+    std::string coll;
+    std::map<uint8_t, std::vector<uint16_t> > migrate_vnode_list;
+    MSGPACK_DEFINE(req_host, coll, migrate_vnode_list);
+};
+
+struct GenerateSCDRspData : public RpcServerRequestData
+{
+    bool success;
+    std::string  rsp_host;
+    std::map<uint8_t, std::string> generated_insert_scds;
+    std::map<uint8_t, std::string> generated_del_scds;
+    MSGPACK_DEFINE(success, rsp_host, generated_insert_scds, generated_del_scds);
+};
+
 
 class FileSyncServerRequest : public RpcServerRequest
 {
@@ -99,6 +127,9 @@ public:
         METHOD_FINISH_RECEIVE,
         METHOD_REPORT_STATUS_REQ,
         METHOD_REPORT_STATUS_RSP,
+        METHOD_GET_RUNNING_REQLOG,
+        METHOD_GENERATE_MIGRATE_SCD_REQ,
+        METHOD_GENERATE_MIGRATE_SCD_RSP,
         COUNT_OF_METHODS
     };
     static const method_t method_names[COUNT_OF_METHODS];
@@ -111,6 +142,15 @@ class GetReqLogRequest : public RpcRequestRequestT<GetReqLogData, FileSyncServer
 public:
     GetReqLogRequest()
         :RpcRequestRequestT<GetReqLogData, FileSyncServerRequest>(METHOD_GET_REQLOG)
+    {
+    }
+};
+
+class GetRunningReqLogRequest : public RpcRequestRequestT<GetRunningReqLogData, FileSyncServerRequest>
+{
+public:
+    GetRunningReqLogRequest()
+        :RpcRequestRequestT<GetRunningReqLogData, FileSyncServerRequest>(METHOD_GET_RUNNING_REQLOG)
     {
     }
 };
@@ -177,6 +217,24 @@ public:
     {
     }
 };
+class GenerateSCDRequest : public RpcRequestRequestT<GenerateSCDReqData, FileSyncServerRequest>
+{
+public:
+    GenerateSCDRequest()
+        :RpcRequestRequestT<GenerateSCDReqData, FileSyncServerRequest>(METHOD_GENERATE_MIGRATE_SCD_REQ)
+    {
+    }
+};
+
+class GenerateSCDRsp : public RpcRequestRequestT<GenerateSCDRspData, FileSyncServerRequest>
+{
+public:
+    GenerateSCDRsp()
+        :RpcRequestRequestT<GenerateSCDRspData, FileSyncServerRequest>(METHOD_GENERATE_MIGRATE_SCD_RSP)
+    {
+    }
+};
+
 
 
 

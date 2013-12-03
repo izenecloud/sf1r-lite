@@ -171,6 +171,7 @@ bool SPUProductClassifier::GetProductCategory(
             false,
             match_ranges_list,
             max_match_list,
+            0,
             max_docs,
             single_res_list);
 
@@ -200,7 +201,7 @@ bool SPUProductClassifier::GetProductCategory(
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
 
     std::map<docid_t, int> doc_idx_map;
     const unsigned int docListSize = res_list.size();
@@ -230,12 +231,12 @@ bool SPUProductClassifier::GetProductCategory(
                 documentCache_.insertValue(docId, doc);
         }
 
-        UString backend = doc.property("Category").get<izenelib::util::UString>();
-        std::string category_str;
-        backend.convertString(category_str, UString::UTF_8);
+        PropertyValue::PropertyValueStrType backend = doc.property("Category").get<PropertyValue::PropertyValueStrType>();
+        std::string category_str = propstr_to_str(backend);
         //LOG(INFO) << category_str;
         UString frontCategory;
-        if(matcher->GetFrontendCategory(backend, frontCategory))
+        UString backend_ustr = propstr_to_ustr(backend);
+        if(matcher->GetFrontendCategory(backend_ustr, frontCategory))
         {
             frontCategories.push_back(frontCategory);
             std::string front_str;
@@ -247,4 +248,3 @@ bool SPUProductClassifier::GetProductCategory(
 }
 
 }
-

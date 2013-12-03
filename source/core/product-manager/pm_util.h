@@ -58,7 +58,7 @@ public:
         ProductPrice doc_price;
         GetPrice(doc, doc_price);
         doc_price += price;
-        doc.property(config_.price_property_name) = doc_price.ToUString();
+        doc.property(config_.price_property_name) = doc_price.ToPropString();
     }
 
     void AddPrice(PMDocumentType& doc, const PMDocumentType& from) const
@@ -69,7 +69,7 @@ public:
             ProductPrice doc_price;
             GetPrice(doc, doc_price);
             doc_price += price;
-            doc.property(config_.price_property_name) = doc_price.ToUString();
+            doc.property(config_.price_property_name) = doc_price.ToPropString();
         }
     }
 
@@ -111,12 +111,12 @@ public:
 
     void SetItemCount(PMDocumentType& doc, uint32_t count)
     {
-        doc.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(count), izenelib::util::UString::UTF_8);
+        doc.property(config_.itemcount_property_name) = str_to_propstr(boost::lexical_cast<std::string>(count));
     }
 
     void SetManmade(PMDocumentType& doc)
     {
-        doc.property(config_.manmade_property_name) = izenelib::util::UString("1", izenelib::util::UString::UTF_8);
+        doc.property(config_.manmade_property_name) = str_to_propstr("1");
 
     }
 

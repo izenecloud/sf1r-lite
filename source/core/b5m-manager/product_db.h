@@ -1,59 +1,84 @@
 #ifndef SF1R_B5MMANAGER_PRODUCTDB_H_
 #define SF1R_B5MMANAGER_PRODUCTDB_H_
 
+#include "b5m_types.h"
 #include <string>
 #include <vector>
 #include <product-manager/product_price.h>
 #include <document-manager/Document.h>
-#include "b5m_types.h"
-#include <am/tc/BTree.h>
-#include <am/leveldb/Table.h>
+#include <document-manager/ScdDocument.h>
 #include <glog/logging.h>
 #include <boost/unordered_set.hpp>
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
-
-    class ProductProperty
+struct SubDocSelector
+{
+    int weight;
+    std::vector<Document> docs;
+    bool operator<(const SubDocSelector& x) const
     {
-    public:
-        //typedef std::map<std::string, int32_t> SourceMap;
-        typedef boost::unordered_set<std::string> SourceType;
-        typedef izenelib::util::UString UString;
-        typedef std::map<std::string, std::vector<std::string> > AttributeType;
+        return weight>x.weight;
+    }
 
-        UString pid;
-        ProductPrice price;
-        SourceType source;
-        int64_t itemcount;
-        UString oid;
-        bool independent;
-        AttributeType attribute;
-        std::string date;
+};
 
-        ProductProperty();
+class B5mpDocGenerator
+{
+public:
+    B5mpDocGenerator();
+    void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
+private:
+    void SelectSubDocs_(std::vector<Document>& subdocs) const;
+    static bool SubDocCompare_(const Document& x, const Document& y);
+    static bool ReversePriceCompare_(const Document& x, const Document& y);
 
-        bool Parse(const Document& doc);
+private:
+    boost::unordered_set<std::string> sub_doc_props_;
+    boost::unordered_map<std::string, int> subdoc_weighter_;
+    boost::unordered_map<std::string, int> pic_weighter_;
+    int default_source_weight_;
+};
 
-        void Set(Document& doc) const;
+class ProductProperty
+{
+public:
+    //typedef std::map<std::string, int32_t> SourceMap;
+    typedef boost::unordered_set<std::string> SourceType;
+    typedef Document::doc_prop_value_strtype StringType;
+    typedef std::map<std::string, std::vector<std::string> > AttributeType;
 
-        void SetIndependent();
+    Document::doc_prop_value_strtype productid;
+    ProductPrice price;
+    SourceType source;
+    int64_t itemcount;
+    StringType oid;
+    bool independent;
+    AttributeType attribute;
+    std::string date;
+
+    ProductProperty();
+
+    bool Parse(const Document& doc);
+
+    void Set(Document& doc) const;
+
+    void SetIndependent();
 
 
-        std::string GetSourceString() const;
+    std::string GetSourceString() const;
 
-        izenelib::util::UString GetSourceUString() const;
-        izenelib::util::UString GetAttributeUString() const;
+    izenelib::util::UString GetSourceUString() const;
+    izenelib::util::UString GetAttributeUString() const;
 
-        ProductProperty& operator+=(const ProductProperty& other);
+    ProductProperty& operator+=(const ProductProperty& other);
 
-        //ProductProperty& operator-=(const ProductProperty& other);
+    //ProductProperty& operator-=(const ProductProperty& other);
 
-        std::string ToString() const;
-    };
+    std::string ToString() const;
+};
 
-
-}
+NS_SF1R_B5M_END
 
 #endif
 

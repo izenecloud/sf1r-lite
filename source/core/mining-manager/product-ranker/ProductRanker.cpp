@@ -37,12 +37,6 @@ void ProductRanker::addEvaluator(ProductScoreEvaluator* evaluator)
 
 void ProductRanker::rank()
 {
-    if (!rankParam_.isValid())
-    {
-        LOG(ERROR) << "invalid parameter for product ranking";
-        return;
-    }
-
     loadScore_();
 
     sortScore_();
@@ -58,7 +52,8 @@ void ProductRanker::loadScore_()
     for (std::size_t i = 0; i < docNum; ++i)
     {
         ProductScore score(rankParam_.docIds_[i],
-                           rankParam_.topKScores_[i]);
+                           rankParam_.topKScores_[i],
+                           docNum);
         evaluateScore_(score);
         scoreList_.push_back(score);
     }

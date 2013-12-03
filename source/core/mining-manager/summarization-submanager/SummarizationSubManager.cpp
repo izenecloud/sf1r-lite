@@ -3,7 +3,6 @@
 #include "CommentCacheStorage.h"
 #include "splm.h"
 
-#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAPool.h>
 
@@ -27,6 +26,9 @@
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+#include <util/scheduler.h>
 
 
 #define OPINION_COMPUTE_THREAD_NUM 4
@@ -38,19 +40,33 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
-static const char* SUMMARY_CONTROL_FLAG = "b5m_control";
+
+static const std::string syncID_totalComment = "TOTAL_COMMENT";
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
-static const char* scd_control_recevier = "full";
 static const UString DOCID("DOCID", UString::UTF_8);
 static const std::size_t COMPUTE_COMMENT_NUM = 4;
+static const std::string OFFER_COMMENT_SCD_DIR = "offer_scddir";
+static const std::string syncID_OFFER = "_offer_comment";
+
+bool IsAllOpinionStr(const UString& ustr)
+{
+    for(size_t i = 0; i < ustr.length(); ++i)
+    {
+        if( !izenelib::util::UString::isThisChineseChar(ustr[i]) &&
+            !izenelib::util::UString::isThisDigitChar(ustr[i]) &&
+            !izenelib::util::UString::isThisAlphaChar(ustr[i]))
+            return false;
+    }
+    return true;
+}
 
 bool CheckParentKeyLogFormat(
         const SCDDocPtr& doc,
         const UString& parent_key_name)
 {
     if (doc->size() != 2) return false;
-    const UString& first = (*doc)[0].first;
-    const UString& second = (*doc)[1].first;
+    const UString first = UString((*doc)[0].first, UString::UTF_8);
+    const UString second = UString((*doc)[1].first, UString::UTF_8);
     //FIXME case insensitive compare, but it requires extra string conversion,
     //which introduces unnecessary memory fragments
     return (first == DOCID && second == parent_key_name);
@@ -115,32 +131,49 @@ struct IsParentKeyFilterProperty
 
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
+        const std::string& sys_res_path,
         const std::string& collectionName,
         const std::string& scdPath,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
-        boost::shared_ptr<IndexManager> index_manager,
+        //boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
-    : last_docid_path_(homePath + "/last_docid.txt")
+    : is_rebuild_(false)
+    , last_docid_path_(homePath + "/last_docid.txt")
     , total_scd_path_(scdPath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
+    , scdPath_(scdPath)
     , schema_(schema)
     , document_manager_(document_manager)
-    , index_manager_(index_manager)
+    //, index_manager_(index_manager)
     , analyzer_(analyzer)
     , comment_cache_storage_(new CommentCacheStorage(homePath))
+    , offer_comment_cache_storage_(new CommentCacheStorage(homePath + "/offer/"))
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
+    , system_resource_path_(sys_res_path)
+    , cronJobName_("SummarizationSubManager-" + collectionName_)
 {
-    scd_control_recevier_ = new ScdControlRecevier(SUMMARY_CONTROL_FLAG, collectionName, homePath_ + "/full");
+    if (cronExpression_.setExpression("10 0 * * *"))
+    {
+        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                                                        60*1000, // each minute
+                                                        0, // start from now
+                                                        boost::bind(&MultiDocSummarizationSubManager::updateRecentComments, this, _1));
+        if (! result)
+        {
+            LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
+        }
+    }
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
-    delete scd_control_recevier_;
+    izenelib::util::Scheduler::removeJob(cronJobName_);
     delete summarization_storage_;
     delete comment_cache_storage_;
+    delete offer_comment_cache_storage_;
     delete corpus_;
 }
 
@@ -190,9 +223,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 const std::string& fieldStr = p->first;// preventing copy
                 if (fieldStr == "DOCID")
                 {
-                    std::string key_str;
-                    const izenelib::util::UString & propertyValueU = p->second; // preventing copy
-                    propertyValueU.convertString(key_str, izenelib::util::UString::UTF_8);
+                    std::string key_str = propstr_to_str(p->second);
                     KeyType docid = Utilities::uuidToUint128(key_str);
                     if (del_docid_set.find(docid) != del_docid_set.end())
                         break;
@@ -200,8 +231,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 }
                 else
                 {
-                    std::string content_str;
-                    p->second.convertString(content_str, izenelib::util::UString::UTF_8);
+                    std::string content_str = propstr_to_str(p->second);
                     outNewScd << "<" << p->first << ">" << content_str << endl;
                 }
             }
@@ -253,22 +283,26 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
         if (title_it == doc.propertyEnd()) continue;
 
-        const UString& key = kit->second.get<UString>();
+        Document::doc_prop_value_strtype offerkey;
+        Document::property_const_iterator offer_key_it = doc.findProperty(schema_.offerIdPropName);
+        if (offer_key_it != doc.propertyEnd())
+        {
+            offerkey = offer_key_it->second.getPropertyStrValue();
+        }
+
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
 
         ContentType content ;
 
-        UString us(cit->second.get<UString>());
-        std::string str;
-        us.convertString(str, izenelib::util::UString::UTF_8);
+        std::string str = propstr_to_str(cit->second.getPropertyStrValue());
         std::pair<UString, UString> advantagepair;
         OpcList_[x]->Classify(str, advantagepair);
 
         AdvantageType advantage = advantagepair.first;
         DisadvantageType disadvantage = advantagepair.second;
 
-        UString us_title(title_it->second.get<UString>());
-        us_title.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(title_it->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
 
         if(advantage.find(advantagepair.first) == UString::npos)
@@ -279,25 +313,32 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         {
             disadvantage.append(advantagepair.second);
         }
-        UString  usa(ait->second.get<AdvantageType>());
-        usa.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(ait->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
         if(advantage.find(advantagepair.first) == UString::npos)
         {
             advantage.append(advantagepair.first);
         }
 
-        UString  usd(dit->second.get<DisadvantageType>());
-        usd.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(dit->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
         if(disadvantage.find(advantagepair.second) == UString::npos)
         disadvantage.append(advantagepair.second);
         float score = 0.0f;
         document_manager_->getNumericPropertyTable(schema_.scorePropName)->getFloatValue(i, score);
+        int64_t timestamp = 0;
+        Document::property_const_iterator date_it = doc.findProperty("DATE");
+        document_manager_->getNumericPropertyTable("DATE")->getInt64Value(i, timestamp);
+
         {
             boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
             comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
-                advantage, disadvantage, score);
+                advantage, disadvantage, score, timestamp);
+            if (!offerkey.empty())
+            {
+                offer_comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(offerkey), i, content,
+                advantage, disadvantage, score, timestamp);
+            }
         }
     }
 }
@@ -314,15 +355,24 @@ bool MultiDocSummarizationSubManager::buildDocument(docid_t docID, const Documen
     return true;
 }
 
-bool MultiDocSummarizationSubManager::preProcess()
+bool MultiDocSummarizationSubManager::preProcess(int64_t timestamp)
 {
+    check_rebuild();
+
+    // store the recent comments in 30 days.
+    int64_t ts = timestamp/1000000;
+    ts -= schema_.recent_days*24*60*60;
+
+    comment_cache_storage_->setRecentTime(ts);
+    offer_comment_cache_storage_->setRecentTime(ts);
+
     boost::filesystem::path totalscdPath(total_scd_path_);
     if (!boost::filesystem::exists(totalscdPath))
     {
         boost::filesystem::create_directory(totalscdPath);
     }
-    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
+    std::string opinionScdName = "B-00-205001071530-00000-R-C.SCD";
+    std::string scoreScdName = "B-00-205001071530-00001-R-C.SCD";
     
     std::vector<docid_t> del_docid_list;
     std::set<KeyType> del_key_set;
@@ -335,9 +385,18 @@ bool MultiDocSummarizationSubManager::preProcess()
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 
-        const UString& key = kit->second.get<UString>();
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
+        Document::property_const_iterator offer_kit = doc.findProperty(schema_.offerIdPropName);
+        if (offer_kit != doc.propertyEnd())
+        {
+            const Document::doc_prop_value_strtype& offerkey = offer_kit->second.getPropertyStrValue();
+            if (!offerkey.empty())
+            {
+                offer_comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(offerkey), i);
+            }
+        }
         del_key_set.insert(Utilities::md5ToUint128(key));
     }
 
@@ -393,9 +452,16 @@ bool MultiDocSummarizationSubManager::postProcess()
 
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
+    offer_comment_cache_storage_->Flush(true);
 
     string OpPath = schema_.opinionWorkingPath;
     boost::filesystem::path opPath(OpPath);
+    //if (is_rebuild_)
+    //{
+    //    LOG(INFO) << "removing the opinion working path for rebuild." << opPath;
+    //    boost::filesystem::remove_all(opPath);
+    //}
+
     if (!boost::filesystem::exists(opPath))
     {
         boost::filesystem::create_directory(opPath);
@@ -404,8 +470,8 @@ bool MultiDocSummarizationSubManager::postProcess()
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
@@ -419,7 +485,7 @@ bool MultiDocSummarizationSubManager::postProcess()
     try
     {
         ifstream infile;
-        infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
+        infile.open((system_resource_path_ + "/opinion/opinion_filter_data.txt").c_str(), ios::in);
         while(infile.good())
         {
             std::string line;
@@ -440,7 +506,7 @@ bool MultiDocSummarizationSubManager::postProcess()
     try
     {
         ifstream infile;
-        infile.open((OpPath + "/opinion_synonym_data.txt").c_str(), ios::in);
+        infile.open((system_resource_path_ + "/opinion/opinion_synonym_data.txt").c_str(), ios::in);
         while(infile.good())
         {
             std::string line;
@@ -470,9 +536,9 @@ bool MultiDocSummarizationSubManager::postProcess()
         std::string cma_path;
         LAPool::getInstance()->get_cma_path(cma_path);
 
-        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
+        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath, system_resource_path_));
 
-        Ops_.back()->setSigma(0.1, 5, 0.6, 20);
+        Ops_.back()->setSigma(0.1, 5, 0.5, 20);
         //////////////////////////
         Ops_.back()->setFilterStr(filters);
         Ops_.back()->setSynonymWord(synonym_strs);
@@ -540,383 +606,63 @@ bool MultiDocSummarizationSubManager::postProcess()
 
     comment_cache_storage_->ClearDirtyKey();
     //sync data;
-    std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
-    boost::filesystem::path controlfilePath(controlfilePath_str);
-    bool isFull = false;
-    if (boost::filesystem::exists(controlfilePath))
-    {
-        isFull = true;
-        boost::filesystem::remove_all(controlfilePath);
-    }
-    else
-    {
-        isFull = false;
-    }
+   
     if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-        if (!isFull)
-        {
-            SynchroData syncData;
-            syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce syncData error";
-            }
-        }
-        else
-        {
-            boost::filesystem::remove_all(generated_scds_path);
-            LOG(INFO) << "Send Total SCD files..." << endl;
-            SynchroData syncTotalData;
-            syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-
-            if (syncProducer->produce(syncTotalData))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce syncData error";
-            }
-        }
+        sendCommentSCDs(schema_.opinionSyncId, generated_scds_path.string(), total_scd_path_, is_rebuild_, true);
     }
     total_Opinion_Scd_.close();
     total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";
+
+    ComputeCommentForOffer();
+    return true;
+}
+
+bool MultiDocSummarizationSubManager::sendCommentSCDs(const std::string& syncID, const std::string& scddir,
+    const std::string& total_scd_dir, bool isrebuild, bool send_total)
+{
+    if (!isrebuild)
+    {
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID);
+        SynchroData syncData;
+        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+        syncData.setValue(SynchroData::KEY_DATA_PATH, scddir);
+        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, scddir)))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce incre syncData error";
+        }
+    }
+
+    {
+        if (total_scd_dir.empty())
+            return true;
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID + syncID_totalComment);
+        SynchroData syncTotalData;
+        syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
+        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_dir);
+
+        if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, scddir)))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce total syncData error";
+        }
+    }
     return true;
 }
 
 docid_t MultiDocSummarizationSubManager::getLastDocId()
 {
     return GetLastDocid_() + 1;
-}
-
-void MultiDocSummarizationSubManager::EvaluateSummarization()
-{
-    boost::filesystem::path totalscdPath(total_scd_path_);
-    if (!boost::filesystem::exists(totalscdPath))
-    {
-        boost::filesystem::create_directory(totalscdPath);
-    }
-    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
-    
-    std::vector<docid_t> del_docid_list;
-    std::set<KeyType> del_key_set;
-    document_manager_->getDeletedDocIdList(del_docid_list);
-    for(unsigned int i = 0; i < del_docid_list.size();++i)
-    {
-        Document doc;
-        bool b = document_manager_->getDocument(i, doc);
-        if(!b) continue;
-        Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd()) continue;
-
-        const UString& key = kit->second.get<UString>();
-        if (key.empty()) continue;
-        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
-        del_key_set.insert(Utilities::md5ToUint128(key));
-    }
-
-    dealTotalScd(opinionScdName, del_key_set, total_Opinion_Scd_);
-    dealTotalScd(scoreScdName, del_key_set, total_Score_Scd_);
-
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path);
-
-    {
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-        can_quit_compute_ = false;
-    }
-    
-    for (int i = 0; i < OPINION_COMPUTE_THREAD_NUM; ++i)
-    {
-        OpcList_.push_back(new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath));
-    }
-
-    std::vector<boost::thread*> comment_classify_threads;
-    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    {
-        comment_classify_threads.push_back(new boost::thread(&MultiDocSummarizationSubManager::commentsClassify, this, i));
-    }
-
-    for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
-    {
-        Document doc;
-        bool b = document_manager_->getDocument(i, doc);
-        if (!b) continue;
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-        while(docList_.size() > OPINION_COMPUTE_QUEUE_SIZE)
-        {
-            waiting_opinion_cond_.timed_wait(g, boost::posix_time::millisec(30));
-        }
-        docList_.push(std::make_pair(doc, i));
-        waiting_opinion_cond_.notify_one();
-        if (++count % 100000 == 0)
-        {
-            LOG(INFO) << "Caching comments: " << count;
-        }
-    }
-
-    LOG(INFO) << "Finish document iterator....";
-
-    {
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-        can_quit_compute_ = true;
-        waiting_opinion_cond_.notify_all();
-    }
-
-    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    {
-        comment_classify_threads[i]->timed_join(boost::posix_time::seconds(15));
-    }
-
-    LOG(INFO) << "All document iterator lines finished" ;
-    
-    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    {
-        delete comment_classify_threads[i];
-    }
-
-    for (int i = 0; i < OPINION_COMPUTE_THREAD_NUM; ++i)
-    {
-        delete OpcList_[i];
-    }
-    comment_classify_threads.clear();
-    OpcList_.clear();
-
-    SetLastDocid_(document_manager_->getMaxDocId());
-    comment_cache_storage_->Flush(true);
-
-    string OpPath = schema_.opinionWorkingPath;
-    boost::filesystem::path opPath(OpPath);
-    if (!boost::filesystem::exists(opPath))
-    {
-        boost::filesystem::create_directory(opPath);
-    }
-
-    boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
-    boost::filesystem::create_directory(generated_scds_path);
-
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
-
-    {
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-        can_quit_compute_ = false;
-    }
-
-    std::vector<UString> filters;
-    std::vector<UString> synonym_strs;
-    LOG(INFO)<<"OpPath"<<OpPath<<endl;
-
-    try
-    {
-        ifstream infile;
-        infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
-        while(infile.good())
-        {
-            std::string line;
-            getline(infile, line);
-            if(line.empty())
-            {
-                continue;
-            }
-            filters.push_back(UString(line, UString::UTF_8));
-        }
-        infile.close();
-    }
-    catch(...)
-    {
-        LOG(ERROR) << "read opinion filter file error" << endl;
-    }
-
-    try
-    {
-        ifstream infile;
-        infile.open((OpPath + "/opinion_synonym_data.txt").c_str(), ios::in);
-        while(infile.good())
-        {
-            std::string line;
-            getline(infile, line);
-            if(line.empty())
-            {
-                continue;
-            }
-            synonym_strs.push_back(UString(line, UString::UTF_8));
-        }
-        infile.close();
-    }
-    catch(...)
-    {
-        LOG(ERROR) << "read opinion synonym file error" << endl;
-    }
-
-
-    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    {
-        std::string log_path = OpPath;
-        log_path += "/opinion-log-";
-        log_path.push_back('a' + i);
-        boost::filesystem::path p(log_path);
-        boost::filesystem::create_directory(p);
-
-        std::string cma_path;
-        LAPool::getInstance()->get_cma_path(cma_path);
-
-        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
-
-        Ops_.back()->setSigma(0.1, 5, 0.6, 20);
-        //////////////////////////
-        Ops_.back()->setFilterStr(filters);
-        Ops_.back()->setSynonymWord(synonym_strs);
-
-        opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
-                    this, Ops_[i]));
-    }
-
-    LOG(INFO) << "====== Evaluating summarization begin ======" << std::endl;
-    {
-        CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
-        CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
-        for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
-        {
-            const KeyType& key = dirtyKeyIt->first;
-
-            CommentCacheItemType commentCacheItem;
-            comment_cache_storage_->Get(key, commentCacheItem);
-            if (commentCacheItem.empty())
-            {
-                summarization_storage_->Delete(key);
-                continue;
-            }
-
-            Summarization summarization(commentCacheItem);
-            DoEvaluateSummarization_(summarization, key, commentCacheItem);
-
-            DoOpinionExtraction(summarization, key, commentCacheItem);// add data for process....
-            if (++count % 1000 == 0)
-            {
-                std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===" << std::flush;
-            }
-        }
-
-        {
-            boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-            can_quit_compute_ = true;
-            waiting_opinion_cond_.notify_all();
-        }
-
-        DoWriteOpinionResult();
-
-        summarization_storage_->Flush();
-    } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
-
-    LOG(INFO) << "====== Evaluating summarization end ======" << std::endl;
-    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    {
-        delete opinion_compute_threads_[i];
-        delete Ops_[i];
-    }
-    Ops_.clear();
-    opinion_compute_threads_.clear();
-
-    if (score_scd_writer_)
-    {
-        score_scd_writer_->Close();
-        score_scd_writer_.reset();
-    }
-    if (opinion_scd_writer_)
-    {
-        opinion_scd_writer_->Close();
-        opinion_scd_writer_.reset();
-    }
-
-    comment_cache_storage_->ClearDirtyKey();
-    //sync data;
-    std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
-    boost::filesystem::path controlfilePath(controlfilePath_str);
-    bool isFull = false;
-    if (boost::filesystem::exists(controlfilePath))
-    {
-        isFull = true;
-        boost::filesystem::remove_all(controlfilePath);
-    }
-    else
-    {
-        isFull = false;
-    }
-    if (DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-        if (!isFull)
-        {
-            SynchroData syncData;
-            syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce syncData error";
-            }
-        }
-        else
-        {
-            boost::filesystem::remove_all(generated_scds_path);
-            LOG(INFO) << "Send Total SCD files..." << endl;
-            SynchroData syncTotalData;
-            syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-
-            if (syncProducer->produce(syncTotalData))
-            {
-                syncProducer->wait();
-            }
-            else
-            {
-                LOG(WARNING) << "produce syncData error";
-            }
-        }
-    }
-    total_Opinion_Scd_.close();
-    total_Score_Scd_.close();
-    LOG(INFO) << "Finish evaluating summarization.";
-}
-
-void MultiDocSummarizationSubManager::syncFullSummScd()
-{
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
-        return;
-
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-    LOG(INFO) << "Send Total SCD files..." << endl;
-    SynchroData syncTotalData;
-    syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-    syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-    syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-
-    if (syncProducer->produce(syncTotalData))
-    {
-        syncProducer->wait();
-    }
-    else
-    {
-        LOG(WARNING) << "produce syncData error";
-    }
 }
 
 void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
@@ -977,6 +723,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                 for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
                 {
                     bool isIN = false;
+                    Op->StripRightForNonSence(iter->second);
                     for (unsigned int j = 0; j < advantage_opinions.size(); ++j)
                     {
                         if (advantage_opinions[j].second == iter->second)
@@ -986,7 +733,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                             break;
                         }
                     }
-                    if (!isIN)
+                    if (!isIN && !Op->IsNeedFilter(iter->second) && IsAllOpinionStr(iter->second))
                         advantage_opinions.push_back(*iter);
                 }
                 if(advantage_opinions.size() >= 4)
@@ -1003,6 +750,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                 for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
                 {
                     bool isIN = false;
+                    Op->StripRightForNonSence(iter->second);
                     for (unsigned int j = 0; j < disadvantage_opinions.size(); ++j)
                     {
                         if (disadvantage_opinions[j].second == iter->second)
@@ -1012,7 +760,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                             break;
                         }
                     }
-                    if (!isIN)
+                    if (!isIN && !Op->IsNeedFilter(iter->second) && IsAllOpinionStr(iter->second))
                         disadvantage_opinions.push_back(*iter);
                 }
                  if(disadvantage_opinions.size() > 4)
@@ -1076,6 +824,16 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                 {
                     if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(1)))
                     {
+                        if (opinion_compute_threads_[i]->get_id() == boost::thread::id())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Thread-Id";
+                            continue;
+                        }
+                        if (!opinion_compute_threads_[i]->joinable())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Joinable";
+                            continue;
+                        }
                         // not finished
                         all_finished = false;
                         break;
@@ -1107,13 +865,12 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
 
                 std::string key_str;
                 key_str = Utilities::uint128ToUuid(result.key);
-                UString key_ustr(key_str, UString::UTF_8);
 
                 if (opinion_scd_writer_)
                 {
                     Document doc;
-                    doc.property("DOCID") = key_ustr;
-                    doc.property(schema_.opinionPropName) = final_opinion_str;
+                    doc.property("DOCID") = str_to_propstr(key_str);
+                    doc.property(schema_.opinionPropName) = ustr_to_propstr(final_opinion_str);
                     opinion_scd_writer_->Append(doc);
                 }
 
@@ -1147,35 +904,40 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 #define MAX_SENT_COUNT 1000
 
     ScoreType total_score = 0;
-    uint32_t count = 0;
+    size_t total_count = comment_cache_item.size();
+    uint32_t score_count = 0;
 
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
-    UString key_ustr(key_str, UString::UTF_8);
 
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
         if (it->second.score)
         {
-            ++count;
+            ++score_count;
             total_score += (it->second).score;
         }
     }
-    if (count)
+    size_t recent_count = comment_cache_storage_->setRecentComments(key, comment_cache_item);
+    if (total_count > 0)
     {
         std::vector<std::pair<double, UString> > score_list(1);
-        double avg_score = (double)total_score / (double)count;
+        double avg_score = 0;
+        if (score_count > 0)
+            avg_score = (double)total_score / (double)score_count;
         score_list[0].first = avg_score;
         summarization.updateProperty("avg_score", score_list);
 
         if (score_scd_writer_)
         {
             Document doc;
-            doc.property("DOCID") = key_ustr;
-            doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            doc.property("DOCID") = str_to_propstr(key_str);
+            doc.property(schema_.scorePropName) = str_to_propstr(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
             if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
+                doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(total_count));
+            if(!schema_.recentCommentCountPropName.empty())
+                doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
             score_scd_writer_->Append(doc);
         }
         if (total_Score_Scd_.good())
@@ -1184,82 +946,96 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             total_Score_Scd_ << "<" << schema_.scorePropName << ">" << boost::lexical_cast<std::string>(avg_score) << endl;
             if(!schema_.commentCountPropName.empty())
             {
-                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">" << boost::lexical_cast<std::string>(count) << endl;
+                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(total_count) << endl;
+            }
+            if(!schema_.recentCommentCountPropName.empty())
+            {
+                total_Score_Scd_ << "<" << schema_.recentCommentCountPropName << ">"
+                    << boost::lexical_cast<std::string>(recent_count) << endl;
             }
          }
     }
+    
     return true;
 }
 
 bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
-        const UString& rawKey,
+        const std::string& rawKey,
         Summarization& result)
 {
-    std::string key_str;
-    rawKey.convertString(key_str, UString::UTF_8);
-    //LOG(INFO)<<"key_str:"<<key_str<<endl;
-    return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
+    return summarization_storage_->Get(Utilities::uuidToUint128(rawKey), result);
 }
 
-void MultiDocSummarizationSubManager::AppendSearchFilter(
-        std::vector<QueryFiltering::FilteringType>& filtingList)
+//void MultiDocSummarizationSubManager::AppendSearchFilter(
+//        std::vector<QueryFiltering::FilteringType>& filtingList)
+//{
+//    ///When search filter is based on ParentKey, get its associated values,
+//    ///and add those values to filter conditions.
+//    ///The typical situation of this happen when :
+//    ///SELECT * FROM comments WHERE product_type="foo"
+//    ///This hook will translate the semantic into:
+//    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
+//
+//    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
+//    IteratorType it = std::find_if(filtingList.begin(),
+//            filtingList.end(), IsParentKeyFilterProperty(schema_.uuidPropName));
+//    if (it != filtingList.end())
+//    {
+//        const std::vector<PropertyValue>& filterParam = it->values_;
+//        if (!filterParam.empty())
+//        {
+//            try
+//            {
+//                const std::string& paramValue = get<std::string>(filterParam[0]);
+//                KeyType param = Utilities::uuidToUint128(paramValue);
+//
+//                LogServerConnection& conn = LogServerConnection::instance();
+//                GetDocidListRequest req;
+//                UUID2DocidList resp;
+//
+//                req.param_.uuid_ = param;
+//                conn.syncRequest(req, resp);
+//                if (req.param_.uuid_ != resp.uuid_) return;
+//
+//                BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
+//                QueryFiltering::FilteringType filterRule;
+//                filterRule.operation_ = QueryFiltering::INCLUDE;
+//                filterRule.property_ = schema_.docidPropName;
+//                for (std::vector<KeyType>::const_iterator rit = resp.docidList_.begin();
+//                        rit != resp.docidList_.end(); ++rit)
+//                {
+//                    UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
+//                    if (pBTreeIndexer->seek(schema_.docidPropName, result))
+//                    {
+//                        ///Protection
+//                        ///Or else, too many unexisted keys are added
+//                        PropertyValue v(result);
+//                        filterRule.values_.push_back(v);
+//                    }
+//                }
+//                //filterRule.logic_ = QueryFiltering::OR;
+//                filtingList.erase(it);
+//                //it->logic_ = QueryFiltering::OR;
+//                filtingList.push_back(filterRule);
+//            }
+//            catch (const boost::bad_get &)
+//            {
+//                filtingList.erase(it);
+//                return;
+//            }
+//        }
+//    }
+//}
+
+void MultiDocSummarizationSubManager::check_rebuild()
 {
-    ///When search filter is based on ParentKey, get its associated values,
-    ///and add those values to filter conditions.
-    ///The typical situation of this happen when :
-    ///SELECT * FROM comments WHERE product_type="foo"
-    ///This hook will translate the semantic into:
-    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
+    std::ifstream ifs(last_docid_path_.c_str());
 
-    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
-    IteratorType it = std::find_if(filtingList.begin(),
-            filtingList.end(), IsParentKeyFilterProperty(schema_.uuidPropName));
-    if (it != filtingList.end())
-    {
-        const std::vector<PropertyValue>& filterParam = it->values_;
-        if (!filterParam.empty())
-        {
-            try
-            {
-                const std::string& paramValue = get<std::string>(filterParam[0]);
-                KeyType param = Utilities::uuidToUint128(paramValue);
-
-                LogServerConnection& conn = LogServerConnection::instance();
-                GetDocidListRequest req;
-                UUID2DocidList resp;
-
-                req.param_.uuid_ = param;
-                conn.syncRequest(req, resp);
-                if (req.param_.uuid_ != resp.uuid_) return;
-
-                BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
-                QueryFiltering::FilteringType filterRule;
-                filterRule.operation_ = QueryFiltering::INCLUDE;
-                filterRule.property_ = schema_.docidPropName;
-                for (std::vector<KeyType>::const_iterator rit = resp.docidList_.begin();
-                        rit != resp.docidList_.end(); ++rit)
-                {
-                    UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
-                    if (pBTreeIndexer->seek(schema_.docidPropName, result))
-                    {
-                        ///Protection
-                        ///Or else, too many unexisted keys are added
-                        PropertyValue v(result);
-                        filterRule.values_.push_back(v);
-                    }
-                }
-                //filterRule.logic_ = QueryFiltering::OR;
-                filtingList.erase(it);
-                //it->logic_ = QueryFiltering::OR;
-                filtingList.push_back(filterRule);
-            }
-            catch (const boost::bad_get &)
-            {
-                filtingList.erase(it);
-                return;
-            }
-        }
-    }
+    if (!ifs) 
+        is_rebuild_ = true;
+    else
+        is_rebuild_ = false;
 }
 
 uint32_t MultiDocSummarizationSubManager::GetLastDocid_() const
@@ -1278,6 +1054,157 @@ void MultiDocSummarizationSubManager::SetLastDocid_(uint32_t docid) const
     std::ofstream ofs(last_docid_path_.c_str());
 
     if (ofs) ofs << docid;
+}
+
+void MultiDocSummarizationSubManager::ComputeCommentForOffer()
+{
+    boost::filesystem::path generated_scds_path(scdPath_ + "/" + OFFER_COMMENT_SCD_DIR);
+    try
+    {
+        boost::filesystem::create_directories(generated_scds_path);
+        offer_comment_scd_writer_.reset(new ScdWriter(generated_scds_path.string(), RTYPE_SCD));
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "init scd writer failed. " << e.what();
+        return;
+    }
+    LOG(INFO) << "Begin compute comment for offer.";
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(offer_comment_cache_storage_->dirty_key_db_);
+    CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
+    for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
+    {
+        const KeyType& key = dirtyKeyIt->first;
+
+        CommentCacheItemType comment_cache_item;
+        offer_comment_cache_storage_->Get(key, comment_cache_item);
+        if (comment_cache_item.empty())
+        {
+            continue;
+        }
+
+        std::string key_str;
+        key_str = Utilities::uint128ToUuid(key);
+        size_t total_cnt = comment_cache_item.size();
+        size_t recent_count = offer_comment_cache_storage_->setRecentComments(key, comment_cache_item);
+        if (total_cnt > 0)
+        {
+            if (offer_comment_scd_writer_)
+            {
+                Document doc;
+                doc.property("DOCID") = str_to_propstr(key_str);
+                if(!schema_.commentCountPropName.empty())
+                    doc.property(schema_.commentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(total_cnt));
+                if(!schema_.recentCommentCountPropName.empty())
+                    doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_count));
+                offer_comment_scd_writer_->Append(doc);
+            }
+        }
+
+        if (++count % 10000 == 0)
+        {
+            std::cout << "\r === compute offer comment count: " << count << " ===" << std::flush;
+        }
+    }
+
+    LOG(INFO) << "End compute comment for offer.";
+    if (offer_comment_scd_writer_)
+    {
+        offer_comment_scd_writer_->Close();
+        offer_comment_scd_writer_.reset();
+    }
+    offer_comment_cache_storage_->ClearDirtyKey();
+
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        sendCommentSCDs(schema_.opinionSyncId + syncID_OFFER, generated_scds_path.string(), "", false, false);
+    }
+}
+
+void MultiDocSummarizationSubManager::doUpdateRecentCommentAndSendSCD(CommentCacheStorage* storage,
+    boost::shared_ptr<ScdWriter>& scd_writer, const std::string& scd_dir, const std::string& syncID)
+{
+    std::vector<KeyType> update_keys;
+    std::vector<uint32_t> recent_comment_count_list;
+    storage->updateRecentComments(update_keys, recent_comment_count_list);
+    LOG(INFO) << "recent comments update finished: " << update_keys.size();
+    if (!update_keys.empty() && !schema_.recentCommentCountPropName.empty())
+    {
+        if (scd_writer)
+        {
+            LOG(WARNING) << "scd write is currently using. skip generate recent comments SCD.";
+        }
+        else
+        {
+            try
+            {
+                boost::filesystem::create_directories(scd_dir);
+                scd_writer.reset(new ScdWriter(scd_dir, RTYPE_SCD));
+                for (size_t i = 0; i < update_keys.size(); ++i)
+                {
+                    std::string key_str;
+                    key_str = Utilities::uint128ToUuid(update_keys[i]);
+                    Document doc;
+                    doc.property("DOCID") = str_to_propstr(key_str);
+                    doc.property(schema_.recentCommentCountPropName) = str_to_propstr(boost::lexical_cast<std::string>(recent_comment_count_list[i]));
+                    scd_writer->Append(doc);
+                }
+                scd_writer->Close();
+                scd_writer.reset();
+
+                if (DistributeRequestHooker::get()->isRunningPrimary())
+                {
+                    sendCommentSCDs(syncID, scd_dir, "", false, false);
+                }
+            }
+            catch(const std::exception& e)
+            {
+                LOG(ERROR) << "failed while update recent comment." << e.what();
+            }
+        }
+    }
+}
+
+void MultiDocSummarizationSubManager::updateRecentComments(int calltype)
+{
+    if (cronExpression_.matches_now() || calltype > 0)
+    {
+        if(calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+            }
+            else
+                LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+            return;
+        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = Utilities::createTimeStamp();
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+            return;
+        }
+
+        int64_t ts = reqlog.cron_time/1000000;
+        ts -= schema_.recent_days*24*60*60;
+        comment_cache_storage_->setRecentTime(ts);
+        string OpPath = schema_.opinionWorkingPath;
+        boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
+        doUpdateRecentCommentAndSendSCD(comment_cache_storage_, score_scd_writer_,
+            generated_scds_path.string(), schema_.opinionSyncId);
+
+        offer_comment_cache_storage_->setRecentTime(ts);
+        doUpdateRecentCommentAndSendSCD(offer_comment_cache_storage_, offer_comment_scd_writer_,
+            scdPath_ + "/" + OFFER_COMMENT_SCD_DIR, schema_.opinionSyncId + syncID_OFFER);
+
+        DISTRIBUTE_WRITE_FINISH(true);
+    }
 }
 
 }

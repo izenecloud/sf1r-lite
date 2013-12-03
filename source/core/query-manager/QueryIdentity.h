@@ -20,6 +20,8 @@ struct QueryIdentity
         , start(0)
         , distActionType(0)
         , isRandomRank(false)
+        , isSynonym(false)
+        , isAnalyzeResult(false)
     {
     }
 
@@ -73,6 +75,13 @@ struct QueryIdentity
 
     /// @brief whether rank randomly
     bool isRandomRank;
+    
+    /// @brief whether use synonym in search
+    bool isSynonym;
+    
+    /// @brief If true, return "analyzer_result" in fuzzy search response,
+    /// which contains the tokenized result of the query
+    bool isAnalyzeResult;
 
     /// @brief where does the query come from, used to decide
     ///        the categories to boost in product ranking.
@@ -99,6 +108,8 @@ struct QueryIdentity
             && start == other.start
             && distActionType == other.distActionType
             && isRandomRank == other.isRandomRank
+            && isSynonym == other.isSynonym
+            && isAnalyzeResult == other.isAnalyzeResult
             && querySource == other.querySource;
     }
 
@@ -110,7 +121,7 @@ struct QueryIdentity
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
             & properties & counterList & sortInfo &filteringTreeList_ & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
-            & start & distActionType & isRandomRank & querySource);
+            & start & distActionType & isRandomRank & isSynonym & isAnalyzeResult & querySource);
 };
 
 } // namespace sf1r

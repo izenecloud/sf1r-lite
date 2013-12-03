@@ -8,10 +8,11 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/serialization.hpp>
 #include "b5m_helper.h"
+#include "b5m_types.h"
 #include <boost/regex.hpp>
 
 
-namespace sf1r {
+NS_SF1R_B5M_BEGIN
 
 struct PsmAttach
 {
@@ -37,28 +38,26 @@ class PsmHelper
 public:
     static bool GetPsmItem(
             ProductTermAnalyzer& analyzer,
-            std::map<std::string, izenelib::util::UString>& doc,
+            std::map<std::string, Document::doc_prop_value_strtype>& doc,
             std::string& key,
             std::vector<std::pair<std::string, double> >& doc_vector,
             PsmAttach& attach)
     {
-        const izenelib::util::UString& img_ustr = doc["Img"];
-        if (img_ustr.empty())
+        const Document::doc_prop_value_strtype& img_url = doc["Img"];
+        if (img_url.empty())
         {
             LOG(INFO) << "There is no Img ... " << std::endl;
             return false;
         }
-        doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
-        std::string img_url;
-        img_ustr.convertString(img_url, izenelib::util::UString::UTF_8);
-        analyzer.Analyze(img_ustr.substr(7), doc_vector);
+        key = propstr_to_str(doc["DOCID"]);
+        analyzer.Analyze(propstr_to_ustr(img_url).substr(7), doc_vector);
         uint32_t i;
         uint32_t size = img_url.size();
         if (size < 60)
         {
             for (i = 20; i < size - 6; ++i)
             {
-                doc_vector.push_back(std::make_pair(img_url.substr(i, 7), 1.0));
+                doc_vector.push_back(std::make_pair(propstr_to_str(img_url).substr(i, 7), 1.0));
             }
         }
         return true;
@@ -66,7 +65,7 @@ public:
 
     static bool GetPsmItemCon(
             ProductTermAnalyzer& analyzer,
-            std::map<std::string, izenelib::util::UString>& doc,
+            std::map<std::string, Document::doc_prop_value_strtype>& doc,
             std::string& key,
             std::vector<std::pair<std::string, double> >& doc_vector,
             PsmAttach& attach,
@@ -78,12 +77,11 @@ public:
 //          LOG(INFO) << "Content Empty...";
             return false;
         }
-        doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
-        analyzer.Analyze(doc[img_con_name], doc_vector);
+        key = propstr_to_str(doc["DOCID"]);
+        analyzer.Analyze(propstr_to_ustr(doc[img_con_name]), doc_vector);
         return true;
     }
 };
-
-}
+NS_SF1R_B5M_END
 
 #endif

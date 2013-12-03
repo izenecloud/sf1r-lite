@@ -1,5 +1,6 @@
 #include "IndexSearchService.h"
 
+#include <node-manager/MasterManagerBase.h>
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 
@@ -17,6 +18,7 @@ IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
 {
+    ro_index_ = 0;
 }
 
 IndexSearchService::~IndexSearchService()
@@ -35,6 +37,7 @@ const IndexBundleConfiguration* IndexSearchService::getBundleConfig()
 
 void IndexSearchService::OnUpdateSearchCache()
 {
+    LOG(INFO) << "clearing master search cache.";
     searchCache_->clear();
 }
 
@@ -56,18 +59,29 @@ bool IndexSearchService::getSearchResult(
         return ret;
     }
 
+
     /// Perform distributed search by aggregator
     KeywordSearchResult distResultItem;
+    distResultItem.distSearchInfo_.isDistributed_ = true;
     distResultItem.distSearchInfo_.effective_ = true;
     distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 
-#ifdef GATHER_DISTRIBUTED_SEARCH_INFO
-    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
-    searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
-            actionItem.collectionName_, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
+    uint32_t request_index = ++ro_index_;
 
-    distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
-#endif
+    if (actionItem.searchingMode_.mode_ == SearchingMode::WAND)
+    {
+        distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
+        bool ret = ro_searchAggregator_->distributeRequest<KeywordSearchActionItem, DistKeywordSearchInfo>(
+            actionItem.collectionName_, request_index, "getDistSearchInfo", actionItem, distResultItem.distSearchInfo_);
+
+        if (!ret)
+        {
+            LOG(ERROR) << "get dist search info error.";
+            return false;
+        }
+
+        distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
+    }
 
     typedef std::map<workerid_t, KeywordSearchResult> ResultMapT;
     typedef ResultMapT::iterator ResultMapIterT;
@@ -75,61 +89,116 @@ bool IndexSearchService::getSearchResult(
     QueryIdentity identity;
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
-    const uint32_t topKStart = 0;
-    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_,
-        actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_));
+    size_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
+    LOG(INFO) << "query: " << actionItem.env_.queryString_ << ", topKStart for dist search is " << topKStart << ", pageInfo_ :"
+        << actionItem.pageInfo_.start_ << ", " << actionItem.pageInfo_.count_;
+    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
+    bool ret = true;
     if (!searchCache_->get(identity, resultItem))
     {
         // Get and aggregate keyword search results from mutliple nodes
         distResultItem.setStartCount(actionItem.pageInfo_);
 
-        searchAggregator_->distributeRequest(
-                actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+        ret = ro_searchAggregator_->distributeRequest(
+                actionItem.collectionName_, request_index, "getDistSearchResult", actionItem, distResultItem);
+        if (!ret)
+        {
+            LOG(ERROR) << "got dist search result failed.";
+            return false;
+        }
+        // remove the first topKStart docids.
+        if (topKStart > 0)
+        {
+            if( !distResultItem.topKDocs_.empty() )
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKDocs_.size());
+                distResultItem.topKDocs_.erase(distResultItem.topKDocs_.begin(),
+                    distResultItem.topKDocs_.begin() + erase_to);
+            }
+            if( !distResultItem.topKRankScoreList_.empty() )
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKRankScoreList_.size());
+                distResultItem.topKRankScoreList_.erase(distResultItem.topKRankScoreList_.begin(),
+                    distResultItem.topKRankScoreList_.begin() + erase_to);
+            }
+            if (!distResultItem.topKCustomRankScoreList_.empty())
+            {
+                size_t erase_to = std::min(topKStart, distResultItem.topKCustomRankScoreList_.size());
+                distResultItem.topKCustomRankScoreList_.erase(distResultItem.topKCustomRankScoreList_.begin(),
+                    distResultItem.topKCustomRankScoreList_.begin() + erase_to);
+            }
+        }
 
         distResultItem.adjustStartCount(topKStart);
 
         resultItem.swap(distResultItem);
         resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
-        // Get and aggregate Summary, Mining results from multiple nodes.
-        ResultMapT resultMap;
-        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-        RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-        for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+        searchWorker_->rerank(actionItem, resultItem);
+
+        if (actionItem.disableGetDocs_ || resultItem.distSearchInfo_.include_summary_data_)
         {
-            workerid_t workerid = it->first;
-            KeywordSearchResult& subResultItem = it->second;
-            requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+            LOG(INFO) << "getdocs disabled or summary data included, no need get the data from other workers.";
         }
+        else
+        {
+            // Get and aggregate Summary, Mining results from multiple nodes.
+            ResultMapT resultMap;
+            searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
+            if (resultMap.empty())
+            {
+                // empty is meaning we do not need send request to any worker to get 
+                // any documents. But we do need to get mining result.
+                LOG(INFO) << "empty worker map after split.";
+            }
+            else
+            {
+                RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+                for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+                {
+                    workerid_t workerid = it->first;
+                    KeywordSearchResult& subResultItem = it->second;
+                    requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+                }
 
-        searchAggregator_->distributeRequest(
-                actionItem.collectionName_, "getSummaryMiningResult", requestGroup, resultItem);
-
-        searchCache_->set(identity, resultItem);
+                ret = ro_searchAggregator_->distributeRequest(
+                    actionItem.collectionName_, request_index, "getSummaryMiningResult", requestGroup, resultItem);
+            }
+        }
+        if (searchCache_ && !resultItem.topKDocs_.empty())
+            searchCache_->set(identity, resultItem);
     }
     else
     {
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);
 
+        LOG(INFO) << "result.count: " << resultItem.count_ << ", is disableGetDocs_:" << actionItem.disableGetDocs_;
+
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-        RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-        for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+        if (resultMap.empty())
         {
-            workerid_t workerid = it->first;
-            KeywordSearchResult& subResultItem = it->second;
-            requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+            LOG(INFO) << "empty worker map after split.";
         }
-
-        searchAggregator_->distributeRequest(
-                actionItem.collectionName_, "getSummaryResult", requestGroup, resultItem);
+        else
+        {
+            RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+            for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+            {
+                workerid_t workerid = it->first;
+                KeywordSearchResult& subResultItem = it->second;
+                requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+            }
+            ret = ro_searchAggregator_->distributeRequest(
+                actionItem.collectionName_, request_index, "getSummaryResult", requestGroup, resultItem);
+        }
     }
 
-    cout << "Total count: " << resultItem.totalCount_ << endl;
-    cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
-    cout << "Page Count: " << resultItem.count_ << endl;
+    LOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
+    LOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
+    LOG(INFO) << "Page Count: " << resultItem.count_ << endl;
     LOG(INFO) << "Search Finished " << endl;
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
@@ -147,15 +216,16 @@ bool IndexSearchService::getDocumentsByIds(
         searchWorker_->getDocumentsByIds(actionItem, resultItem);
         return !resultItem.idList_.empty();
     }
-
     /// Perform distributed search by aggregator
     typedef std::map<workerid_t, GetDocumentsByIdsActionItem> ActionItemMapT;
     typedef ActionItemMapT::iterator ActionItemMapIterT;
 
+    uint32_t request_index = ++ro_index_;
+
     ActionItemMapT actionItemMap;
     if (!searchMerger_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", actionItem, resultItem);
+        ro_searchAggregator_->distributeRequest(actionItem.collectionName_, request_index, "getDocumentsByIds", actionItem, resultItem);
     }
     else
     {
@@ -167,10 +237,15 @@ bool IndexSearchService::getDocumentsByIds(
             requestGroup.addRequest(workerid, &subActionItem);
         }
 
-        searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);
+        ro_searchAggregator_->distributeRequest(actionItem.collectionName_, request_index, "getDocumentsByIds", requestGroup, resultItem);
     }
 
-    return true;
+    if (!resultItem.error_.empty())
+    {
+        LOG(ERROR) << "failed to get documents in . " << __FUNCTION__ << std::endl;
+        actionItem.print();
+    }
+    return !resultItem.idList_.empty();
 }
 
 bool IndexSearchService::getInternalDocumentId(
@@ -183,14 +258,42 @@ bool IndexSearchService::getInternalDocumentId(
     if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
+        internalId = net::aggregator::Util::GetWDocId(searchAggregator_->getLocalWorker(), (uint32_t)internalId);
     }
     else
     {
-        searchAggregator_->distributeRequest<uint128_t, uint64_t>(
-                collectionName, "getInternalDocumentId", scdDocumentId, internalId);
+        uint32_t request_index = ++ro_index_;
+        ro_searchAggregator_->distributeRequest<uint128_t, uint64_t>(
+                collectionName, request_index, "getInternalDocumentId", scdDocumentId, internalId);
     }
 
     return (internalId != 0);
+}
+
+uint32_t IndexSearchService::getDocNum(const std::string& collection)
+{
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
+        return searchWorker_->getDocNum();
+    else
+    {
+        uint32_t request_index = ++ro_index_;
+        uint32_t total_docs = 0;
+        ro_searchAggregator_->distributeRequest(collection, request_index, "getDistDocNum", total_docs);
+        return total_docs;
+    }
+}
+
+uint32_t IndexSearchService::getKeyCount(const std::string& collection, const std::string& property_name)
+{
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
+        return searchWorker_->getKeyCount(property_name);
+    else
+    {
+        uint32_t request_index = ++ro_index_;
+        uint32_t total_docs = 0;
+        ro_searchAggregator_->distributeRequest(collection, request_index, "getDistKeyCount", property_name, total_docs);
+        return total_docs;
+    }
 }
 
 }

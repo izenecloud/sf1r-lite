@@ -19,7 +19,6 @@ public:
     typedef boost::function<bool(const std::string&, const std::string&, bool)> StartColCBFuncT;
     typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
     typedef boost::function<void(const std::string&)> FlushColCBFuncT;
-    typedef boost::function<bool(const std::string&)> ReopenColCBFuncT;
 
     static RecoveryChecker* get()
     {
@@ -46,13 +45,12 @@ public:
         stop_col_ = stop_col;
     }
 
-    void setColCallback(ReopenColCBFuncT reopen_cb, FlushColCBFuncT flush_cb)
+    void setColCallback(FlushColCBFuncT flush_cb)
     {
-        reopen_col_ = reopen_cb;
         flush_col_ = flush_cb;
     }
 
-    void init(const std::string& conf_dir, const std::string& workdir);
+    void init(const std::string& conf_dir, const std::string& workdir, unsigned int check_level);
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
     bool getCollPath(const std::string& colname, CollectionPath& colpath);
@@ -94,7 +92,6 @@ private:
 
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
-    ReopenColCBFuncT reopen_col_;
     FlushColCBFuncT flush_col_;
     std::string backup_basepath_;
     std::string request_log_basepath_;
@@ -103,6 +100,7 @@ private:
     std::string last_conf_file_;
     std::string configDir_;
     bool need_backup_;
+    unsigned int check_level_;
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     CollInfoMapT all_col_info_;
     boost::mutex mutex_;

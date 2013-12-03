@@ -2,6 +2,7 @@
 #include "b5m_types.h"
 #include "b5m_mode.h"
 #include "b5m_helper.h"
+#include "scd_doc_processor.h"
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
@@ -14,16 +15,44 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 //#define B5MC_DEBUG
 
 
-B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode)
-:cdb_(cdb), odb_(odb), bdb_(bdb), matcher_(matcher), mode_(mode)
+B5mcScdGenerator::B5mcScdGenerator(const B5mM& b5mm)
+:b5mm_(b5mm), mode_(0), matcher_(NULL)
+,new_count_(0), pid_changed_count_(0), pid_not_changed_count_(0)
 {
 }
 
-bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& mdb_instance)
+B5mcScdGenerator::~B5mcScdGenerator()
 {
+    if(matcher_!=NULL) delete matcher_;
+}
+bool B5mcScdGenerator::Generate(const std::string& mdb_instance, const std::string& last_mdb_instance)
+{
+    const std::string& scd_path = b5mm_.comment_scd_path;
+    mode_ = b5mm_.mode;
+    int thread_num = b5mm_.thread_num;
+    //const std::string& knowledge = b5mm_.knowledge;
+    //matcher_ = new ProductMatcher;
+    //matcher_->SetCmaPath(b5mm_.cma_path);
+    //if(knowledge.empty()) matcher_->ForceOpen();
+    //else
+    //{
+    //    if(!matcher_->Open(knowledge)) return false;
+    //}
+    std::string cdb_path = mdb_instance+"/cdb";
+    cdb_.reset(new CommentDb(cdb_path));
+    std::string odb_path = mdb_instance+"/odb";
+    boost::shared_ptr<OfferDb> this_odb(new OfferDb(odb_path));
+    boost::shared_ptr<OfferDb> last_odb;
+    if(!last_mdb_instance.empty())
+    {
+        std::string last_odb_path = last_mdb_instance+"/odb";
+        last_odb.reset(new OfferDb(last_odb_path));
+    }
+    odb_.reset(new OfferDbRecorder(this_odb.get(), last_odb.get()));
     if(!cdb_->is_open())
     {
         if(!cdb_->open())
@@ -41,157 +70,133 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             return false;
         }
     } 
-    if(bdb_!=NULL)
-    {
-        if(!bdb_->is_open())
-        {
-            if(!bdb_->open())
-            {
-                LOG(ERROR)<<"bdb open error"<<std::endl;
-                return false;
-            }
-        }
-    }
-    std::vector<std::string> scd_list;
-    B5MHelper::GetScdList(scd_path, scd_list);
-    if(scd_list.empty())
-    {
-        LOG(WARNING)<<"scd path empty"<<std::endl;
-        return true;
-    }
-    static const std::string oid_property_name = "ProdDocid";
-    std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
+    const std::string& output_dir = b5mm_.b5mc_path;
     B5MHelper::PrepareEmptyDir(output_dir);
-    ScdWriter b5mc_u(output_dir, UPDATE_SCD);
-    std::size_t new_count = 0;
-    std::size_t pid_changed_count = 0;
-    std::size_t pid_not_changed_count = 0;
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        std::string scd_file = scd_list[i];
-        int type = ScdParser::checkSCDType(scd_file);
-        if(type==DELETE_SCD) continue;
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-        ScdParser parser(izenelib::util::UString::UTF_8);
-        parser.load(scd_file);
-        uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin();
-          doc_iter!= parser.end(); ++doc_iter, ++n)
-        {
-            if(n%100000==0)
-            {
-                LOG(INFO)<<"Find Documents "<<n<<","<<new_count<<","<<pid_changed_count<<","<<pid_not_changed_count<<std::endl;
-            }
-            Document doc;
-            SCDDoc& scddoc = *(*doc_iter);
-            SCDDoc::iterator p = scddoc.begin();
-            for(; p!=scddoc.end(); ++p)
-            {
-                const std::string& property_name = p->first;
-                doc.property(property_name) = p->second;
-            }
-            doc.eraseProperty("uuid");
-            doc.eraseProperty(B5MHelper::GetBrandPropertyName());
-            std::string scid;
-            doc.getString("DOCID", scid);
-            if(scid.empty()) continue;
-            uint128_t cid = B5MHelper::StringToUint128(scid);
-            bool has_oid = false;
-            std::string soid;
-            doc.getString(oid_property_name, soid);
-            if(!soid.empty()) has_oid = true;
-
-            bool is_new_cid = true;
-            if(cdb_->Get(cid)) 
-            {
-                is_new_cid = false;
-            }
-            else {
-                cdb_->Insert(cid);
-                new_count++;
-            }
-            //if(mode_==B5MMode::INC&&cdb_->Count()==0)
-            //{
-                //is_new_cid = false;
-            //}
-            //else{
-            //}
-            //{
-                //bool test_is_new_cid = true;
-                //if(uset.find(cid)!=uset.end())
-                //{
-                    //test_is_new_cid = false;
-                //}
-                //else
-                //{
-                    //uset.insert(cid);
-                //}
-                //if(is_new_cid!=test_is_new_cid)
-                //{
-                    //LOG(ERROR)<<"filter error on "<<scid<<std::endl;
-                //}
-            //}
-            std::string spid;
-            bool pid_changed = false;
-            if(has_oid)
-            {
-                odb_->get(soid, spid, pid_changed);
-            }
-            if(pid_changed)
-            {
-                pid_changed_count++;
-#ifdef B5MC_DEBUG
-                std::string last_spid;
-                odb_->get_last(soid, last_spid);
-                LOG(INFO)<<soid<<" changed from "<<last_spid<<" to "<<spid<<std::endl;
-#endif
-            }
-            else
-            {
-                if(!spid.empty())
-                {
-                    pid_not_changed_count++;
-                }
-            }
-            if(!spid.empty())
-            {
-                doc.property("uuid") = UString(spid, UString::UTF_8);
-            }
-            //std::cerr<<is_new_cid<<","<<pid_changed<<","<<spid<<std::endl;
-            bool need_process = is_new_cid || pid_changed;
-            if(!need_process) continue;
-            ProcessFurther_(doc);
-            spid.clear();
-            doc.getString("uuid", spid);
-            if(spid.empty()) continue;
-            b5mc_u.Append(doc);
-        } 
-    }
-    b5mc_u.Close();
+    ScdDocProcessor::ProcessorType p = boost::bind(&B5mcScdGenerator::Process, this, _1);
+    ScdDocProcessor sd_processor(p, thread_num);
+    sd_processor.AddInput(scd_path);
+    sd_processor.SetOutput(output_dir);
+    sd_processor.Process();
     cdb_->flush();
-    LOG(INFO)<<"new cid "<<new_count<<", pid_changed "<<pid_changed_count<<", pid_not_changed "<<pid_not_changed_count<<std::endl;
+    LOG(INFO)<<"new cid "<<new_count_<<", pid_changed "<<pid_changed_count_<<", pid_not_changed "<<pid_not_changed_count_<<std::endl;
     return true;
 }
 
-void B5mcScdGenerator::ProcessFurther_(Document& doc)
+void B5mcScdGenerator::Process(ScdDocument& doc)
+{
+    static const std::string oid_property_name = "ProdDocid";
+    doc.eraseProperty(B5MHelper::GetBrandPropertyName());
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(!spid.empty())
+    {
+        new_count_++;
+        return;
+    }
+    doc.eraseProperty("uuid");
+    std::string scid;
+    doc.getString("DOCID", scid);
+    if(scid.empty()) 
+    {
+        doc.type = NOT_SCD;
+        return;
+    }
+    uint128_t cid = B5MHelper::StringToUint128(scid);
+    bool has_oid = false;
+    std::string soid;
+    doc.getString(oid_property_name, soid);
+    if(!soid.empty()) has_oid = true;
+
+    bool is_new_cid = true;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if(cdb_->Get(cid)) 
+        {
+            is_new_cid = false;
+        }
+        else {
+            cdb_->Insert(cid);
+            new_count_++;
+        }
+    }
+    //if(mode_==B5MMode::INC&&cdb_->Count()==0)
+    //{
+        //is_new_cid = false;
+    //}
+    //else{
+    //}
+    //{
+        //bool test_is_new_cid = true;
+        //if(uset.find(cid)!=uset.end())
+        //{
+            //test_is_new_cid = false;
+        //}
+        //else
+        //{
+            //uset.insert(cid);
+        //}
+        //if(is_new_cid!=test_is_new_cid)
+        //{
+            //LOG(ERROR)<<"filter error on "<<scid<<std::endl;
+        //}
+    //}
+    bool pid_changed = false;
+    if(has_oid)
+    {
+        odb_->get(soid, spid, pid_changed);
+    }
+    if(pid_changed)
+    {
+        pid_changed_count_++;
+#ifdef B5MC_DEBUG
+        std::string last_spid;
+        odb_->get_last(soid, last_spid);
+        LOG(INFO)<<soid<<" changed from "<<last_spid<<" to "<<spid<<std::endl;
+#endif
+    }
+    else
+    {
+        if(!spid.empty())
+        {
+            pid_not_changed_count_++;
+        }
+    }
+    if(!spid.empty())
+    {
+        doc.property("uuid") = str_to_propstr(spid);
+    }
+    //std::cerr<<is_new_cid<<","<<pid_changed<<","<<spid<<std::endl;
+    bool need_process = is_new_cid || pid_changed;
+    if(!need_process) 
+    {
+        doc.type = NOT_SCD;
+        return;
+    }
+    ProcessFurther_(doc);
+    spid.clear();
+    doc.getString("uuid", spid);
+    if(spid.empty()) doc.type = NOT_SCD;
+}
+
+void B5mcScdGenerator::ProcessFurther_(ScdDocument& doc)
 {
     static const std::string title_property_name = "ProdName";
     std::string spid;
     doc.getString("uuid", spid);
     if(spid.empty())
     {
-        ProductMatcher::Product product;
+        Product product;
         std::string isbn;
         if(ProductMatcher::GetIsbnAttribute(doc, isbn))
         {
             Document book_doc;
-            book_doc.property("Category") = UString(B5MHelper::BookCategoryName(), UString::UTF_8);
+            //book_doc.property("Category") = str_to_propstr(B5MHelper::BookCategoryName());
             book_doc.property("Attribute") = doc.property("Attribute");
-            ProductMatcher::ProcessBook(book_doc, product);
+            ProductMatcher::ProcessBookStatic(book_doc, product);
         }
         else
         {
-            UString title;
+            Document::doc_prop_value_strtype title;
             doc.getProperty(title_property_name, title);
             if(!title.empty())
             {
@@ -209,19 +214,19 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
             spid = product.spid;
         }
     }
-    if(!spid.empty() && bdb_!=NULL)
-    {
-        uint128_t pid = B5MHelper::StringToUint128(spid);
-        izenelib::util::UString brand;
-        bdb_->get(pid, brand);
-        if(brand.length()>0)
-        {
-            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
-        }
-    }
+    //if(!spid.empty() && bdb_!=NULL)
+    //{
+        //uint128_t pid = B5MHelper::StringToUint128(spid);
+        //Document::doc_prop_value_strtype brand;
+        //bdb_->get(pid, brand);
+        //if(brand.length()>0)
+        //{
+            //doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+        //}
+    //}
     if(!spid.empty())
     {
-        doc.property("uuid") = UString(spid, UString::UTF_8);
+        doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
     }
 }
 

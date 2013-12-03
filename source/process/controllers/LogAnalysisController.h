@@ -47,10 +47,9 @@ public:
 
     void delete_database();
 
-    void inject_user_queries_to_logserver();
-
     void get_freq_user_queries_from_logserver();
 
+    void inject_user_queries_to_logserver();
 private:
 
     std::string parseSelect(bool & existAggregateFunc);

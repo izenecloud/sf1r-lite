@@ -24,6 +24,11 @@ public:
 
     ~ProductTaskService();
 
+    ProductBundleConfiguration* getbundleConfig()
+    {
+        return bundleConfig_;
+    }
+
 
 private:
     ProductBundleConfiguration* bundleConfig_;

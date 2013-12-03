@@ -16,6 +16,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         std::string property = iter->first;
         SortPropertyData* pPropertyComparator = new SortPropertyData(iter->first, iter->second);
 
+        std::cout << "=== merge sort property : " << property << std::endl;
         void* dataList = NULL;
         if (property == "RANK")
         {
@@ -33,7 +34,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
             {
                 bool found = false;
                 std::vector<std::pair<std::string, std::vector<int32_t> > >::const_iterator it;
-                for (it = distSearchInfo.sortPropertyInt32DataList_.begin(); it != distSearchInfo.sortPropertyInt32DataList_.end(); it++)
+                for (it = distSearchInfo.sortPropertyInt32DataList_.begin(); it != distSearchInfo.sortPropertyInt32DataList_.end(); ++it)
                 {
                     if (it->first == property)
                     {
@@ -45,7 +46,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
                 if (found) break;
 
                 std::vector<std::pair<std::string, std::vector<int64_t> > >::const_iterator itu;
-                for (itu = distSearchInfo.sortPropertyInt64DataList_.begin(); itu != distSearchInfo.sortPropertyInt64DataList_.end(); itu++)
+                for (itu = distSearchInfo.sortPropertyInt64DataList_.begin(); itu != distSearchInfo.sortPropertyInt64DataList_.end(); ++itu)
                 {
                     if (itu->first == property)
                     {
@@ -57,12 +58,24 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
                 if (found) break;
 
                 std::vector<std::pair<std::string, std::vector<float> > >::const_iterator itf;
-                for (itf = distSearchInfo.sortPropertyFloatDataList_.begin(); itf != distSearchInfo.sortPropertyFloatDataList_.end(); itf++)
+                for (itf = distSearchInfo.sortPropertyFloatDataList_.begin(); itf != distSearchInfo.sortPropertyFloatDataList_.end(); ++itf)
                 {
                     if (itf->first == property)
                     {
                         dataList = (void*)(itf->second.data());
                         pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
+                        found = true;
+                    }
+                }
+                if (found) break;
+
+                std::vector<std::pair<std::string, std::vector<std::string> > >::const_iterator itstr;
+                for (itstr = distSearchInfo.sortPropertyStrDataList_.begin(); itstr != distSearchInfo.sortPropertyStrDataList_.end(); ++itstr)
+                {
+                    if (itstr->first == property)
+                    {
+                        dataList = (void*)(itstr->second.data());
+                        pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_STRING);
                         found = true;
                     }
                 }
@@ -74,7 +87,6 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         if (dataList !=  NULL)
         {
             pPropertyComparator->setDataList(dataList);
-
             sortProperties_.push_back(pPropertyComparator);
         }
         else
@@ -93,7 +105,8 @@ DocumentComparator::~DocumentComparator()
     }
 }
 
-bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* comp2, size_t idx2)
+bool greaterThan(DocumentComparator* comp1, size_t idx1, docid_t left_docid,
+    DocumentComparator* comp2, size_t idx2, docid_t right_docid)
 {
     for (size_t i = 0; i < comp1->sortProperties_.size(); i++)
     {
@@ -102,6 +115,8 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
 
         SortPropertyData* pSortProperty1 = comp1->sortProperties_[i];
         SortPropertyData* pSortProperty2 = comp2->sortProperties_[i];
+
+        //std::cout << "comparing property: " << pSortProperty1->getProperty() << std::endl;
 
         SortPropertyData::DataType dataType1 = pSortProperty1->getDataType();
         SortPropertyData::DataType dataType2 = pSortProperty2->getDataType();
@@ -116,28 +131,33 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
             int32_t v1 = ((int32_t*)dataList1)[idx1];
             int32_t v2 = ((int32_t*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? (v1 < v2) : (v1 > v2);
         }
         else if (dataType1 == SortPropertyData::DATA_TYPE_INT64)
         {
             int64_t v1 = ((int64_t*)dataList1)[idx1];
             int64_t v2 = ((int64_t*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? (v1 < v2) : (v1 > v2);
         }
         else if (dataType1 == SortPropertyData::DATA_TYPE_FLOAT)
         {
             float v1 = ((float*)dataList1)[idx1];
             float v2 = ((float*)dataList2)[idx2];
             if (v1 == v2) continue;
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
+            return pSortProperty1->isReverse() ? (v1 < v2) : (v1 > v2);
+        }
+        else if (dataType1 == SortPropertyData::DATA_TYPE_STRING)
+        {
+            std::string v1 = ((std::string*)dataList1)[idx1];
+            std::string v2 = ((std::string*)dataList2)[idx2];
+            if (v1 == v2) continue;
+            return pSortProperty1->isReverse() ? (v1 < v2) : (v1 > v2);
         }
     }
 
-    return false;
+    //std::cerr << "all sort data is the same, just sort by docid : " << left_docid << " VS " << right_docid << std::endl;
+    return left_docid > right_docid;
 }
 
 

@@ -20,7 +20,8 @@
 #include <util/ustring/UString.h>
 #include <la/tokenizer/Tokenizer.h>
 #include <la/util/UStringUtil.h>
-
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
 #include <vector>
 #include <map>
 
@@ -75,6 +76,7 @@ public:
     boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
 
     la::Tokenizer tokenizer_;
+    boost::mutex mutex_;
 };
 
 }

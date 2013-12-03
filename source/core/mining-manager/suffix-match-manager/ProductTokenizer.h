@@ -4,7 +4,7 @@
 #include <util/ustring/UString.h>
 #include <util/singleton.h>
 #include <am/succinct/ux-trie/uxTrie.hpp>
-
+#include <common/type_defs.h>
 #include <string>
 #include <list>
 #include <map>
@@ -75,7 +75,11 @@ public:
 
 };
 
+namespace b5m {
 class ProductMatcher;
+}
+class CategoryClassifyTable;
+
 class ProductTokenizer
 {
     enum CharType
@@ -100,14 +104,21 @@ public:
 
     bool GetTokenResults(
             const std::string& pattern,
-            std::list<std::pair<UString,double> >& tokens,
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
+            bool is_refine_result,
             UString& refined_results);
-
-    void SetProductMatcher(ProductMatcher* matcher)
+    bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
+    bool GetSynonymId(const UString& pattern, int& setid);
+    void SetProductMatcher(b5m::ProductMatcher* matcher)
     {
         matcher_ = matcher;
     }
 
+    void GetQuerySumScore(const std::string& pattern, double& sum_score, docid_t docid = 0);
+
+    void setCategoryClassifyTable(CategoryClassifyTable* table);
+    
 private:
     void Init_(const std::string& dict_path);
 
@@ -116,6 +127,12 @@ private:
     void InitWithDict_(const std::string& dict_path);
 
     void InitDict_(const std::string& dict_name);
+
+    double GetTokenResultsByKNlp_(
+            const std::string& pattern,
+            std::list<std::pair<UString,double> >& token_results,
+            UString& refined_results,
+            docid_t docid = 0);
 
     bool GetTokenResultsByCMA_(
             const std::string& pattern,
@@ -129,7 +146,8 @@ private:
 
     bool GetTokenResultsByMatcher_(
             const std::string& pattern,
-            std::list<std::pair<UString,double> >& tokens,
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
             UString& refined_results);
 
     void GetDictTokens_(
@@ -144,15 +162,17 @@ private:
             std::list<std::pair<UString,double> >& tokens,
             double score);
 
-    void GetLeftTokens_(
+    bool GetLeftTokens_(
             const std::list<std::string>& input,
             std::list<std::pair<UString,double> >& token_results,
             double score = 1.0);
 
-    void GetLeftTokens_(
+    bool GetLeftTokens_(
             const std::list<UString>& input,
             std::list<std::pair<UString,double> >& token_results,
             double score = 1.0);
+
+
 
     TokenizerType type_;
     std::string dict_path_;
@@ -160,12 +180,13 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
 
-    ProductMatcher* matcher_;
+    b5m::ProductMatcher* matcher_;
+    CategoryClassifyTable* categoryClassifyTable_;
 
     std::vector<std::pair<std::string, double> > dict_names_;
     std::vector<izenelib::am::succinct::ux::Trie*> tries_;
 
-    static const UString SPACE_UCHAR;
+    static const UString::CharT SPACE_UCHAR;
     friend class ProductTokenizerTest;
 };
 

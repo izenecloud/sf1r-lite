@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include "../MiningTask.h"
+#include <util/cronexpression.h>
 
 #include "OpinionsClassificationManager.h"
 namespace idmlib
@@ -24,7 +25,6 @@ class IDMAnalyzer;
 namespace sf1r
 {
 class DocumentManager;
-class IndexManager;
 class ScdWriter;
 
 class SummarizationStorage;
@@ -37,33 +37,31 @@ class MultiDocSummarizationSubManager: public MiningTask
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
+            const std::string& sys_res_path,
             const std::string& collectionName,
             const std::string& scdPath,
             SummarizeConfig schema,
             boost::shared_ptr<DocumentManager> document_manager,
-            boost::shared_ptr<IndexManager> index_manager,
+            //boost::shared_ptr<IndexManager> index_manager,
             idmlib::util::IDMAnalyzer* analyzer);
 
     ~MultiDocSummarizationSubManager();
 
-    void EvaluateSummarization();
-
-    void AppendSearchFilter(
-            std::vector<QueryFiltering::FilteringType>& filtingList);
+    //void AppendSearchFilter(
+    //        std::vector<QueryFiltering::FilteringType>& filtingList);
 
     bool GetSummarizationByRawKey(
-            const izenelib::util::UString& rawKey,
+            const std::string& rawKey,
             Summarization& result);
     
-    void syncFullSummScd();
-
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
-    virtual bool preProcess();
+    virtual bool preProcess(int64_t timestamp);
 
     virtual bool postProcess();
 
     virtual docid_t getLastDocId();
+    void updateRecentComments(int calltype);
 
 private:
     void commentsClassify(int x);
@@ -90,25 +88,34 @@ private:
 
     void SetLastDocid_(uint32_t docid) const;
 
+    void check_rebuild();
+    bool sendCommentSCDs(const std::string& syncID, const std::string& scddir,
+        const std::string& total_scd_dir, bool isrebuild, bool send_total);
+    void ComputeCommentForOffer();
+    void doUpdateRecentCommentAndSendSCD(CommentCacheStorage* storage,
+        boost::shared_ptr<ScdWriter>& scd_writer, const std::string& scd_dir, const std::string& syncID);
+
 private:
+    bool is_rebuild_;
     std::string last_docid_path_;
     std::string total_scd_path_;
     std::string collectionName_;
     std::string homePath_;
+    std::string scdPath_;
     SummarizeConfig schema_;
-
-    ScdControlRecevier* scd_control_recevier_;
 
     fstream total_Opinion_Scd_;
     fstream total_Score_Scd_;
     boost::shared_ptr<DocumentManager> document_manager_;
-    boost::shared_ptr<IndexManager> index_manager_;
+    //boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<ScdWriter> score_scd_writer_;
     boost::shared_ptr<ScdWriter> opinion_scd_writer_;
+    boost::shared_ptr<ScdWriter> offer_comment_scd_writer_;
 
     idmlib::util::IDMAnalyzer* analyzer_;
 
     CommentCacheStorage* comment_cache_storage_;
+    CommentCacheStorage* offer_comment_cache_storage_;
     SummarizationStorage* summarization_storage_;
 
     Corpus* corpus_;
@@ -138,6 +145,9 @@ private:
     std::vector<boost::thread*> comment_classify_threads_;
     std::queue<std::pair<Document, docid_t> > docList_;
     bool  can_quit_compute_;
+    std::string system_resource_path_;
+    izenelib::util::CronExpression cronExpression_;
+    std::string cronJobName_;
 };
 
 }

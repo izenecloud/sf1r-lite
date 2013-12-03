@@ -41,13 +41,8 @@ bool HasCategoryPrefix(
 
 QueryCategorizer::QueryCategorizer()
     :matcher_(NULL)
-    ,spu_classifier_(NULL)
-    ,suffix_manager_(NULL)
     ,cache_(10000)
 {
-    //modes_.push_back(MATCHER);
-    //modes_.push_back(SEARCH_PRODUCT);	
-    //modes_.push_back(SEARCH_SPU);
 }
 
 QueryCategorizer::~QueryCategorizer()
@@ -63,72 +58,14 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     if(query.empty()) return false;
 
     Document doc;
-    UString queryU(query, UString::UTF_8);
-    doc.property("Title") = queryU;
+    doc.property("Title") = str_to_propstr(query);
 
-    std::vector<ProductMatcher::Product> result_products;
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    std::vector<b5m::Product> result_products;
+    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
+    UString queryU(query, UString::UTF_8);
     matcher->GetFrontendCategory(queryU, (uint32_t)limit, frontends);
 
     return frontends.empty() ? false : true;
-}
-
-bool QueryCategorizer::GetCategoryBySPU_(
-    const std::string& query,
-    std::vector<UString>& frontCategories)
-{
-    if(!spu_classifier_) return false;
-
-    return spu_classifier_->GetProductCategory(query, frontCategories);
-}
-
-bool QueryCategorizer::GetCategoryBySuffixMatcher_(
-    const std::string& query,
-    std::vector<UString>& frontCategories)
-{
-    if(!suffix_manager_) return false;
-    if(query.empty()) return false;
-
-    uint32_t max_docs = 10;
-    std::vector<std::string> search_in_properties;
-    search_in_properties.push_back("Title");
-    search_in_properties.push_back("TargetCategory");
-    std::vector<QueryFiltering::FilteringType> filter_param;
-    faceted::GroupParam groupParam;
-    std::vector<std::pair<double, uint32_t> > res_list;
-    UString analyzed_query;
-    suffix_manager_->AllPossibleSuffixMatch(
-                              query, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
-                              filter_param, groupParam, res_list, analyzed_query);
-    std::set<UString> cat_set;
-
-    std::map<docid_t, int> doc_idx_map;
-    const unsigned int docListSize = res_list.size();
-    std::vector<unsigned int> ids(docListSize);
-
-    for (unsigned int i=0; i<docListSize; i++)
-    {
-        docid_t docId = res_list[i].second;
-        doc_idx_map[docId] = i;
-        ids[i] = docId;
-    }
-
-    std::vector<Document> docs;
-    document_manager_->getDocuments(ids, docs, true);
-    for(unsigned i = 0; i < docs.size(); ++i)
-    {
-        Document& doc = docs[i];
-        UString category = doc.property("TargetCategory").get<izenelib::util::UString>();
-        if(category.empty() ||cat_set.find(category) != cat_set.end()) continue;
-        cat_set.insert(category);
-
-        frontCategories.push_back(category);
-        std::string category_str;
-        category.convertString(category_str, UString::UTF_8);
-        LOG(INFO) << category_str;
-    }
-
-    return !frontCategories.empty();
 }
 
 bool QueryCategorizer::GetSplittedCategories_(
@@ -167,22 +104,6 @@ bool QueryCategorizer::GetSplittedCategories_(
     return true;
 }
 
-void QueryCategorizer::SetWorkingMode(std::string& mode)
-{
-    if(mode.empty()) return;
-    LOG(INFO)<<"SetWorkingMode "<<mode;
-	
-    modes_.clear();
-    std::vector<std::string> modes;
-    boost::algorithm::split( modes, mode, boost::algorithm::is_any_of("+") );
-    for(unsigned i = 0; i < modes.size(); ++i)	
-    {
-        if(modes[i] == "M") modes_.push_back(MATCHER);
-        else if(modes[i] == "S") modes_.push_back(SEARCH_SPU);
-        else if(modes[i] == "P") modes_.push_back(SEARCH_PRODUCT);
-    }
-}
-
 bool QueryCategorizer::GetProductCategory(
     const std::string& query,
     int limit,
@@ -209,30 +130,7 @@ bool QueryCategorizer::GetProductCategory(
             return true;
         }
     }
-    if(!modes_.empty()&&frontCategories.empty())
-    {
-        std::string enriched_query;
-        spu_classifier_->GetEnrichedQuery(query, enriched_query);
-
-        for(unsigned i = 0; i < modes_.size(); ++i)
-        {
-            switch(modes_[i])
-            {
-            case MATCHER:
-                //GetCategoryByMatcher_(query, limit, frontCategories);
-                //LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
-                break;
-            case SEARCH_SPU:
-                GetCategoryBySPU_(enriched_query, frontCategories);
-                LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
-                break;
-            case SEARCH_PRODUCT:
-                GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
-                LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
-                break;
-            }
-        }
-    }
+    
     bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);
     cache_.insertValue(query, pathVec);
     return ret;

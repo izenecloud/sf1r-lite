@@ -43,7 +43,7 @@ public:
     };
 
 public:
-    SynchroConsumer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncZkNode);
+    SynchroConsumer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncID);
 
     ~SynchroConsumer();
 
@@ -60,7 +60,7 @@ public:
 
     virtual void onNodeDeleted(const std::string& path);
 
-    virtual void onMonitor();
+    //virtual void onMonitor();
 
 private:
     void doWatchProducer();
@@ -74,17 +74,21 @@ private:
 private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    std::string syncID_;
     std::string syncZkNode_;
     std::string producerZkNode_;
 
     ConsumerStatusType consumerStatus_;
 
     boost::mutex mutex_;
+    boost::condition_variable cond_;
     std::string consumerNodePath_;
 
     callback_on_produced_t callback_on_produced_;
 
     std::string collectionName_;
+    bool stopping_;
+    bool reconnectting_;
 };
 
 typedef boost::shared_ptr<SynchroConsumer> SynchroConsumerPtr;

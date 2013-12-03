@@ -80,6 +80,9 @@ namespace sf1r {
             case QueryTree::AND:
                 ss << "AND      : ]" << endl;
                 break;
+            case QueryTree::WAND:
+                ss << "WAND     : ]" << endl;
+                break;
             case QueryTree::OR:
                 ss << "OR       : ]" << endl;
                 break;

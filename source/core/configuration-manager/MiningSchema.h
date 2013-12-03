@@ -7,7 +7,9 @@
 #include "TDTConfig.h"
 #include "SummarizeConfig.h"
 #include "SuffixMatchConfig.h"
-
+#include "QueryIntentConfig.h"
+#include "ZambeziConfig.h"
+#include "AdIndexConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -28,9 +30,10 @@ public:
         , group_enable(false)
         , attr_enable(false), attr_property()
         , ise_enable(false)
-        , recommend_tg(false), recommend_querylog(true)
+        , recommend_tg(false), recommend_querylog(true), recommend_autofill(false), recommend_autofill_days(30)
         , summarization_enable(false), summarization_schema()
         , product_matcher_enable(false)
+        , query_intent_enable(false)
     {
     }
     ~MiningSchema() {}
@@ -52,9 +55,10 @@ private:
         ar & tdt_enable;
         ar & tdt_config;
         ar & ise_enable & ise_property;
-        ar & recommend_tg & recommend_querylog & recommend_properties;
+        ar & recommend_tg & recommend_querylog & recommend_autofill & recommend_autofill_days & recommend_properties;
         ar & summarization_enable & summarization_schema;
         ar & product_matcher_enable & product_categorizer_mode;
+        ar & query_intent_enable & query_intent_config;
     }
 
 public:
@@ -91,6 +95,8 @@ public:
 
     bool recommend_tg;
     bool recommend_querylog;
+    bool recommend_autofill;
+    unsigned int recommend_autofill_days;
     std::vector<std::string> recommend_properties;
 
     bool summarization_enable;
@@ -100,6 +106,13 @@ public:
 
     bool product_matcher_enable;
     std::string product_categorizer_mode;
+
+    bool query_intent_enable;
+    QueryIntentConfig query_intent_config;
+
+    ZambeziConfig zambezi_config;
+
+    AdIndexConfig ad_index_config;
 };
 
 } // namespace

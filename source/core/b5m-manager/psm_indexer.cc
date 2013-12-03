@@ -5,6 +5,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
 PsmIndexer::PsmIndexer(const std::string& cma_path)
 :cma_path_(cma_path), psmk_(400)
@@ -88,7 +89,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::map<std::string, UString> doc;
+            std::map<std::string, Document::doc_prop_value_strtype> doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)
@@ -222,7 +223,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
+                std::map<std::string, Document::doc_prop_value_strtype> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
                 for(; p!=scddoc.end(); ++p)
@@ -304,7 +305,7 @@ bool PsmIndexer::DoMatch(const std::string& scd_path, const std::string& knowled
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::map<std::string, UString> doc;
+            std::map<std::string, Document::doc_prop_value_strtype> doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             for(; p!=scddoc.end(); ++p)

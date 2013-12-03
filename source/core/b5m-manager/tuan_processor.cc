@@ -13,13 +13,16 @@
 
 
 using namespace sf1r;
+using namespace sf1r::b5m;
 
-TuanProcessor::TuanProcessor()
+TuanProcessor::TuanProcessor(const B5mM& b5mm) : b5mm_(b5mm)
 {
 }
 
-bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
+bool TuanProcessor::Generate(const std::string& mdb_instance)
 {
+    SetCmaPath(b5mm_.cma_path);
+    const std::string& scd_path = b5mm_.scd_path;
     namespace bfs = boost::filesystem;
     std::vector<std::string> scd_list;
     B5MHelper::GetIUScdList(scd_path, scd_list);
@@ -61,36 +64,54 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 {
                     LOG(INFO)<<"Find Documents "<<n<<std::endl;
                 }
-                std::map<std::string, UString> doc;
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
+                Document doc;
                 for(; p!=scddoc.end(); ++p)
                 {
                     const std::string& property_name = p->first;
-                    doc[property_name] = p->second;
+                    doc.property(property_name) = p->second;
                 }
-                //if(doc["uuid"].length()>0) continue;
-                UString category = doc["Category"];
-                UString city = doc["City"];
-                UString title = doc["Title"];
-                if(category.empty()||city.empty()||title.empty())
+                std::string soid;
+                std::string category;
+                std::string city;
+                std::string title;
+                std::string sprice;
+                std::string address;
+                std::string area;
+                doc.getString("DOCID", soid);
+                doc.getString("Category", category);
+                doc.getString("City", city);
+                doc.getString("Title", title);
+                doc.getString("MerchantAddr", address);
+                doc.getString("MerchantArea", area);
+                if(category.empty()||city.empty()||title.empty()||area.empty())
                 {
                     continue;
                 }
-                std::string scategory;
-                category.convertString(scategory, izenelib::util::UString::UTF_8);
-                std::string soid;
-                doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
+                doc.getString("Price", sprice);
+                ProductPrice pprice;
+                pprice.Parse(sprice);
                 const DocIdType& id = soid;
 
                 TuanProcessorAttach attach;
-                UString sid_str = category;
+                if(pprice.Positive()) attach.price = pprice;
+                UString sid_str = UString(category, UString::UTF_8);
                 sid_str.append(UString("|", UString::UTF_8));
-                sid_str.append(city);
+                sid_str.append(UString(city, UString::UTF_8));
+                std::vector<std::string> area_array;
+                boost::algorithm::split(area_array, area, boost::is_any_of(",;"));
+                if(area_array.size()!=1) continue;
+                sid_str.append(UString("|", UString::UTF_8));
+                sid_str.append(UString(area_array.front(), UString::UTF_8));
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
+                //std::sort(area_array.begin(), area_array.end());
+                std::string text = title;
+                //if(!address.empty()) text+="\t"+address;
+                
 
                 std::vector<std::pair<std::string, double> > doc_vector;
-                analyzer.Analyze(title, doc_vector);
+                analyzer.Analyze(UString(text, UString::UTF_8), doc_vector);
 
                 if( doc_vector.empty() )
                 {
@@ -113,7 +134,8 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
         }
     }
     LOG(INFO)<<"match result size "<<match_result.size()<<std::endl;
-    std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
+    //std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
+    const std::string& b5mo_path = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(b5mo_path);
     ScdWriter writer(b5mo_path, UPDATE_SCD);
 
@@ -140,10 +162,10 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            UString oid;
+            Document::doc_prop_value_strtype oid;
             std::string soid;
             doc.getProperty("DOCID", oid);
-            oid.convertString(soid, UString::UTF_8);
+            soid = propstr_to_str(oid);
             std::string spid;
             MatchResult::const_iterator it = match_result.find(soid);
             if(it==match_result.end())
@@ -154,7 +176,7 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
             {
                 spid = it->second;
             }
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
             writer.Append(doc);
         }
     }
@@ -167,7 +189,8 @@ bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb
     merger.SetMProperty("uuid");
     merger.SetOutputer(boost::bind( &TuanProcessor::B5moOutput_, this, _1, _2));
     merger.SetMEnd(boost::bind( &TuanProcessor::POutputAll_, this));
-    std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance);
+    //std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance);
+    const std::string& p_output_dir = b5mm_.b5mp_path;
     B5MHelper::PrepareEmptyDir(p_output_dir);
     pwriter_.reset(new ScdWriter(p_output_dir, UPDATE_SCD));
     merger.Run();
@@ -224,7 +247,7 @@ void TuanProcessor::ProductMerge_(SValueType& value, const SValueType& another_v
     ProductProperty another;
     another.Parse(another_value.doc);
     pp += another;
-    if(value.empty() || another.oid==another.pid )
+    if(value.empty() || another.oid==another.productid)
     {
         value.doc.copyPropertiesFromDocument(another_value.doc, true);
     }
@@ -243,7 +266,7 @@ void TuanProcessor::ProductMerge_(SValueType& value, const SValueType& another_v
                 PropertyValue& pvalue = value.doc.property(it->first);
                 if(pvalue.which()==docid_value.which()) //is UString
                 {
-                    const UString& uvalue = pvalue.get<UString>();
+                    const PropertyValue::PropertyValueStrType& uvalue = pvalue.getPropertyStrValue();
                     if(uvalue.empty())
                     {
                         pvalue = it->second;

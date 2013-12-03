@@ -65,11 +65,17 @@ public:
         filename_ = fn;
     }
 
+    std::string getFileName()
+    {
+        return filename_;
+    }
     static std::string GenSCDFileName(SCD_TYPE scd_type);
 
     bool Append(const Document& doc);
 
     bool Append(const SCDDoc& doc);
+
+    bool Append(const std::string& str);//use it after DocToString
 
     void Close();
 
@@ -77,6 +83,8 @@ public:
     {
         pname_filter_ = filter;
     }
+
+    static void DocToString(const Document& doc, std::string& str);
 
 private:
 

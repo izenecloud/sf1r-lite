@@ -10,20 +10,17 @@
 
 namespace sf1r
 {
-void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
-
 bool buildQueryTree(
         SearchKeywordOperation&action,
         IndexBundleConfiguration& bundleConfig,
         std::string& btqError,
         PersonalSearchInfo& personalSearchInfo);
 
-void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
-void split_int32(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
-void split_int64(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
-void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
-void split_datetime(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
+//void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
+//void split_int32(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
+//void split_int64(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
+//void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
+//void split_datetime(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep = " ");
 
 } //namespace
 

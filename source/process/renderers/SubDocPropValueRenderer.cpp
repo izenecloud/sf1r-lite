@@ -1,6 +1,7 @@
 #include "SubDocPropValueRenderer.h"
 #include <rapidjson/document.h>
 #include <glog/logging.h>
+#include <util/driver/readers/JsonReader.h>
 
 namespace sf1r
 {
@@ -11,10 +12,16 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
 {
     if (origText.empty())
         return;
-    rapidjson::Document doc;
-    if (doc.Parse<0>(origText.c_str()).HasParseError());
+    izenelib::driver::JsonReader reader;
+    if(!reader.read(origText, resourceValue))
     {
-        return;
+        resourceValue[propName] = origText;
+    }
+    /*
+    rapidjson::Document doc;
+    if (doc.Parse<0>(origText.c_str()).HasParseError())
+    {
+        //return;
     }
     const rapidjson::Value& subDocs = doc;
     assert(subDocs.IsArray());
@@ -27,6 +34,6 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
         {
             subDoc[mit->name.GetString()]=mit->value.GetString();
         }
-    }
+    }*/
 }
 }

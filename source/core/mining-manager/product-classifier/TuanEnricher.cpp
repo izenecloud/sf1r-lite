@@ -151,6 +151,7 @@ void TuanEnricher::GetEnrichedQuery(
             false,
             match_ranges_list,
             max_match_list,
+            0,
             max_docs,
             single_res_list);
 
@@ -205,17 +206,15 @@ void TuanEnricher::GetEnrichedQuery(
         }
         try
         {
-            UString enriched = doc.property("Title").get<izenelib::util::UString>();
-            enriched += UString(" ");
-            enriched += doc.property("Category").get<izenelib::util::UString>();
-            enriched += UString(" ");
-            enriched += doc.property("SubCategory").get<izenelib::util::UString>();
-            std::string enriched_str;
-            enriched.convertString(enriched_str, UString::UTF_8);
+            PropertyValue::PropertyValueStrType enriched = doc.property("Title").get<PropertyValue::PropertyValueStrType>();
+            enriched += str_to_propstr(" ");
+            enriched += doc.property("Category").get<PropertyValue::PropertyValueStrType>();
+            enriched += str_to_propstr(" ");
+            enriched += doc.property("SubCategory").get<PropertyValue::PropertyValueStrType>();
 
             //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;
             enriched_result += std::string(" ");
-            enriched_result += enriched_str;
+            enriched_result += propstr_to_str(enriched);
         }
         catch(boost::bad_get& e)
             {}
@@ -223,4 +222,3 @@ void TuanEnricher::GetEnrichedQuery(
 }
 
 }
-

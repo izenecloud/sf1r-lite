@@ -18,6 +18,8 @@ const char* UserQuery::ColumnMeta[EoC] = { "Text", "TEXT", "integer", "integer",
 //integer
 const char* UserQuery::TableName = "user_queries";
 
+const std::string UserQuery::service_="user-query-analysis";
+
 void UserQuery::save( std::map<std::string, std::string> & rawdata )
 {
     rawdata.clear();
@@ -46,6 +48,8 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
     {
         if (it->first == ColumnName[Query] )
         {
+
+
             setQuery(it->second);
         }
         else if (it->first == ColumnName[Collection])
@@ -89,17 +93,44 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
 
 void UserQuery::save_to_logserver()
 {
-    LogServerConnection& conn = LogServerConnection::instance();
-    InjectUserQueryRequest req;
-    req.param_.query_ = query_;
-    req.param_.collection_ = collection_;
-    req.param_.hitnum_ = boost::lexical_cast<string>(hitDocsNum_);
-    req.param_.page_start_ = boost::lexical_cast<string>(pageStart_);
-    req.param_.page_count_ = boost::lexical_cast<string>(pageCount_);
-    req.param_.duration_ = to_iso_string(duration_);
-    req.param_.timestamp_ = to_iso_string(timeStamp_);
+    if(hitDocsNum_ > 0)
+    {
+        LogAnalysisConnection& conn = LogAnalysisConnection::instance();
+        InsertWithValuesDataRequest req;
+        req.param_.service_ = service_;
+        req.param_.collection_=collection_;
+        req.param_.key_ = query_;
+        req.param_.values_["query"] = query_;
+        req.param_.values_["collection"] = collection_;
+        req.param_.values_["hit_docs_num"] = boost::lexical_cast<string>(hitDocsNum_);
+        req.param_.values_["page_start"] = boost::lexical_cast<string>(pageStart_);
+        req.param_.values_["page_count"] = boost::lexical_cast<string>(pageCount_);
+        req.param_.values_["duration"] = to_simple_string(duration_);
+        req.param_.values_["TimeStamp"] = to_iso_string(timeStamp_);
 
-    bool res;
+        bool res;
+        conn.syncRequest(req, res);
+    }
+}
+
+void UserQuery::getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res)
+{
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
+    GetValueAndCountRequest req;
+    req.param_.service_ = service_;
+    req.param_.collection_ = c;
+    req.param_.begin_time_ = b;
+
+    conn.syncRequest(req, res);
+}
+
+void UserQuery::getRecentKeyword(const std::string& b, std::list<std::map<std::string, std::string> >& res)
+{
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
+    GetAllCollectionRequest req;
+    req.param_.service_ = service_;
+    req.param_.begin_time_ = b;
+
     conn.syncRequest(req, res);
 }
 

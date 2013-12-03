@@ -6,6 +6,7 @@
 #include <mining-manager/util/FSUtil.hpp>
 #include <mining-manager/MiningUtil.h>
 #include <log-manager/PropertyLabel.h>
+#include <log-manager/LogAnalysis.h>
 #include <util/hashFunction.h>
 #include <stdint.h>
 #include <algorithm>
@@ -488,7 +489,8 @@ bool LabelManager::updateLabelDb_()
         return true;
 
     // TODO: keep consistency between collection data and db table when distributed
-    PropertyLabel::del_record("collection = '" + collection_name_ + "'");
+    LogAnalysis::delPropertyLabel(collection_name_);
+
     uint32_t max_labelid = getMaxLabelID();
     for (uint32_t labelid = 1; labelid <= max_labelid; labelid++)
     {

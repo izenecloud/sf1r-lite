@@ -14,11 +14,14 @@ enum ProductScoreType
     MERCHANT_SCORE = 0,
     CUSTOM_SCORE,
     CATEGORY_SCORE,
+    CATEGORY_CLASSIFY_SCORE,
     RELEVANCE_SCORE,
     POPULARITY_SCORE,
     FUZZY_SCORE,
+    OFFER_ITEM_COUNT_SCORE,
     DIVERSITY_SCORE,
     RANDOM_SCORE,
+    TITLE_RELEVANCE_SCORE,
     PRODUCT_SCORE_NUM
 };
 
@@ -33,9 +36,24 @@ struct ProductScoreConfig
 
     score_t weight;
 
+    score_t minLimit;
+    score_t maxLimit;
+
+    bool isDebug; /// whether print debug message
+
     std::vector<ProductScoreConfig> factors;
 
     ProductScoreConfig();
+
+    /**
+     * Limit the @p score within the range [minLimit, maxLimit].
+     */
+    void limitScore(score_t& score) const;
+
+    /**
+     * @return true if @p score is within the range [minLimit, maxLimit].
+     */
+    bool isValidScore(score_t score) const;
 
     /**
      * @return a string which could be printed in debug.
@@ -51,6 +69,9 @@ private:
         ar & type;
         ar & propName;
         ar & weight;
+        ar & minLimit;
+        ar & maxLimit;
+        ar & isDebug;
         ar & factors;
     }
 };

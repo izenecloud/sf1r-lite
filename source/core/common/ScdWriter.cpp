@@ -53,9 +53,18 @@ bool ScdWriter::Append(const Document& doc)
     {
         Open_();
     }
-    std::string sdocid;
-    docid_it->second.get<izenelib::util::UString>().convertString(sdocid, izenelib::util::UString::UTF_8);
+    std::string sdocid = propstr_to_str(docid_it->second.getPropertyStrValue());
     ofs_<<"<"<<DOCID<<">"<<sdocid<<std::endl;
+    if(scd_type_ == DELETE_SCD)
+    {
+        Document::property_const_iterator uuid_it = doc.findProperty("uuid");
+        if(uuid_it != doc.propertyEnd())
+        {
+            std::string suuid = propstr_to_str(uuid_it->second.getPropertyStrValue());
+            ofs_<<"<uuid>"<< suuid << std::endl;
+        }
+        return true;
+    }
     Document::property_const_iterator it = doc.propertyBegin();
     while(it!=doc.propertyEnd())
     {
@@ -77,6 +86,16 @@ bool ScdWriter::Append(const Document& doc)
         ofs_<<std::endl;
         ++it;
     }
+    return true;
+}
+bool ScdWriter::Append(const std::string& str)
+{
+    if(str.empty()) return false;
+    if(!ofs_.is_open())
+    {
+        Open_();
+    }
+    ofs_<<str;
     return true;
 }
 
@@ -105,7 +124,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
         const std::string& name = it->first;
         if(name=="DOCID")
         {
-            it->second.convertString(docid_value, izenelib::util::UString::UTF_8);
+            docid_value = propstr_to_str(it->second);
             docid_found = true;
             break;
         }
@@ -127,8 +146,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
             const std::string& name = it->first;
             if(name!="DOCID")
             {
-                std::string value;
-                it->second.convertString(value, izenelib::util::UString::UTF_8);
+                std::string value = propstr_to_str(it->second);
                 ofs_<<"<"<<name<<">"<<value<<std::endl;
             }
         }
@@ -143,3 +161,31 @@ void ScdWriter::Close()
         ofs_.close();
     }
 }
+void ScdWriter::DocToString(const Document& doc, std::string& str)
+{
+    std::stringstream ss;
+    DocumentOutputVisitor visitor(&ss);
+    const static std::string DOCID = "DOCID";
+    Document::property_const_iterator docid_it = doc.findProperty(DOCID);
+    if(docid_it == doc.propertyEnd())
+    {
+        return;
+    }
+    std::string sdocid = propstr_to_str(docid_it->second.getPropertyStrValue());
+    ss<<"<"<<DOCID<<">"<<sdocid<<std::endl;
+    Document::property_const_iterator it = doc.propertyBegin();
+    while(it!=doc.propertyEnd())
+    {
+        if(it->first==DOCID)
+        {
+            ++it;
+            continue;
+        }
+        ss<<"<"<<it->first<<">";
+        boost::apply_visitor( visitor, it->second.getVariant());
+        ss<<std::endl;
+        ++it;
+    }
+    str = ss.str();
+}
+

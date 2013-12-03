@@ -5,8 +5,6 @@
 #include "UserQuery.h"
 #include "PropertyLabel.h"
 #include "ProductCount.h"
-#include "OrderLogger.h"
-#include "ItemLogger.h"
 
 #include "CassandraConnection.h"
 #include "PriceHistory.h"
@@ -42,13 +40,12 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
 {
     if (!RDbConnection::instance().init(pathParam))
         return false;
-
+    if (RDbConnection::instance().logServer())
+        return true;
     SystemEvent::createTable();
     UserQuery::createTable();
     PropertyLabel::createTable();
     ProductCount::createTable();
-    OrderLogger::createTable();
-    ItemLogger::createTable();
 
     return true;
 }

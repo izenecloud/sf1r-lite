@@ -8,32 +8,42 @@
 
 namespace sf1r
 {
-
-void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
+static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
 {
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
+    if (NULL == rawQueryTree)
+        return;
+    if (rawQueryTree->type_ == QueryTree::KEYWORD)
+        return;
+    if (QueryTree::AND == rawQueryTree->type_)
+        rawQueryTree->type_ = QueryTree::WAND;
+    QTIter it = rawQueryTree->children_.begin();
+    for (; it != rawQueryTree->children_.end(); ++it)
     {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += " ";
+        buildWANDQueryTree((*it));
     }
 }
 
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
+static void buildWANDQueryTree(QueryTreePtr& rawQueryTree, QueryTreePtr& analyzedQueryTree)
 {
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
+    if (NULL == rawQueryTree || NULL == analyzedQueryTree)
+        return;
+    if (QueryTree::KEYWORD == rawQueryTree->type_)
     {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += "|";
+        if (analyzedQueryTree->children_.begin() != analyzedQueryTree->children_.end())
+            analyzedQueryTree->type_ = QueryTree::WAND;
+        return;
     }
-    boost::trim_right_if(result, boost::is_any_of("|"));
+    if (QueryTree::WAND == rawQueryTree->type_)
+    {
+        analyzedQueryTree->type_ = QueryTree::WAND;
+        QTIter itRaw = rawQueryTree->children_.begin();
+        QTIter itAna = analyzedQueryTree->children_.begin();
+        for (; (itRaw != rawQueryTree->children_.end()) 
+             && (itAna != analyzedQueryTree->children_.end()); ++itRaw, ++itAna)
+        {
+            buildWANDQueryTree((*itRaw), (*itAna));
+        }
+    }
 }
 
 bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
@@ -45,7 +55,8 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     UString::EncodingType encodingType =
         UString::convertEncodingTypeFromStringToEnum(
             action.actionItem_.env_.encodingType_.c_str() );
-    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
+    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);//xxx
+    
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
 
@@ -57,6 +68,10 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         action.isPhraseOrWildcardQuery_ = true;
 
     //queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
+    if (action.actionItem_.searchingMode_.mode_ == SearchingMode::WAND) 
+    {
+        buildWANDQueryTree(action.rawQueryTree_);
+    }
     action.rawQueryTree_->print();
 
     // Build property query map
@@ -69,7 +84,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         if ( action.queryTreeMap_.find( *propertyIter ) != action.queryTreeMap_.end()
                 && action.propertyTermInfo_.find( *propertyIter ) != action.propertyTermInfo_.end() )
             continue;
-        std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
+        //std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
 
         QueryTreePtr tmpQueryTree;
         if ( applyLA )
@@ -113,7 +128,12 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         else // store raw query's info into it.
             tmpQueryTree = action.rawQueryTree_;
 
-        tmpQueryTree->print();
+        if (action.actionItem_.searchingMode_.mode_ == SearchingMode::WAND) 
+        {
+            buildWANDQueryTree(action.rawQueryTree_, tmpQueryTree);
+        }
+        
+        //tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;
         tmpQueryTree->getPropertyTermInfo(ptInfo);
@@ -122,173 +142,4 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     } // end - for
     return true;
 } // end - buildQueryTree()
-
-void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator)
-{
-    izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ", encoding);
-    sep[0] = Separator;
-    size_t n = 0, nOld = 0;
-    while (n != izenelib::util::UString::npos)
-    {
-        n = str.find(sep,n);
-        if (n != izenelib::util::UString::npos)
-        {
-            if (n != nOld)
-                out.push_back(str.substr(nOld, n - nOld));
-            n += sep.length();
-            nOld = n;
-        }
-    }
-    out.push_back(str.substr(nOld));
-}
-
-void split_int32(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
-{
-    std::string str;
-    szText.convertString(str, encoding);
-    std::size_t n = 0, nOld = 0;
-    while (n != std::string::npos)
-    {
-        n = str.find_first_of(sep, n);
-        if (n != std::string::npos)
-        {
-            if (n != nOld)
-            {
-                try
-                {
-                    std::string tmpStr = str.substr(nOld, n - nOld);
-                    boost::algorithm::trim(tmpStr);
-                    int32_t value = boost::lexical_cast<int32_t>(tmpStr);
-                    out.push_back(value);
-                }
-                catch (boost::bad_lexical_cast &)
-                {
-                }
-            }
-            ++n;
-            nOld = n;
-        }
-    }
-
-    try
-    {
-        std::string tmpStr = str.substr(nOld);
-        boost::algorithm::trim(tmpStr);
-        int32_t value = boost::lexical_cast<int32_t>(tmpStr);
-        out.push_back(value);
-    }
-    catch (boost::bad_lexical_cast &)
-    {
-    }
-}
-
-void split_int64(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
-{
-    std::string str;
-    szText.convertString(str, encoding);
-    std::size_t n = 0, nOld = 0;
-    while (n != std::string::npos)
-    {
-        n = str.find_first_of(sep, n);
-        if (n != std::string::npos)
-        {
-            if (n != nOld)
-            {
-                try
-                {
-                    std::string tmpStr = str.substr(nOld, n - nOld);
-                    boost::algorithm::trim(tmpStr);
-                    int64_t value = boost::lexical_cast<int64_t>(tmpStr);
-                    out.push_back(value);
-                }
-                catch (boost::bad_lexical_cast &)
-                {
-                }
-            }
-            ++n;
-            nOld = n;
-        }
-    }
-
-    try
-    {
-        std::string tmpStr = str.substr(nOld);
-        boost::algorithm::trim(tmpStr);
-        int64_t value = boost::lexical_cast<int64_t>(tmpStr);
-        out.push_back(value);
-    }
-    catch (boost::bad_lexical_cast &)
-    {
-    }
-}
-
-void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
-{
-    std::string str;
-    szText.convertString(str, encoding);
-    std::size_t n = 0, nOld = 0;
-    while (n != std::string::npos)
-    {
-        n = str.find_first_of(sep, n);
-        if (n != std::string::npos)
-        {
-            if (n != nOld)
-            {
-                try
-                {
-                    std::string tmpStr = str.substr(nOld, n - nOld);
-                    boost::algorithm::trim(tmpStr);
-                    float value = boost::lexical_cast<float>(tmpStr);
-                    out.push_back(value);
-                }
-                catch (boost::bad_lexical_cast &)
-                {
-                }
-            }
-            ++n;
-            nOld = n;
-        }
-    }
-
-    try
-    {
-        std::string tmpStr = str.substr(nOld);
-        boost::algorithm::trim(tmpStr);
-        float value = boost::lexical_cast<float>(tmpStr);
-        out.push_back(value);
-    }
-    catch (boost::bad_lexical_cast &)
-    {
-    }
-}
-
-void split_datetime(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
-{
-    std::string str;
-    szText.convertString(str, encoding);
-    std::size_t n = 0, nOld = 0;
-    while (n != std::string::npos)
-    {
-        n = str.find_first_of(sep,n);
-        if (n != std::string::npos)
-        {
-            if (n != nOld)
-            {
-                std::string tmpStr = str.substr(nOld, n-nOld);
-                boost::algorithm::trim(tmpStr);
-                time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
-                out.push_back(timestamp);
-            }
-            ++n;
-            nOld = n;
-        }
-    }
-
-    std::string tmpStr = str.substr(nOld);
-    boost::algorithm::trim( tmpStr );
-    time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
-    out.push_back(timestamp);
-}
-
 }

@@ -17,9 +17,13 @@ headers:
   - controllers/QueryNormalizeController.h
 
 controllers:
-  AutoFillController: ~
+  AutoFillController:
+    actions:
+      - index
 
-  QueryCorrectionController: ~
+  QueryCorrectionController:
+    actions:
+      - index
 
   QueryNormalizeController:
     actions:
@@ -33,6 +37,7 @@ controllers:
       - optimize_index
       - index_query_log
       - mining
+      - train_ctr_model
 
   KeywordsController:
     actions:
@@ -131,10 +136,6 @@ controllers:
 
   ProductController:
     actions:
-      - add_new_group
-      - append_to_group
-      - remove_from_group
-      - update_a_doc
       - get_multi_price_history
       - get_top_price_cut_list
       - migrate_price_history
@@ -151,6 +152,8 @@ controllers:
       - stop_collection
       - check_collection
       - update_collection_conf
+      - update_sharding_conf
+      - add_sharding_nodes
       - rebuild_collection
       - rebuild_from_scd
       - backup_all

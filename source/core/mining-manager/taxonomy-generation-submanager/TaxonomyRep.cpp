@@ -30,7 +30,7 @@ void TaxonomyRep::fill(KeywordSearchResult& searchResult)
 
 void TaxonomyRep::fill_(KeywordSearchResult& searchResult, boost::shared_ptr<TgClusterRep> cluster, uint8_t level)
 {
-    searchResult.taxonomyString_.push_back(cluster->name_);
+    searchResult.taxonomyString_.push_back(ustr_to_propstr(cluster->name_));
     searchResult.numOfTGDocs_.push_back( (cluster->docContain_).size() );
     searchResult.tgDocIdList_.push_back( cluster->docContain_ );
     searchResult.taxonomyLevel_.push_back(level);

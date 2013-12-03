@@ -35,6 +35,7 @@ class ItemIdGenerator;
 struct RateParam;
 class UpdateRecommendBase;
 class UpdateRecommendWorker;
+class RecommendShardStrategy;
 
 namespace directory
 {
@@ -58,7 +59,8 @@ public:
         ItemIdGenerator& itemIdGenerator,
         QueryPurchaseCounter& queryPurchaseCounter,
         UpdateRecommendBase& updateRecommendBase,
-        UpdateRecommendWorker* updateRecommendWorker
+        UpdateRecommendWorker* updateRecommendWorker,
+        RecommendShardStrategy* recommendShardStrategy
     );
 
     ~RecommendTaskService();
@@ -290,6 +292,7 @@ private:
 
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
+    RecommendShardStrategy*  recommendShardStrategy_;
 
     boost::mutex buildCollectionMutex_;
 };

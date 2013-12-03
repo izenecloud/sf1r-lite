@@ -33,7 +33,6 @@ namespace sf1r
 class DocumentManager;
 class LAManager;
 class LabelManager;
-class IndexManager;
 }
 
 NS_FACETED_BEGIN
@@ -54,22 +53,6 @@ public:
             const std::vector<std::string>& properties,
             idmlib::util::IDMAnalyzer* analyzer);
 
-#if 0
-    OntologyManager(
-        std::string& facetedPath,
-        std::string& tgLabelPath,
-        std::string& collectionName,
-        const DocumentSchema& documentSchema,
-        const MiningSchema& mining_schema_,
-        boost::shared_ptr<DocumentManager>& document_manager,
-        idmlib::util::IDMAnalyzer* analyzer,
-        boost::shared_ptr<IndexManager>& index_manager,
-        boost::shared_ptr<LabelManager>& labelManager,
-        boost::shared_ptr<IDManager>& idManager,
-        boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader,
-        boost::shared_ptr<LAManager>& laManager
-    );
-#endif
     ~OntologyManager();
 
     bool Open();
@@ -96,17 +79,13 @@ public:
     int getCoOccurence(uint32_t labelTermId,uint32_t topicTermId);
 private:
     void OutputToFile_(const std::string& file, Ontology* ontology);
-    void  calculateCoOccurenceByIndexManager(Ontology* ontology);
     uint32_t GetProcessedMaxId_();
 
     bool ProcessCollectionSimple_(bool rebuild = false);
-    bool ProcessCollectionWithSmooth_(bool rebuild);
 
     bool SetXMLSimple_(const std::string& xml);
-    bool SetXMLWithSmooth_(const std::string& xml);
 
     //void readDocsFromFile(const std::string& file, vector<Document> &docs);
-    int getCollectionTermsCount();
     int getTFInDoc(izenelib::util::UString& label,Document& doc );
     int getTFInCollection(izenelib::util::UString& label);
     int getDocTermsCount(Document& doc);
@@ -129,7 +108,6 @@ private:
     Ontology* service_;
     OntologySearcher* searcher_;
     ManmadeDocCategory* manmade_;
-    boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<LabelManager> labelManager_;
     boost::shared_ptr<IDManager> idManager_;
     //boost::shared_ptr<LabelManager::LabelDistributeSSFType::ReaderType> reader_;

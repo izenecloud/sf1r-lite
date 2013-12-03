@@ -33,11 +33,32 @@ public:
 
     std::string ToString() const;
 
-    izenelib::util::UString ToUString() const;
+    Document::doc_prop_value_strtype ToPropString() const;
 
     bool Valid() const;
 
+    bool Positive() const;
+
     bool GetMid(ProductPriceType& mid) const;
+
+    ProductPriceType Min() const { return value.first; }
+    ProductPriceType Max() const { return value.second; }
+    ProductPriceType Mid() const { return (Min()+Max())/2.0; }
+    friend std::ostream& operator<<(std::ostream& out, const ProductPrice& p)
+    {
+        if(p.Valid())
+        {
+            if(p.value.first!=p.value.second)
+            {
+                out<<p.value.first<<"-"<<p.value.second;
+            }
+            else
+            {
+                out<<p.value.first;
+            }
+        }
+        return out;
+    }
 
 private:
     static bool Convert_(const std::string& str, ProductPriceType& p);

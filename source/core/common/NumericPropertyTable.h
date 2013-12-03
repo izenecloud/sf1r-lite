@@ -57,6 +57,16 @@ template <class T>
 class NumericPropertyTable : public NumericPropertyTableBase
 {
 public:
+	//define sf1r search precision
+	//float normally used as price
+	//double normally used as latitude/longitude
+	enum
+	{
+		kPrecisionFloat = 2,
+		kPrecisionDouble = 6
+	};
+
+public:
     NumericPropertyTable(PropertyDataType type)
         : NumericPropertyTableBase(type)
         , dirty_(false)
@@ -236,10 +246,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -247,10 +259,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -258,21 +272,25 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
-	data_[pos] = static_cast<T>(value);
+        ScopedReadBoolLock lock(mutex_, true);
+        data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setDoubleValue(std::size_t pos, const double& value)
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
@@ -280,10 +298,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         try
         {
             data_[pos] = boost::lexical_cast<T>(value);
@@ -300,10 +320,12 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
+        ScopedReadBoolLock lock(mutex_, true);
         data_[pos] = value;
         dirty_ = true;
     }
@@ -404,7 +426,19 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
     char buf[32];
-    modp_dtoa((double)data_[pos], buf, 2);
+    modp_dtoa((double)data_[pos], buf, kPrecisionFloat);
+    value.assign(buf);
+    return true;
+}
+
+template <>
+inline bool NumericPropertyTable<double>::getStringValue(std::size_t pos, std::string& value, bool isLock) const
+{
+    ScopedReadBoolLock lock(mutex_, isLock);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+    char buf[32];
+    modp_dtoa((double)data_[pos], buf, kPrecisionDouble);
     value.assign(buf);
     return true;
 }
@@ -414,8 +448,9 @@ inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const 
 {
     if (pos >= data_.size())
     {
-        ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-        data_.resize(pos + 1, invalidValue_);
+        ScopedWriteBoolLock lock(mutex_, true);
+        if (pos >= data_.size())
+            data_.resize(pos + 1, invalidValue_);
     }
 
     try

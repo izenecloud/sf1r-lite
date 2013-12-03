@@ -8,6 +8,7 @@
 
 #include <util/driver/Renderer.h>
 #include <util/ustring/UString.h>
+#include <common/PropertyValue.h>
 
 #include <string>
 #include <set>
@@ -23,18 +24,18 @@ public:
 
     void renderPropValue(
         const std::string& propName,
-        const izenelib::util::UString& origText,
+        const PropertyValue::PropertyValueStrType& origText,
         izenelib::driver::Value& resourceValue
     );
 
 private:
     void renderGroupValue_(
-        const izenelib::util::UString& origText,
+        const PropertyValue::PropertyValueStrType& origText,
         izenelib::driver::Value& groupValue
     );
 
     void renderAttrValue_(
-        const izenelib::util::UString& origText,
+        const PropertyValue::PropertyValueStrType& origText,
         izenelib::driver::Value& attrValue
     );
 

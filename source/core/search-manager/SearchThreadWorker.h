@@ -14,13 +14,12 @@
 
 namespace sf1r
 {
-class IndexManager;
+class InvertedIndexManager;
 class DocumentManager;
 class SearchManagerPreProcessor;
 class CustomRankManager;
 class KeywordSearchActionItem;
 class DocumentIterator;
-class CombinedDocumentIterator;
 class ScoreDocEvaluator;
 class PropSharedLockSet;
 class QueryBuilder;
@@ -40,7 +39,7 @@ public:
     SearchThreadWorker(
         const IndexBundleConfiguration& config,
         const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
+        const boost::shared_ptr<InvertedIndexManager>& indexManager,
         const boost::shared_ptr<RankingManager>& rankingManager,
         SearchManagerPreProcessor& preprocessor,
         QueryBuilder& queryBuilder);
@@ -63,7 +62,7 @@ private:
 
     bool doSearch_(
         SearchThreadParam& param,
-        CombinedDocumentIterator* pDocIterator,
+        DocumentIterator& docIterator,
         faceted::GroupFilter* groupFilter,
         ScoreDocEvaluator& scoreDocEvaluator,
         PropSharedLockSet& propSharedLockSet);
@@ -72,7 +71,7 @@ private:
     const IndexBundleConfiguration& config_;
 
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
+    boost::shared_ptr<InvertedIndexManager> indexManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
 
     SearchManagerPreProcessor& preprocessor_;

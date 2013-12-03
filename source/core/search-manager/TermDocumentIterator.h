@@ -23,7 +23,7 @@
 namespace sf1r
 {
 
-class IndexManager;
+class InvertedIndexManager;
 
 ///DocumentIterator for one term in one property
 class TermDocumentIterator: public DocumentIterator
@@ -44,7 +44,7 @@ public:
         std::string rawTerm,
         collectionid_t colID,
         izenelib::ir::indexmanager::IndexReader* pIndexReader,
-        boost::shared_ptr<IndexManager> indexManagerPtr,
+        boost::shared_ptr<InvertedIndexManager> indexManagerPtr,
         const std::string& property,
         unsigned int propertyId,
         sf1r::PropertyDataType dataType,
@@ -111,9 +111,19 @@ public:
         return pTermDocReader_->freq();
     }
 
-    void set_ub(float ub)
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
     {
-        ub_ = ub;
+        ub_ = ubmap[property_][termIndex_]; 
+    }
+
+    float getUB()
+    {
+        return ub_;
+    }
+    
+    const char* getProperty()
+    {
+        return property_.c_str();
     }
 
     termid_t termId()
@@ -162,7 +172,7 @@ protected:
 
     izenelib::ir::indexmanager::TermDocFreqs* pTermDocReader_;
 
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
+    boost::shared_ptr<InvertedIndexManager> indexManagerPtr_;
 
     docid_t currDoc_;
 
@@ -171,6 +181,7 @@ protected:
     bool readPositions_;
 
     float ub_;
+
     friend class WANDDocumentIterator;
     friend class VirtualPropertyTermDocumentIterator;
 };

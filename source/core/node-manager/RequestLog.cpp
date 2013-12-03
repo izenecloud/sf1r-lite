@@ -7,6 +7,7 @@ namespace sf1r
 {
 std::set<std::string> ReqLogMgr::write_req_set_;
 std::set<std::string> ReqLogMgr::replay_write_req_set_;
+std::set<std::string> ReqLogMgr::auto_shard_write_set_;
 
 // to handle write request correctly , you need do things below:
 // 1. add controller_action string to ReqLogMgr, and define the log type for it if neccesary.
@@ -41,6 +42,9 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("collection_rebuild_from_scd");
     write_req_set_.insert("collection_backup_all");
     write_req_set_.insert("collection_set_kv");
+
+    write_req_set_.insert("collection_update_sharding_conf");
+
     write_req_set_.insert("commands_index");
     write_req_set_.insert("commands_index_recommend");
     write_req_set_.insert("commands_mining");
@@ -49,6 +53,8 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("faceted_set_custom_rank");
     write_req_set_.insert("faceted_set_merchant_score");
     write_req_set_.insert("faceted_set_ontology");
+    write_req_set_.insert("keywords_inject_query_correction");
+    write_req_set_.insert("keywords_inject_query_recommend");
 
     write_req_set_.insert("recommend_add_user");
     write_req_set_.insert("recommend_update_user");
@@ -59,13 +65,8 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("recommend_update_shopping_cart");
     write_req_set_.insert("recommend_track_event");
 
-    write_req_set_.insert("product_add_new_group");
-    write_req_set_.insert("product_append_to_group");
-    write_req_set_.insert("product_remove_from_group");
-    write_req_set_.insert("product_update_a_doc");
-
-    replay_write_req_set_.insert("documents_update");
-    replay_write_req_set_.insert("documents_update_inplace");
+    //replay_write_req_set_.insert("documents_update");
+    //replay_write_req_set_.insert("documents_update_inplace");
     replay_write_req_set_.insert("documents_set_top_group_label");
     replay_write_req_set_.insert("documents_log_group_label");
     replay_write_req_set_.insert("documents_visit");
@@ -80,6 +81,27 @@ void ReqLogMgr::initWriteRequestSet()
     replay_write_req_set_.insert("recommend_visit_item");
     replay_write_req_set_.insert("recommend_update_shopping_cart");
     replay_write_req_set_.insert("recommend_track_event");
+
+    auto_shard_write_set_.insert("documents_set_top_group_label");
+    auto_shard_write_set_.insert("documents_log_group_label");
+    auto_shard_write_set_.insert("commands_mining");
+    auto_shard_write_set_.insert("commands_optimize_index");
+    auto_shard_write_set_.insert("commands_index_query_log");
+    auto_shard_write_set_.insert("faceted_set_custom_rank");
+    auto_shard_write_set_.insert("faceted_set_merchant_score");
+    auto_shard_write_set_.insert("faceted_set_ontology");
+    auto_shard_write_set_.insert("keywords_inject_query_correction");
+    auto_shard_write_set_.insert("keywords_inject_query_recommend");
+
+    auto_shard_write_set_.insert("recommend_add_user");
+    auto_shard_write_set_.insert("recommend_update_user");
+    auto_shard_write_set_.insert("recommend_remove_user");
+    auto_shard_write_set_.insert("recommend_purchase_item");
+    auto_shard_write_set_.insert("recommend_rate_item");
+    auto_shard_write_set_.insert("recommend_visit_item");
+    auto_shard_write_set_.insert("recommend_update_shopping_cart");
+    auto_shard_write_set_.insert("recommend_track_event");
+
 }
 
 void ReqLogMgr::init(const std::string& basepath)

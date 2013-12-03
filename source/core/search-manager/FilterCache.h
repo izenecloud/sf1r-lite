@@ -7,7 +7,7 @@
  */
 
 #include <query-manager/ActionItem.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <cache/IzeneCache.h>
 
 #include <boost/shared_ptr.hpp>
@@ -18,7 +18,7 @@ class FilterCache
 {
 public:
     typedef QueryFiltering::FilteringType key_type;
-    typedef boost::shared_ptr<IndexManager::FilterBitmapT> value_type;
+    typedef boost::shared_ptr<InvertedIndexManager::FilterBitmapT> value_type;
 
 public:
     explicit FilterCache(unsigned cacheSize)

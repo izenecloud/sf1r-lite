@@ -3,13 +3,22 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
+#include "CategoryClassifyScorer.h"
+#include "TitleRelevanceScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../product-score-manager/ProductScoreManager.h"
+#include "../category-classify/CategoryClassifyTable.h"
+#include "../suffix-match-manager/SuffixMatchManager.hpp"
+#include "../title-scorer/TitleScoreList.h"
 #include <common/PropSharedLockSet.h>
+#include <common/QueryNormalizer.h>
+#include <common/ResourceManager.h>
 #include <configuration-manager/ProductRankingConfig.h>
-#include <memory> // auto_ptr
+#include <knlp/doc_naive_bayes.h>
 #include <glog/logging.h>
+#include <memory> // auto_ptr
+#include <sstream>
 
 using namespace sf1r;
 
@@ -20,6 +29,18 @@ namespace
  * score), we would select at most 9 top labels.
  */
 const score_t kTopLabelLimit = 9;
+
+const std::string kCategoryPropName("Category");
+
+bool checkGroupLabel(const faceted::GroupParam& groupParam)
+{
+    faceted::GroupParam::GroupLabelMap::const_iterator it =
+        groupParam.groupLabels_.find(kCategoryPropName);
+
+    return it != groupParam.groupLabels_.end() &&
+        !it->second.empty();
+}
+
 }
 
 ProductScorerFactory::ProductScorerFactory(
@@ -29,6 +50,8 @@ ProductScorerFactory::ProductScorerFactory(
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryValueTable_(NULL)
     , productScoreManager_(miningManager.GetProductScoreManager())
+    , categoryClassifyTable_(miningManager.GetCategoryClassifyTable())
+    , titleScoreList_(miningManager.GetTitleScoreList())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -47,6 +70,7 @@ ProductScorerFactory::ProductScorerFactory(
                                                     clickLogger,
                                                     labelKnowledge));
     }
+
 }
 
 ProductScorer* ProductScorerFactory::createScorer(
@@ -54,22 +78,82 @@ ProductScorer* ProductScorerFactory::createScorer(
 {
     std::auto_ptr<ProductScoreSum> scoreSum(new ProductScoreSum);
 
-    bool isany = false;
-    for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
+    if (scoreParam.searchMode_ == SearchingMode::SUFFIX_MATCH)
     {
-        ProductScorer* scorer = createScorerImpl_(config_.scores[i],
-                                                  scoreParam);
-        if (scorer)
+        createFuzzyModeScorer_(*scoreSum, scoreParam);
+    }
+    else if (scoreParam.searchMode_ == SearchingMode::ZAMBEZI)
+    {
+        createZambeziModeScorer_(*scoreSum, scoreParam);
+    }
+    else
+    {
+        for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
         {
-            scoreSum->addScorer(scorer);
-            isany = true;
+            ProductScorer* scorer = createScorerImpl_(config_.scores[i],
+                                                      scoreParam);
+            if (scorer)
+            {
+                scoreSum->addScorer(scorer);
+            }
         }
     }
 
-    if(!isany)
+    if(scoreSum->empty())
         return NULL;
 
     return scoreSum.release();
+}
+
+void ProductScorerFactory::createZambeziModeScorer_(
+    ProductScoreSum& scoreSum,
+    const ProductScoreParam& scoreParam)
+{
+    ProductScorer* scorer = createCategoryScorer_(config_.scores[CATEGORY_SCORE], 
+                                                  scoreParam);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createPopularityScorer_(config_.scores[POPULARITY_SCORE]);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+}
+
+void ProductScorerFactory::createFuzzyModeScorer_(
+    ProductScoreSum& scoreSum,
+    const ProductScoreParam& scoreParam)
+{
+    ProductScorer* scorer = categoryClassifyTable_ ?
+        createCategoryClassifyScorer_(config_.scores[CATEGORY_CLASSIFY_SCORE], scoreParam) :
+        createCategoryScorer_(config_.scores[CATEGORY_SCORE], scoreParam);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createCustomScorer_(config_.scores[CUSTOM_SCORE],
+                                 scoreParam.query_);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createTitleRelevanceScorer_(config_.scores[TITLE_RELEVANCE_SCORE],
+                                         scoreParam.queryScore_);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
+
+    scorer = createPopularityScorer_(config_.scores[POPULARITY_SCORE]);
+    if (scorer)
+    {
+        scoreSum.addScorer(scorer);
+    }
 }
 
 ProductScorer* ProductScorerFactory::createScorerImpl_(
@@ -118,20 +202,73 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     const ProductScoreConfig& scoreConfig,
     const ProductScoreParam& scoreParam)
 {
-    if (!labelSelector_)
+    if (!labelSelector_ ||
+        QueryNormalizer::get()->isLongQuery(scoreParam.query_))
         return NULL;
 
     scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
 
     std::vector<category_id_t> boostLabels;
-    if (labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
+    if (!labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
+        return NULL;
+
+    const bool hasPriority = scoreParam.searchMode_ != SearchingMode::ZAMBEZI;
+
+    return new CategoryScorer(scoreConfig,
+                              *categoryValueTable_,
+                              boostLabels,
+                              hasPriority);
+}
+
+ProductScorer* ProductScorerFactory::createTitleRelevanceScorer_(
+    const ProductScoreConfig& scoreConfig,
+    double score)
+{
+    if (titleScoreList_ == NULL)
+        return NULL;
+
+    return new TitleRelevanceScorer(scoreConfig, titleScoreList_, score);
+}
+
+ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
+    const ProductScoreConfig& scoreConfig,
+    const ProductScoreParam& scoreParam)
+{
+    if (!categoryClassifyTable_)
+        return NULL;
+
+    const std::string& query = scoreParam.rawQuery_;
+
+    LOG(INFO) << "for query [" << query << "]";
+
+    const bool isLongQuery = QueryNormalizer::get()->isLongQuery(query);
+    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
+    CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
+        knlpWrapper->classifyToMultiCategories(query, isLongQuery);
+
+    if (categoryScoreMap.empty())
     {
-        return new CategoryScorer(scoreConfig,
-                                  *categoryValueTable_,
-                                  boostLabels);
+        LOG(INFO) << "no classified category";
+        //return NULL;
     }
 
-    return NULL;
+    std::ostringstream oss;
+    oss << "classified category:";
+
+    for (CategoryClassifyScorer::CategoryScoreMap::const_iterator it =
+             categoryScoreMap.begin(); it != categoryScoreMap.end(); ++it)
+    {
+        oss << " " << it->first << "/" << std::setprecision(4) << it->second;
+    }
+    LOG(INFO) << oss.str();
+
+    const bool hasGroupLabel = checkGroupLabel(scoreParam.groupParam_);
+
+    scoreParam.propSharedLockSet_.insertSharedLock(categoryClassifyTable_);
+    return new CategoryClassifyScorer(scoreConfig,
+                                      *categoryClassifyTable_,
+                                      categoryScoreMap,
+                                      hasGroupLabel);
 }
 
 ProductScorer* ProductScorerFactory::createRelevanceScorer_(

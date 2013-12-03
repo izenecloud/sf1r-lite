@@ -17,6 +17,7 @@
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/pop_front.hpp>
 
+#include <3rdparty/msgpack/msgpack.hpp>
 #include <3rdparty/msgpack/msgpack/object.hpp>
 #include <3rdparty/msgpack/msgpack/type/int.hpp>
 #include <3rdparty/msgpack/msgpack/type/float.hpp>
@@ -36,6 +37,20 @@ MAKE_FEBIRD_SERIALIZATION(sf1r::PropertyValue)
 
 namespace sf1r {
 
+namespace inner {
+template <typename T>
+struct test_string_type
+{
+    enum {check = true};
+};
+template <>
+struct test_string_type<izenelib::util::UString>
+{
+    enum {check = false};
+};
+
+}
+
 class PropertyValue {
 public:
 /*****************************************
@@ -44,17 +59,18 @@ public:
 * default, we should make it locate at first position
 ******************************************/
     typedef boost::variant<
-        izenelib::util::UString,
+        //izenelib::util::UString,
         std::string,
         int32_t,
         int64_t,
         float,
         double,
-        std::vector<izenelib::util::UString>,
+        //std::vector<izenelib::util::UString>,
         std::vector<uint32_t>
     > variant_type;
 
     typedef variant_type::types type_list;
+    typedef std::string  PropertyValueStrType;
 
     PropertyValue()
     : data_()
@@ -81,21 +97,25 @@ public:
     template<typename T>
     T& get()
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(data_);
     }
     template<typename T>
     const T& get() const
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(data_);
     }
     template<typename T>
     T* getPointer()
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(&data_);
     }
     template<typename T>
     const T* getPointer() const
     {
+        BOOST_STATIC_ASSERT(inner::test_string_type<T>::check);
         return boost::get<T>(&data_);
     }
 
@@ -122,6 +142,15 @@ public:
         return data_;
     }
 
+    const PropertyValueStrType& getPropertyStrValue() const
+    {
+        return boost::get<PropertyValueStrType>(data_);
+    }
+    PropertyValueStrType& getPropertyStrValue()
+    {
+        return boost::get<PropertyValueStrType>(data_);
+    }
+
     double getNumber() const
     {
         // get without consider the accuracy loss.
@@ -138,6 +167,67 @@ public:
 private:
     variant_type data_;
 };
+
+// the interface for the PropertyValue with std::string internal string type.
+//
+inline const std::string& propstr_to_str(
+    const PropertyValue::PropertyValueStrType& propstr,
+    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+{
+    return propstr;
+}
+
+inline izenelib::util::UString propstr_to_ustr(
+    const PropertyValue::PropertyValueStrType& propstr,
+    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+{
+    return izenelib::util::UString(propstr, encode);
+}
+
+inline const PropertyValue::PropertyValueStrType& str_to_propstr(const std::string& prop_str,
+    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+{
+    return prop_str;
+}
+
+inline PropertyValue::PropertyValueStrType ustr_to_propstr(
+    const izenelib::util::UString& prop_ustr,
+    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+{
+    std::string prop_str;
+    prop_ustr.convertString(prop_str, encode);
+    return prop_str;
+}
+// the interface for the PropertyValue with izenelib::util::UString internal string type.
+//
+//inline std::string propstr_to_str(
+//    const PropertyValue::PropertyValueStrType& propstr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    std::string tmpstr;
+//    propstr.convertString(tmpstr, encode);
+//    return tmpstr;
+//}
+//
+//inline const izenelib::util::UString& propstr_to_ustr(
+//    const PropertyValue::PropertyValueStrType& propstr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return propstr;
+//}
+//
+//inline PropertyValue::PropertyValueStrType str_to_propstr(const std::string& prop_str,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return izenelib::util::UString(prop_str, encode);
+//}
+//
+//inline const PropertyValue::PropertyValueStrType& ustr_to_propstr(
+//    const izenelib::util::UString& prop_ustr,
+//    izenelib::util::UString::EncodingType encode = izenelib::util::UString::UTF_8)
+//{
+//    return prop_ustr;
+//}
 
 template<typename T>
 inline T& get(PropertyValue& p)
@@ -319,39 +409,68 @@ static const char STR_TYPE_USTRING = 'u';
 
 inline sf1r::PropertyValue& operator>>(object o, sf1r::PropertyValue& v)
 {
-    if(o.type == type::POSITIVE_INTEGER)
-    {
-        v = type::detail::convert_integer<int64_t>(o); return v;
-    }
-    else if(o.type == type::NEGATIVE_INTEGER)
-    {
-        v = type::detail::convert_integer<int64_t>(o); return v;
-    }
-    else if (o.type == type::DOUBLE)
-    {
-        v = (double)o.via.dec;
-    }
-    else if (o.type == type::RAW)
+    int type;
+    std::string packed_data;
+    o >> packed_data;
+
+    msgpack::unpacker unpac;
+    unpac.reserve_buffer(packed_data.size());
+    memcpy(unpac.buffer(), packed_data.data(), packed_data.size());
+    unpac.buffer_consumed(packed_data.size());
+    msgpack::unpacked msg;
+    if(!unpac.next(&msg))
+        throw type_error();
+    msg.get().convert(&type);
+    if (!unpac.next(&msg))
+        throw type_error();
+
+    if (type == 0)
     {
         std::string s;
-        o >> s;
+        msg.get().convert(&s);
 
         if (s.length() <= 1)
         {
-            v = s;
+            v = sf1r::str_to_propstr(s);
         }
         else if (s[0] == STR_TYPE_USTRING)
         {
             std::string str = s.substr(1);
             izenelib::util::UString ustr(str, izenelib::util::UString::UTF_8);
-            v = ustr;
+            v = sf1r::ustr_to_propstr(ustr);
         }
         else
         {
             std::string str = s.substr(1);
-            v = str;
+            v = sf1r::str_to_propstr(str);
         }
     }
+    else if(type == 1)
+    {
+        int32_t tmp;
+        msg.get().convert(&tmp);
+        v = tmp;
+    }
+    else if(type == 2)
+    {
+        int64_t tmp;
+        msg.get().convert(&tmp);
+        v = tmp;
+    }
+    else if (type == 3)
+    {
+        float tmp;
+        msg.get().convert(&tmp);
+        v = tmp;
+    }
+    else if (type == 4)
+    {
+        double tmp;
+        msg.get().convert(&tmp);
+        v = tmp;
+    }
+    else
+        throw type_error();
 
     return v;
 }
@@ -360,124 +479,209 @@ template <typename Stream>
 inline packer<Stream>& operator<< (packer<Stream>& o, const sf1r::PropertyValue& cv)
 {
     sf1r::PropertyValue& v = const_cast<sf1r::PropertyValue&>(cv);
-    if (int32_t* p = boost::get<int32_t>(&v.getVariant()))
+
+    msgpack::sbuffer sbuf;
+    msgpack::packer<msgpack::sbuffer> pk(&sbuf);
+    int type = v.which();
+    pk.pack(type);
+    if (type == 0)
     {
-        o.pack_fix_int32(*p);
+        if (std::string* p = boost::get<std::string>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_STRING;
+            packstr += *p;
+            pk.pack(packstr);
+        }
+        else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_USTRING;
+            std::string s;
+            (*p).convertString(s, izenelib::util::UString::UTF_8);
+            packstr += s;
+            pk.pack(packstr);
+        }
+        else
+            throw type_error();
     }
-    else if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+    else if (type == 1)
     {
-        o.pack_fix_int64(*p);
+        if(int32_t* p = boost::get<int32_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (const float* p = boost::get<float>(&v.getVariant()))
+    else if (type == 2)
     {
-        o.pack_double(*p);
+        if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (double* p = boost::get<double>(&v.getVariant()))
+    else if (type == 3)
     {
-        o.pack_double(*p);
+        if (const float* p = boost::get<float>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (std::string* p = boost::get<std::string>(&v.getVariant()))
+    else if (type == 4)
     {
-        std::string packstr;
-        packstr += STR_TYPE_STRING;
-        packstr += *p;
-        o.pack_raw(packstr.size());
-        o.pack_raw_body(packstr.c_str(), packstr.size());
-    }
-    else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
-    {
-        std::string packstr;
-        packstr += STR_TYPE_USTRING;
-        std::string s;
-        (*p).convertString(s, izenelib::util::UString::UTF_8);
-        packstr += s;
-        o.pack_raw(packstr.size());
-        o.pack_raw_body(packstr.data(), packstr.size());
+        if (double* p = boost::get<double>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
     else
-    {
-        // reserved
-        //std::vector<izenelib::util::UString>,
-        //std::vector<uint32_t>
-
         throw type_error();
-    }
 
+    o << std::string(sbuf.data(), sbuf.size());
     return o;
 }
 
 inline void operator<< (object& o, sf1r::PropertyValue v)
 {
-    if (int32_t* p = boost::get<int32_t>(&v.getVariant()))
+    msgpack::sbuffer sbuf;
+    msgpack::packer<msgpack::sbuffer> pk(&sbuf);
+    int type = v.which();
+    pk.pack(type);
+    if (type == 0)
     {
-        *p < 0 ? (o.type = type::NEGATIVE_INTEGER, o.via.i64 = *p, o.raw_type = type::RAW_INT64)
-               : (o.type = type::POSITIVE_INTEGER, o.via.u64 = *p);
+        if (std::string* p = boost::get<std::string>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_STRING;
+            packstr += *p;
+            pk.pack(packstr);
+        }
+        else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_USTRING;
+            std::string s;
+            (*p).convertString(s, izenelib::util::UString::UTF_8);
+            packstr += s;
+            pk.pack(packstr);
+        }
+        else
+            throw type_error();
     }
-    else if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+    else if (type == 1)
     {
-        *p < 0 ? (o.type = type::NEGATIVE_INTEGER, o.via.i64 = *p, o.raw_type = type::RAW_INT64)
-               : (o.type = type::POSITIVE_INTEGER, o.via.u64 = *p);
+        if(int32_t* p = boost::get<int32_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (float* p = boost::get<float>(&v.getVariant()))
+    else if (type == 2)
     {
-        o << *p;
+        if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (double* p = boost::get<double>(&v.getVariant()))
+    else if (type == 3)
     {
-        o << *p;
+        if (const float* p = boost::get<float>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (std::string* p = boost::get<std::string>(&v.getVariant()))
+    else if (type == 4)
     {
-        std::string packstr;
-        packstr += STR_TYPE_STRING;
-        packstr += *p;
-        o << packstr;
-    }
-    else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
-    {
-        std::string packstr;
-        packstr += STR_TYPE_USTRING;
-        std::string s;
-        (*p).convertString(s, izenelib::util::UString::UTF_8);
-        packstr += s;
-        o << packstr;
+        if (double* p = boost::get<double>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
     else
         throw type_error();
+    o << std::string(sbuf.data(), sbuf.size());
 }
 
 inline void operator<< (object::with_zone& o, sf1r::PropertyValue v)
 {
-    if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+    msgpack::sbuffer sbuf;
+    msgpack::packer<msgpack::sbuffer> pk(&sbuf);
+    int type = v.which();
+    pk.pack(type);
+    if (type == 0)
     {
-        static_cast<object&>(o) << *p;
+        if (std::string* p = boost::get<std::string>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_STRING;
+            packstr += *p;
+            pk.pack(packstr);
+        }
+        else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
+        {
+            std::string packstr;
+            packstr += STR_TYPE_USTRING;
+            std::string s;
+            (*p).convertString(s, izenelib::util::UString::UTF_8);
+            packstr += s;
+            pk.pack(packstr);
+        }
+        else
+            throw type_error();
     }
-    else if (float* p = boost::get<float>(&v.getVariant()))
+    else if (type == 1)
     {
-        static_cast<object&>(o) << *p;
+        if(int32_t* p = boost::get<int32_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (double* p = boost::get<double>(&v.getVariant()))
+    else if (type == 2)
     {
-        static_cast<object&>(o) << *p;
+        if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (std::string* p = boost::get<std::string>(&v.getVariant()))
+    else if (type == 3)
     {
-        std::string packstr;
-        packstr += STR_TYPE_STRING;
-        packstr += *p;
-        static_cast<object&>(o) << packstr;
+        if (const float* p = boost::get<float>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
-    else if (izenelib::util::UString* p = boost::get<izenelib::util::UString>(&v.getVariant()))
+    else if (type == 4)
     {
-        std::string packstr;
-        packstr += STR_TYPE_USTRING;
-        std::string s;
-        (*p).convertString(s, izenelib::util::UString::UTF_8);
-        packstr += s;
-        static_cast<object&>(o) << packstr;
+        if (double* p = boost::get<double>(&v.getVariant()))
+        {
+            pk.pack(*p);
+        }
+        else
+            throw type_error();
     }
     else
         throw type_error();
+    static_cast<object&>(o) << std::string(sbuf.data(), sbuf.size());
 }
 
 } // namespace msgpack

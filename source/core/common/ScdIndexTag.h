@@ -10,6 +10,7 @@
 
 #include "ScdParserTraits.h"
 #include "Utilities.h"
+#include "PropertyValue.h"
 
 namespace scd {
 
@@ -18,10 +19,8 @@ template <typename Type> struct Converter;
 
 /// Converter specialization for the default type std::string.
 template <> struct Converter<std::string> {
-    inline std::string operator()(const PropertyValueType& in) const {
-        std::string str;
-        in.convertString(str, izenelib::util::UString::UTF_8);
-        return str;
+    inline std::string operator()(const ScdPropertyValueType& in) const {
+        return sf1r::propstr_to_str(in);
     }
 };
 
@@ -31,7 +30,7 @@ struct TagType {
     typedef Type type;
 
     /// Convert the parsed value.
-    static inline Type convert(const PropertyValueType& parsed) {
+    static inline Type convert(const ScdPropertyValueType& parsed) {
         static TypeConverter converter;
         return converter(parsed);
     }
@@ -56,7 +55,7 @@ struct TagType {
  * @brief Create a new property tag with a specific type.
  *
  * A conversion function object in the scd namespace is needed in order to
- * properly convert the PropertyValueType value (returned by the parser).
+ * properly convert the ScdPropertyValueType value (returned by the parser).
  */
 #define SCD_INDEX_PROPERTY_TAG_TYPED(tag_name, tag_type) \
     struct tag_name : scd::TagType<tag_name, tag_type> { \
@@ -70,7 +69,7 @@ SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128_t);  //< Default tag for 'uuid' prope
 
 /// Converter specialization for the uint128_t.
 template<> struct Converter<uint128_t> {
-    inline uint128_t operator()(const PropertyValueType& in) const {
+    inline uint128_t operator()(const ScdPropertyValueType& in) const {
         return sf1r::Utilities::md5ToUint128(in);
     }
 };

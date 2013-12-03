@@ -15,6 +15,9 @@ namespace sf1r {
  *
  * Every item is an object of following fields:
  * - @b property* (@c String): Which property current condition applies on.
+ * - @b id_type* (@c String): Which kind type uuid(b5mp)/DOCID(b5mp) applies on,not required.
+       @c isbn:isbn for Book;
+       @c url:url of this doc;
  * - @b operator* (@c String): Which kind operator.
  *   - @c = : Property must equal to the specified value.
  *   - @c <> : Property should not equal to the specified value.

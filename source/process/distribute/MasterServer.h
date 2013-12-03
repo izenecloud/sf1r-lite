@@ -25,7 +25,7 @@ public:
         stop();
     }
 
-    void start(const std::string& host, uint16_t port, unsigned int threadnum=4)
+    void start(const std::string& host, uint16_t port, unsigned int threadnum = 30)
     {
         instance.listen(host, port);
         instance.start(threadnum);
@@ -88,6 +88,11 @@ private:
         {
             RawTextResultFromSIA resultItem;
             collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
+            if (!resultItem.error_.empty())
+            {
+                LOG(ERROR) << "get documents failed.";
+                action.print();
+            }
             req.result(resultItem);
         }
         else

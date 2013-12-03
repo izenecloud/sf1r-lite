@@ -8,10 +8,10 @@
 #include "ScdIndexUtils.hpp"
 #include "Timer.hpp"
 #include "common/ScdIndex.h"
+#include "common/PropertyValue.h"
 #include <boost/scoped_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
-#define USTRING(in) izenelib::util::UString((in), izenelib::util::UString::UTF_8)
 #define DOCID(in) sf1r::Utilities::md5ToUint128(test::getDocid(in))
 
 #define PRINT(what) std::cout << what << std::endl
@@ -22,13 +22,13 @@ SCD_INDEX_PROPERTY_TAG(Title);
 
 void checkDoc(const SCDDoc& doc, size_t i) {
     BOOST_CHECK_EQUAL("DOCID", doc[0].first);
-    BOOST_CHECK_EQUAL(USTRING(test::getDocid(i)), doc[0].second);
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr(test::getDocid(i)), doc[0].second);
 
     BOOST_CHECK_EQUAL("Title", doc[1].first);
-    BOOST_CHECK_EQUAL(USTRING(test::getTitle(i)), doc[1].second);
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr(test::getTitle(i)), doc[1].second);
 
     BOOST_CHECK_EQUAL("uuid", doc[2].first);
-    BOOST_CHECK_EQUAL(USTRING(test::getUuid(i)), doc[2].second);
+    BOOST_CHECK_EQUAL(sf1r::str_to_propstr(test::getUuid(i)), doc[2].second);
 }
 
 void doTest(scd::ScdIndex<test::Title>& index) {

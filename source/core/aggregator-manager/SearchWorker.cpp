@@ -6,27 +6,34 @@
 
 #include <common/SearchCache.h>
 #include <common/Utilities.h>
-#include <index-manager/IndexManager.h>
+#include <common/QueryNormalizer.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/PersonalizedSearchInfo.h>
+#include <search-manager/QueryPruneFactory.h>
+#include <search-manager/QueryPruneBase.h>
+#include <search-manager/QueryHelper.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
+#include <aggregator-manager/MasterNotifier.h>
 #include <query-manager/QueryTypeDef.h>
+
 namespace sf1r
 {
 
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
-    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_, 
+    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_,
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
+    , queryPruneFactory_(new QueryPruneFactory())
 {
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
@@ -35,6 +42,25 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.analyzerId_ = "la_sia";
     analysisInfo_.tokenizerNameList_.insert("tok_divide");
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
+}
+
+void SearchWorker::GetSummarizationByRawKey(const std::string& rawKey, Summarization& result)
+{
+    miningManager_->GetSummarizationByRawKey(rawKey, result);
+}
+
+void SearchWorker::getLabelListByDocId(const uint32_t& docId,
+    LabelListT& result)
+{
+    miningManager_->getLabelListByDocId(docId, result);
+}
+
+bool SearchWorker::getLabelListWithSimByDocId(
+    uint32_t docId,
+    LabelListWithSimT& label_list
+    )
+{
+    return miningManager_->getLabelListWithSimByDocId(docId, label_list);
 }
 
 void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result)
@@ -51,7 +77,7 @@ void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::strin
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     KeywordSearchResult fakeResultItem;
-    fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
+    fakeResultItem.distSearchInfo_.swap(resultItem);
 
     getSearchResult_(actionItem, fakeResultItem);
 
@@ -63,19 +89,55 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
     LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
+    resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+    if (!resultItem.topKDocs_.empty())
+        searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+    if (miningManager_)
+    {
+        miningManager_->getMiningResult(actionItem, resultItem);
+    }
+
+    if (!actionItem.disableGetDocs_)
+    {
+        if( (resultItem.topKDocs_.size() > 20) &&
+            (actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_) > 20 )
+        {
+            return;
+        }
+        std::vector<sf1r::docid_t> possible_docsInPage;
+        if (actionItem.pageInfo_.count_ > 0)
+        {
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin();
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end(); ++i, ++it)
+            {
+                if (i < actionItem.pageInfo_.start_ + actionItem.pageInfo_.count_)
+                {
+                    possible_docsInPage.push_back(*it);
+                }
+                else
+                    break;
+            }
+        }
+        LOG(INFO) << "pre get documents since the page result is small. size: " << possible_docsInPage.size();
+
+        resultItem.distSearchInfo_.include_summary_data_ = true;
+        // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
+        getResultItem(actionItem, possible_docsInPage, resultItem.propertyQueryTermList_, resultItem);
+    }
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_
+      << ", query: " << actionItem.env_.queryString_ << endl;
 
     getSummaryResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
-
     getSummaryMiningResult_(actionItem, resultItem);
 }
 
@@ -88,6 +150,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     std::vector<sf1r::workerid_t> workeridList;
     actionItem.getDocWorkerIdLists(idList, workeridList);
 
+    LOG(INFO) << "get docs by ids, idlist: " << idList.size() << ", docidlist:" << actionItem.docIdList_.size();
     // append docIdList_ at the end of idList_.
     typedef std::vector<std::string>::const_iterator docid_iterator;
     sf1r::docid_t internalId;
@@ -98,11 +161,18 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
         {
             if(!documentManager_->isDeleted(internalId))
                 idList.push_back(internalId);
+            else
+                LOG(INFO) << "doc is deleted while try to get." << *it << ", " << internalId;
+        }
+        else
+        {
+            LOG(INFO) << "get doc not found: " << *it;
         }
     }
 
+    LOG(INFO) << "after convert, get docs by ids idlist: " << idList.size();
     // get docids by property value
-    collectionid_t colId = 1;
+    //collectionid_t colId = 1;
     if (!actionItem.propertyName_.empty())
     {
         std::vector<PropertyValue>::const_iterator property_value;
@@ -112,7 +182,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
             boost::apply_visitor(converter, (*property_value).getVariant());
-            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
+            invertedIndexManager_->getDocsByPropertyValue(actionItem.propertyName_, value, idList);
         }
     }
 
@@ -139,6 +209,13 @@ void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_
         internalId = docid;
 }
 
+void SearchWorker::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    // this is used for distributed search.
+    // we can rerank the result if the merged result has the rerank data with them.
+    //searchManager_->topKReranker_.rerank(actionItem, resultItem);
+}
+
 // local interface
 bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
@@ -147,7 +224,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     START_PROFILER( cacheoverhead )
 
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
 
     QueryIdentity identity;
     makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
@@ -159,10 +236,19 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (! getSearchResult_(actionItem, resultItem, identity, false))
             return false;
 
+        resultItem.rawQueryString_ = actionItem.env_.queryString_;
+
+        if (!resultItem.topKDocs_.empty() && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
+            searchManager_->topKReranker_.rerank(actionItem, resultItem);
+
+        if (miningManager_ && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
+        {
+            miningManager_->getMiningResult(actionItem, resultItem);
+        }
+
         if (resultItem.topKDocs_.empty())
             return true;
 
-        searchManager_->topKReranker_.rerank(actionItem, resultItem);
 
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
@@ -224,7 +310,7 @@ void SearchWorker::visitDoc(const uint32_t& docId, bool& result)
     //{
     //    // for rpc call from master, we can not decide whether the caller is from
     //    // local or remote master, so we assume all caller is remote.
-    //    // In order to make sure the hook is cleared, we need return true to 
+    //    // In order to make sure the hook is cleared, we need return true to
     //    // tell caller that we will take the charge to clear any hooked on this request.
     //    DistributeRequestHooker::get()->processLocalFinished(result);
     //    result = true;
@@ -241,7 +327,7 @@ void SearchWorker::makeQueryIdentity(
     identity.userId = item.env_.userID_;
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
-
+    identity.isSynonym = item.languageAnalyzerInfo_.synonymExtension_;
     switch (item.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
@@ -258,11 +344,13 @@ void SearchWorker::makeQueryIdentity(
         identity.groupParam = item.groupParam_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
+        identity.distActionType = distActionType;
+        identity.isAnalyzeResult = item.isAnalyzeResult_;
         break;
     default:
         identity.query = item.env_.queryString_;
         identity.expandedQueryString = item.env_.expandedQueryString_;
-        if (indexManager_->getIndexManagerConfig()->indexStrategy_.indexLevel_
+        if (invertedIndexManager_->getIndexManagerConfig()->indexStrategy_.indexLevel_
                 == izenelib::ir::indexmanager::DOCLEVEL
                 && item.rankingType_ == RankingType::PLM)
         {
@@ -299,6 +387,9 @@ bool SearchWorker::getSearchResult_(
         bool isDistributedSearch)
 {
     QueryIdentity identity;
+    uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
     return getSearchResult_(actionItem, resultItem, identity, isDistributedSearch);
 }
 
@@ -341,6 +432,7 @@ bool SearchWorker::getSearchResult_(
         actionOperation.actionItem_.env_.queryString_ = newQuery;
     }
 
+
     // Get Personalized Search information (user profile)
     PersonalSearchInfo personalSearchInfo;
     personalSearchInfo.enabled = false;
@@ -361,49 +453,37 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
+    actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
+
     uint32_t topKStart = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
     uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
+    uint32_t search_limit = TOP_K_NUM;
+    resultItem.TOP_K_NUM = TOP_K_NUM;
+
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
     // to be retrieved in one node is set to TOP_K_NUM.
-    if (!isDistributedSearch)
+    if (isDistributedSearch)
     {
-        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+        // distributed search need get more topk since
+        // each worker can only start topk from 0.
+        search_limit += actionOperation.actionItem_.pageInfo_.start_;
     }
     else
     {
-        // distributed search need get more topk since 
-        // each worker can only start topk from 0.
-        TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
-        if (fuzzy_lucky > 100000)
-        {
-            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_lucky;
-            fuzzy_lucky = 100000;
-        }
+        topKStart = identity.start;
     }
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
-
-    std::vector<QueryFiltering::FilteringType> filteringRules;
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
-    {
-        unsigned int size = actionOperation.actionItem_.filteringTreeList_.size();
-        for (int i = size -1 ; i >= 1; --i)
-        {
-            filteringRules.push_back(actionOperation.actionItem_.filteringTreeList_[i].fitleringType_);
-        }
-    }
-
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
+        resultItem.TOP_K_NUM = KNN_TOP_K_NUM;
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
         if (!miningManager_->GetKNNListBySignature(identity.simHash,
@@ -419,6 +499,7 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
+        resultItem.TOP_K_NUM = fuzzy_lucky;
         if (!miningManager_->GetSuffixMatch(actionOperation,
                                             fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
@@ -430,51 +511,110 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.totalCount_,
                                             resultItem.groupRep_,
                                             resultItem.attrRep_,
-                                            resultItem.analyzedQuery_))
+                                            actionOperation.actionItem_.isAnalyzeResult_,
+                                            resultItem.analyzedQuery_,
+                                            resultItem.pruneQueryString_,
+                                            resultItem.distSearchInfo_,
+                                            resultItem.autoSelectGroupLabels_))
         {
             return true;
         }
 
         break;
 
-    default:
-        if (!searchManager_->searchBase_->search(actionOperation,
-                                                 resultItem,
-                                                 TOP_K_NUM,
-                                                 topKStart))
+    case SearchingMode::ZAMBEZI:
+        if (!searchManager_->zambeziSearch_->search(actionOperation,
+                                                    resultItem,
+                                                    search_limit,
+                                                    topKStart))
         {
+            return true;
+        }
+
+        break;
+
+    case SearchingMode::AD_INDEX:
+        if (!miningManager_->getAdIndexManager()->search(
+                    actionOperation.actionItem_.adSearchPropertyValue_,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.totalCount_))
+        {
+            return true;
+        }
+        break;
+
+    default:
+        unsigned int QueryPruneTimes = 2;
+        bool isUsePrune = false;
+        //isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
+        bool is_getResult = true;
+        if (!searchManager_->normalSearch_->search(actionOperation,
+                                                   resultItem,
+                                                   search_limit,
+                                                   topKStart) || resultItem.totalCount_ == 0)
+        {
+            cout<<"resultItem.totalCount_:"<<resultItem.totalCount_<<endl;
             if (time(NULL) - start_search > 5)
             {
                 LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
                 actionOperation.actionItem_.print();
             }
 
-            std::string newQuery;
+            /// muti thread ....
+            /// * star search
+            const bool isFilterQuery =
+            actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
-            if (!bundleConfig_->bTriggerQA_)
+            if (isFilterQuery)
                 return true;
-            assembleDisjunction(keywords, newQuery);
 
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            resultItem.propertyQueryTermList_.clear();
-            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+            /// query frune
+            QueryPruneBase* queryPrunePtr = NULL;
+            QueryPruneType qrType;
+
+            if ( isUsePrune == true)
             {
-                return true;
+                qrType = AND_TRIGGER;
             }
+            else if (bundleConfig_->bTriggerQA_)
+                qrType = QA_TRIGGER;
+            else
+                return true;
 
-            if (!searchManager_->searchBase_->search(actionOperation,
-                                                     resultItem,
-                                                     TOP_K_NUM,
-                                                     topKStart))
+            RequesterEnvironment& requestEnv = actionOperation.actionItem_.env_;
+            std::string rawQuery = requestEnv.queryString_;
+
+            do
             {
-                if (time(NULL) - start_search > 5)
+                std::string newQuery = "";
+                queryPrunePtr = queryPruneFactory_->getQueryPrune(qrType);
+
+                if (queryPrunePtr != NULL)
                 {
-                    LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
-                    actionOperation.actionItem_.print();
+                    if(!queryPrunePtr->queryPrune(rawQuery, keywords, newQuery))
+                    {
+                        LOG(INFO) << "There is no Prune query";
+                        return true;
+                    }
                 }
+                LOG(INFO) << "[QUERY PRUNE] the new query is" <<  newQuery << endl;
+                requestEnv.queryString_ = newQuery;
+                QueryNormalizer::get()->normalize(requestEnv.queryString_,
+                                                  requestEnv.normalizedQueryString_);
 
-                return true;
-            }
+                resultItem.propertyQueryTermList_.clear();
+                if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+                {
+                    return true;
+                }
+                QueryPruneTimes--;
+                is_getResult =  searchManager_->normalSearch_->search(actionOperation,
+                                                                      resultItem,
+                                                                      search_limit,
+                                                                      topKStart);
+                rawQuery = newQuery;
+            } while(isUsePrune && QueryPruneTimes > 0 && (!is_getResult || resultItem.totalCount_ == 0));
         }
         break;
     }
@@ -500,8 +640,6 @@ bool SearchWorker::getSearchResult_(
         resultItem.adjustStartCount(topKStart);
     }
 
-    //set query term and Id List
-    resultItem.rawQueryString_ = actionItem.env_.queryString_;
     actionOperation.getRawQueryTermIdList(resultItem.queryTermIdList_);
 
     DLOG(INFO) << "Total count: " << resultItem.totalCount_ << endl;
@@ -520,27 +658,30 @@ bool SearchWorker::getSummaryResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
-    if (resultItem.count_ == 0)
+    if (resultItem.count_ == 0 || actionItem.disableGetDocs_)
         return true;
 
     CREATE_PROFILER ( getSummary, "IndexSearchService", "processGetSearchResults: get raw text, snippets, summarization");
     START_PROFILER ( getSummary );
 
-    DLOG(INFO) << "[SIAServiceHandler] RawText,Summarization,Snippet" << endl;
+    LOG(INFO) << "Begin get RawText,Summarization,Snippet" << endl;
 
     if (isDistributedSearch)
     {
         // SearchMerger::splitSearchResultByWorkerid has put current page docs into "topKDocs_"
-        getResultItem(actionItem, resultItem.topKDocs_, resultItem.propertyQueryTermList_, resultItem);
+        getResultItem(actionItem, resultItem.docsInPage_, resultItem.propertyQueryTermList_, resultItem);
     }
     else
     {
         // get current page docs
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
-        for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+        if ((resultItem.start_ % resultItem.TOP_K_NUM) < resultItem.topKDocs_.size())
         {
-            docsInPage.push_back(*it);
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_% resultItem.TOP_K_NUM;
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+            {
+                docsInPage.push_back(*it);
+            }
         }
         resultItem.count_ = docsInPage.size();
 
@@ -549,7 +690,7 @@ bool SearchWorker::getSummaryResult_(
 
     STOP_PROFILER ( getSummary );
 
-    cout << "[IndexSearchService] keywordSearch process Done" << endl; // XXX
+    LOG(INFO) << "getSummaryResult_ done." << endl; // XXX
 
     return true;
 }
@@ -559,25 +700,21 @@ bool SearchWorker::getSummaryMiningResult_(
         KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+
     getSummaryResult_(actionItem, resultItem, isDistributedSearch);
-
-    if (miningManager_)
-    {
-        miningManager_->getMiningResult(actionItem, resultItem);
-    }
-
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] finished.";
     return true;
 }
 
 void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA)
 {
-    results.clear();
-    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
-    la::TermList termList;
-
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
 //    pLA->process_search(question, termList);
     if (!pLA) return;
+    results.clear();
+    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
+    la::TermList termList;
     pLA->process(question, termList);
     LAPool::getInstance()->pushSearchLA( analysisInfo_, pLA );
 
@@ -609,9 +746,13 @@ bool SearchWorker::buildQuery(
         KeywordSearchResult& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
-            || actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+    SearchingMode::SearchingModeType mode = actionOperation.actionItem_.searchingMode_.mode_;
+    if (mode == SearchingMode::KNN ||
+        mode == SearchingMode::SUFFIX_MATCH ||
+        mode == SearchingMode::ZAMBEZI)
+    {
         return true;
+    }
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
     CREATE_PROFILER ( analyzeQuery, "IndexSearchService", "processGetSearchResults: analyze query");
@@ -698,7 +839,19 @@ bool  SearchWorker::getResultItem(
             actionItem.languageAnalyzerInfo_.useOriginalKeyword_
     );
 
-    //analyze_(actionItem.env_.queryString_, queryTerms);
+    //queryTerms is begin segmented after analyze_()
+    bool isRequireHighlight = false;
+    for(std::vector<DisplayProperty>::const_iterator it = actionItem.displayPropertyList_.begin();
+        it != actionItem.displayPropertyList_.end(); ++it)
+    {
+        if(it->isHighlightOn_ ||it->isSnippetOn_)
+        {
+            isRequireHighlight = true;
+            break;
+        }
+    }
+    if(isRequireHighlight)
+        analyze_(actionItem.env_.queryString_, queryTerms, false);
 
     // propertyOption
     if (!actionItem.env_.taxonomyLabel_.empty())
@@ -722,19 +875,32 @@ bool  SearchWorker::getResultItem(
         ids[i] = docId;
     }
 
+    typedef std::vector<DisplayProperty>::size_type vec_size_type;
+    vec_size_type indexSummary = 0;
     std::vector<Document> docs;
     bool forceget = (miningManager_&&miningManager_->HasDeletedDocDuringMining())||bundleConfig_->enable_forceget_doc_;
     if(!documentManager_->getDocuments(ids, docs, forceget))
     {
         ///Whenever any document could not be retrieved, return false
         resultItem.error_ = "Error : Cannot get document data";
+        LOG(WARNING) << "get document data failed. doc num: " << ids.size() << ", is forceget:" << forceget;
+        if (ids.size() < 10)
+        {
+            for(size_t i = 0; i < ids.size(); ++i)
+                std::cout << " " << ids[i] << ",";
+        }
+        std::cout << std::endl;
+        for (vec_size_type i = 0; i < actionItem.displayPropertyList_.size(); ++i)
+        {
+            if (actionItem.displayPropertyList_[i].isSummaryOn_)
+                indexSummary++;
+        }
+        resultItem.rawTextOfSummaryInPage_.resize(indexSummary);
         return false;
     }
 
     /// start to get snippet/summary/highlight
-    typedef std::vector<DisplayProperty>::size_type vec_size_type;
     // counter for properties requiring summary, later
-    vec_size_type indexSummary = 0;
     bool ret = true;
     for (vec_size_type i = 0; i < actionItem.displayPropertyList_.size(); ++i)
     {
@@ -831,11 +997,29 @@ void SearchWorker::reset_all_property_cache()
 void SearchWorker::clearSearchCache()
 {
     searchCache_->clear();
+    LOG(INFO) << "notify master to clear cache.";
+    if (bundleConfig_->isWorkerNode())
+    {
+        NotifyMSG msg;
+        msg.collection = bundleConfig_->collectionName_;
+        msg.method = "CLEAR_SEARCH_CACHE";
+        MasterNotifier::get()->notify(msg);
+    }
 }
 
 void SearchWorker::clearFilterCache()
 {
     searchManager_->queryBuilder_->reset_cache();
+}
+
+uint32_t SearchWorker::getDocNum()
+{
+    return documentManager_->getNumDocs();
+}
+
+uint32_t SearchWorker::getKeyCount(const std::string& property_name)
+{
+    return invertedIndexManager_->getBTreeIndexer()->count(property_name);
 }
 
 }

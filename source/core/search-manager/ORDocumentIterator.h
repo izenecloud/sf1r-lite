@@ -79,6 +79,17 @@ public:
     {
         return docIteratorList_;
     }
+    
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap);
+    
+    float getUB();
+
+    const char* getProperty()
+    {
+        if (docIteratorList_.begin() == docIteratorList_.end())
+            return NULL;
+        return (*docIteratorList_.begin())->getProperty();
+    }
 
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);

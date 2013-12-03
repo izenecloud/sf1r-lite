@@ -17,7 +17,7 @@
 #include <log-manager/LogAnalysis.h>
 #include <configuration-manager/CollectionPath.h>
 #include <log-manager/UserQuery.h>
-
+#include <common/QueryNormalizer.h>
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 
@@ -193,7 +193,8 @@ public:
     bool Init(const CollectionPath& collectionPath
             , const std::string& collectionName
             , const string& cronExpression
-            , const string& instanceName);
+            , const string& instanceName
+            , uint32_t days = 30);
 
     bool InitWhileHaveLeveldb();
     
@@ -269,6 +270,7 @@ public:
     std::vector<QueryType> valueToQueryTypeVector(string value);
     
     static std::string system_resource_path_;
+    static bool enableUpdateHitnum_;
 
 private:
     bool isFromSCD_;

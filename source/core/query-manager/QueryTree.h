@@ -26,7 +26,7 @@ namespace sf1r {
             ///
             /// @brief  a variable which indicates type of current query node.
             ///
-            enum QueryType { KEYWORD, RANK_KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, FILTER_QUERY, UNKNOWN } type_;
+            enum QueryType { KEYWORD, RANK_KEYWORD, UNIGRAM_WILDCARD, TRIE_WILDCARD, AND, OR, NOT, WAND, EXACT, ORDER, NEARBY, ASTERISK, QUESTION_MARK, AND_PERSONAL, OR_PERSONAL, FILTER_QUERY, UNKNOWN } type_;
 
             ///
             /// @brief keyword string of current query node.

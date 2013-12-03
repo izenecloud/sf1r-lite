@@ -42,11 +42,12 @@ namespace sf1r
 
     void QueryParser::initOnlyOnceCore()
     {
-        operUStr_.assign("&|!(){}[]^\"", UString::UTF_8);
+        operUStr_.assign("&|#!(){}[]^\"", UString::UTF_8);
         escOperUStr_ = operUStr_; escOperUStr_.push_back('\\');
 
         operEncodeDic_.push_back( make_pair( USTRING("\\\\") , USTRING("::$OP_SL$::") ) ); // "\\" : Operator Slash
         operEncodeDic_.push_back( make_pair( USTRING("\\&")  , USTRING("::$OP_AN$::") ) ); // "\ " : Operator AND
+        operEncodeDic_.push_back( make_pair( USTRING("\\#")  , USTRING("::$OP_WN$::") ) ); // "\ " : Operator WAND
         operEncodeDic_.push_back( make_pair( USTRING("\\|")  , USTRING("::$OP_OR$::") ) ); // "\|" : Operator OR
         operEncodeDic_.push_back( make_pair( USTRING("\\!")  , USTRING("::$OP_NT$::") ) ); // "\!" : Operator NOT
         operEncodeDic_.push_back( make_pair( USTRING("\\(")  , USTRING("::$OP_BO$::") ) ); // "\(" : Operator Opening Bracket
@@ -60,6 +61,7 @@ namespace sf1r
 
         operDecodeDic_.push_back( make_pair( USTRING("::$OP_SL$::") , USTRING("\\") ) ); // "\" : Operator Slash
         operDecodeDic_.push_back( make_pair( USTRING("::$OP_AN$::") , USTRING("&")  ) ); // " " : Operator AND
+        operDecodeDic_.push_back( make_pair( USTRING("::$OP_WN$::") , USTRING("#")  ) ); // " " : Operator WAND
         operDecodeDic_.push_back( make_pair( USTRING("::$OP_OR$::") , USTRING("|")  ) ); // "|" : Operator OR
         operDecodeDic_.push_back( make_pair( USTRING("::$OP_NT$::") , USTRING("!")  ) ); // "!" : Operator NOT
         operDecodeDic_.push_back( make_pair( USTRING("::$OP_BO$::") , USTRING("(")  ) ); // "(" : Operator Opening Bracket
@@ -124,8 +126,8 @@ namespace sf1r
     {
         static const UString openBracket("([{", UString::UTF_8);
         static const UString closeBracket("]}^", UString::UTF_8);
-        static const UString notBeforeBool("(!&|", UString::UTF_8);
-        static const UString notAfterBool(")&|", UString::UTF_8);
+        static const UString notBeforeBool("(!&#|", UString::UTF_8);
+        static const UString notAfterBool(")&#|", UString::UTF_8);
         static const UString omitChar[2] = {USTRING( " \"*?" ), USTRING( " " )};
         UString tmpNormUStr;
         UString::const_iterator iter, iterEnd;
@@ -134,8 +136,8 @@ namespace sf1r
         iter = queryUstr.begin();
         iterEnd = queryUstr.end();
 
-        while (iter != iterEnd && (omitChar[hasUnigramProperty].find(*iter) != UString::npos || *iter == '&' || *iter == '|')) ++iter;
-        while (iterEnd != iter && (omitChar[hasUnigramProperty].find(*(iterEnd - 1)) != UString::npos || *(iterEnd - 1) == '&' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!')) --iterEnd;
+        while (iter != iterEnd && (omitChar[hasUnigramProperty].find(*iter) != UString::npos || *iter == '&' || *iter == '|' || *iter == '#' )) ++iter;
+        while (iterEnd != iter && (omitChar[hasUnigramProperty].find(*(iterEnd - 1)) != UString::npos || *(iterEnd - 1) == '&' || *(iterEnd -1) == '#' || *(iterEnd - 1) == '|' || *(iterEnd - 1) == '!')) --iterEnd;
 
         // -----[ Step 2 : Remove redundant spaces and do some more tricks ]
         int parenthesesCount = 0;
@@ -151,13 +153,14 @@ namespace sf1r
                 } // end - case '!'
 
                 case '&':
+                case '#':
                 case '|':
                 {
                     if (!tmpNormUStr.empty() && notBeforeBool.find(*tmpNormUStr.rbegin()) == UString::npos)
                         tmpNormUStr.push_back(*iter);
                     while (++iter != iterEnd && omitChar[hasUnigramProperty].find(*iter) != UString::npos);
                     break;
-                } // end - case '&' '|'
+                } // end - case '&' '|' '#'
 
                 case '(':
                 {
@@ -391,6 +394,8 @@ namespace sf1r
         if (queryUStr.empty())
             return false;
 
+        queryUStr.convertString(queryStr, izenelib::util::UString::UTF_8);
+        
         tree_parse_info<const uint16_t *> info = ast_parse(queryUStr.c_str(), *this);
 
         if ( info.match )
@@ -519,6 +524,7 @@ namespace sf1r
                 // no break;
             }
             case QueryTree::AND:
+            case QueryTree::WAND:
             case QueryTree::OR:
             {
                 for (la::TermList::iterator termIter = termList.begin(); termIter != termList.end(); termIter++)
@@ -551,6 +557,7 @@ namespace sf1r
                 // no break;
             }
             case QueryTree::AND:
+            case QueryTree::WAND:
             case QueryTree::OR:
             {
                 if (queryTree->type_ == QueryTree::AND)
@@ -852,6 +859,9 @@ namespace sf1r
         {
         case '&':
             queryType = QueryTree::AND;
+            break;
+        case '#':
+            queryType = QueryTree::WAND;
             break;
         case '|':
             queryType = QueryTree::OR;

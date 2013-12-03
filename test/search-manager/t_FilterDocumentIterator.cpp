@@ -8,7 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ir/index_manager/index/MockIndexReader.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/ANDDocumentIterator.h>
 #include <search-manager/FilterDocumentIterator.h>
 
@@ -143,10 +143,10 @@ BOOST_AUTO_TEST_CASE(filter_test)
         MockTermDocumentIterator* pTermDocIterator2 = new MockTermDocumentIterator(2, 1, &indexer,"title",1);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(new InvertedIndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(2);
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
@@ -164,10 +164,10 @@ BOOST_AUTO_TEST_CASE(filter_test)
         MockTermDocumentIterator* pTermDocIterator3 = new MockTermDocumentIterator(5, 1, &indexer,"title",1);
         iter.add(pTermDocIterator3);
 
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(new InvertedIndexManager::FilterBitmapT);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
@@ -182,10 +182,10 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pTermDocIterator2->setNot(true);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(new InvertedIndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(1);
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
@@ -200,12 +200,12 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pTermDocIterator2->setNot(true);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(new InvertedIndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(1);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
 
     {
         ANDDocumentIterator iter;
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(new InvertedIndexManager::FilterBitmapT);
 
         int data_size = 100;
         int real_size = 0;
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
         // pFilterIdSet->set(2);
         // pFilterIdSet->set(3);
 
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 

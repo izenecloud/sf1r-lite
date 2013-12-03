@@ -1,6 +1,7 @@
 #include "GroupParam.h"
 #include "DateStrParser.h"
 #include <configuration-manager/MiningSchema.h>
+#include <query-manager/SearchingEnumerator.h>
 
 namespace
 {
@@ -153,6 +154,8 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
 GroupParam::GroupParam()
     : isAttrGroup_(false)
     , attrGroupNum_(0)
+    , attrIterDocNum_(0)
+    , searchMode_(SearchingMode::DefaultSearchingMode)
 {
 }
 
@@ -297,6 +300,49 @@ bool GroupParam::isRangeLabel_(const std::string& propName) const
     return false;
 }
 
+static bool IsGreaterGroup(const std::pair<GroupParam::GroupPath, double>& left,
+    const std::pair<GroupParam::GroupPath, double>& right)
+{
+    return left.second > right.second;
+}
+
+void GroupParam::mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from)
+{
+    GroupLabelScoreMap::const_iterator groupit = from.begin();
+
+    for(; groupit != from.end(); ++groupit)
+    {
+        GroupLabelScoreMap::iterator merged_it = mergeto.find(groupit->first);
+        if (merged_it == mergeto.end())
+        {
+            // new property for group labels.
+            merged_it = mergeto.insert(std::make_pair(groupit->first, groupit->second)).first;
+        }
+        else
+        {
+            for(size_t i = 0; i < groupit->second.size(); ++i)
+            {
+                bool isnew_group = true;
+                for(size_t j = 0; j < merged_it->second.size(); ++j)
+                {
+                    if (groupit->second[i].first == merged_it->second[j].first)
+                    {
+                        // chose the higher score
+                        merged_it->second[j].second = max(groupit->second[i].second, merged_it->second[j].second);
+                        isnew_group = false;
+                        break;
+                    }
+                }
+                if (isnew_group)
+                {
+                    merged_it->second.push_back(groupit->second[i]);
+                }
+            }
+        }
+        std::sort(merged_it->second.begin(), merged_it->second.end(), IsGreaterGroup);
+    }
+}
+
 bool operator==(const GroupParam& a, const GroupParam& b)
 {
     return a.groupProps_ == b.groupProps_ &&
@@ -305,7 +351,9 @@ bool operator==(const GroupParam& a, const GroupParam& b)
            a.boostGroupLabels_ == b.boostGroupLabels_ &&
            a.isAttrGroup_ == b.isAttrGroup_ &&
            a.attrGroupNum_ == b.attrGroupNum_ &&
-           a.attrLabels_ == b.attrLabels_;
+           a.attrIterDocNum_ == b.attrIterDocNum_ &&
+           a.attrLabels_ == b.attrLabels_ &&
+           a.searchMode_ == b.searchMode_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
@@ -333,6 +381,7 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
     out << "attrGroupNum_: " << groupParam.attrGroupNum_ << std::endl;
+    out << "attrIterDocNum_: " << groupParam.attrIterDocNum_ << std::endl;
 
     out << "attrLabels_: ";
     for (GroupParam::AttrLabelMap::const_iterator labelIt = groupParam.attrLabels_.begin();
@@ -350,6 +399,8 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
         out << std::endl;
     }
 
+    out << "searchMode_: " << groupParam.searchMode_ << std::endl;
+
     return out;
 }
 
@@ -362,6 +413,39 @@ std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& gro
         const GroupParam::GroupPathVec& pathVec = labelIt->second;
 
         out << "property " << propName << ", " << pathVec;
+    }
+
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelScoreMap& groupLabelMap)
+{
+    for (GroupParam::GroupLabelScoreMap::const_iterator labelIt = groupLabelMap.begin();
+         labelIt != groupLabelMap.end(); ++labelIt)
+    {
+        const std::string& propName = labelIt->first;
+        const GroupParam::GroupPathScoreVec& pathVec = labelIt->second;
+
+        out << "property " << propName << ", " << pathVec;
+    }
+
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathScoreVec& groupPathVec)
+{
+    out << "labels num: " << groupPathVec.size() << std::endl;
+
+    for (GroupParam::GroupPathScoreVec::const_iterator pathIt = groupPathVec.begin();
+         pathIt != groupPathVec.end(); ++pathIt)
+    {
+        out << " score : " << pathIt->second << ", ";
+        for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->first.begin();
+             nodeIt != pathIt->first.end(); ++nodeIt)
+        {
+            out << *nodeIt << ", ";
+        }
+        out << std::endl;
     }
 
     return out;

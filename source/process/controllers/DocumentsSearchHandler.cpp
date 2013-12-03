@@ -27,6 +27,10 @@
 
 #include <common/Keys.h>
 #include <common/parsers/PageInfoParser.h>
+#include <common/QueryNormalizer.h>
+
+#include <mining-manager/MiningManager.h>
+#include <mining-manager/query-intent/QueryIntentManager.h>
 
 #include <log-manager/UserQuery.h>
 
@@ -76,7 +80,6 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
         actionItem_(),
-        returnAnalyzerResult_(false),
         TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_),
         renderer_(miningSchema_, TOP_K_NUM)
 {
@@ -93,7 +96,27 @@ void DocumentsSearchHandler::search()
         KeywordSearchResult searchResult;
         preprocess(searchResult);
 
-        int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM);
+        searchResult.TOP_K_NUM = TOP_K_NUM;
+        if (actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+        {
+            searchResult.TOP_K_NUM = actionItem_.searchingMode_.lucky_;
+        }
+        else if (actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
+        {
+            searchResult.TOP_K_NUM = indexSearchService_->getBundleConfig()->kNNTopKNum_;
+        }
+        else if (actionItem_.searchingMode_.mode_ == SearchingMode::AD_INDEX)
+        {
+            std::vector<std::pair<std::string, std::string> >::iterator it;
+            for(it = actionItem_.adSearchPropertyValue_.begin();
+                    it != actionItem_.adSearchPropertyValue_.end(); it++ )
+            {
+                actionItem_.env_.queryString_ += (it->first + it->second);
+            }
+        }
+        renderer_.setTopKNum(searchResult.TOP_K_NUM);
+
+        int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem_));
 
         if (actionItem_.env_.taxonomyLabel_.empty()
             && actionItem_.env_.nameEntityItem_.empty())
@@ -105,10 +128,10 @@ void DocumentsSearchHandler::search()
                 response_[Keys::total_count] = searchResult.totalCount_;
 
                 std::size_t topKCount = searchResult.topKDocs_.size();
-                if (topKStart + topKCount <= searchResult.totalCount_)
-                {
-                    topKCount += topKStart;
-                }
+                if(IsTopKComesFromConfig(actionItem_))
+                    if (topKStart + topKCount <= searchResult.totalCount_)
+                        topKCount += topKStart;
+
                 response_[Keys::top_k_count] = topKCount;
 
                 renderDocuments(searchResult);
@@ -139,8 +162,10 @@ void DocumentsSearchHandler::search()
             unsigned count = actionItem_.pageInfo_.count_;
 
             // DO NOT get raw text.
-            actionItem_.pageInfo_.start_ = topKStart;
-            actionItem_.pageInfo_.count_ = 0;
+            //actionItem_.pageInfo_.start_ = topKStart;
+            //actionItem_.pageInfo_.count_ = 0;
+
+            actionItem_.disableGetDocs_ = true;
 
             if (doSearch(searchResult))
             {
@@ -214,16 +239,12 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     std::vector<sf1r::wdocid_t>& idListInPage
 )
 {
-    izenelib::util::UString taxonomyLabel(
-        actionItem_.env_.taxonomyLabel_,
-        izenelib::util::UString::UTF_8
-    );
-    typedef std::vector<izenelib::util::UString>::const_iterator iterator;
+    typedef std::vector<PropertyValue::PropertyValueStrType>::const_iterator iterator;
     std::size_t taxonomyIndex =
         std::find(
             miaResult.taxonomyString_.begin(),
             miaResult.taxonomyString_.end(),
-            taxonomyLabel
+            str_to_propstr(actionItem_.env_.taxonomyLabel_)
         ) - miaResult.taxonomyString_.begin();
 
     std::size_t totalCount = 0;
@@ -339,6 +360,10 @@ bool DocumentsSearchHandler::doGet(
 
 bool DocumentsSearchHandler::parse()
 {
+    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager();
+    if (queryIntentManager)
+        queryIntentManager->queryIntent(request_, response_);
+
     std::vector<Parser*> parsers;
     std::vector<const Value*> values;
 
@@ -452,6 +477,10 @@ bool DocumentsSearchHandler::parse()
         actionItem_.counterList_,
         searchParser.mutableCounterList()
     );
+    swap(
+        actionItem_.adSearchPropertyValue_,
+        searchParser.adSearch()
+    );
     actionItem_.languageAnalyzerInfo_ = searchParser.analyzerInfo();
     actionItem_.rankingType_ = searchParser.rankingModel();
     actionItem_.searchingMode_ = searchParser.searchingModeInfo();
@@ -492,6 +521,7 @@ bool DocumentsSearchHandler::parse()
     // attrParser
     actionItem_.groupParam_.isAttrGroup_ = attrParser.attrResult();
     actionItem_.groupParam_.attrGroupNum_ = attrParser.attrTop();
+    actionItem_.groupParam_.searchMode_ = actionItem_.searchingMode_.mode_;
 
     // rangeParser
     actionItem_.rangePropertyName_ = rangeParser.rangeProperty();
@@ -649,7 +679,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
 void DocumentsSearchHandler::parseOptions()
 {
     actionItem_.removeDuplicatedDocs_ = asBool(request_[Keys::remove_duplicated_result]);
-    returnAnalyzerResult_ = asBoolOr(request_[Keys::analyzer_result], false);
+    actionItem_.isAnalyzeResult_ = asBoolOr(request_[Keys::analyzer_result], false);
 }
 
 bool DocumentsSearchHandler::doSearch(
@@ -663,12 +693,12 @@ bool DocumentsSearchHandler::doSearch(
     }
 
     // Return analyzer result even when result validation fails.
-    if (returnAnalyzerResult_)
+    if (actionItem_.isAnalyzeResult_)
     {
         std::string convertBuffer;
         searchResult.analyzedQuery_.convertString(
                 convertBuffer, izenelib::util::UString::UTF_8
-        );		
+        );
         response_[Keys::analyzer_result] = convertBuffer;
     }
 
@@ -713,6 +743,8 @@ bool DocumentsSearchHandler::validateSearchResult(
         response_.addError(siaResult.error_);
         return false;
     }
+    if (actionItem_.disableGetDocs_)
+        return true;
 
     // TODO: SIA should ensure the result is valid.
 
@@ -729,12 +761,14 @@ bool DocumentsSearchHandler::validateSearchResult(
             summaryPropertySize++;
         }
     }
-//     std::cout<<"**XX**"<<siaResult.fullTextOfDocumentInPage_.size()<<std::endl;
-//     std::cout<<"**YY**"<<siaResult.snippetTextOfDocumentInPage_.size()<<std::endl;
-//     std::cout<<"**ZZ**"<<siaResult.rawTextOfSummaryInPage_.size()<<std::endl;
-//     std::cout<<"**AA**"<<siaResult.count_<<std::endl;
-//     std::cout<<"**BB**"<<siaResult.start_<<std::endl;
-//     std::cout<<"**CC**"<<siaResult.topKDocs_.size()<<std::endl;
+    //LOG(INFO)<<"**XX**"<<siaResult.fullTextOfDocumentInPage_.size()<<std::endl;
+    //LOG(INFO)<<"**YY**"<<siaResult.snippetTextOfDocumentInPage_.size()<<std::endl;
+    //LOG(INFO)<<"**ZZ**"<<siaResult.rawTextOfSummaryInPage_.size()<<std::endl;
+    //LOG(INFO)<<"**AA**"<<siaResult.count_<<std::endl;
+    //LOG(INFO)<<"**BB**"<<siaResult.start_<<std::endl;
+    //LOG(INFO)<<"**CC**"<<siaResult.topKDocs_.size()<<std::endl;
+    //LOG(INFO)<<"**DD**"<<summaryPropertySize<<std::endl;
+    //LOG(INFO)<<"**EE**"<<displayPropertySize<<std::endl;
     if ( !validateTextList(siaResult.fullTextOfDocumentInPage_,
                            siaResult.count_,
                            displayPropertySize) ||
@@ -753,7 +787,7 @@ bool DocumentsSearchHandler::validateSearchResult(
 }
 
 bool DocumentsSearchHandler::validateTextList(
-    const std::vector<std::vector<izenelib::util::UString> >& textList,
+    const std::vector<std::vector<PropertyValue::PropertyValueStrType> >& textList,
     std::size_t row,
     std::size_t column
 )
@@ -766,7 +800,7 @@ bool DocumentsSearchHandler::validateTextList(
             return false;
         }
 
-        typedef std::vector<std::vector<izenelib::util::UString> > list_type;
+        typedef std::vector<std::vector<PropertyValue::PropertyValueStrType> > list_type;
         typedef list_type::const_iterator iterator;
 
         for (iterator it = textList.begin(); it != textList.end(); ++it)
@@ -942,8 +976,11 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::INCLUDE;
         filter.property_ = "ACL_ALLOW";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
-        PropertyValue value(std::string("@@ALL@@"));
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
+        PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
         QueryFiltering::FilteringTreeValue filteringTreeValue;
@@ -974,7 +1011,10 @@ void DocumentsSearchHandler::addAclFilters()
         filter.operation_ = QueryFiltering::EXCLUDE;
         filter.property_ = "ACL_DENY";
 
-        filter.values_.assign(tokens.begin(), tokens.end());
+        for(size_t i = 0; i < tokens.size(); ++i)
+        {
+            filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
+        }
 
         QueryFiltering::FilteringTreeValue filteringTreeValue;
         filteringTreeValue.fitleringType_ = filter;
@@ -1000,6 +1040,9 @@ void DocumentsSearchHandler::addAclFilters()
 
 void DocumentsSearchHandler::preprocess(KeywordSearchResult& searchResult)
 {
+    QueryNormalizer::get()->normalize(actionItem_.env_.queryString_,
+                                      actionItem_.env_.normalizedQueryString_);
+
     GroupLabelPreProcessor processor(miningSearchService_);
     processor.process(actionItem_, searchResult);
 }
@@ -1050,7 +1093,7 @@ void DocumentsSearchKeywordsLogger::log(
 
     queryLog.setQuery(actionItem.env_.queryString_);
     queryLog.setCollection(actionItem.collectionName_);
-    queryLog.setHitDocsNum(searchResult.totalCount_);
+    queryLog.setHitDocsNum(searchResult.topKDocs_.size());
     queryLog.setPageStart(actionItem.pageInfo_.start_);
     queryLog.setPageCount(actionItem.pageInfo_.count_);
     queryLog.setSessionId(session);

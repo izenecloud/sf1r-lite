@@ -10,12 +10,12 @@
 
 namespace sf1r
 {
-class IndexManager;
+class InvertedIndexManager;
 
 class IndexModeSelector
 {
 public:
-    IndexModeSelector(const boost::shared_ptr<IndexManager>& index_manager, double threshold, long max_realtime_msize);
+    IndexModeSelector(const boost::shared_ptr<InvertedIndexManager>& index_manager, double threshold, long max_realtime_msize);
 
     void TrySetIndexMode(long scd_file_size);
 
@@ -24,7 +24,7 @@ public:
     void ForceCommit();
 
 private:
-    boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<InvertedIndexManager> index_manager_;
     double threshold_;
     long max_realtime_msize_;
 };

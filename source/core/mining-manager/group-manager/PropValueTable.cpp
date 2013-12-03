@@ -23,6 +23,41 @@ const char* SUFFIX_PARENT_STR = ".parent_str.txt";
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
+
+inline unsigned int getDistance(
+    const izenelib::util::UString& s1,
+    const izenelib::util::UString& s2)
+{
+    izenelib::util::UString ls1(s1);
+    izenelib::util::UString ls2(s2);
+    ls1.toLowerString();
+    ls2.toLowerString();
+    const unsigned int HEIGHT = ls1.length() + 1;
+    const unsigned int WIDTH = ls2.length() + 1;
+    unsigned int eArray[HEIGHT][WIDTH];
+    unsigned int i;
+    unsigned int j;
+
+    for (i = 0; i < HEIGHT; i++)
+        eArray[i][0] = i;
+
+    for (j = 0; j < WIDTH; j++)
+        eArray[0][j] = j;
+
+    for (i = 1; i < HEIGHT; i++)
+    {
+        for (j = 1; j < WIDTH; j++)
+        {
+            eArray[i][j] = min(
+                eArray[i - 1][j - 1] +
+                (ls1[i-1] == ls2[j-1] ? 0 : 1),
+                min(eArray[i - 1][j] + 1, eArray[i][j - 1] + 1));
+        }
+    }
+
+    return eArray[HEIGHT - 1][WIDTH - 1];
+}
+
 }
 
 NS_FACETED_BEGIN
@@ -70,9 +105,12 @@ void PropValueTable::appendPropIdList(const std::vector<pvid_t>& inputIdList)
     valueIdTable_.appendIdList(inputIdList);
 }
 
-void PropValueTable::propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const
+void PropValueTable::propValueStr(
+    pvid_t pvId,
+    izenelib::util::UString& ustr,
+    bool isLock) const
 {
-    ScopedReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
 
     ustr = propStrVec_[pvId];
 }
@@ -109,8 +147,8 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
             else
             {
                 // overflow
-                throw MiningException(
-                    "property value count is out of range",
+                throw MiningException(propName_ + 
+                    ": property value count is out of range",
                     boost::lexical_cast<std::string>(propStrVec_.size()),
                     "PropValueTable::insertPropValueId"
                 );
@@ -181,7 +219,7 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     return saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) &&
            save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) &&
@@ -255,9 +293,12 @@ bool PropValueTable::testDoc(docid_t docId, pvid_t labelId) const
     return parentSet.find(labelId) != parentSet.end();
 }
 
-void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
+void PropValueTable::propValuePath(
+    pvid_t pvId,
+    std::vector<izenelib::util::UString>& path,
+    bool isLock) const
 {
-    ScopedReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
 
     // from leaf to root
     for (; pvId; pvId = parentIdVec_[pvId])
@@ -288,6 +329,18 @@ void PropValueTable::getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) c
     {
         parentIds.push_back(pvId);
     }
+}
+
+PropValueTable::pvid_t PropValueTable::getRootValueId(pvid_t pvId) const
+{
+    pvid_t rootId = 0;
+
+    for (; pvId; pvId = parentIdVec_[pvId])
+    {
+        rootId = pvId;
+    }
+
+    return rootId;
 }
 
 NS_FACETED_END

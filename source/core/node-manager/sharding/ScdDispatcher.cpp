@@ -24,7 +24,10 @@ ScdDispatcher::ScdDispatcher(const boost::shared_ptr<ScdSharder>& scdSharder)
     BOOST_ASSERT(scdSharder_);
 }
 
-bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum)
+bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList,
+    const std::string& dir,
+    const std::string& to_dir,
+    unsigned int docNum)
 {
     LOG(INFO) << "start SCD sharding";
 
@@ -34,6 +37,7 @@ bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::s
 
     // set scd dir and initialize
     scdDir_ = dir;
+    to_scdDir_ = to_dir;
     if (!initialize())
         return false;
 
@@ -63,7 +67,7 @@ bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::s
             docProcessed ++;
             if (docProcessed % 1000 == 0)
             {
-                std::cout << "\rProcessed documents: "<<docProcessed<<std::flush;
+                LOG(INFO) << "\rProcessed documents: "<<docProcessed<<std::flush;
             }
 
             if (docProcessed >= docNum && docNum > 0)
@@ -72,8 +76,7 @@ bool ScdDispatcher::dispatch(std::vector<std::string>& scdFileList, const std::s
             // for interruption
             boost::this_thread::interruption_point();
         }
-        std::cout<<"\rProcessed documents: "<<docProcessed<<std::flush;
-        std::cout<<std::endl;
+        LOG(INFO) << "\rProcessed documents: " << docProcessed;
 
         if (docProcessed >= docNum  && docNum > 0)
             break;
@@ -127,38 +130,42 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 
 BatchScdDispatcher::BatchScdDispatcher(
         const boost::shared_ptr<ScdSharder>& scdSharder,
-        const std::string& collectionName)
+        const std::string& collectionName,
+        bool is_dfs_enabled)
 : ScdDispatcher(scdSharder)
 , collectionName_(collectionName)
+, is_dfs_enabled_(is_dfs_enabled)
 {
     service_ = Sf1rTopology::getServiceName(Sf1rTopology::SearchService);
 }
 
 BatchScdDispatcher::~BatchScdDispatcher()
 {
-    for (size_t i = 0; i < ofList_.size(); i++)
+    for (std::map<shardid_t, std::ofstream*>::iterator it = ofList_.begin();
+        it != ofList_.end(); ++it)
     {
-        if (ofList_[i])
+        if (it->second)
         {
-            ofList_[i]->close();
-            delete ofList_[i];
+            it->second->close();
+            delete it->second;
         }
     }
 }
 
 bool BatchScdDispatcher::initialize()
 {
-    return initTempDir(scdDir_ + DISPATCH_TEMP_DIR);
+    return initTempDir((bfs::path(scdDir_)/bfs::path(DISPATCH_TEMP_DIR)).string());
 }
 
 bool BatchScdDispatcher::switchFile()
 {
-    //std::cout<<"switchFile to "<<curScdFileName_<<std::endl;
+    LOG(INFO) <<" switchFile to "<< curScdFileName_ <<std::endl;
 
-    for (unsigned int shardid = scdSharder_->getMinShardID();
-                shardid <= scdSharder_->getMaxShardID(); shardid++)
+    for (std::map<shardid_t, std::ofstream*>::iterator it = ofList_.begin();
+        it != ofList_.end(); ++it)
     {
-        std::ofstream*& rof = ofList_[shardid];
+        std::ofstream*& rof = it->second;
+        shardid_t shardid = it->first;
 
         if (!rof)
         {
@@ -183,15 +190,13 @@ bool BatchScdDispatcher::switchFile()
     return true;
 }
 
-std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
+std::ostream& operator<<(std::ostream& out, const SCDDoc& scdDoc)
 {
-    SCDDoc::iterator propertyIter;
+    SCDDoc::const_iterator propertyIter;
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
-        std::string str;
         out << "<" << propertyIter->first << ">";
-        (*propertyIter).second.convertString(str, izenelib::util::UString::UTF_8);
-        out << str << std::endl;
+        out << (*propertyIter).second << std::endl;
     }
 
     return out;
@@ -202,9 +207,6 @@ bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
     std::ofstream*& rof = ofList_[shardid];
     (*rof) << scdDoc;
 
-    // add shardid property?
-    //(*rof) << "<SHARDID>" << shardid << std::endl;
-
     return true;
 }
 
@@ -213,15 +215,16 @@ bool BatchScdDispatcher::finish()
     bool ret = true;
     LOG(INFO) << "start SCD dispatching" ;
 
-    // Send splitted scd files in sub dirs to each shard server
-    for (unsigned int shardid = scdSharder_->getMinShardID();
-            shardid <= scdSharder_->getMaxShardID(); shardid++)
+    if (is_dfs_enabled_)
     {
-        if (!MasterManagerBase::get()->checkCollectionShardid(service_, collectionName_, shardid))
-        {
-            continue;
-        }
-
+        LOG(INFO) << "DFS enabled, no need dispatch scd files.";
+        return true;
+    }
+    // Send splitted scd files in sub dirs to each shard server
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingIdList();
+    for (size_t i = 0; i < shardids.size(); ++i)
+    {
+        shardid_t shardid = shardids[i];
         std::string host;
         unsigned int recvPort;
         if (MasterManagerBase::get()->getShardReceiver(shardid, host, recvPort))
@@ -230,7 +233,7 @@ bool BatchScdDispatcher::finish()
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
 
             izenelib::net::distribute::DataTransfer2 transfer(host, recvPort);
-            if (not transfer.syncSend(shardScdfileMap_[shardid], collectionName_ + "/scd/index"))
+            if (not transfer.syncSend(shardScdfileMap_[shardid], to_scdDir_))
             {
                 ret = false;
                 LOG(ERROR) << "Failed to transfer scd"<<shardid;
@@ -254,24 +257,17 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
     bfs::remove_all(tempDir);
     bfs::create_directory(tempDir);
 
-    ofList_.resize(scdSharder_->getMaxShardID()+1, NULL);
-    for (unsigned int shardid = scdSharder_->getMinShardID();
-            shardid <= scdSharder_->getMaxShardID(); shardid++)
+    const std::vector<shardid_t>& shardids = scdSharder_->getShardingIdList();
+    for (size_t i = 0; i < shardids.size(); ++i)
     {
-        // shards are collection related
-        if (!MasterManagerBase::get()->checkCollectionShardid(service_, collectionName_, shardid))
-        {
-            continue;
-        }
-
         std::ostringstream oss;
-        oss << tempDir << shardid;
+        oss << tempDir << shardids[i];
 
         std::string shardScdDir = oss.str();
         bfs::create_directory(shardScdDir);
 
-        shardScdfileMap_.insert(std::make_pair(shardid, shardScdDir));
-        ofList_[shardid] = new std::ofstream;
+        shardScdfileMap_.insert(std::make_pair(shardids[i], shardScdDir));
+        ofList_[shardids[i]] = new std::ofstream;
     }
 
     return true;

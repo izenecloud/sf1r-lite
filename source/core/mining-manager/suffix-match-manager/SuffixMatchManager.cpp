@@ -5,6 +5,7 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <common/ResourceManager.h>
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
@@ -14,108 +15,10 @@
 #include <3rdparty/am/btree/btree_map.h>
 #include <util/ustring/algo.hpp>
 #include <glog/logging.h>
+#include <math.h>
 
 using namespace cma;
 using namespace izenelib::util;
-
-namespace
-{
-const char* NUMERIC_RANGE_DELIMITER = "-";
-
-typedef std::pair<int64_t, int64_t> NumericRange;
-
-using namespace sf1r::faceted;
-
-/**
- * check parameter of group label
- * @param[in] labelParam parameter to check
- * @param[out] isRange true for group on range, false for group on single numeric value
- * @return true for success, false for failure
-*/
-bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
-{
-    const GroupParam::GroupPathVec& labelPaths = labelParam.second;
-
-    if (labelPaths.empty())
-        return false;
-
-    const GroupParam::GroupPath& path = labelPaths[0];
-    if (path.empty())
-        return false;
-
-    const std::string& propValue = path[0];
-    std::size_t delimitPos = propValue.find(NUMERIC_RANGE_DELIMITER);
-    isRange = (delimitPos != std::string::npos);
-
-    return true;
-}
-
-bool convertNumericLabel(const std::string& src, float& target)
-{
-    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
-    if (delimitPos != std::string::npos)
-    {
-        LOG(ERROR) << "group label parameter: " << src
-                   << ", it should be specified as single numeric value";
-        return false;
-    }
-
-    try
-    {
-        target = boost::lexical_cast<float>(src);
-    }
-    catch (const boost::bad_lexical_cast& e)
-    {
-        LOG(ERROR) << "failed in casting label from " << src
-                   << " to numeric value, exception: " << e.what();
-        return false;
-    }
-
-    return true;
-}
-
-bool convertRangeLabel(const std::string& src, NumericRange& target)
-{
-    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
-    if (delimitPos == std::string::npos)
-    {
-        LOG(ERROR) << "group label parameter: " << src
-                   << ", it should be specified as numeric range value";
-        return false;
-    }
-
-    int64_t lowerBound = std::numeric_limits<int64_t>::min();
-    int64_t upperBound = std::numeric_limits<int64_t>::max();
-
-    try
-    {
-        if (delimitPos)
-        {
-            std::string sub = src.substr(0, delimitPos);
-            lowerBound = boost::lexical_cast<int64_t>(sub);
-        }
-
-        if (delimitPos+1 != src.size())
-        {
-            std::string sub = src.substr(delimitPos+1);
-            upperBound = boost::lexical_cast<int64_t>(sub);
-        }
-    }
-    catch (const boost::bad_lexical_cast& e)
-    {
-        LOG(ERROR) << "failed in casting label from " << src
-                    << " to numeric value, exception: " << e.what();
-        return false;
-    }
-
-    target.first = lowerBound;
-    target.second = upperBound;
-
-    return true;
-}
-
-}
-
 
 namespace sf1r
 {
@@ -142,7 +45,7 @@ SuffixMatchManager::SuffixMatchManager(
     }
     buildTokenizeDic();
 
-    filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
+    filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
     fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
 }
@@ -153,7 +56,7 @@ SuffixMatchManager::~SuffixMatchManager()
     //if (knowledge_) delete knowledge_;
 }
 
-void SuffixMatchManager::setProductMatcher(ProductMatcher* matcher)
+void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
 {
     if (tokenizer_)
         tokenizer_->SetProductMatcher(matcher);
@@ -217,12 +120,12 @@ size_t SuffixMatchManager::longestSuffixMatch(
             for (size_t j = 0; j < docid_list.size(); ++j)
             {
                 assert(doclen_list[j] > 0);
-                res_list_map[docid_list[i]] += double(max_match) / double(doclen_list[j]);
+                res_list_map[docid_list[j]] += double(max_match) / double(doclen_list[j]);
             }
 
             for (size_t j = 0; j < match_ranges.size(); ++j)
             {
-                total_match += match_ranges[i].second - match_ranges[i].first;
+                total_match += match_ranges[j].second - match_ranges[j].first;
             }
             docid_list.clear();
             doclen_list.clear();
@@ -241,42 +144,261 @@ size_t SuffixMatchManager::longestSuffixMatch(
     return total_match;
 }
 
+void SuffixMatchManager::GetTokenResults(const std::string& pattern,
+                                std::list<std::pair<UString, double> >& major_tokens,
+                                std::list<std::pair<UString, double> >& minor_tokens,
+                                bool isAnalyzeQuery,
+                                UString& analyzedQuery,
+                                double& rank_boundary)
+{
+    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery);
+    getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
+}
+
+//getSuffixSearchRankThreshold
+void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
+{
+    double minor_score_sum = 0;
+    double major_score_sum = 0;
+    unsigned int minor_size = 0;
+    unsigned int major_size = 0;
+    unsigned int total_size = 0;
+    bool needSmooth = false;
+    for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second > 0.1)
+        {
+            major_score_sum += i->second;
+            major_size++;
+            if (i->second > 0.5)
+            {
+                needSmooth = true;
+            }
+        }
+        else
+        {
+            minor_score_sum += i->second;
+            minor_size++;
+        }
+    }
+    total_size = minor_size + major_size;
+
+    if (needSmooth == true || (major_size <= 2 && major_score_sum > 0.6))
+    {
+        std::vector<double> minor_tokens_point; 
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+            minor_tokens_point.push_back(i->second);
+
+        KNlpResourceManager::getResource()->gauss_smooth(minor_tokens_point);
+
+        unsigned int k = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                                        i != minor_tokens.end(); ++i, k++)
+            i->second = minor_tokens_point[k];
+
+        minor_score_sum = 0;
+        major_score_sum = 0;
+        minor_size = 0;
+        major_size = 0;
+        total_size = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            if (i->second > 0.1)
+            {
+                major_score_sum += i->second;
+                major_size++;
+            }
+            else
+            {
+                minor_score_sum += i->second;
+                minor_size++;
+            }
+        }
+        total_size = minor_size + major_size;
+    }
+
+    if (major_size <= 3)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.85 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.9 + minor_score_sum * 0.6;
+        }
+        
+    }
+    else if (major_size <= 5)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.75 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.7;
+        }
+    }
+    else 
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.7;
+        }
+    }
+}
+
+bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
+{
+    if (!tokenizer_)
+    {
+        LOG(INFO)<<"tokenizer_ = NULL";
+        return false;
+    }
+    return tokenizer_->GetSynonymSet(pattern, synonym_set, setid);
+}
+
+bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
+{
+    if (!tokenizer_)
+    {
+        LOG(INFO)<<"tokenizer_ = NULL";
+        return false;
+    }
+    return tokenizer_->GetSynonymId(pattern, setid);
+}
+
+void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
+{
+    // const size_t tmp_size = major_size;
+    std::map<UString, bool> is_add;
+
+    for (size_t j = 0; j < tokens.size(); ++j)
+    {
+        if (is_add.find(tokens[j].first) != is_add.end()) continue;
+        std::vector<UString> synonym_set;
+        std::vector<std::pair<UString, double> > tmp_tokens;
+
+        int id = -1;
+        if (!GetSynonymSet_(tokens[j].first, synonym_set, id))//term doesn't have synonym
+        {
+            tmp_tokens.push_back(tokens[j]);
+            refine_tokens.push_back(tmp_tokens);
+            continue;
+        }
+           
+
+        double tmp_score = 0;
+            
+        for (size_t i = 0; i < tokens.size(); ++i)
+        {
+            int tmp_id = -1;
+            GetSynonymId_(tokens[i].first, tmp_id);
+            if (tmp_id == id)
+                tmp_score += tokens[i].second;
+        }
+        for (size_t i = 0; i < tokens.size(); ++i)
+        {
+            int tmp_id = -1;
+            GetSynonymId_(tokens[i].first, tmp_id);
+            if (tmp_id == id)
+            {
+                tmp_tokens.push_back(std::make_pair(tokens[i].first, tmp_score));
+                is_add.insert(std::make_pair(tokens[i].first, 1));
+            }
+        }
+        for (size_t i = 0; i < synonym_set.size(); ++i)
+            if (is_add.find(synonym_set[i]) == is_add.end())
+                tmp_tokens.push_back(std::make_pair(synonym_set[i], tmp_score * 0.95));
+            
+        refine_tokens.push_back(tmp_tokens);
+    }
+/*                    
+            for (size_t i = 0; i < synonym_set.size(); ++i)
+            {
+                if (synonym_set[i] == tokens[j].first)
+                {
+                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second));
+                }
+                else
+                {
+                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second * 0.8));                    
+                }
+            }
+            refine_tokens.push_back(tmp_tokens);
+        }
+        else//has been added
+        {
+            if (j < tmp_size) --major_size;
+            for (size_t i = 0; i < refine_tokens[find_flag].size(); ++i)
+                if (refine_tokens[find_flag][i].first == tokens[j].first)
+                {
+                    refine_tokens[find_flag][i].second = tokens[j].second;
+                    break;
+                }
+        }
+    }
+*/    
+}
+
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
-        const std::string& pattern_orig,
+        bool use_synonym,
+        std::list<std::pair<UString, double> >& major_tokens,
+        std::list<std::pair<UString, double> >& minor_tokens,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param,
         std::vector<std::pair<double, uint32_t> >& res_list,
-        UString& analyzedQuery) const
+        double rank_boundary)
 {
-    if (pattern_orig.empty()) return 0;
 
     btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > range_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> score_list;
+    std::vector<vector<std::pair<UString, double> > > synonym_tokens;
+    size_t major_size = 0;    
+   
 
-    // tokenize the pattern.
-    std::string pattern = pattern_orig;
-    boost::to_lower(pattern);
-    LOG(INFO) << "original query string: " << pattern_orig;
+    if (use_synonym)
+    {
+        std::vector<std::pair<UString, double> > tmp_tokens;
 
-    std::list<std::pair<UString, double> > sub_patterns;
-    tokenizer_->GetTokenResults(pattern, sub_patterns, analyzedQuery);
+        for (std::list<std::pair<UString, double> >::iterator it = major_tokens.begin(); it != major_tokens.end(); ++it, ++major_size)
+            tmp_tokens.push_back((*it));
+        for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
+            tmp_tokens.push_back((*it));       
+        ExpandSynonym_(tmp_tokens, synonym_tokens, major_size);
+/*        
+        for (size_t i = 0; i < synonym_tokens.size(); ++i)
+            for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
+            {
+                string s;
+                synonym_tokens[i][j].first.convertString(s, UString::UTF_8);
+                LOG(INFO)<<i<<' '<<j<<' '<<s<<' '<<synonym_tokens[i][j].second;
+            }
+*/            
+    }
+
     size_t total_match = 0;
 
     {
         ReadLock lock(mutex_);
         std::vector<size_t> prop_id_list;
         std::vector<RangeListT> filter_range_list;
-        if (!group_param.isGroupEmpty())
+        if (!group_param.groupLabels_.empty())
         {
             if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
                 return 0;
         }
-        if (!group_param.isAttrEmpty())
+        if (!group_param.attrLabels_.empty())
         {
             if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
                 return 0;
@@ -288,41 +410,89 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         }
 
         std::pair<size_t, size_t> sub_match_range;
+        
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
+            size_t thres = 0;
             const std::string& search_property = search_in_properties[prop_i];
-            range_list.reserve(sub_patterns.size());
-            score_list.reserve(sub_patterns.size());
-            LOG(INFO) << "query tokenize match ranges in property : " << search_property;
-            for (std::list<std::pair<UString, double> >::iterator pit = sub_patterns.begin();
-                    pit != sub_patterns.end(); ++pit)
-            {
-                if (pit->first.empty()) continue;
-                if (is_alphabet<uint16_t>::value(pit->first[0]) || is_numeric<uint16_t>::value(pit->first[0]))
+            range_list.reserve(major_tokens.size() + minor_tokens.size());
+            score_list.reserve(range_list.size());
+            std::vector<std::vector<boost::tuple<size_t, size_t, double> > > synonym_range_list;             
+            if (use_synonym)
+            {            
+
+                boost::tuple<size_t, size_t, double> tmp_tuple;            
+                for (size_t i = 0; i < synonym_tokens.size(); ++i)
                 {
-                    pit->first.insert(pit->first.begin(), ' ');
+                    std::vector<boost::tuple<size_t, size_t, double> > synonym_match_range;
+                    for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
+                    {    
+                        synonym_tokens[i][j].first = Algorithm<UString>::padForAlphaNum(synonym_tokens[i][j].first);
+                        if (fmi_manager_->backwardSearch(search_property, synonym_tokens[i][j].first, sub_match_range) == synonym_tokens[i][j].first.length())
+                        {
+                            tmp_tuple.get<0>() = sub_match_range.first;
+                            tmp_tuple.get<1>() = sub_match_range.second;
+                            tmp_tuple.get<2>() = synonym_tokens[i][j].second;                        
+                            synonym_match_range.push_back(tmp_tuple);
+                        }
+                    }
+                    if (!synonym_match_range.empty())
+                    {
+                        if (i < major_size) ++thres;
+                        synonym_range_list.push_back(synonym_match_range);
+                    }
                 }
-                if (is_alphabet<uint16_t>::value(*pit->first.end()) || is_numeric<uint16_t>::value(*pit->first.end()))
-                {
-                    pit->first.push_back(' ');
-                }
-                if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
-                {
-                    range_list.push_back(sub_match_range);
-                    score_list.push_back(pit->second);
-                }
+
             }
-            fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
+            else
+            {
+                for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
+                        pit != major_tokens.end(); ++pit)
+                {
+                    if (pit->first.empty()) continue;
+                    Algorithm<UString>::to_lower(pit->first);
+                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                    {
+                        range_list.push_back(sub_match_range);
+                        score_list.push_back(pit->second);
+                    }
+                }
+
+                thres = range_list.size();
+    
+                for (std::list<std::pair<UString, double> >::iterator pit = minor_tokens.begin();
+                        pit != minor_tokens.end(); ++pit)
+                {
+                    if (pit->first.empty()) continue;
+                    Algorithm<UString>::to_lower(pit->first);
+                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                    {
+                        range_list.push_back(sub_match_range);
+                        score_list.push_back(pit->second);
+                    }
+                }
+                fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
+            }
             if (filter_mode == SearchingMode::OR_Filter)
             {
-                fmi_manager_->getTopKDocIdListByFilter(
-                        search_property,
-                        prop_id_list,
-                        filter_range_list,
-                        range_list,
-                        score_list,
-                        max_docs,
-                        single_res_list);
+                if (use_synonym)
+                {
+                    fmi_manager_->getTopKDocIdListByFilter(search_property, prop_id_list, filter_range_list, synonym_range_list, thres,max_docs, single_res_list);                        
+                }    
+                else
+                {
+                    fmi_manager_->getTopKDocIdListByFilter(
+                            search_property,
+                            prop_id_list,
+                            filter_range_list,
+                            range_list,
+                            score_list,
+                            thres,
+                            max_docs,
+                            single_res_list);
+                }                             
             }
             else if (filter_mode == SearchingMode::AND_Filter)
             {
@@ -341,12 +511,20 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             single_res_list.clear();
 
-            for (size_t i = 0; i < range_list.size(); ++i)
+            if (use_synonym)  
             {
-                total_match += range_list[i].second - range_list[i].first;
+                for (size_t i = 0; i < synonym_range_list.size(); ++i)
+                    for (size_t j = 0; j < synonym_range_list[i].size(); ++j)
+                        total_match += synonym_range_list[i][j].get<1>() - synonym_range_list[i][j].get<0>();
+            }
+            else
+            {
+                for (size_t i = 0; i < range_list.size(); ++i)
+                    total_match += range_list[i].second - range_list[i].first;
             }
             range_list.clear();
             score_list.clear();
+            
             LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
@@ -355,12 +533,20 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
-        res_list.push_back(std::make_pair(cit->second, cit->first));
+        if (cit->second > rank_boundary)
+        {
+            res_list.push_back(std::make_pair(cit->second, cit->first));
+        }
     }
+    if (res_list.empty())
+        return total_match;
+    
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
-    LOG(INFO) << "all property fuzzy search finished";
+        
+    LOG(INFO) << "all property fuzzy search finished, answer is: "<<res_list.size();
+
     return total_match;
 }
 
@@ -376,7 +562,7 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
     }
 
     size_t prop_id = filter_manager_->getAttrPropertyId();
-    if (prop_id == (size_t)-1) return true;
+    if (prop_id == (size_t)-1) return false;
 
     FMIndexManager::FilterRangeT filter_range;
     FilterManager::FilterIdRange filterid_range;
@@ -394,12 +580,12 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
             if (filterid_range.start >= filterid_range.end)
             {
                 LOG(WARNING) << "attribute filter id range not found. " << attr_filterstr;
-                return false;
+                continue;
             }
             if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
                 LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
+                continue;
             }
 
             LOG(INFO) << "attribute filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
@@ -407,7 +593,11 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
         }
     }
 
-    if (!temp_range_list.empty())
+    if (temp_range_list.empty())
+    {
+        return false;
+    }
+    else
     {
         prop_id_list.push_back(prop_id);
         filter_range_list.push_back(temp_range_list);
@@ -443,29 +633,51 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
         RangeListT temp_range_list;
         for (size_t i = 0; i < group_values.size(); ++i)
         {
+            if (group_values[i].empty()) continue;
+
             if (is_numeric)
             {
-                bool is_range = false;
-                if (!checkLabelParam(*cit, is_range))
+                const std::string& str_value = group_values[i][0];
+                size_t delimitPos = str_value.find('-');
+                if (delimitPos != std::string::npos)
                 {
-                    return false;
-                }
-                if (is_range)
-                {
-                    NumericRange range;
-                    if (!convertRangeLabel(group_values[i][0], range))
-                        return false;
-                    FilterManager::FilterIdRange tmp_range;
-                    tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(range.first, range.second), true);
-                    filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, std::min(range.first, range.second), true);
-                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                    float lowerBound = std::numeric_limits<float>::min();
+                    float upperBound = std::numeric_limits<float>::max();
+
+                    try
+                    {
+                        if (delimitPos)
+                        {
+                            lowerBound = boost::lexical_cast<float>(str_value.substr(0, delimitPos));
+                        }
+
+                        if (delimitPos + 1 != str_value.size())
+                        {
+                            upperBound = boost::lexical_cast<float>(str_value.substr(delimitPos + 1));
+                        }
+                    }
+                    catch (const boost::bad_lexical_cast& e)
+                    {
+                        LOG(ERROR) << "failed in casting label from " << str_value
+                            << " to numeric value, exception: " << e.what();
+                        continue;
+                    }
+                    filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, lowerBound, true);
+                    filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, upperBound, true));
                 }
                 else
                 {
                     float value = 0;
-                    if (!convertNumericLabel(group_values[i][0], value))
-                        return false;
+                    try
+                    {
+                        value = boost::lexical_cast<float>(str_value);
+                    }
+                    catch (const boost::bad_lexical_cast& e)
+                    {
+                        LOG(ERROR) << "failed in casting label from " << str_value
+                            << " to numeric value, exception: " << e.what();
+                        continue;
+                    }
                     filterid_range = filter_manager_->getNumFilterIdRangeExact(prop_id, value);
                 }
             }
@@ -477,7 +689,7 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                 if (!dsf.apiDateStrToDateVec(propValue, date_vec))
                 {
                     LOG(WARNING) << "get date from datestr error. " << propValue;
-                    return false;
+                    continue;
                 }
                 double value = (double)dsf.createDate(date_vec);
                 LOG(INFO) << "date value is : " << value;
@@ -497,15 +709,12 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                     }
                     else
                     {
-                        return false;
+                        continue;
                     }
                     double end_value = (double)dsf.createDate(end_date_vec);
                     LOG(INFO) << "end date value is : " << end_value;
-                    FilterManager::FilterIdRange tmp_range;
-                    tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, end_value, true);
                     filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, value, true);
-                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                    filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, end_value, true));
                 }
                 else
                 {
@@ -521,19 +730,23 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
             if (filterid_range.start >= filterid_range.end)
             {
                 LOG(WARNING) << "one of group label filter id range not found.";
-                return false;
+                continue;
             }
             if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
                 LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
+                continue;
             }
 
             temp_range_list.push_back(filter_range);
             LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
         }
 
-        if (!temp_range_list.empty())
+        if (temp_range_list.empty())
+        {
+            return false;
+        }
+        else
         {
             prop_id_list.push_back(prop_id);
             filter_range_list.push_back(temp_range_list);
@@ -559,25 +772,24 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
 
     for (size_t i = 0; i < filter_param.size(); ++i)
     {
-        const QueryFiltering::FilteringType& filtertype = filter_param[i];
+        const QueryFiltering::FilteringType& filter = filter_param[i];
+        if (filter.values_.empty()) return false;
 
-        bool is_numeric = filter_manager_->isNumericProp(filtertype.property_)
-            || filter_manager_->isDateProp(filtertype.property_);
-        size_t prop_id = filter_manager_->getPropertyId(filtertype.property_);
+        bool is_numeric = filter_manager_->isNumericProp(filter.property_)
+            || filter_manager_->isDateProp(filter.property_);
+        size_t prop_id = filter_manager_->getPropertyId(filter.property_);
         if (prop_id == (size_t)-1) return false;
 
         RangeListT temp_range_list;
-        for (size_t j = 0; j < filtertype.values_.size(); ++j)
+        try
         {
-            try
+            if (is_numeric)
             {
-                if (is_numeric)
-                {
-                    double filter_num = filtertype.values_[j].getNumber();
-                    LOG(INFO) << "filter num by : " << filter_num;
+                double filter_num = filter.values_[0].getNumber();
+                LOG(INFO) << "filter num by : " << filter_num;
 
-                    switch (filtertype.operation_)
-                    {
+                switch (filter.operation_)
+                {
                     case QueryFiltering::LESS_THAN_EQUAL:
                         filterid_range = filter_manager_->getNumFilterIdRangeLess(prop_id, filter_num, true);
                         break;
@@ -596,14 +808,11 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
 
                     case QueryFiltering::RANGE:
                         {
-                            assert(filtertype.values_.size() == 2);
-                            if (j >= 1) return false;
-                            double filter_num_2 = filtertype.values_[1].getNumber();
-                            FilterManager::FilterIdRange tmp_range;
-                            tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true);
+                            if (filter.values_.size() < 2) return false;
+
+                            double filter_num_2 = filter.values_[1].getNumber();
                             filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, std::min(filter_num, filter_num_2), true);
-                            filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                            filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true));
                         }
                         break;
 
@@ -614,88 +823,84 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                     default:
                         LOG(WARNING) << "not support filter operation for numeric property in fuzzy searching.";
                         return false;
-                    }
                 }
-                else
+            }
+            else
+            {
+                std::string filter_str = propstr_to_str(filter.values_[0].getPropertyStrValue());
+                LOG(INFO) << "filter range by : " << filter_str;
+
+                switch (filter.operation_)
                 {
-                    const std::string& filter_str = filtertype.values_[j].get<std::string>();
-                    LOG(INFO) << "filter range by : " << filter_str;
+                case QueryFiltering::EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, UString(filter_str, UString::UTF_8));
+                    break;
 
-                    switch (filtertype.operation_)
+                case QueryFiltering::GREATER_THAN:
+                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), false);
+                    break;
+
+                case QueryFiltering::GREATER_THAN_EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                    break;
+
+                case QueryFiltering::LESS_THAN:
+                    filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), false);
+                    break;
+
+                case QueryFiltering::LESS_THAN_EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
+                    break;
+
+                case QueryFiltering::RANGE:
                     {
-                    case QueryFiltering::EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, UString(filter_str, UString::UTF_8));
-                        break;
+                        if (filter.values_.size() < 2) return false;
 
-                    case QueryFiltering::GREATER_THAN:
-                        filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), false);
-                        break;
-
-                    case QueryFiltering::GREATER_THAN_EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
-                        break;
-
-                    case QueryFiltering::LESS_THAN:
-                        filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), false);
-                        break;
-
-                    case QueryFiltering::LESS_THAN_EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
-                        break;
-
-                    case QueryFiltering::RANGE:
+                        std::string filter_str1 = propstr_to_str(filter.values_[1].getPropertyStrValue());
+                        if (filter_str < filter_str1)
                         {
-                            assert(filtertype.values_.size() == 2);
-                            if (j >= 1) return false;
-                            const std::string& filter_str1 = filtertype.values_[1].get<std::string>();
-                            FilterManager::FilterIdRange tmp_range;
-                            if (filter_str < filter_str1)
-                            {
-                                tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true);
-                                filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
-                            }
-                            else
-                            {
-                                tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
-                                filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
-                            }
-                            filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                            filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                            filterid_range.merge(filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true));
                         }
-                        break;
-
-                    case QueryFiltering::PREFIX:
-                        filterid_range = filter_manager_->getStrFilterIdRangePrefix(prop_id, UString(filter_str, UString::UTF_8));
-                        break;
-
-                    default:
-                        LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
-                        return false;
+                        else
+                        {
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
+                            filterid_range.merge(filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true));
+                        }
                     }
+                    break;
+
+                case QueryFiltering::PREFIX:
+                    filterid_range = filter_manager_->getStrFilterIdRangePrefix(prop_id, UString(filter_str, UString::UTF_8));
+                    break;
+
+                default:
+                    LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
+                    return false;
                 }
             }
-            catch (const boost::bad_get &)
-            {
-                LOG(INFO) << "get filter string failed. boost::bad_get.";
-                return false;
-            }
-
-            if (filterid_range.start >= filterid_range.end)
-            {
-                LOG(WARNING) << "filter id range not found. ";
-                return false;
-            }
-
-            if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
-            {
-                LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
-            }
-
-            temp_range_list.push_back(filter_range);
-            LOG(INFO) << "filter range is : " << filterid_range.start << ", " << filterid_range.end;
-            LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
         }
+        catch (const boost::bad_get &)
+        {
+            LOG(INFO) << "get filter string failed. boost::bad_get.";
+            return false;
+        }
+
+        if (filterid_range.start >= filterid_range.end)
+        {
+            LOG(WARNING) << "filter id range not found. ";
+            return false;
+        }
+
+        if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
+        {
+            LOG(WARNING) << "get filter DocArray range failed.";
+            return false;
+        }
+
+        temp_range_list.push_back(filter_range);
+        LOG(INFO) << "filter range is : " << filterid_range.start << ", " << filterid_range.end;
+        LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
 
         if (!temp_range_list.empty())
         {
@@ -723,6 +928,11 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
+void SuffixMatchManager::GetQuerySumScore(const std::string& pattern, double &sum_score)
+{
+    tokenizer_->GetQuerySumScore(pattern, sum_score);
+}
+
 SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
@@ -731,6 +941,7 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
     }
     return NULL;
 }
+
 
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {
@@ -751,7 +962,7 @@ void SuffixMatchManager::buildTokenizeDic()
 void SuffixMatchManager::updateFmindex()
 {
     LOG (INFO) << "Merge cron-job with fm-index...";
-    suffixMatchTask_->preProcess();
+    suffixMatchTask_->preProcess(0);
     docid_t start_doc = suffixMatchTask_->getLastDocId();
     for (uint32_t docid = start_doc + 1; docid < document_manager_->getMaxDocId(); ++docid)
     {
@@ -765,5 +976,111 @@ void SuffixMatchManager::updateFmindex()
     suffixMatchTask_->postProcess();
     last_doc_id_ = document_manager_->getMaxDocId();
 }
+
+
+double SuffixMatchManager::getSuffixSearchRankThreshold(
+            const std::list<std::pair<UString, double> >& major_tokens,
+            const std::list<std::pair<UString, double> >& minor_tokens,
+            std::list<std::pair<UString, double> >& boundary_minor_tokens)
+{
+    double rank_boundary = 0;
+    double total_score = 0;
+    double major_score = 0;
+    double minor_score = 0;
+    unsigned int major_highscore_size = 0;
+    unsigned int major_size = major_tokens.size();
+
+    for (std::list<std::pair<UString, double> >::const_iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+    {
+        if (i->second >= 3)
+        {
+            major_highscore_size++;
+        }
+
+        double tmp_score = 0;
+
+        if (i->second < 1)
+        {
+            major_score += 0.12;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, 0.12));
+        }
+        else if (major_size >= 5)
+        {
+            tmp_score = (i->second)/5;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+        else if (major_size >= 3)
+        {
+            tmp_score = (i->second)/6;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+        else if(major_size > 0)
+        {
+            tmp_score = (i->second)/7;
+            major_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+    }
+    for (std::list<std::pair<UString, double> >::const_iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second < 1)
+        {
+            minor_score += i->second;
+            boundary_minor_tokens.push_back(*i);
+        }
+        else
+        {
+            double tmp_score = (i->second)/8;
+            minor_score += tmp_score;
+            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+        }
+    }
+
+    total_score = minor_score + major_score;
+
+    cout << "total_score :" <<total_score <<endl;
+    cout << "major_score :" <<major_score <<endl;
+    cout << "minor_score :" <<minor_score <<endl;
+
+    if (major_size >= 7) // 7 8 9 10 ...
+    {
+        ///0.54 + 0.3 // 0.54 + 0.4
+        if (major_highscore_size >= 5)
+            rank_boundary = major_score * 0.5 + minor_score * 0.3;
+        else
+            rank_boundary = major_score * 0.5 + minor_score * 0.4;
+    }
+    else if (major_size >= 5) // 5 6
+    {
+        ///0.53 + 0.4  // 0.53 + 0.55
+        if (major_highscore_size > 3)
+            rank_boundary = major_score * 0.5 + minor_score * 0.4;
+        else
+            rank_boundary = major_size * 0.5 + minor_score * 0.55;
+    }
+    else if (major_size >= 3) // 3 4
+    {
+        ///0.6 + 0.4 // 0.6 + 0.6
+        if (major_highscore_size > 2)
+            rank_boundary = major_score * 0.55 + minor_score * 0.4;
+        else
+            rank_boundary = major_score * 0.55 + minor_score * 0.6;
+    }
+    else if (major_size > 0) // 1 2
+    {
+        ///0.75 + 0.65
+        rank_boundary = major_score * 0.75 + minor_score * 0.65;
+    }
+    else
+    {
+        ///0.7
+        rank_boundary = total_score * 0.7;
+    }
+
+    return rank_boundary;
+}
+
 
 }

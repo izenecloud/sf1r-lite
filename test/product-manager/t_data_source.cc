@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(normal_test)
     {
         PMDocumentType doc;
         doc.setId(docid);
-        doc.property(pm_config.uuid_property_name) = izenelib::util::UString(suuid_list[docid-1], izenelib::util::UString::UTF_8);
+        doc.property(pm_config.uuid_property_name) = str_to_propstr(suuid_list[docid-1], izenelib::util::UString::UTF_8);
         document_list->push_back(doc);
     }
     SimpleDataSource data_source(pm_config, document_list);

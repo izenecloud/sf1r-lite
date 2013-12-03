@@ -39,7 +39,7 @@ bool DateGroupTable::open()
 
 bool DateGroupTable::flush()
 {
-    ScopedWriteLock lock(mutex_);
+    ScopedReadLock lock(mutex_);
 
     return save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, dateValueTable_.indexTable_, saveIndexNum_) &&
            save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, dateValueTable_.multiValueTable_, saveValueNum_);

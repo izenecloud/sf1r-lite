@@ -86,6 +86,17 @@ public:
     void queryBoosting(double& score, double& weight);
 
     void print(int level = 0);
+    
+    void setUB( bool useOriginalQuery, UpperBoundInProperties& ubmap);
+    
+    float getUB();
+
+    const char* getProperty()
+    {
+        if (docIterList_.begin() == docIterList_.end())
+            return NULL;
+        return (*docIterList_.begin())->getProperty();
+    }
 
 #if SKIP_ENABLED
     inline docid_t skipTo(docid_t target);

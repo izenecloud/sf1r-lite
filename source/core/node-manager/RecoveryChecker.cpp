@@ -1,6 +1,6 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
-//#include "DistributeFileSys.h"
+#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -52,24 +52,32 @@ public:
     static void safe_remove_all(const std::string& dir)
     {
         CopyGuard dir_guard(dir);
-        // remove other files first and then remove flag.
-        static bfs::directory_iterator end_it = bfs::directory_iterator();
-        bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
-        while(dir_it != end_it)
+        try
         {
-            bfs::path current(dir_it->path());
-            if (bfs::is_regular_file(current) &&
-                current.filename().string() == getGuardFileName())
+            // remove other files first and then remove flag.
+            static bfs::directory_iterator end_it = bfs::directory_iterator();
+            bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
+            while(dir_it != end_it)
             {
+                bfs::path current(dir_it->path());
+                if (bfs::is_regular_file(current) &&
+                    current.filename().string() == getGuardFileName())
+                {
+                    ++dir_it;
+                    continue;
+                }
+                DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
+                bfs::remove_all(current);
                 ++dir_it;
-                continue;
             }
-            DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
-            bfs::remove_all(current);
-            ++dir_it;
+            bfs::remove(dir + "/" + getGuardFileName());
+            bfs::remove_all(dir);
         }
-        bfs::remove(dir + "/" + getGuardFileName());
-        bfs::remove_all(dir);
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "safe remove error: " << e.what();
+            return;
+        }
         dir_guard.setOK();
     }
 
@@ -166,6 +174,15 @@ static bool getLastBackup(const bfs::path& backup_basepath, uint32_t less_than, 
     return false;
 }
 
+static void copy_file_keep_modification(const bfs::path& from, const bfs::path& to)
+{
+    bfs::copy_file(from, to, bfs::copy_option::overwrite_if_exists);
+    try
+    {
+        bfs::last_write_time(to, bfs::last_write_time(from));
+    }catch(const std::exception& e){}
+}
+
 static void copyDir(bfs::path src, bfs::path dest)
 {
     if( !bfs::exists(src) ||
@@ -200,7 +217,7 @@ static void copyDir(bfs::path src, bfs::path dest)
 
             DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
             // Found file: Copy
-            bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
+            copy_file_keep_modification(current, dest / current.filename());
             //LOG(INFO) << "copying : " << current << " to " << dest;
         }
     }
@@ -357,8 +374,7 @@ bool RecoveryChecker::backup(bool force_remove)
         try
         {
             copy_dir(request_log_basepath_, dest_path, false);
-            bfs::copy_file(last_conf_file_, dest_path/bfs::path(last_conf_file_).filename(),
-                bfs::copy_option::overwrite_if_exists);
+            copy_file_keep_modification(last_conf_file_, dest_path/bfs::path(last_conf_file_).filename());
         }
         catch(const std::exception& e)
         {
@@ -447,7 +463,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
                 req_commondata.reqtype == Req_Index ||
                 req_commondata.reqtype == Req_Callback)
             {
-                LOG(INFO) << "ignore replaying log type : " << req_commondata.reqtype;
+                //LOG(INFO) << "ignore replaying log type : " << req_commondata.reqtype;
                 if (!is_primary)
                     break;
                 continue;
@@ -481,7 +497,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             std::string collection = asString(request[Keys::collection]);
             if (collection != from_col)
             {
-                LOG(INFO) << "not match collection : " << collection;
+                //LOG(INFO) << "not match collection : " << collection;
                 if (!is_primary)
                     break;
                 continue;
@@ -491,7 +507,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             std::string replay_json;
             izenelib::driver::JsonWriter writer;
             writer.write(request.get(), replay_json);
-            LOG(INFO) << "replaying for request id : " << rethead.inc_id;
+            //LOG(INFO) << "replaying for request id : " << rethead.inc_id;
             CommonReqData new_common = req_commondata;
             new_common.req_json_data = replay_json;
             ReqLogMgr::replaceCommonReqData(req_commondata, new_common, req_packed_data);
@@ -752,8 +768,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         LOG(INFO) << "rollback begin update config file and restart the collection." << last_backup_path;
         // check if config file changed. if so, we need restart to finish rollback.
         std::string restore_conf_file = last_backup_path + bfs::path(last_conf_file_).filename().string();
-        bfs::copy_file(restore_conf_file, last_conf_file_,
-            bfs::copy_option::overwrite_if_exists);
+        copy_file_keep_modification(restore_conf_file, last_conf_file_);
 
         std::map<std::string, std::string> new_running_col = handleConfigUpdate();
 
@@ -798,7 +813,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
     return true;
 }
 
-void RecoveryChecker::init(const std::string& conf_dir, const std::string& workdir)
+void RecoveryChecker::init(const std::string& conf_dir, const std::string& workdir, unsigned int check_level)
 {
     backup_basepath_ = workdir + "/req-backup";
     request_log_basepath_ = workdir + "/req-log";
@@ -807,11 +822,11 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
-    //if (DistributeFileSys::get()->isEnabled())
-    //{
-    //    backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
-    //}
-
+    check_level_ = check_level;
+    if (DistributeFileSys::get()->isEnabled())
+    {
+        backup_basepath_ = DistributeFileSys::get()->getDFSPathForLocalNode("/req-backup");
+    }
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
@@ -825,27 +840,26 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         reqlog_mgr_->init(request_log_basepath_);
     }
 
-    if (bfs::exists(rollback_file_))
+    if (isNeedRollback(true))
     {
+        uint32_t rollback_id = 0;
         ifstream ifs(rollback_file_.c_str());
         if (ifs.good())
         {
-            uint32_t rollback_id = 0;
             ifs.read((char*)&rollback_id, sizeof(rollback_id));
+        }
 
-            LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
-            std::string last_backup_path;
-            uint32_t last_backup_id = 0;
-            if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
-            {
-                bfs::copy_file(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_,
-                    bfs::copy_option::overwrite_if_exists);
-                LOG(INFO) << "restore config file from : " << last_backup_path;
-            }
-            else
-            {
-                LOG(ERROR) << "no backup available while check startup.";
-            }
+        LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
+        std::string last_backup_path;
+        uint32_t last_backup_id = 0;
+        if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
+        {
+            copy_file_keep_modification(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_);
+            LOG(INFO) << "restore config file from : " << last_backup_path;
+        }
+        else
+        {
+            LOG(ERROR) << "no backup available while check startup.";
         }
     }
 
@@ -894,6 +908,7 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     // re-enter cluster.
     if (startup && (need_rollback || !isLastNormalExit()) )
     {
+        flushAllData();
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (reqlog_mgr_->getLastSuccessReqId() > 0 && !NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
@@ -918,6 +933,11 @@ void RecoveryChecker::onRecoverCallback(bool startup)
 
 bool RecoveryChecker::removeConfigFromAPI(const std::string& coll)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+    {
+        return true;
+    }
+
     std::map<std::string, std::string> config_file_list;
     LOG(INFO) << "remove config file for the collection." << coll;
     if(!handleConfigUpdateForColl(coll, true, config_file_list))
@@ -940,6 +960,10 @@ bool RecoveryChecker::removeConfigFromAPI(const std::string& coll)
 bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_primary,
     const std::string& config_file, std::map<std::string, std::string>& config_file_list)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+    {
+        return true;
+    }
     if (!is_primary)
     {
         LOG(INFO) << "write updated config data to last conf file on the secondary.";
@@ -1001,7 +1025,10 @@ bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll, bool de
     {
         config_file_list.erase(current.filename().string());
         if (bfs::is_regular_file(current))
+        {
+            copy_file_keep_modification(current, current.string() + ".removed");
             bfs::remove(current);
+        }
         LOG(INFO) << "config file removed : " << current;
         return true;
     }
@@ -1141,7 +1168,7 @@ void RecoveryChecker::checkDataConsistent(const std::string& coll, std::string& 
         flush_col_(coll);
     std::vector<std::string> coll_list;
     coll_list.push_back(coll);
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, 100, errinfo);
 }
 
 bool RecoveryChecker::checkDataConsistent()
@@ -1163,7 +1190,7 @@ bool RecoveryChecker::checkDataConsistent()
         coll_list.push_back(cit->first);
         ++cit;
     }
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, 100, errinfo);
     if (!errinfo.empty())
     {
         LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
@@ -1177,9 +1204,19 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
     // check new request during wait recovery.
     syncSCDFiles();
-    syncToNewestReqLog();
-    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
     // check data consistent with primary.
+    //
+    if (NodeManagerBase::isAsyncEnabled() && NodeManagerBase::get()->isOtherPrimaryAvailable() && !checkIfLogForward(false))
+    {
+        LOG(INFO) << "check log failed while recover, need rollback";
+        if(!rollbackLastFail(false))
+        {
+            forceExit("rollback failed for forword log.");
+        }
+    }
+    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
+    syncToNewestReqLog();
+
     std::string errinfo;
     CollInfoMapT tmp_all_col_info;
     {
@@ -1198,7 +1235,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
         ++cit;
     }
 
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, check_level_, errinfo);
     if (!errinfo.empty())
     {
         setRollbackFlag(0);
@@ -1219,7 +1256,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (need_backup_)
     {
         LOG(INFO) << "begin backup for config updated.";
-        backup();
+        backup(!DistributeFileSys::get()->isEnabled());
     }
 }
 
@@ -1241,6 +1278,8 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
 {
     uint32_t newest_reqid = reqlog_mgr_->getLastSuccessReqId();
     LOG(INFO) << "starting last request is :" << newest_reqid;
+    if (newest_reqid == 0)
+        return true;
     if (is_primary)
     {
         LOG(INFO) << "primary no need check log.";
@@ -1255,6 +1294,8 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
     std::vector<std::string> primary_logdata_list;
     while(true)
     {
+        bool is_ready_before = NodeManagerBase::get()->isPrimaryReadyForCheckLog();
+
         LOG(INFO) << "checking log start from :" << check_start;
         if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
         {
@@ -1282,12 +1323,29 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             if( local_logdata_list[i] != primary_logdata_list[i] )
             {
                 LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                if (i == 0)
+                {
+                    check_start = local_logid_list[i] - 1;
+                }
                 break;
             }
             else
             {
                 check_start = local_logid_list[i];
             }
+        }
+
+        if (min_size == 0 && check_start <= newest_reqid)
+        {
+            LOG(INFO) << "local log data is forword at id " << check_start;
+            if (!is_ready_before || !NodeManagerBase::get()->isPrimaryReadyForCheckLog())
+            {
+                LOG(INFO) << "primary is not ready for checking log, waiting...";
+                sleep(10);
+                continue;
+            }
+            setRollbackFlag(check_start);
+            return false;
         }
 
         if (check_start >= newest_reqid)
@@ -1354,6 +1412,29 @@ void RecoveryChecker::syncSCDFiles()
     }
 }
 
+static void scanForCronJobLog(const std::vector<std::string>& logdata_list,
+    std::map<std::string, uint32_t>& delayed_cronjob_list)
+{
+    for(size_t i = 0; i < logdata_list.size(); ++i)
+    {
+        CommonReqData req_commondata;
+        ReqLogMgr::unpackReqLogData(logdata_list[i], req_commondata);
+        if (req_commondata.reqtype == Req_CronJob)
+        {
+            CronJobReqLog crondata;
+            if(ReqLogMgr::unpackReqLogData(logdata_list[i], crondata))
+            {
+                if (crondata.cron_time == 0)
+                {
+                    LOG(INFO) << "the cron job without timestamp can be delayed to last. " << crondata.req_json_data;
+                    LOG(INFO) << "delay to id : " << crondata.inc_id;
+                    delayed_cronjob_list[crondata.req_json_data] = crondata.inc_id;
+                }
+            }
+        }
+    }
+}
+
 void RecoveryChecker::syncToNewestReqLog()
 {
     LOG(INFO) << "begin sync to newest log.";
@@ -1379,6 +1460,8 @@ void RecoveryChecker::syncToNewestReqLog()
         }
         if (newlogdata_list.empty())
             break;
+        std::map<std::string, uint32_t> delayed_cronjob_list;
+        scanForCronJobLog(newlogdata_list, delayed_cronjob_list);
         for (size_t i = 0; i < newlogdata_list.size(); ++i)
         {
             // do new redo RequestLog.
@@ -1391,6 +1474,26 @@ void RecoveryChecker::syncToNewestReqLog()
                 forceExit("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
+
+            if (req_commondata.reqtype == Req_CronJob)
+            {
+                CronJobReqLog crondata;
+                if(ReqLogMgr::unpackReqLogData(newlogdata_list[i], crondata) &&
+                    crondata.cron_time == 0)
+                {
+                    std::map<std::string, uint32_t>::iterator it;
+                    it = delayed_cronjob_list.find(crondata.req_json_data);
+                    if (it != delayed_cronjob_list.end() &&
+                        crondata.inc_id != it->second)
+                    {
+                        LOG(INFO) << "this cronjob id " << crondata.inc_id << " delay to id : " << it->second;
+                        reqlog_mgr_->prepareReqLog(crondata, false);
+                        reqlog_mgr_->appendReqData(newlogdata_list[i]);
+                        reqlog_mgr_->delPreparedReqLog();
+                        continue;
+                    }
+                }
+            }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {

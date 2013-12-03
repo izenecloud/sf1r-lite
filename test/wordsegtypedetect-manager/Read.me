@@ -1,0 +1,58 @@
+无监督分词
+------------------------------------------------------------------------------------------------------------------------------------------
+运行分词程序请首先安装open-fst
+wget http://www.openfst.org/twiki/bin/view/FST/FstDownload
+tar -xvjf *.gz
+./configure
+make
+make install
+然后进行编译。
+
+调用分词示例程序 
+#include "latticelmMap.h"
+LatticeLMMap lmmap("char/","trainfile/");
+lmmap.load();
+string ret;
+lmmap.segWord("恒亮破壁花粉230.1克美丽容颜皮肤可直接吸收因此可作面膜","传统",ret)；
+第二个参数是该标题适用的category模型
+
+unsupervised_wordseg.cc 是一个简单的从SCD中生成词的程序，先进行分词，然后进行统计筛选
+运行时 
+cd codebase/sf1r-engine/testbin
+./unsupervised_wordseg char/ trainfile/  *.SCD
+即可生成stringnum 和 segresult ;segresult 表示的是分词结果,stringnum代表生成词的结果
+char是训练输入的word文件夹，trainfile是训练产生保存的文件夹.具体通过latticelm/myScript/run.sh生成，
+运行完latticelm/myScript/run.sh后 会在目录下自动产生char/ trainfile/ 两个文件夹
+拷贝到 testbin下面即可。
+
+
+
+
+型号识别
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+型号识别是对CRF做了一些修改，在crfsgd中加了得分函数,（理论上 probality的比值=e^score的比值，但是显然这个概率很不准确，因为训练数据不多，存在过度学习， 仅仅存在参考价值），
+主要的特征就是 比如 iphone+1位数字   这种
+
+输入文件格式 test.txt
+品牌 可能的型号 一行一个   
+
+AMOS/蓝魔 W2
+TECLAST/台电 P85
+TECLAST/台电 P85
+SAMSUNG/三星 GALAXYTAB2P3100
+SAMSUNG/三星 GALAXYTABP739
+SAMSUNG/三星 GALAXYTABP6800
+LENOVO/联想 乐PADV2010
+SAMSUNG/三星 GALAXYTABP7500
+SAMSUNG/三星 P3110
+
+运行时用脚本 TypeDetect.sh 使用示范
+
+./TypeDetect.sh  手机 -test test.txt 
+
+一次只能运行一个种类,如手机（因为某些种类的型号更根本无法运行，所有的一起训练速度也很慢），test.txt就是该种类下的争议品牌和型号的
+运行完生成  手机.rightType 手机.wrongType 分别是正确的型号和错误的型号 生成在当前目录下的result
+如果不加 -test 可生成训练模型，并测其召回率，如果测得召回率较低（<70%），请注意到crfsgd/crf下删除model.gz文件，可能代码修改后以前生成的训练文件特征和以前不一样了。一般的category召回率在90%以上。
+
+ 生成 category.rightType里的品牌 型号如果拷贝到 手机.brand 重新训练，可形成 boosting,目前没有做这方面的自动实现.
+

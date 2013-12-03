@@ -11,6 +11,7 @@
 namespace sf1r
 {
 std::string AutoFillChildManager::system_resource_path_;
+bool AutoFillChildManager::enableUpdateHitnum_;
 
 AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
     : isFromSCD_(isfromSCD)
@@ -20,7 +21,7 @@ AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ = 90;
+    alllogdays_ = 30;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -28,7 +29,7 @@ AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
 AutoFillChildManager::~AutoFillChildManager()
 {
     if(!cronJobName_.empty())
-        izenelib::util::Scheduler::removeJob(cronJobName_);
+        izenelib::util::Scheduler::removeJob(cronJobName_, true);
     closeDB();
     if (QN_ != NULL)
     {
@@ -53,7 +54,7 @@ void AutoFillChildManager::SaveItem()
         }
         else
         {
-           //LOG(ERROR)<<"open saveItem file error"<<endl;
+            //LOG(ERROR)<<"open saveItem file error"<<endl;
         }
     }
 }
@@ -105,11 +106,11 @@ bool AutoFillChildManager::LoadWat()
         return false;
 }
 
-bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath 
-                                    , const std::string& collectionName
-                                    , const string& cronExpression
-                                    , const string& instanceName
-                                    , bool & isBuildFromLeveldb)
+bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
+        , const std::string& collectionName
+        , const string& cronExpression
+        , const string& instanceName
+        , bool & isBuildFromLeveldb)
 {
     AutofillPath_ = collectionPath.getQueryDataPath() + "/autofill" + "/" + instanceName;
     collectionName_ = collectionName;
@@ -118,7 +119,7 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
     {
         boost::filesystem::create_directories(AutofillPath_);
     }
-    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
     leveldbPath_ = AutofillPath_ + "/leveldb";
     ItemdbPath_ = AutofillPath_ + "/itemdb";
     std::string IDPath = AutofillPath_ + "/id/";
@@ -194,12 +195,12 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
     return true;
 }
 
-bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath 
-                                    , const std::string& collectionName
-                                    , const string& cronExpression
-                                    , const string& instanceName
-                                    , bool & isBuildFromLeveldb
-                                    , std::vector<UserQuery>& query_records)
+bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath
+                                        , const std::string& collectionName
+                                        , const string& cronExpression
+                                        , const string& instanceName
+                                        , bool & isBuildFromLeveldb
+                                        , std::vector<UserQuery>& query_records)
 {
     isBuildFromLeveldb = false;
     if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
@@ -219,9 +220,11 @@ bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath
     return true;
 }
 
-bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
+bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, 
+        const string& cronExpression, const string& instanceName, uint32_t days)
 {
     bool isBuildFromLeveldb = false;
+    alllogdays_ = days;
     if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
         return false;
 
@@ -422,14 +425,9 @@ bool AutoFillChildManager::InitFromLog()
     boost::posix_time::ptime p = time_now - boost::gregorian::days(alllogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,AutoFillChildManager::enableUpdateHitnum_);
+    LOG (INFO) << "[" << collectionName_  << "]" <<"Do InitFrom Log, query number:" << query_records.size();
 
-    UserQuery::find(
-        "query ,max(hit_docs_num) as hit_docs_num, count(*) as count ",
-        "collection = '" + collectionName_ + "' and hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-        "query",
-        "",
-        "",
-        query_records);
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
 
@@ -439,6 +437,8 @@ bool AutoFillChildManager::InitFromLog()
         count++;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->isLongQuery(query))
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
@@ -479,7 +479,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
     {
         querynum++;
         std::vector<izenelib::util::UString> pinyins;
-        
+
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
         std::string strT = (*it).strQuery_;
@@ -573,34 +573,107 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     queryover d1;
     queryequal d2;
     std::vector<QueryType>  havedone = valueToQueryTypeVector(value);
-    sameprefix.insert(sameprefix.end(),havedone.begin(),havedone.end());
-
     sort( sameprefix.begin(), sameprefix.end(), d1);
-    unsigned int indextemp = 0;
-    for (unsigned int i = 1; i < sameprefix.size(); i++)
+    sort( havedone.begin(), havedone.end(), d1);
+    vector<QueryTypeToDeleteDup> qtddvec;
+    std::vector<QueryType>::iterator SubstrIter_a=sameprefix.begin(),SubstrIter_b=havedone.begin(),SubstrIter_a_end=sameprefix.end(),SubstrIter_b_end=havedone.end();
+    std::vector<QueryType>::iterator LastQueryType;
+    bool begin=true;
+    while(SubstrIter_a < SubstrIter_a_end || SubstrIter_b < SubstrIter_b_end)
     {
-        if(sameprefix[i].cmp(sameprefix[indextemp]))
+        if(SubstrIter_a==SubstrIter_a_end )
         {
-            sameprefix[indextemp].freq_ += sameprefix[i].freq_;
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_b))
+                {
+                    LastQueryType->freq_+=SubstrIter_b->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_b;
+            begin=false;
+            ++SubstrIter_b;
+            continue;
+        }
+        else if(SubstrIter_b==SubstrIter_b_end)
+        {
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_a))
+                {
+                    LastQueryType->freq_+=SubstrIter_a->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_a;
+            begin=false;
+            ++SubstrIter_a;
+            continue;
+        }
+        if((*SubstrIter_a).strQuery_> (*SubstrIter_b).strQuery_ )
+        {
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_a))
+                {
+                    LastQueryType->freq_+=SubstrIter_a->freq_;
+                    LastQueryType->HitNum_=SubstrIter_a->HitNum_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_a;
+            begin=false;
+            ++SubstrIter_a;
         }
         else
         {
-            indextemp = i;
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_b))
+                {
+                    LastQueryType->freq_+=SubstrIter_b->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_b;
+            begin=false;
+            ++SubstrIter_b;
         }
     }
-    sameprefix.erase(std::unique(sameprefix.begin(), sameprefix.end(),d2), sameprefix.end());
-    vector<QueryTypeToDeleteDup> qtddvec;
-    for (unsigned i=0;i<sameprefix.size();i++)
+    if(!begin)
     {
-        QueryTypeToDeleteDup qtdd;
-        qtdd.initfrom(sameprefix[i]);
-        qtddvec.push_back(qtdd);
+        if(LastQueryType->HitNum_>0)
+        {
+            QueryTypeToDeleteDup qtdd;
+            qtdd.initfrom(*LastQueryType);
+            qtddvec.push_back(qtdd);
+        }
     }
     sort( qtddvec.begin(),qtddvec.end());
-
     qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());
     sameprefix.clear();
-    for (unsigned i=0;i<qtddvec.size();i++)
+    for (unsigned i=0; i<qtddvec.size(); i++)
     {
         sameprefix.push_back(qtddvec[i].qt_);
     }
@@ -744,6 +817,8 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
 
 bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint64_t OffsetEnd, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
+    if(OffsetEnd == static_cast<uint64_t>(-1))
+        return false;
     izenelib::util::UString tempUString;
     std::string ValueStr;
     uint32_t ValueID = 0;
@@ -996,6 +1071,14 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
                 break;
             ValueType newValue;
             newValue.setValueType(str);
+            /*
+                        if(newValue.HitNum_>0)
+                        {
+                            offset += *(uint32_t*)str;
+                            str += *(uint32_t*)str;
+                            continue;
+                        }
+            */
             newValue.getHitString(IDstring);
             if (IDstring != oldIDstring)
             {
@@ -1064,6 +1147,8 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     if(offsetstr.length() > 0)
     {
         std::size_t pos = offsetstr.find("/");
+	if (pos == string::npos)
+            return false;
         std::string offsetbegin = offsetstr.substr(0, pos);
         std::string offsetcount = offsetstr.substr(pos + 1);
         try
@@ -1073,6 +1158,8 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
         }
         catch(boost::bad_lexical_cast& e)
         {
+	   OffsetStart = 1;
+           OffsetEnd = 0;
         }
     }
     return true;
@@ -1082,7 +1169,7 @@ void AutoFillChildManager::updateAutoFill(int calltype)
 {
     if (cronExpression_.matches_now())
     {
-       boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
@@ -1145,13 +1232,12 @@ void AutoFillChildManager::updateFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    UserQuery::find(
-        "query ,max(hit_docs_num) as hit_docs_num, count(*) as count ",
-        "collection = '" + collectionName_ + "' and hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-        "query",
-        "",
-        "",
-        query_records);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records, AutoFillChildManager::enableUpdateHitnum_);
+    LOG (INFO) << "[" << collectionName_ << "]" << ":Do update from log, query number:" << query_records.size();
+
+    if (query_records.size() == 0)
+        return;
+
     list<QueryType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
     for ( ; it != query_records.end(); ++it)
@@ -1159,6 +1245,8 @@ void AutoFillChildManager::updateFromLog()
         QueryType TempQuery;
         bool isNormalString = true;
         std::string query = it->getQuery();
+        if (QueryNormalizer::get()->isLongQuery(query))
+            continue;
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
@@ -1179,14 +1267,17 @@ void AutoFillChildManager::updateFromLog()
     }
     LoadItem();
     buildItemVector();
+    LOG(INFO) << "[" << collectionName_ << "]" << " buildDbIndex for query size : " << querylist.size() << ", time_string: " << time_string;
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
     wa_.Clear();
     buildWat_array(false);
+    LOG(INFO) << "[" << collectionName_ << "]" << " update finished";
 }
 
 void AutoFillChildManager::flush()
 {
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
     dbTable_.flush();
     dbItem_.flush();
     SaveItem();

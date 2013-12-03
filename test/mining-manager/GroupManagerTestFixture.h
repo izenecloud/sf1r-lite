@@ -66,6 +66,7 @@ public:
     void checkGetGroupRep();
 
     static void checkGroupRepMerge();
+    static void checkScoreGroupLabelMerge();
 
 private:
     void initConfig_();

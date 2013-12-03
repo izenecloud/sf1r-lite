@@ -213,6 +213,11 @@ public:
     std::string expandedQueryString_;
 
     ///
+    /// @brief the normalized query string.
+    ///
+    std::string normalizedQueryString_;
+
+    ///
     /// @brief a user id. The user id is accompanied with the query string
     ///          in a search request.
     ///
@@ -242,11 +247,13 @@ public:
     std::string querySource_;
 
     DATA_IO_LOAD_SAVE(RequesterEnvironment,
-            & isLogging_ & encodingType_ & queryString_ & expandedQueryString_
+            & isLogging_ & encodingType_
+            & queryString_ & expandedQueryString_ & normalizedQueryString_
             & userID_ & taxonomyLabel_ & nameEntityItem_ & nameEntityType_
             & ipAddress_ & querySource_);
 
-    MSGPACK_DEFINE(isLogging_, encodingType_, queryString_, expandedQueryString_,
+    MSGPACK_DEFINE(isLogging_, encodingType_,
+            queryString_, expandedQueryString_, normalizedQueryString_,
             userID_, taxonomyLabel_, nameEntityItem_, nameEntityItem_, nameEntityType_,
             ipAddress_, querySource_);
 
@@ -261,6 +268,7 @@ private:
         ar & encodingType_;
         ar & queryString_;
         ar & expandedQueryString_;
+        ar & normalizedQueryString_;
         ar & userID_;
         ar & taxonomyLabel_;
         ar & nameEntityItem_;
@@ -295,19 +303,23 @@ public:
     // Filter Option - propertyName
 
     KeywordSearchActionItem()
-        : removeDuplicatedDocs_(false)
+        : disableGetDocs_(false)
+        , removeDuplicatedDocs_(false)
         , isRandomRank_(false)
         , requireRelatedQueries_(false)
+        , isAnalyzeResult_(false)
     {
     }
 
     KeywordSearchActionItem(const KeywordSearchActionItem& obj)
         : env_(obj.env_)
         , refinedQueryString_(obj.refinedQueryString_)
+        , queryScore_(0)
         , collectionName_(obj.collectionName_)
         , rankingType_(obj.rankingType_)
         , searchingMode_(obj.searchingMode_)
         , pageInfo_(obj.pageInfo_)
+        , disableGetDocs_(obj.disableGetDocs_)
         , languageAnalyzerInfo_(obj.languageAnalyzerInfo_)
         , searchPropertyList_(obj.searchPropertyList_)
         , removeDuplicatedDocs_(obj.removeDuplicatedDocs_)
@@ -322,6 +334,7 @@ public:
         , customRanker_(obj.customRanker_)
         , isRandomRank_(obj.isRandomRank_)
         , requireRelatedQueries_(obj.requireRelatedQueries_)
+        , isAnalyzeResult_(obj.isAnalyzeResult_)
     {
     }
 
@@ -334,6 +347,7 @@ public:
         rankingType_ = obj.rankingType_;
         searchingMode_ = obj.searchingMode_;
         pageInfo_ = obj.pageInfo_;
+        disableGetDocs_ = obj.disableGetDocs_;
         languageAnalyzerInfo_ = obj.languageAnalyzerInfo_;
         searchPropertyList_ = obj.searchPropertyList_;
         removeDuplicatedDocs_ = obj.removeDuplicatedDocs_;
@@ -348,6 +362,7 @@ public:
         customRanker_ = obj.customRanker_;
         isRandomRank_ = obj.isRandomRank_;
         requireRelatedQueries_ = obj.requireRelatedQueries_;
+        isAnalyzeResult_ = obj.isAnalyzeResult_;
 
         return (*this);
     }
@@ -360,6 +375,7 @@ public:
             && rankingType_ == obj.rankingType_
             && searchingMode_ == obj.searchingMode_
             && pageInfo_ == obj.pageInfo_
+            && disableGetDocs_ == obj.disableGetDocs_
             && languageAnalyzerInfo_ == obj.languageAnalyzerInfo_
             && searchPropertyList_ == obj.searchPropertyList_
             && removeDuplicatedDocs_ == obj.removeDuplicatedDocs_
@@ -373,7 +389,8 @@ public:
             && paramPropertyValueMap_ == obj.paramPropertyValueMap_
             && customRanker_ == obj.customRanker_
             && isRandomRank_ == obj.isRandomRank_
-            && requireRelatedQueries_ == obj.requireRelatedQueries_;
+            && requireRelatedQueries_ == obj.requireRelatedQueries_
+            && isAnalyzeResult_ == obj.isAnalyzeResult_;
     }
 
     void print(std::ostream& out = std::cout) const
@@ -390,6 +407,7 @@ public:
                                     << searchingMode_.useOriginalQuery_<<endl;
 
         ss << "PageInfo         : " << pageInfo_.start_ << " , " << pageInfo_.count_ << endl;
+        ss << "disableGetDocs_  : " << disableGetDocs_ << endl;
         ss << "LanguageAnalyzer : " << languageAnalyzerInfo_.applyLA_ << " , "
                                     << languageAnalyzerInfo_.useOriginalKeyword_ << " , "
                                     << languageAnalyzerInfo_.synonymExtension_ << endl;
@@ -406,6 +424,16 @@ public:
         for (size_t i = 0; i < sortPriorityList_.size(); i++)
             ss << " - " << sortPriorityList_[i].first << " " << sortPriorityList_[i].second << endl;
 
+        ss << "Filtering Option : " << endl;
+        for (size_t i = 0; i < filteringList_.size(); i++)
+        {
+            ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
+            ss << "------------------------------------------------" << endl;
+            for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].values_.begin();
+                    iter != filteringList_[i].values_.end(); iter++ )
+                ss << *iter << ", type:" << iter->which() << endl;
+            ss << "------------------------------------------------" << endl;
+        }
         ss << "------------------------------------------------" << endl;
         ss << groupParam_;
         ss << "------------------------------------------------" << endl;
@@ -430,6 +458,9 @@ public:
         ss << "requireRelatedQueries_: " << requireRelatedQueries_ << endl;
         ss << "------------------------------------------------" << endl;
 
+        ss << "isAnalyzeResult_: " << isAnalyzeResult_ << endl;
+        ss << "------------------------------------------------" << endl;
+
         out << ss.str();
     }
 
@@ -444,6 +475,11 @@ public:
     ///        if it needs to be modified.
     ///
     izenelib::util::UString refinedQueryString_;
+
+    ///
+    /// @brief the score of the query in product tokenizer; only used in TitleScore Relevance;
+    ///
+    double queryScore_;
 
     ///
     /// @brief a collection name.
@@ -465,6 +501,7 @@ public:
     /// @see PageInfo
     ///
     PageInfo pageInfo_;
+    bool  disableGetDocs_;
 
     ///
     /// @brief This contains how to analyze input query string.
@@ -524,6 +561,11 @@ public:
     std::map<std::string, std::string> paramPropertyValueMap_;
 
     ///
+    /// @brief Information that are used to retrieve ads
+    ///
+    std::vector<std::pair<std::string, std::string> > adSearchPropertyValue_;
+
+    ///
     /// @brief custom ranking information(2)
     /// Avoid a second parsing by passing a reference to CustomRanker object.
     /// TODO, abandon this, serialization needed for remoted call
@@ -535,15 +577,22 @@ public:
     /// @brief whether contain related queries in the response
     bool requireRelatedQueries_;
 
+    ///
+    /// @brief If true, return "analyzer_result" in response,
+    /// which contains the tokenized result of the query
+    ///
+    bool isAnalyzeResult_;
+
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
-             & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
+             & rankingType_ & searchingMode_ & pageInfo_ & disableGetDocs_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
              & displayPropertyList_ & sortPriorityList_ & filterTree_ & counterList_ & rangePropertyName_ & groupParam_
-             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_);
+             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_ & isAnalyzeResult_);
 
     /// msgpack serializtion
-    MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filterTree_, counterList_,
-                   rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_);
+    MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, disableGetDocs_, languageAnalyzerInfo_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringTree_, counterList_,
+            rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_,
+            isAnalyzeResult_);
 
 private:
     // Log : 2009.09.08
@@ -558,6 +607,7 @@ private:
         ar & rankingType_;
         ar & searchingMode_;
         ar & pageInfo_;
+        ar & disableGetDocs_;
         ar & languageAnalyzerInfo_;
         ar & searchPropertyList_;
         ar & removeDuplicatedDocs_;
@@ -572,6 +622,7 @@ private:
         ar & paramPropertyValueMap_;
         ar & isRandomRank_;
         ar & requireRelatedQueries_;
+        ar & isAnalyzeResult_;
     }
 
 }; // end - class KeywordSearchActionItem
@@ -607,8 +658,45 @@ public:
     /// @brief filtering options
     //std::vector<QueryFiltering::FilteringType> filteringList_;
 
-    /// @brief filtering tree-likes options
-    boost::shared_ptr<ConditionsNode> filterTree_;
+	/// @brief filtering tree-likes options
+    boost::shared_ptr<ConditionsNode> filterTree_;    
+    
+    void print(std::ostream& out = std::cout) const
+    {
+        stringstream ss;
+        ss << endl;
+        env_.print(out);
+        ss << "collection: " << collectionName_ << std::endl;
+        ss << "DisplayProperty: ";
+        for (size_t i = 0; i < displayPropertyList_.size(); ++i)
+        {
+            displayPropertyList_[i].print(out);
+        }
+        ss << "Internal docid: ";
+        for (size_t i = 0; i < idList_.size(); ++i)
+        {
+            ss << idList_[i] << ", ";
+        }
+        ss << std::endl;
+        ss << "DOCID list: ";
+        for (size_t i = 0; i < docIdList_.size(); ++i)
+        {
+            ss << docIdList_[i] << ",";
+        }
+        ss << std::endl;
+        ss << "PropertyName : " << propertyName_ << std::endl;
+        ss << "Filtering Option : " << endl;
+        for (size_t i = 0; i < filteringList_.size(); i++)
+        {
+            ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
+            ss << "------------------------------------------------" << endl;
+            for( std::vector<PropertyValue>::const_iterator iter = filteringList_[i].values_.begin();
+                    iter != filteringList_[i].values_.end(); iter++ )
+                ss << *iter << ", type:" << iter->which() << endl;
+            ss << "------------------------------------------------" << endl;
+        }
+        out << ss.str();
+    }
 
     DATA_IO_LOAD_SAVE(
         GetDocumentsByIdsActionItem,

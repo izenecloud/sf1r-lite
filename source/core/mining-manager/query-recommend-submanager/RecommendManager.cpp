@@ -44,13 +44,15 @@ RecommendManager::RecommendManager(
     , serInfo_(collectionPath.getQueryDataPath()+"/ser_info")
     , document_manager_(documentManager)
     , recommend_db_(NULL), concept_id_manager_(NULL)
-    , autofill_(new AutoFillSubManager())
     , query_correction_(query_correction)
     , analyzer_(analyzer)
     , logdays_(logdays)
     , dir_switcher_(collectionPath.getQueryDataPath())
     , max_docid_(0), max_docid_file_(collectionPath.getQueryDataPath()+"/max_id")
 {
+    if (mining_schema_.recommend_autofill)
+        autofill_.reset(new AutoFillSubManager());
+
     open();
 }
 
@@ -83,27 +85,33 @@ bool RecommendManager::open()
     {
         return false;
     }
-    //try {
-        std::cout<<"open ir manager on "<<current_recommend_path<<std::endl;
-        recommend_db_ = new MIRDatabase(current_recommend_path);
-        recommend_db_->setCacheSize<0>(100000000);
-        recommend_db_->setCacheSize<1>(0);
-        recommend_db_->open();
-    //}
-    //catch(std::exception& ex)
-    //{
-        //LOG(ERROR)<<ex.what()<<std::endl;
-        //return false;
-    //}
-    std::cout<<"open ir manager finished"<<std::endl;
-    std::string path_tocreate = current_recommend_path+"/concept-id";
-    boost::filesystem::create_directories(path_tocreate);
-    concept_id_manager_ = new ConceptIDManager(path_tocreate);
-    if (!concept_id_manager_->Open())
     {
-        //TODO
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
+        try {
+            LOG(INFO) << "open ir manager on " << current_recommend_path << std::endl;
+            recommend_db_ = new MIRDatabase(current_recommend_path);
+            recommend_db_->setCacheSize<0>(100000000);
+            recommend_db_->setCacheSize<1>(0);
+            recommend_db_->open();
+        }
+        catch(std::exception& ex)
+        {
+            LOG(ERROR) << ex.what() << std::endl;
+            return false;
+        }
+        LOG(INFO) << "open ir manager finished: " << current_recommend_path << std::endl;
+        std::string path_tocreate = current_recommend_path+"/concept-id";
+        boost::filesystem::create_directories(path_tocreate);
+        concept_id_manager_ = new ConceptIDManager(path_tocreate);
+        if (!concept_id_manager_->Open())
+        {
+            //TODO
+        }
     }
-    if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron)) return false;
+    if (mining_schema_.recommend_autofill)
+        if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron, mining_schema_.recommend_autofill_days)) 
+            return false;
+
     isOpen_ = true;
     return true;
 }
@@ -112,11 +120,18 @@ void RecommendManager::flush()
 {
     if (isOpen_)
     {
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
+        try{
         serInfo_.flush();
+        LOG(INFO) << "flushing... " << std::endl;
         if(recommend_db_)
             recommend_db_->flush();
         if (concept_id_manager_)
             concept_id_manager_->Flush();
+        }catch(const std::exception& e)
+        {
+            LOG(ERROR) << "flush error in " << __FUNCTION__ << ", info :" << e.what();
+        }
     }
     if (autofill_) autofill_->flush();
 }
@@ -126,6 +141,7 @@ void RecommendManager::close()
     if (isOpen_)
     {
         serInfo_.close();
+        boost::lock_guard<boost::shared_mutex> lock(mutex_);
         if (recommend_db_ != NULL)
         {
             recommend_db_->close();
@@ -152,13 +168,8 @@ void RecommendManager::RebuildForAll(int64_t cron_time)
     typedef std::map<std::string, std::string> DbRecordType;
 
     std::vector<UserQuery> query_records;
-    UserQuery::find(
-            "query, max(hit_docs_num) as hit_docs_num, count(*) AS page_count",
-            "collection = '" + collection_name_ + "' AND hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-            "query",
-            "",
-            "",
-            query_records);
+
+    LogAnalysis::getRecentKeywordFreqList(collection_name_, time_string, query_records);
 
     std::list<QueryLogType> queryList;
     for (std::vector<UserQuery>::const_iterator it = query_records.begin();
@@ -173,13 +184,8 @@ void RecommendManager::RebuildForAll(int64_t cron_time)
     }
 
     std::vector<PropertyLabel> label_records;
-    PropertyLabel::find(
-            "label_name, sum(hit_docs_num) AS hit_docs_num",
-            "collection = '" + collection_name_ + "'",
-            "label_name",
-            "",
-            "",
-            label_records);
+
+    LogAnalysis::getPropertyLabel(collection_name_, label_records);
 
     std::list<PropertyLabelType> labelList;
     for (std::vector<PropertyLabel>::const_iterator it = label_records.begin();
@@ -274,7 +280,7 @@ void RecommendManager::RebuildForRecommend(
     if (!dir_switcher_.GetNextWithDelete(newPath))
         return;
 
-    std::cout << "switching recommend manager to " << newPath << std::endl;
+    LOG(INFO) << "switching recommend manager to " << newPath << std::endl;
     MIRDatabase* new_db = new MIRDatabase(newPath);
     new_db->setCacheSize<0>(100000000);
     new_db->setCacheSize<1>(0);
@@ -286,7 +292,7 @@ void RecommendManager::RebuildForRecommend(
     {
         //TODO
     }
-    std::cout << newPath << " opened" << std::endl;
+    LOG(INFO) << newPath << " opened" << std::endl;
 
     uint32_t item_id = 1;
 
@@ -342,11 +348,11 @@ void RecommendManager::RebuildForRecommend(
             {
                 if (recommend_properties.find(property_it->first) != NULL)
                 {
-                    const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
-                    bool succ = AddRecommendItem_(new_db, item_id, content, 2, 40);
+                    const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
+                    bool succ = AddRecommendItem_(new_db, item_id, propstr_to_ustr(content), 2, 40);
                     if (succ)
                     {
-                        new_concept_id_manager->Put(item_id, content);
+                        new_concept_id_manager->Put(item_id, propstr_to_ustr(content));
                         item_id++;
                     }
                 }
@@ -357,6 +363,7 @@ void RecommendManager::RebuildForRecommend(
         max_docid_file_.SetValue(max_docid_);
         max_docid_file_.Save();
     }
+    LOG(INFO) << newPath << " flushing" << std::endl;
     new_db->flush();
     new_concept_id_manager->Flush();
     {
@@ -389,14 +396,18 @@ void RecommendManager::RebuildForAutofill(
         const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
-    autofill_->buildIndex(queryList, labelList);
+    if (mining_schema_.recommend_autofill && autofill_)
+        autofill_->buildIndex(queryList, labelList);
 }
 
 bool RecommendManager::getAutoFillList(
         const izenelib::util::UString& query,
         std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
-    return autofill_->getAutoFillList(query, list);
+    if (mining_schema_.recommend_autofill && autofill_)
+        return autofill_->getAutoFillList(query, list);
+
+    return true;
 }
 
 uint32_t RecommendManager::getRelatedConcepts(
@@ -411,7 +422,7 @@ uint32_t RecommendManager::getRelatedConcepts(
     analyzer_->GetIdListForMatch(queryStr, termIdList);
     std::vector<double> weightList(termIdList.size(), 1.0);
 
-    boost::shared_lock<boost::shared_mutex> mLock(mutex_);
+    boost::lock_guard<boost::shared_mutex> lock(mutex_);
     uint32_t num = getRelatedOnes_(recommend_db_, termIdList,weightList, maxNum, obtIdList , queries);
     return num;
 

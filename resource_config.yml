@@ -13,13 +13,18 @@ sub_modules:
     - qn
     - sim
     - speller-support
-    - spu-classifier
     - wikigraph
     - dict
+    - query-intent
+    - query_correction
+    - query_abbreviation
 push_sub_modules:
     - ise
     - kpe
+    - query-intent
     - nec
     - opinion
     - qa
     - dict
+    - query_correction
+    - query_abbreviation

@@ -34,7 +34,8 @@ public:
      * @param docNum  number of docs to be dispatched, 0 for all
      * @return
      */
-    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir, unsigned int docNum = 0);
+    bool dispatch(std::vector<std::string>& scdFileList, const std::string& dir,
+        const std::string& to_dir, unsigned int docNum = 0);
 
 protected:
     bool getScdFileList(const std::string& dir, std::vector<std::string>& fileList);
@@ -53,6 +54,7 @@ protected:
     std::string scdDir_;
     izenelib::util::UString::EncodingType scdEncoding_;
     std::string curScdFileName_;
+    std::string to_scdDir_;
 };
 
 /**
@@ -64,7 +66,7 @@ class BatchScdDispatcher : public ScdDispatcher
 public:
     BatchScdDispatcher(
             const boost::shared_ptr<ScdSharder>& scdSharder,
-            const std::string& collectionName);
+            const std::string& collectionName, bool is_dfs_enabled);
 
     ~BatchScdDispatcher();
 
@@ -83,9 +85,10 @@ private:
 private:
     std::string service_;
     std::string collectionName_;
+    bool is_dfs_enabled_;
     std::string dispatchTempDir_;
     std::map<shardid_t, std::string> shardScdfileMap_;
-    std::vector<std::ofstream*> ofList_;
+    std::map<shardid_t, std::ofstream*> ofList_;
 };
 
 /**
@@ -93,9 +96,6 @@ private:
  */
 class InstantScdDispatcher : public ScdDispatcher
 {
-public:
-    ;
-
 protected:
     virtual bool dispatch_impl(shardid_t shardid, SCDDoc& scdDoc);
 };

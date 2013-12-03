@@ -4,21 +4,40 @@
 #include "../attr-manager/AttrManager.h"
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <document-manager/Document.h>
+#include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace izenelib::util;
+namespace
+{
+struct IsDeleted
+{
+    IsDeleted(const boost::shared_ptr<sf1r::DocumentManager>& doc_manager)
+        :inner_doc_manager_(doc_manager)
+    {
+    }
+    bool operator()(uint32_t single_res) const
+    {
+        return inner_doc_manager_->isDeleted(single_res);
+    }
+private:
+    const boost::shared_ptr<sf1r::DocumentManager>& inner_doc_manager_;
+};
+}
 
 namespace sf1r
 {
 
 FilterManager::FilterManager(
+        const boost::shared_ptr<DocumentManager>& d,
         faceted::GroupManager* g,
         const std::string& rootpath,
         faceted::AttrManager* attr,
         NumericPropertyTableBuilder* builder)
-    : groupManager_(g)
+    : document_manager_(d)
+    , groupManager_(g)
     , attrManager_(attr)
     , numericTableBuilder_(builder)
     , data_root_path_(rootpath)
@@ -52,7 +71,7 @@ void FilterManager::loadStrFilterInvertedData(
 {
     str_filter_data.resize(property_list.size());
     last_docid_list.clear();
-    last_docid_list.resize(property_list.size());
+    last_docid_list.resize(property_list.size(), 0);
 
     for (size_t prop_num = 0; prop_num < property_list.size(); ++prop_num)
     {
@@ -74,8 +93,12 @@ void FilterManager::loadStrFilterInvertedData(
                 ifs.read((char*)&docid_len, sizeof(docid_len));
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
+                
                 LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
-                last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
+                if (!docid_list.empty())
+                {
+                    last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
+                }
                 str_filter_data[prop_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
         }
@@ -240,7 +263,7 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
 
         num_key_sets_.clear();
         num_key_sets_.resize(prop_list_.size());
-        
+
         for (std::vector<uint32_t>::iterator i = group_last_docid_list.begin(); i != group_last_docid_list.end(); ++i)
         {
             if (*i == 0)
@@ -282,7 +305,7 @@ void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc
         }
         size_t prop_id = prop_id_map_[property];
         size_t n = 0, nOld = 0;
-        const UString& value = dit->second.get<UString>();
+        UString value = propstr_to_ustr(dit->second.getPropertyStrValue());
         if (value.empty())
         {
             continue;
@@ -316,6 +339,21 @@ void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc
 
 void FilterManager::finishBuildStringFilters()
 {
+    for (size_t i = 0; i < str_filter_map_.size(); ++i)
+    {
+        StrFilterItemMapT::iterator it = str_filter_map_[i].begin();
+        while(it != str_filter_map_[i].end())
+        {
+            it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            if (it->second.empty())
+            {
+                str_filter_map_[i].erase(it++);
+                continue;
+            }
+            ++it;
+        }
+    }
+
     for (size_t i = 0; i < str_prop_list_.size(); ++i)
     {
         size_t prop_id = prop_id_map_[str_prop_list_[i]];
@@ -392,8 +430,25 @@ void FilterManager::buildGroupFilters(
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                
+
+                if (docid <= last_docid_forproperty) continue;
+
                 group_filter_data[j][groupstr].push_back(docid);
+            }
+        }
+
+        for (size_t i = 0; i < group_filter_data.size(); ++i)
+        {
+            StrFilterItemMapT::iterator it = group_filter_data[i].begin();
+            while(it != group_filter_data[i].end())
+            {
+                it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+                if (it->second.empty())
+                {
+                    group_filter_data[i].erase(it++);
+                    continue;
+                }
+                ++it;
             }
         }
 
@@ -406,7 +461,7 @@ void FilterManager::buildGroupFilters(
         std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
         prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
 
-        prop_filter_str_list_[prop_id].push_back(UString(""));
+        prop_filter_str_list_[prop_id].push_back(UString("", UString::UTF_8));
         for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
                 filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
         {
@@ -430,7 +485,7 @@ void FilterManager::mapGroupFilterToFilterId(
         filterids[node->node_name_].start = filter_list.size();
         string groupstr1;
         node->node_name_.convertString(groupstr1, UString::UTF_8);
-        
+
         StrFilterItemMapT::const_iterator cit = group_filter_data.find(node->node_name_);
         if (cit != group_filter_data.end())
             filter_list.push_back(cit->second);
@@ -480,12 +535,26 @@ void FilterManager::buildAttrFilters(
         }
     }
 
+    for (size_t i = 0; i < attr_filter_data.size(); ++i)
+    {
+        StrFilterItemMapT::iterator it = attr_filter_data[i].begin();
+        while(it != attr_filter_data[i].end())
+        {
+            it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            if (it->second.empty())
+            {
+                attr_filter_data[i].erase(it++);
+                continue;
+            }
+            ++it;
+        }
+    }
     // map the attribute filter string to filter id.
     mapAttrFilterToFilterId(attr_filter_data[0], str_filter_ids_[prop_id], filter_list_[prop_id]);
 
     std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
     prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
-    prop_filter_str_list_[prop_id].push_back(UString(""));
+    prop_filter_str_list_[prop_id].push_back(UString("", UString::UTF_8));
     for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
             filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
     {
@@ -783,7 +852,7 @@ void FilterManager::loadFilterId()
                 // start from 1. so reserve the first.
                 std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[i]);
                 prop_filter_str_list_[i].reserve(prop_filter_str_list_.size() + num + 1);
-                prop_filter_str_list_[i].push_back(UString(""));
+                prop_filter_str_list_[i].push_back(UString("", UString::UTF_8));
                 for (size_t j = 0; j < num; ++j)
                 {
                     std::string str_key;
@@ -808,7 +877,7 @@ void FilterManager::loadFilterId()
                     loadArray_(ifs, str_key);
                     FilterIdRange& idrange = filter_ids[UString(str_key, UString::UTF_8)];
                     ifs.read((char*)&idrange, sizeof(idrange));
-                    str_key_set[j] = str_key;
+                    str_key_set[j] = UString(str_key, UString::UTF_8);
                 }
             }
             break;
@@ -969,6 +1038,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeExact(size_t prop
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeGreater(size_t prop_id, const StrFilterKeyT& str_filter, bool include)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it = include
@@ -998,6 +1069,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeGreater(size_t pr
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeLess(size_t prop_id, const StrFilterKeyT& str_filter, bool include)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it = std::lower_bound(str_key_set.begin(), str_key_set.end(), str_filter);
@@ -1029,6 +1102,8 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeLess(size_t prop_
 FilterManager::FilterIdRange FilterManager::getStrFilterIdRangePrefix(size_t prop_id, const StrFilterKeyT& str_filter)
 {
     FilterIdRange empty_range;
+    if (prop_id >= str_key_sets_.size())
+        return empty_range;
     const std::vector<StrFilterKeyT>& str_key_set = str_key_sets_[prop_id];
 
     std::vector<StrFilterKeyT>::const_iterator it0 = std::lower_bound(str_key_set.begin(), str_key_set.end(), str_filter, PrefixCompare(str_filter.length()));
@@ -1128,12 +1203,14 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
         return empty_range;
     }
 
-    std::vector<NumFilterKeyT>::const_iterator it = std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
+    std::vector<NumFilterKeyT>::const_iterator it = include
+        ? std::upper_bound(num_key_set.begin(), num_key_set.end(), num_key)
+        : std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
     if (it == num_key_set.begin() && (!include || *it > num_filter))
     {
         return empty_range;
     }
-    if (it == num_key_set.end())
+    if (it != num_key_set.begin())
     {
         --it;
     }
@@ -1142,7 +1219,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     {
         return empty_range;
     }
-    
+
     empty_range.start = num_filter_ids_[prop_id].find(num_key_set[0])->second.start;
     empty_range.end = nit->second.end;
 

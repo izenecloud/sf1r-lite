@@ -20,7 +20,7 @@ void ValueConverter::driverValue2PropertyValue(
     switch (dataType)
     {
     case STRING_PROPERTY_TYPE:
-        propertyValue = asString(driverValue);
+        propertyValue = str_to_propstr(asString(driverValue));
         break;
     case INT32_PROPERTY_TYPE:
         propertyValue = (int32_t)asInt(driverValue);

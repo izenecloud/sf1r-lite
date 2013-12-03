@@ -130,6 +130,16 @@ bool Sf1Controller::callDistribute()
             writer.write(request().get(), reqdata);
             if(!MasterManagerBase::get()->pushWriteReq(reqdata))
                 response().addError("push write request to queue failed.");
+            if (ReqLogMgr::isAutoShardWriteReq(request().controller(), request().action()))
+            {
+                if (!collectionHandler_)
+                {
+                    std::cerr << " collectionHandler_ is NULL while sharding";
+                    return true;
+                }
+                MasterManagerBase::get()->pushWriteReqToShard(reqdata,
+                    collectionHandler_->indexTaskService_->getShardidListForSearch());
+            }
             return true;
         }
     }

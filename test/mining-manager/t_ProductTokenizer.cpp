@@ -1,4 +1,5 @@
 #include <mining-manager/suffix-match-manager/ProductTokenizer.h>
+#include <common/ResourceManager.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 
@@ -32,6 +33,8 @@ static const char* Attribute [] = {
     "def"
 };
 
+static const char* KNLP_DICT_DIR = "../package/resource/dict/term_category";
+
 void BuildDict(const std::string& home)
 {
     {
@@ -62,6 +65,14 @@ void BuildDict(const std::string& home)
         ofs << Attribute[i] << std::endl;
      ofs.close();
     }
+}
+
+void LoadKnlpDict(const std::string& dir)
+{
+    boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dir));
+    BOOST_REQUIRE(knlpWrapper->loadDictFiles());
+
+    KNlpResourceManager::setResource(knlpWrapper);
 }
 
 namespace sf1r{
@@ -128,11 +139,12 @@ void ProductTokenizerTest::tokenize( const std::string& pattern, std::string& re
 {
     typedef std::list<std::pair<UString,double> > tokens_type;
 
-    tokens_type token_results;
+    tokens_type major_tokens;
+    tokens_type minor_tokens;
     UString refined_results(refined, UString::UTF_8);
-    tokenizer_.GetTokenResults(pattern, token_results, refined_results);
+    tokenizer_.GetTokenResults(pattern, major_tokens, minor_tokens, true, refined_results);
     std::cout<<"tokenization:";
-    for(tokens_type::iterator tit = token_results.begin(); tit != token_results.end(); ++tit)
+    for(tokens_type::iterator tit = minor_tokens.begin(); tit != minor_tokens.end(); ++tit)
     {
         std::string str;
         tit->first.convertString(str, UString::UTF_8);
@@ -207,6 +219,7 @@ BOOST_AUTO_TEST_CASE(tokenize)
     boost::filesystem::remove_all(dict_dir);
     bfs::create_directories(dict_dir);
     BuildDict(DIR_PREFIX);
+    LoadKnlpDict(KNLP_DICT_DIR);
 
     ProductTokenizer tokenizer(ProductTokenizer::TOKENIZER_DICT,DIR_PREFIX);
     ProductTokenizerTest test(tokenizer);
@@ -226,4 +239,3 @@ BOOST_AUTO_TEST_CASE(tokenize)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

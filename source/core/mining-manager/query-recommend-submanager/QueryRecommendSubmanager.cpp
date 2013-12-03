@@ -66,7 +66,6 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
     boost::algorithm::trim(str_query);
     if(str_query.empty()) return;
     boost::algorithm::to_lower(str_query);
-    std::cout<<"Inject query recommend : "<<str_query<<std::endl;
     if(str_query == "__delete__" )
     {
         inject_data_.erase( str_query );
@@ -74,6 +73,7 @@ void QueryRecommendSubmanager::Inject(const izenelib::util::UString& query, cons
     }
     std::string str_result;
     result.convertString(str_result, izenelib::util::UString::UTF_8);
+    LOG(INFO) << "Inject query recommend : "<< str_query << ", " << str_result << std::endl;
     std::vector<std::string> vec_result;
     boost::algorithm::split( vec_result, str_result, boost::algorithm::is_any_of("|") );
     std::vector<izenelib::util::UString> vec_ustr;
@@ -118,7 +118,7 @@ void QueryRecommendSubmanager::FinishInject()
 
 
 void QueryRecommendSubmanager::getRecommendQuery(const izenelib::util::UString& query,
-        const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
+        unsigned int maxNum,
         QueryRecommendRep& recommendRep)
 {
     std::string str_query;

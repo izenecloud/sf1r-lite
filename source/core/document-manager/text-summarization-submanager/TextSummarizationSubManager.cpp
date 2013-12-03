@@ -51,29 +51,31 @@ bool TextSummarizationSubManager::getOffsetPairs(
 
     UString sentence;
     CharacterOffset startPos = 0;
-    while (std::size_t len = langIdAnalyzer_->sentenceLength(textBody, startPos))
     {
-        sentence.assign(textBody, startPos, len);
-
-        /// Replace the old inefficient API to the new one. - Wei, 2010.08.25
-        TermId id;
-        sentenceListInTermId.push_back(vector<TermId>());
-        vector<TermId>& sentenceIds = sentenceListInTermId.back();
-
-        tokenizer_.tokenize(sentence);
-        while (tokenizer_.nextToken())
+        boost::mutex::scoped_lock guard(mutex_);
+        while (std::size_t len = langIdAnalyzer_->sentenceLength(textBody, startPos))
         {
-            if (!tokenizer_.isDelimiter())
+            sentence.assign(textBody, startPos, len);
+
+            /// Replace the old inefficient API to the new one. - Wei, 2010.08.25
+            TermId id;
+            sentenceListInTermId.push_back(vector<TermId>());
+            vector<TermId>& sentenceIds = sentenceListInTermId.back();
+
+            tokenizer_.tokenize(sentence);
+            while (tokenizer_.nextToken())
             {
-                idManager_->getTermIdByTermString(izenelib::util::UString(tokenizer_.getToken(), tokenizer_.getLength()), id);
-                sentenceIds.push_back(id);
+                if (!tokenizer_.isDelimiter())
+                {
+                    idManager_->getTermIdByTermString(izenelib::util::UString(tokenizer_.getToken(), tokenizer_.getLength()), id);
+                    sentenceIds.push_back(id);
+                }
             }
+
+            sentencesOffsetPairs.push_back(make_pair(startPos, startPos+len));
+            startPos += len;
         }
-
-        sentencesOffsetPairs.push_back(make_pair(startPos, startPos+len));
-        startPos += len;
     }
-
     //initialize first value to be 0 by default
     offsetPairs.push_back(0);
 

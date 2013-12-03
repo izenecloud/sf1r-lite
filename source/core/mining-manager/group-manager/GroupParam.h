@@ -28,6 +28,9 @@ class MiningSchema;
 
 NS_FACETED_BEGIN
 
+typedef uint32_t category_id_t;
+typedef uint32_t merchant_id_t;
+
 struct GroupPropParam
 {
     std::string property_;
@@ -66,8 +69,10 @@ struct GroupParam
     typedef std::vector<std::string> GroupPath;
     /** a list of group paths for one property */
     typedef std::vector<GroupPath> GroupPathVec;
+    typedef std::vector<std::pair<GroupPath, double> > GroupPathScoreVec;
     /** map from property name to group paths */
     typedef std::map<std::string, GroupPathVec> GroupLabelMap;
+    typedef std::map<std::string, GroupPathScoreVec> GroupLabelScoreMap;
     /** a pair of property name and group path */
     typedef GroupLabelMap::value_type GroupLabelParam;
     /** selected group labels */
@@ -87,6 +92,9 @@ struct GroupParam
     /** the number of attributes to return */
     int attrGroupNum_;
 
+    /** to get attributes, the number of docs to iterate */
+    int attrIterDocNum_;
+
     /** a list of attribute values for one attribute name */
     typedef std::vector<std::string> AttrValueVec;
     /** map from attribute name to attribute values */
@@ -94,18 +102,23 @@ struct GroupParam
     /** selected attribute labels */
     AttrLabelMap attrLabels_;
 
+    int searchMode_;
+
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
     bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
+    static void mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from);
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_
-                      &isAttrGroup_&attrGroupNum_&attrLabels_);
+                      &isAttrGroup_&attrGroupNum_&attrLabels_
+                      &searchMode_);
 
     MSGPACK_DEFINE(groupProps_, groupLabels_,
                    autoSelectLimits_, boostGroupLabels_,
-                   isAttrGroup_, attrGroupNum_, attrLabels_);
+                   isAttrGroup_, attrGroupNum_, attrLabels_,
+                   searchMode_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -117,6 +130,7 @@ struct GroupParam
         ar & isAttrGroup_;
         ar & attrGroupNum_;
         ar & attrLabels_;
+        ar & searchMode_;
     }
 
 private:
@@ -132,6 +146,8 @@ bool operator==(const GroupParam& a, const GroupParam& b);
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
 std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& groupLabelMap);
 std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathVec& groupPathVec);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelScoreMap& groupLabelMap);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathScoreVec& groupPathVec);
 
 NS_FACETED_END
 

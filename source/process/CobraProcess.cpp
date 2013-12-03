@@ -2,6 +2,7 @@
 #include <common/RouterInitializer.h>
 #include <common/WorkerRouterInitializer.h>
 #include <common/SFLogger.h>
+#include <common/ResourceManager.h>
 
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
@@ -18,8 +19,12 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeFileSys.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
+#include <mining-manager/query-recommendation/RecommendEngineWrapper.h>
+#include <mining-manager/query-abbreviation/AbbrEngine.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <common/OnSignal.h>
@@ -77,6 +82,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
         return false;
     }
 
+    if(!initKNlpWrapper()) return false;
+
     if(!initLogManager()) return false;
 
     if(!initFireWall()) return false;
@@ -87,6 +94,14 @@ bool CobraProcess::initialize(const std::string& configFileDir)
 
     initNodeManager();
 
+    return true;
+}
+
+bool CobraProcess::initKNlpWrapper()
+{
+    const std::string dictDir = SF1Config::get()->getKNlpDictDir();
+    boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir));
+    KNlpResourceManager::setResource(knlpWrapper);
     return true;
 }
 
@@ -152,9 +167,17 @@ void CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
-    QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
-    QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
-    QueryCorrectionSubmanager::getInstance();
+    //QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
+    CorrectionEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
+    CorrectionEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
+    CorrectionEngineWrapper::getInstance();
+    RecommendEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
+    RecommendEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
+    RecommendEngineWrapper::getInstance();
+    QA::AbbrEngine::get()->init(SF1Config::get()->getWorkingDir(), SF1Config::get()->getResourceDir());
+
+    //QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
+    //QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
     OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
 }
@@ -220,7 +243,7 @@ bool CobraProcess::initDriverServer()
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
-    DriverThreadPool::init(1, 1);
+    //DriverThreadPool::init(1, 1);
     // init Router
     driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
@@ -247,6 +270,8 @@ bool CobraProcess::initDriverServer()
 
 bool CobraProcess::initNodeManager()
 {
+    SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
+
     // Do not connect to zookeeper if disabled
     if (SF1Config::get()->isDisableZooKeeper())
     {
@@ -259,13 +284,26 @@ bool CobraProcess::initNodeManager()
         SF1Config::get()->distributedUtilConfig_.zkConfig_,
         SF1Config::get()->distributedCommonConfig_.clusterId_);
 
-    SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
-
     if (SF1Config::get()->isDistributedNode())
     {
-        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
 
-        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir());
+        std::string dfs_local_root = SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_;
+        if (!dfs_local_root.empty())
+        {
+            std::stringstream ss;
+            ss << dfs_local_root << std::string("/sf1r/nodedata/")
+                << SF1Config::get()->topologyConfig_.sf1rTopology_.clusterId_
+                << std::string("/node") << getShardidStr(SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_);
+            dfs_local_root =  ss.str();
+            LOG(INFO) << "local dfs enabled as : " << dfs_local_root;
+            DistributeFileSys::get()->enableDFS(SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_,
+                dfs_local_root);
+        }
+
+        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
+        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir(),
+            SF1Config::get()->distributedCommonConfig_.check_level_);
+
         DistributeRequestHooker::get()->init();
         ReqLogMgr::initWriteRequestSet();
     }
@@ -301,7 +339,7 @@ bool CobraProcess::startDistributedServer()
     DistributeFileSyncMgr::get()->init();
 
     // Start worker server
-    if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
+    if (SF1Config::get()->isWorkerEnabled())
     {
         workerRouter_.reset(new net::aggregator::WorkerRouter);
         WorkerRouterInitializer routerInitializer;
@@ -315,12 +353,12 @@ bool CobraProcess::startDistributedServer()
         cout << "[WorkerServer] listen at "<<localHost<<":"<<workerPort<<endl;
 
         workerServer_.reset(new net::aggregator::WorkerServer(
-            *workerRouter_, localHost, workerPort, threadNum));
+            *workerRouter_, localHost, workerPort, threadNum*2));
         workerServer_->start();
     }
 
     // Start server for master
-    if (SF1Config::get()->isSearchMaster() || SF1Config::get()->isRecommendMaster())
+    if (SF1Config::get()->isMasterEnabled())
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;
         uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.masterPort_;
@@ -390,6 +428,10 @@ void CobraProcess::startCollections()
         }
     }
 
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
+    }
 #ifdef  EXIST_LICENSE
     char* home = getenv("HOME");
     std::string licenseDir = home; licenseDir += "/sf1-license/";
@@ -428,7 +470,6 @@ void CobraProcess::stopCollections()
 
 int CobraProcess::run()
 {
-    setupDefaultSignalHandlers();
 
     bool caughtException = false;
 
@@ -451,6 +492,7 @@ int CobraProcess::run()
         stopCollections();
 
         LOG(INFO) << "CobraProcess has exited";
+        waitSignalThread();
     }
     catch (const std::exception& e)
     {

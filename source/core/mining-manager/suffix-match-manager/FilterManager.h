@@ -13,6 +13,7 @@ class AttrManager;
 }
 class NumericPropertyTableBuilder;
 class Document;
+class DocumentManager;
 
 class GroupNode
 {
@@ -76,6 +77,7 @@ public:
             return false;
         delete it->second;
         child_nodes_.erase(it);
+        return true;
     }
     GroupNode* getChild(const izenelib::util::UString& node_name)
     {
@@ -101,9 +103,16 @@ public:
     {
         uint32_t start;
         uint32_t end;
+
         FilterIdRange()
             : start(0), end(0)
         {
+        }
+
+        void merge(const FilterIdRange& other)
+        {
+            start = std::max(start, other.start);
+            end = std::min(end, other.end);
         }
     };
 
@@ -116,6 +125,7 @@ public:
     typedef std::map<NumFilterKeyT, FilterDocListT> NumFilterItemMapT;
 
     FilterManager(
+            const boost::shared_ptr<DocumentManager>& d,
             faceted::GroupManager* g,
             const std::string& rootpath,
             faceted::AttrManager* attr,
@@ -315,12 +325,13 @@ private:
         return ifs;
     }
 
+    boost::shared_ptr<DocumentManager> document_manager_;
     faceted::GroupManager* groupManager_;
     faceted::AttrManager* attrManager_;
     NumericPropertyTableBuilder* numericTableBuilder_;
     std::string data_root_path_;
 
-//属于各种过滤类型的属性 
+//属于各种过滤类型的属性
     std::vector<std::string> group_prop_list_;
     std::vector<std::string> attr_prop_list_;
     std::vector<std::string> str_prop_list_;
@@ -339,10 +350,10 @@ private:
     StrPropIdVecT str_filter_ids_;//save load ok // 这种有range : filter...
     NumPropIdVecT num_filter_ids_;//save load ok
 //key properties : like A,B,C
-    std::vector<std::vector<StrFilterKeyT> > str_key_sets_;//save load // 京东,当当,亚马逊  这种没有range : key ... 
-    std::vector<std::vector<NumFilterKeyT> > num_key_sets_;//save load // keep string or 
+    std::vector<std::vector<StrFilterKeyT> > str_key_sets_;//save load // 京东,当当,亚马逊  这种没有range : key ...
+    std::vector<std::vector<NumFilterKeyT> > num_key_sets_;//save load // keep string or
 //all filter AND key properties's value
-    std::vector<std::vector<FilterDocListT> > filter_list_; // not save and load... ok 
+    std::vector<std::vector<FilterDocListT> > filter_list_; // not save and load... ok
 
     std::set<std::string> unchanged_prop_list_;
     std::vector<StrFilterItemMapT> str_filter_map_;//
