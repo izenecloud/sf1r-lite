@@ -2374,6 +2374,7 @@ void CollectionConfig::parseZambeziNode(
         throw XmlConfigParserException(message.str());
     }
 	getAttribute_ByteSize(zambeziNode, "vocabSize", zambeziConfig.vocabSize, false);
+    getAttribute(zambeziNode, "searchBuffer", zambeziConfig.searchBuffer, false);
 
     zambeziConfig.isEnable = true;
     //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
@@ -2463,7 +2464,10 @@ void CollectionConfig::parseZambeziNode(
             //getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
             float propertyWeight;
             if (getAttribute_FloatType(virtualproperty.Get(), "weight", propertyWeight, false))
+            {
                 vProperty.weight = propertyWeight;
+                sProperty.weight = propertyWeight;
+            }
 
             // poolsize
             uint32_t poolSize = 0;

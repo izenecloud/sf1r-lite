@@ -139,7 +139,7 @@ void ZambeziManager::search(
     // in one property
     if (propertyList.size() == 1)
     {    
-        property_index_map_[propertyList[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, false, docids, scores);
+        property_index_map_[propertyList[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docids, scores);
         LOG(INFO) << "Search property:" << propertyList[0] 
                   << " ,zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
@@ -149,7 +149,7 @@ void ZambeziManager::search(
     // only one property
     if (propertyList_.size() == 1)
     {    
-        property_index_map_[propertyList_[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, false, docids, scores);
+        property_index_map_[propertyList_[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docids, scores);
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -168,7 +168,7 @@ void ZambeziManager::search(
     std::vector<float> weightList;
     for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
-        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(kAlgorithm, tokens, limit, false, docidsList[i], scoresList[i]);
+        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docidsList[i], scoresList[i]);
         weightList.push_back(config_.getWeight(searchPropertyList[i]));
     }
 

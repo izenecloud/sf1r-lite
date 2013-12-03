@@ -52,6 +52,7 @@
                         <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
                         <xs:attribute name="vocabSize" type="xs:string" use="optional"/>
 						<xs:attribute name="indexType" type="xs:string" use="optional"/>
+                        <xs:attribute name="searchBuffer" type="YesNoType" use="optional"/>
                     </xs:complexType>
                 </xs:element>
 

@@ -151,6 +151,7 @@ public:
     ZambeziIndexType::IndexType indexType_;
 
     bool hasAttrtoken;
+    bool searchBuffer;
 
     /**
      * @brief: @properties, and @virtualPropeties
@@ -174,6 +175,7 @@ public:
                     , vocabSize(1U << 25) // 32M terms in default
                     , indexType_(ZambeziIndexType::DefultIndexType)
                     , hasAttrtoken(false)
+                    , searchBuffer(false)
     {}
 
 
@@ -189,6 +191,7 @@ public:
         std::cout << "tokenPath: "<< tokenPath << std::endl;
         std::cout << "indexType_" << indexType_ << std::endl;
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
+        std::cout << "searchBuffer: "<< searchBuffer << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
 
         /*for (std::vector<ZambeziProperty>::iterator i = properties.begin();

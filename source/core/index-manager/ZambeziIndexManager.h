@@ -80,7 +80,6 @@ private:
         const std::vector<std::pair<std::string, int> >& tokenScoreList);
 
 private:
-    unsigned int indexDocCount_;
     const ZambeziConfig& config_;
     const std::vector<std::string>& properties_;
     ZambeziTokenizer* zambeziTokenizer_;

@@ -15,8 +15,7 @@ ZambeziIndexManager::ZambeziIndexManager(
     std::map<std::string, ZambeziBaseIndex*>& property_index_map,
     ZambeziTokenizer* zambeziTokenizer,
     boost::shared_ptr<DocumentManager> documentManager)
-    : indexDocCount_(0)
-    , config_(config)
+    : config_(config)
     , properties_(properties)
     , zambeziTokenizer_(zambeziTokenizer)
     , property_index_map_(property_index_map)
@@ -26,8 +25,7 @@ ZambeziIndexManager::ZambeziIndexManager(
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
-    LOG(INFO) << " ~ZambeziIndexManager() ";
-    //postProcessForAPI();
+    
 }
 
 // build scd and creatdocument comes sequentially
@@ -40,14 +38,13 @@ ZambeziIndexManager::~ZambeziIndexManager()
 void ZambeziIndexManager::postProcessForAPI()
 {
     postBuildFromSCD(1);
-    indexDocCount_ = 0;
 }
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 {
     for (std::map<std::string, ZambeziBaseIndex*>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
     {
-        //i->second->flush();
+        i->second->flush();
         
         std::string indexPath = config_.indexFilePath + "_" + i->first;
         std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
@@ -73,13 +70,6 @@ bool ZambeziIndexManager::insertDocument(
     const Document& doc,
     time_t timestamp)
 {
-    //never flush during the create document ...
-    /*if (isRealTime)
-        indexDocCount_++;
-    
-    if (indexDocCount_ == MAX_API_INDEXDOC)
-        postProcessForAPI();*/
-
     return buildDocument_(doc);
 }
 
