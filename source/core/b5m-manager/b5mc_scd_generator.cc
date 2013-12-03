@@ -70,7 +70,7 @@ bool B5mcScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             return false;
         }
     } 
-    std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
+    const std::string& output_dir = b5mm_.b5mc_path;
     B5MHelper::PrepareEmptyDir(output_dir);
     ScdDocProcessor::ProcessorType p = boost::bind(&B5mcScdGenerator::Process, this, _1);
     ScdDocProcessor sd_processor(p, thread_num);
