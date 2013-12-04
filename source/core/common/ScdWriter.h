@@ -75,12 +75,16 @@ public:
 
     bool Append(const SCDDoc& doc);
 
+    bool Append(const std::string& str);//use it after DocToString
+
     void Close();
 
     void SetPropertyNameFilter(const PropertyNameFilterType& filter)
     {
         pname_filter_ = filter;
     }
+
+    static void DocToString(const Document& doc, std::string& str);
 
 private:
 

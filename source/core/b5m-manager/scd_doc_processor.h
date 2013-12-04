@@ -97,8 +97,10 @@ private:
         p_(doc);
         if(writer_)
         {
+            std::string doctext;
+            ScdWriter::DocToString(doc, doctext);
             boost::unique_lock<boost::mutex> lock(mutex_);
-            writer_->Append(doc);
+            writer_->Append(doctext, doc.type);
         }
     }
 

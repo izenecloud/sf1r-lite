@@ -207,7 +207,10 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
                 continue;
             }
 
-            if (greaterThan(docComparators[i], iter[i], docComparators[maxi], iter[maxi]))
+            const docid_t left_docid = workerResults.result(i).topKDocs_[iter[i]];
+            const docid_t right_docid = workerResults.result(maxi).topKDocs_[iter[maxi]];
+            if (greaterThan(docComparators[i], iter[i], left_docid,
+                    docComparators[maxi], iter[maxi], right_docid))
             {
                 maxi = i;
             }

@@ -295,7 +295,6 @@ int do_main(int ac, char** av)
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
-        ("last-odb", po::value<std::string>(), "specify last offer db path")
         ("bdb", po::value<std::string>(), "specify brand db path")
         ("cdb", po::value<std::string>(), "specify comment db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
@@ -331,6 +330,7 @@ int do_main(int ac, char** av)
         ("cr-train", "do category recognizer training")
         ("cr", "do category recognizer")
         ("odb-test", "do odb test")
+        ("m-test", "do b5mm test")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -352,7 +352,6 @@ int do_main(int ac, char** av)
     std::string output;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
-    boost::shared_ptr<OfferDb> last_odb;
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<CommentDb> cdb;
 
@@ -441,12 +440,6 @@ int do_main(int ac, char** av)
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
-    if(vm.count("last-odb"))
-    {
-        std::string last_odb_path = vm["last-odb"].as<std::string>();
-        std::cout << "last odb path: " << last_odb_path <<std::endl;
-        last_odb.reset(new OfferDb(last_odb_path));
-    }
     if (vm.count("bdb")) {
         std::string bdb_path = vm["bdb"].as<std::string>();
         std::cout << "bdb path: " << bdb_path <<std::endl;
@@ -560,6 +553,13 @@ int do_main(int ac, char** av)
         std::string pid;
         odb->get(name, pid);
         std::cout<<"pid:"<<pid<<std::endl;
+    }
+    if(vm.count("m-test"))
+    {
+        if(mdb_instance.empty()) return EXIT_FAILURE;
+        B5mM b5mm;
+        b5mm.Load(mdb_instance);
+        b5mm.Show();
     }
     if(vm.count("isbn-test"))
     {
@@ -942,13 +942,18 @@ int do_main(int ac, char** av)
     }
     if(vm.count("ticket-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TicketProcessor processor;
-        processor.SetCmaPath(cma_path);
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TicketProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"ticket generator fail"<<std::endl;
             return EXIT_FAILURE;
@@ -956,13 +961,18 @@ int do_main(int ac, char** av)
     }
     if(vm.count("tuan-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TuanProcessor processor;
-        processor.SetCmaPath(cma_path);
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TuanProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"tuan generator fail"<<std::endl;
             return EXIT_FAILURE;
@@ -970,45 +980,39 @@ int do_main(int ac, char** av)
     }
     if(vm.count("tour-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TourProcessor processor;
-        if(!processor.Generate(scd_path, mdb_instance))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        TourProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance))
         {
             std::cout<<"tour generator fail"<<std::endl;
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("b5mo-generate") && !scd_path.empty())
+    if(vm.count("b5mo-generate"))
     {
-        if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        LOG(INFO)<<"b5mo generator, mode: "<<mode<<std::endl;
-        boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher);
-        matcher->SetCmaPath(cma_path);
-        if(!matcher->Open(knowledge_dir))
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
         {
-            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
-        if(!mobile_source.empty())
-        {
-            if(boost::filesystem::exists(mobile_source))
-            {
-                LOG(INFO)<<"b5mo processor loading mobile source "<<mobile_source<<std::endl;
-                processor.LoadMobileSource(mobile_source);
-            }
-        }
-        if(!human_match.empty() && boost::filesystem::exists(human_match))
-        {
-            processor.SetHumanMatchFile(human_match);
-        }
-        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
+        b5mm.Show();
+        LOG(INFO)<<"b5mo generator on "<<mdb_instance<<std::endl;
+        B5moProcessor processor(b5mm);
+        if(!processor.Generate(mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
         }
@@ -1020,16 +1024,15 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
-        if(!buffer_size.empty())
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
         {
-            processor.SetBufferSize(buffer_size);
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
         }
-        if(!sorter_bin.empty())
-        {
-            processor.SetSorterBin(sorter_bin);
-        }
-        if(!processor.Generate(spu_only, thread_num))
+        b5mm.Show();
+        B5mpProcessor2 processor(b5mm);
+        if(!processor.Generate(mdb_instance, last_mdb_instance))
         {
             std::cout<<"b5mp processor failed"<<std::endl;
             return EXIT_FAILURE;
@@ -1037,25 +1040,21 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mc-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty())
+        if( mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        boost::shared_ptr<ProductMatcher> matcher;
-        if(!knowledge_dir.empty())
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
         {
-            matcher.reset(new ProductMatcher);
-            if(!matcher->Open(knowledge_dir)) 
-            {
-                LOG(ERROR)<<"matcher open failed"<<std::endl;
-                return EXIT_FAILURE;
-            }
-            matcher->SetCmaPath(cma_path);
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
         }
+        b5mm.Show();
 
         //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
-        B5mcScdGenerator generator(mode, matcher.get());
-        if(!generator.Generate(scd_path, mdb_instance, last_mdb_instance, thread_num))
+        B5mcScdGenerator generator(b5mm);
+        if(!generator.Generate(mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
         }

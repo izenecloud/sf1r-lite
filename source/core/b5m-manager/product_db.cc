@@ -32,7 +32,7 @@ B5mpDocGenerator::B5mpDocGenerator()
     pic_weighter_.insert(std::make_pair("天猫", 0));
     pic_weighter_.insert(std::make_pair("淘宝网", 0));
 }
-void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
+void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
 {
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
@@ -50,8 +50,10 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     bool independent=true;
     Document::doc_prop_value_strtype pid;
     odocs.front().getProperty("uuid", pid);
-    std::size_t sales_amount = 0;
-    bool has_sales_amount = false;
+    std::size_t sales_amount=0;
+    std::size_t sales_amount_number = 0;
+    std::size_t comment_count=0;
+    std::size_t comment_count_number = 0;
     std::vector<Attribute> attributes;
     //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
@@ -141,11 +143,25 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             try {
                 std::size_t m = boost::lexical_cast<std::size_t>(samount);
                 sales_amount += m;
-                has_sales_amount = true;
+                sales_amount_number+=1;
             }
             catch(std::exception& ex)
             {
-                std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
+                //std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
+            }
+        }
+        std::string ccount;
+        doc.getString(B5MHelper::GetCommentCountPropertyName(), ccount);
+        if(!ccount.empty())
+        {
+            try {
+                std::size_t m = boost::lexical_cast<std::size_t>(ccount);
+                comment_count += m;
+                comment_count_number+=1;
+            }
+            catch(std::exception& ex)
+            {
+                //std::cerr<<"comment count error: ["<<ccount<<"] on oid "<<oid<<std::endl;
             }
         }
     }
@@ -232,9 +248,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         scountry+=*it;
     }
     if(!scountry.empty()) pdoc.property("Country") = str_to_propstr(scountry, UString::UTF_8);
-    if(has_sales_amount)
+    if(sales_amount_number>0)
     {
-        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;
+        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)(sales_amount/sales_amount_number);
+    }
+    if(comment_count_number>0)
+    {
+        pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)(comment_count/comment_count_number);
     }
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
@@ -242,7 +262,6 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
-    if(spu_only&&pdoc.type==UPDATE_SCD&&independent) pdoc.type = NOT_SCD;
 }
 
 bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)

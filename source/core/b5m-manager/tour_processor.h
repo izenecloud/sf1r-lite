@@ -4,6 +4,7 @@
 #include <product-manager/product_price.h>
 #include "b5m_helper.h"
 #include "b5m_types.h"
+#include "b5m_m.h"
 #include <boost/unordered_map.hpp>
 #include <common/ScdWriter.h>
 #include <document-manager/ScdDocument.h>
@@ -51,11 +52,11 @@ class TourProcessor{
     typedef boost::unordered_set<Document*> DocSet;
     
 public:
-    TourProcessor();
+    TourProcessor(const B5mM& b5mm);
     
     ~TourProcessor();
    
-    bool Generate(const std::string& scd_path, const std::string& mdb_instance);
+    bool Generate(const std::string& mdb_instance);
 
 private:
     void Insert_(ScdDocument& doc);
@@ -104,6 +105,7 @@ private:
                                const std::string&to_city,
                                const std::string&name);
 private:
+    B5mM            b5mm_;
     std::string		m_;
     FromToHash		from_to_hash_;
     DocHash		    doc_hash_;

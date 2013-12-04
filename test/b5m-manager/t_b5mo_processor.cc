@@ -100,21 +100,11 @@ public:
     ScdTester(): step_(0), mdb_("./mdb")
     {
         //mdb_ = boost::filesystem::absolute(boost::filesystem::path(mdb_)).string();
-        std::string odb_path="./odb";
-        boost::filesystem::remove_all(odb_path);
         B5MHelper::PrepareEmptyDir(mdb_);
-        odb_.reset(new OfferDb(odb_path));
-        odb_->open();
-        std::string cma_path= IZENECMA_KNOWLEDGE ;
-        matcher_.reset(new ProductMatcher());
-        matcher_->SetCmaPath(cma_path);
-        matcher_->ForceOpen();
     }
 
     ~ScdTester()
     {
-        std::string odb_path="./odb";
-        boost::filesystem::remove_all(odb_path);
         //boost::filesystem::remove_all(mdb_);
     }
 
@@ -124,7 +114,6 @@ public:
         int mode = 0;
         if(step==1) mode = 1;
         std::cerr<<"test step "<<step<<", mode "<<mode<<std::endl;
-        processor_.reset(new B5moProcessor(odb_.get(), matcher_.get(), mode, NULL));
         string input_dir="./input_scd";
         B5MHelper::PrepareEmptyDir(input_dir);
         {
@@ -137,6 +126,14 @@ public:
         }
         std::string mdb_instance = mdb_+"/"+mdb_ts(step);
         std::cerr<<"mdb dir "<<mdb_instance<<std::endl;
+        B5mM b5mm;
+        b5mm.path = mdb_instance;
+        //set b5mm value
+        b5mm.mode = mode;
+        b5mm.thread_num = 2;
+        b5mm.scd_path = input_dir;
+        b5mm.Gen();
+        processor_.reset(new B5moProcessor(b5mm));
         boost::filesystem::create_directories(mdb_instance);
         std::string omapper_path = B5MHelper::GetOMapperPath(mdb_instance);
         if(!item.omapper.empty())
@@ -151,9 +148,9 @@ public:
             }
             ofs.close();
         }
-        processor_->Generate(input_dir, mdb_instance, last_mdb_instance_);
-        B5mpProcessor2 pprocessor(mdb_instance, last_mdb_instance_);
-        pprocessor.Generate();
+        BOOST_CHECK(processor_->Generate(mdb_instance, last_mdb_instance_));
+        B5mpProcessor2 pprocessor(b5mm);
+        BOOST_CHECK(pprocessor.Generate(mdb_instance, last_mdb_instance_));
         std::vector<ScdDocument> odocs;
         GetAllDocs(B5MHelper::GetB5moPath(mdb_instance), odocs);
         std::cerr<<"start to do batch test on b5mo"<<std::endl;
@@ -310,8 +307,6 @@ public:
     }
 
 private:
-    boost::shared_ptr<OfferDb> odb_;
-    boost::shared_ptr<ProductMatcher> matcher_;
     boost::shared_ptr<B5moProcessor> processor_;
     int step_;
     std::string mdb_;
@@ -391,109 +386,6 @@ void show(Product product)
 
 BOOST_AUTO_TEST_SUITE(b5mo_processor_test)
 
-BOOST_AUTO_TEST_CASE(b5mo_processor_process)
-{
-    //string bdb_path="./bdb";
-    string odb_path="./odb";
-    std::string cma_path= IZENECMA_KNOWLEDGE ;
-
-    //string scd_path="/home/lscm/6indexSCD";
-    string output_dir="./output";
-
-    //boost::filesystem::remove_all(bdb_path);
-    boost::filesystem::remove_all(odb_path);
-    //b5mo process
-    //boost::shared_ptr<BrandDb> bdb;
-    boost::shared_ptr<OfferDb> odb;
-    //bdb.reset(new BrandDb(bdb_path));
-    odb.reset(new OfferDb(odb_path));
-    odb->open();
-    //bdb->open();
-    int mode=0;
-    ProductMatcher*  matcher=(new ProductMatcher);
-    matcher->SetCmaPath(cma_path);
-
-
-    uint128_t pid=B5MHelper::StringToUint128("5f29098f1f606d9daeb41e49e9a24f87");
-    uint128_t docid=1;
-    Document::doc_prop_value_strtype brand(str_to_propstr("联想"));
-    //bdb->set(pid, brand);
-
-    ScdDocument doc;
-    doc.type=INSERT_SCD;
-    doc.property("Title") = str_to_propstr("苹果 iphone4s", UString::UTF_8);
-    doc.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
-    doc.property("Price") = str_to_propstr("100.0", UString::UTF_8);
-    doc.property("Source") = str_to_propstr("京东", UString::UTF_8);
-    doc.property("Attribute") = str_to_propstr("品牌:苹果", UString::UTF_8);
-    odb->insert(1, pid);
-    odb->flush();
-    odb->get(docid, pid);
-    B5moProcessor processor(odb.get(), matcher, mode, NULL);
-
-
-    processor.Process(doc);
-
-    check(doc,"京东","100.00","苹果 iphone4s","","品牌:苹果","");//1,0x05f29098f1f606d9daeb41e49e9a24f87,"
-    uint128_t bdocid;
-
-    bdocid=B5MHelper::StringToUint128(get(doc,"DOCID"));
-    //bdb->get(bdocid, brand);
-    //BOOST_CHECK_EQUAL( propstr_to_str(brand),"联想");
-    doc.property("Category") = str_to_propstr("平板电脑/MID", UString::UTF_8);
-    doc.type=UPDATE_SCD;
-    doc.property("Source") = str_to_propstr("天猫", UString::UTF_8);
-    doc.property("Price") = str_to_propstr("106.0", UString::UTF_8);
-    processor.Process(doc);
-    check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID>","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
-
-
-    ScdDocument doc2;
-    doc2.type = INSERT_SCD;
-    docid=2;
-    doc2.property("Source") = str_to_propstr("天猫", UString::UTF_8);
-    doc2.property("DOCID") = str_to_propstr(B5MHelper::Uint128ToString(docid), UString::UTF_8);
-    doc2.property("Price") = str_to_propstr("154.0", UString::UTF_8);
-    doc2.property("Category") = str_to_propstr("手机", UString::UTF_8);
-    doc2.property("Attribute") = str_to_propstr("品牌:三星", UString::UTF_8);
-    odb->insert(2, pid);
-    odb->flush();
-    processor.Process(doc2);
-    check(doc2,"天猫","154.00","","手机>","品牌:三星","");
-   
-
-    doc.type=DELETE_SCD;
-    processor.Process(doc);
-    //bdb->get(bdocid, brand);
-    //BOOST_CHECK_EQUAL(propstr_to_str(brand),"联想");
-    ScdDocument doc3;
-    doc3.type=INSERT_SCD;
-    doc3.property("Source") = str_to_propstr("当当", UString::UTF_8);
-    doc3.property("DOCID") = str_to_propstr("03", UString::UTF_8);
-    doc3.property("Price") = str_to_propstr("15434.0", UString::UTF_8);
-    doc3.property("Category") = str_to_propstr("男装>夹克", UString::UTF_8);
-    doc3.property("Attribute") = str_to_propstr("品牌:brand1", UString::UTF_8);
-    processor.Process(doc3);
-//当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile
-
-    check(doc3,"当当","15434.00","","男装>夹克>","品牌:brand1","");
-    doc.type = INSERT_SCD;
-    processor.Process(doc);
-    ScdDocument doc4;
-    doc4.type = INSERT_SCD;
-    doc4.property("Title") = str_to_propstr("SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版");
-    doc4.property("DOCID") = str_to_propstr("04", UString::UTF_8);
-    doc4.property("Price") = str_to_propstr("1324.0", UString::UTF_8);
-    doc4.property("Category") = str_to_propstr("平板电脑/MID");
-    processor.Process(doc);
-
-    //bdb->flush();
-    //bdb.reset(new BrandDb(bdb_path));
-    //bdb->open();
-    //bdb->get(bdocid, brand);
-    //BOOST_CHECK_EQUAL(propstr_to_str(brand),"联想");
-
-}
 
 BOOST_AUTO_TEST_CASE(b5mo_omap_test)
 {

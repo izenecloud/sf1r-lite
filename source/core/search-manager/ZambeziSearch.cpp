@@ -36,6 +36,12 @@ const std::size_t kZambeziTopKNum = 1e6;
 const std::string kTopLabelPropName = "Category";
 const size_t kRootCateNum = 10;
 
+const std::string kMerchantPropName = "Source";
+const izenelib::util::UString::EncodingType kEncodeType =
+    izenelib::util::UString::UTF_8;
+const izenelib::util::UString kAttrExcludeMerchant =
+    izenelib::util::UString("淘宝网", kEncodeType);
+
 const izenelib::util::UString::CharT kUCharSpace = ' ';
 
 const MonomorphicFilter<true> kAllPassFilter;
@@ -51,6 +57,7 @@ ZambeziSearch::ZambeziSearch(
     , groupFilterBuilder_(NULL)
     , zambeziManager_(NULL)
     , categoryValueTable_(NULL)
+    , merchantValueTable_(NULL)
 {
 }
 
@@ -60,6 +67,7 @@ void ZambeziSearch::setMiningManager(
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
     zambeziManager_ = miningManager->getZambeziManager();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
+    merchantValueTable_ = miningManager->GetPropValueTable(kMerchantPropName);
 }
 
 bool ZambeziSearch::search(
@@ -252,32 +260,10 @@ bool ZambeziSearch::search(
         groupFilter->getGroupRep(searchResult.groupRep_, tempAttrRep);
     }
 
-    // get attr results for top docs
-    if (originIsAttrGroup && groupFilterBuilder_)
+    if (originIsAttrGroup)
     {
-        izenelib::util::ClockTimer attrTimer;
-
-        faceted::GroupParam attrGroupParam;
-        attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
-        attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
-        attrGroupParam.searchMode_ = groupParam.searchMode_;
-
-        boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
-            groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));
-
-        if (attrGroupFilter)
-        {
-            const size_t topNum = std::min(docIdList.size(), kAttrTopDocNum);
-            for (size_t i = 0; i < topNum; ++i)
-            {
-                attrGroupFilter->test(docIdList[i]);
-            }
-
-            faceted::GroupRep tempGroupRep;
-            attrGroupFilter->getGroupRep(tempGroupRep, searchResult.attrRep_);
-        }
-
-        LOG(INFO) << "attrGroupFilter costs :" << attrTimer.elapsed() << " seconds";
+        getTopAttrs_(docIdList, groupParam, propSharedLockSet,
+                     searchResult.attrRep_);
     }
 
     if (sorter)
@@ -356,6 +342,57 @@ void ZambeziSearch::getTopLabels_(
 
     LOG(INFO) << "get top label num: "<< topLabels.size()
               << ", costs: " << timer.elapsed() << " seconds";
+}
+
+void ZambeziSearch::getTopAttrs_(
+    const std::vector<unsigned int>& docIdList,
+    faceted::GroupParam& groupParam,
+    PropSharedLockSet& propSharedLockSet,
+    faceted::OntologyRep& attrRep)
+{
+    if (!groupFilterBuilder_)
+        return;
+
+    izenelib::util::ClockTimer timer;
+
+    faceted::GroupParam attrGroupParam;
+    attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
+    attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
+    attrGroupParam.searchMode_ = groupParam.searchMode_;
+
+    boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
+        groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));
+
+    if (!attrGroupFilter)
+        return;
+
+    faceted::PropValueTable::pvid_t excludeMerchantId = 0;
+    if (merchantValueTable_)
+    {
+        std::vector<izenelib::util::UString> path;
+        path.push_back(kAttrExcludeMerchant);
+
+        propSharedLockSet.insertSharedLock(merchantValueTable_);
+        excludeMerchantId = merchantValueTable_->propValueId(path, false);
+    }
+
+    size_t testNum = 0;
+    for (size_t i = 0; i < docIdList.size() && testNum < kAttrTopDocNum; ++i)
+    {
+        docid_t docId = docIdList[i];
+
+        if (excludeMerchantId &&
+            merchantValueTable_->testDoc(docId, excludeMerchantId))
+            continue;
+
+        attrGroupFilter->test(docId);
+        ++testNum;
+    }
+
+    faceted::GroupRep tempGroupRep;
+    attrGroupFilter->getGroupRep(tempGroupRep, attrRep);
+
+    LOG(INFO) << "attrGroupFilter costs :" << timer.elapsed() << " seconds";
 }
 
 void ZambeziSearch::getAnalyzedQuery_(

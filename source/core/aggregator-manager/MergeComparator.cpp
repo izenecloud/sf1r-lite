@@ -105,7 +105,8 @@ DocumentComparator::~DocumentComparator()
     }
 }
 
-bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* comp2, size_t idx2)
+bool greaterThan(DocumentComparator* comp1, size_t idx1, docid_t left_docid,
+    DocumentComparator* comp2, size_t idx2, docid_t right_docid)
 {
     for (size_t i = 0; i < comp1->sortProperties_.size(); i++)
     {
@@ -155,7 +156,8 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, DocumentComparator* com
         }
     }
 
-    return false;
+    //std::cerr << "all sort data is the same, just sort by docid : " << left_docid << " VS " << right_docid << std::endl;
+    return left_docid > right_docid;
 }
 
 

@@ -50,6 +50,14 @@ public:
         return writer->Append(doc);
     }
 
+    bool Append(const std::string& doctext, SCD_TYPE scd_type)
+    {
+        if(scd_type==NOT_SCD) return false;
+        ScdWriter* writer = GetWriter_(scd_type);
+        if(writer==NULL) return false;
+        return writer->Append(doctext);
+    }
+
     void Close()
     {
         for(WriterMap::iterator it = writer_map_.begin(); it!=writer_map_.end(); ++it)

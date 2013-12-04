@@ -19,14 +19,29 @@ using namespace sf1r::b5m;
 //#define B5MC_DEBUG
 
 
-B5mcScdGenerator::B5mcScdGenerator(int mode, ProductMatcher* matcher)
-:mode_(mode), matcher_(matcher)
+B5mcScdGenerator::B5mcScdGenerator(const B5mM& b5mm)
+:b5mm_(b5mm), mode_(0), matcher_(NULL)
 ,new_count_(0), pid_changed_count_(0), pid_not_changed_count_(0)
 {
 }
 
-bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
+B5mcScdGenerator::~B5mcScdGenerator()
 {
+    if(matcher_!=NULL) delete matcher_;
+}
+bool B5mcScdGenerator::Generate(const std::string& mdb_instance, const std::string& last_mdb_instance)
+{
+    const std::string& scd_path = b5mm_.comment_scd_path;
+    mode_ = b5mm_.mode;
+    int thread_num = b5mm_.thread_num;
+    //const std::string& knowledge = b5mm_.knowledge;
+    //matcher_ = new ProductMatcher;
+    //matcher_->SetCmaPath(b5mm_.cma_path);
+    //if(knowledge.empty()) matcher_->ForceOpen();
+    //else
+    //{
+    //    if(!matcher_->Open(knowledge)) return false;
+    //}
     std::string cdb_path = mdb_instance+"/cdb";
     cdb_.reset(new CommentDb(cdb_path));
     std::string odb_path = mdb_instance+"/odb";
@@ -55,7 +70,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             return false;
         }
     } 
-    std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
+    const std::string& output_dir = b5mm_.b5mc_path;
     B5MHelper::PrepareEmptyDir(output_dir);
     ScdDocProcessor::ProcessorType p = boost::bind(&B5mcScdGenerator::Process, this, _1);
     ScdDocProcessor sd_processor(p, thread_num);
