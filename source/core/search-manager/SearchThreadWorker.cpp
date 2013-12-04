@@ -179,12 +179,12 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         unsigned maxDoc = documentManagerPtr_->getMaxDocId();
         if (maxDoc == 0)
             return false;
-        boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
+        boost::shared_ptr<Bitset> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
         AllDocumentIterator* pFilterIterator = NULL;
         if (pDelFilter)
         {
             pFilterIdSet.reset(new InvertedIndexManager::FilterBitmapT);
-            pDelFilter->compressed(*pFilterIdSet);
+            pDelFilter->compress(*pFilterIdSet);
             TermDocFreqs* pDelTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
             pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
         }

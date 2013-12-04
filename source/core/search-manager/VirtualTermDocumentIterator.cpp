@@ -1,7 +1,6 @@
 #include "VirtualTermDocumentIterator.h"
 #include "TermDocumentIterator.h"
 #include <ir/index_manager/index/TermPositions.h>
-#include <ir/index_manager/utility/BitVector.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -61,7 +60,7 @@ void VirtualTermDocumentIterator::accept()
         if (find)
         {
             df_ += pTermReader_->docFreq(&term);
-            if(pTermDocReaderList_[i]) 
+            if(pTermDocReaderList_[i])
             {
                 delete pTermDocReaderList_[i];
                 pTermDocReaderList_[i] = 0;
@@ -128,8 +127,8 @@ void VirtualTermDocumentIterator::doc_item(
     }
     rankDocumentProperty.setDocLength(docLength);
 
-    if (readPositions_) 
-    {       
+    if (readPositions_)
+    {
             /*
             START_PROFILER ( get_position )
             rankDocumentProperty.activate(termIndex_);
@@ -139,7 +138,7 @@ void VirtualTermDocumentIterator::doc_item(
                 Term term(subProperties_[i].c_str(), termId);
                 bool find = pTermReader_->seek(&term);
                 pTermDocReader_ = pTermReader_->termPositions();/// only once ..
-                
+
                 TermPositions* pPositions = reinterpret_cast<TermPositions*>(pTermDocReader_);
                 loc_t pos = pPositions->nextPosition();
                 while (pos != BAD_POSITION)

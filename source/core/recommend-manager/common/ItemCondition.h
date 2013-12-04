@@ -9,7 +9,7 @@
 
 #include "RecTypes.h"
 #include <query-manager/QueryTypeDef.h> // FilteringType
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Bitset.h>
 
 namespace sf1r
 {
@@ -24,11 +24,11 @@ struct ItemCondition
     std::vector<QueryFiltering::FilteringType> filteringList_;
 
     /** bit 1 for meet condition, bit 0 for not meet condition */
-    boost::scoped_ptr<izenelib::ir::indexmanager::BitVector> pBitVector_;
+    boost::scoped_ptr<izenelib::ir::indexmanager::Bitset> pBitset_;
 
     ItemCondition();
 
-    void createBitVector(QueryBuilder* queryBuilder);
+    void createBitset(QueryBuilder* queryBuilder);
 
     /**
      * Check whether @p itemId meets the condition.

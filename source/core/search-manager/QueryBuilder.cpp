@@ -16,7 +16,7 @@
 
 #include <common/TermTypeDetector.h>
 
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Bitset.h>
 
 #include <util/get.h>
 
@@ -336,7 +336,7 @@ void QueryBuilder::prefetch_term_doc_readers_(
         else
         {
             boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
-            boost::shared_ptr<BitVector> pBitVector;
+            boost::shared_ptr<Bitset> pBitset;
 
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
                 continue;
@@ -357,10 +357,10 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 if(!filterCache_->get(filteringRule, pFilterBitmap))
                 {
                     pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
-                    pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
+                    pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
 
-                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
-                    pBitVector->compressed(*pFilterBitmap);
+                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitset);
+                    pBitset->compress(*pFilterBitmap);
                     filterCache_->set(filteringRule, pFilterBitmap);
                 }
                 TermDocFreqs* pTermDocReader = new InvertedIndexManager::FilterTermDocFreqsT(pFilterBitmap);
@@ -522,7 +522,7 @@ void QueryBuilder::post_prepare_ranker_(
                         emptyPropertyTermInfo
                     ).getTermIdPositionMap();
             uint32_t DocumentFreq = 0;
-            uint32_t MaxTermFreq = 0; 
+            uint32_t MaxTermFreq = 0;
             uint32_t index = 0;
             uint32_t queryLength = 0;
             uint32_t ctf = 0;
@@ -596,7 +596,7 @@ void QueryBuilder::prepare_for_virtual_property_(
 {
     LOG(INFO)<<"start prepare_for_virtual_property_"<<endl;
     QueryTreePtr queryTree;
-    if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) ) 
+    if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) )
         return;
     DocumentIterator* pIter = NULL;
 
@@ -619,7 +619,7 @@ void QueryBuilder::prepare_for_virtual_property_(
         propertyIds.push_back(p->second.getPropertyId());
         propertyDataTypes.push_back(p->second.getType());
     }
-    
+
     bool ret = do_prepare_for_virtual_property_(
                 queryTree,
                 colID,
@@ -676,7 +676,7 @@ void QueryBuilder::prepare_for_virtual_property_(
 }
 
 bool QueryBuilder::do_prepare_for_virtual_property_(
-    QueryTreePtr& queryTree, 
+    QueryTreePtr& queryTree,
     collectionid_t colID,
     const std::vector<std::string>& properties,
     std::vector<unsigned int>& propertyIds,
@@ -721,7 +721,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
             for( uint32_t i = 0; i < properties.size(); ++i)
             {
                 TermDocumentIterator* pTermIterator = NULL;
-                
+
                 if (!isUnigramSearchMode)
                 {
                     pTermIterator = new TermDocumentIterator(
@@ -909,7 +909,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
                     return false;
                 }
             }
-            //parentAndorFlag 
+            //parentAndorFlag
             if (NULL == pDocIterator)
                 pDocIterator = pIterator;
             else
@@ -1164,21 +1164,21 @@ bool QueryBuilder::do_prepare_for_property_(
         for (std::list<QueryTreePtr>::iterator childIter = queryTree->children_.begin();
                 childIter != queryTree->children_.end(); ++childIter)
         {
-            if ((*childIter)->type_ == QueryTree::ASTERISK )
+            if ((*childIter)->type_ == QueryTree::ASTERISK)
             {
-                asterisk_pos.push_back( termIds.size() );
+                asterisk_pos.push_back(termIds.size());
             }
-            else if ((*childIter)->type_ == QueryTree::QUESTION_MARK )
+            else if ((*childIter)->type_ == QueryTree::QUESTION_MARK)
             {
-                question_mark_pos.push_back( termIds.size() );
+                question_mark_pos.push_back(termIds.size());
             }
             else
             {
-                termid_t keywordId( (*childIter)->keywordId_ );
+                termid_t keywordId((*childIter)->keywordId_);
                 unsigned termIndex = izenelib::util::getOr(
                                          termIndexMapInProperty,
                                          keywordId,
-                                         (std::numeric_limits<unsigned>::max) ()
+                                         std::numeric_limits<unsigned>::max()
                                      );
                 termIds.push_back(keywordId);
                 termIndexes.push_back(termIndex);
@@ -1355,7 +1355,7 @@ bool QueryBuilder::do_prepare_for_property_(
                 delete pIterator;
                 return false;
             }
-            
+
             if(!virtualProperty.empty())
             {
                 if(!parentAndOrFlag)
@@ -1418,7 +1418,7 @@ bool QueryBuilder::do_prepare_for_property_(
                 delete pIterator;
                 return false;
             }
-            
+
             if(!virtualProperty.empty())
             {
                 if(!parentAndOrFlag)

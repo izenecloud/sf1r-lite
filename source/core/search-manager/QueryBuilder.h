@@ -139,7 +139,7 @@ private:
     );
 
     bool do_prepare_for_virtual_property_(
-        QueryTreePtr& queryTree, 
+        QueryTreePtr& queryTree,
         collectionid_t colID,
         const std::vector<std::string>& properties,
         std::vector<unsigned int>& propertyIds,
@@ -153,7 +153,7 @@ private:
         bool isUnigramSearchMode,
         int parentAndOrFlag = 0
     );
-   
+
     void prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
         size_t & success_properties,

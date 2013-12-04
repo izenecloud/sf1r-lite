@@ -27,6 +27,7 @@ struct PropIdTable
     class PropIdList;
 
     void getIdList(docid_t docId, PropIdList& propIdList) const;
+    size_t getIdCount(docid_t docId) const;
 
     template <class IdContainer>
     void appendIdList(const IdContainer& idContainer);
@@ -83,7 +84,7 @@ private:
     /// when there is only one value id
     valueid_t singleValueId_;
 
-    /// when there are multiple value ids, the iterator to the first value id 
+    /// when there are multiple value ids, the iterator to the first value id
     typename std::vector<valueid_t>::const_iterator multiValueIter_;
 
     friend struct PropIdTable<valueid_t, index_t>;
@@ -125,6 +126,24 @@ void PropIdTable<valueid_t, index_t>::getIdList(docid_t docId, PropIdList& propI
     {
         propIdList.size_ = 1;
         propIdList.singleValueId_ = index;
+    }
+}
+
+template <typename valueid_t, typename index_t>
+size_t PropIdTable<valueid_t, index_t>::getIdCount(docid_t docId) const
+{
+    if (docId >= indexTable_.size())
+        return 0;
+
+    index_t index = indexTable_[docId];
+
+    if (index & INDEX_MSB)
+    {
+        return multiValueTable_[index & INDEX_MASK];
+    }
+    else
+    {
+        return index ? 1 : 0;
     }
 }
 

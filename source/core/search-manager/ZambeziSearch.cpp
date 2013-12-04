@@ -18,7 +18,7 @@
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <mining-manager/util/convert_ustr.h>
 #include <b5m-manager/product_matcher.h>
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Bitset.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
 #include <iostream>
@@ -109,13 +109,13 @@ bool ZambeziSearch::search(
     const std::vector<QueryFiltering::FilteringType>& filterList =
         actionOperation.actionItem_.filteringList_;
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
-    boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
+    boost::shared_ptr<izenelib::ir::indexmanager::Bitset> filterBitset;
 
     if (!filterList.empty())
     {
         queryBuilder_.prepare_filter(filterList, filterBitmap);
-        filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
-        filterBitVector->importFromEWAH(*filterBitmap);
+        filterBitset.reset(new izenelib::ir::indexmanager::Bitset);
+        filterBitset->importFromEWAH(*filterBitmap);
     }
 
     AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
@@ -175,7 +175,7 @@ bool ZambeziSearch::search(
     std::size_t totalCount = 0;
 
     {
-        ZambeziFilter filter(documentManager_, groupFilter, filterBitVector);
+        ZambeziFilter filter(documentManager_, groupFilter, filterBitset);
 
         for (size_t i = 0; i < candNum; ++i)
         {
