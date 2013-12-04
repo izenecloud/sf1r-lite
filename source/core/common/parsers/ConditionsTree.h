@@ -10,14 +10,14 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <query-manager/QueryTypeDef.h>
 
 #define MAXSIZE 5
 
-
+//using namespace izenelib::driver;
 namespace sf1r {
-using namespace izenelib::driver;
 
-///this is node with with relatonship, the leaf node is FilteringType;
+///this is node with relatonship, the leaf node is FilteringType;
 struct ConditionsNode
 {
     std::string relation_;
@@ -53,6 +53,25 @@ struct ConditionsNode
         else
             return false;
 
+        return true;
+    }
+
+    bool empty()
+    {
+        if (conditionLeafList_.size() == 0 && pConditionsNodeList_.size() == 0)
+            return true;
+    }
+
+    bool getFilteringListSuffix(std::vector<QueryFiltering::FilteringType>& filteringRules)
+    {
+        if (relation_ != "and" || pConditionsNodeList_.size() != 0)
+            return false;
+
+        for (std::vector<QueryFiltering::FilteringType>::iterator i = conditionLeafList_.begin();
+                i != conditionLeafList_.end(); ++i)
+        {
+            filteringRules.push_back(*i);   
+        }
         return true;
     }
 };

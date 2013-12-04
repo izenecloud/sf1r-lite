@@ -21,7 +21,7 @@ struct ItemCondition
     ItemManager* itemManager_;
 
     /** a list of filtering conditions */
-    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
+    //std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
 
 
     /** bit 1 for meet condition, bit 0 for not meet condition */

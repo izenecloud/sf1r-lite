@@ -8,13 +8,14 @@
 #include <util/driver/Value.h>
 #include <util/driver/Parser.h>
 
+#include <common/Keys.h>
 #include "ConditionParser.h"
 #include "ConditionsTree.h"
 
 #include <vector>
 
 namespace sf1r {
-//using namespace izenelib::driver;
+using namespace izenelib::driver;
 
 class ConditionTreeParser : public ::izenelib::driver::Parser
 {

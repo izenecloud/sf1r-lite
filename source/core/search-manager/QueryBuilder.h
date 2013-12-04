@@ -82,9 +82,9 @@ public:
     void prepare_filter(
         std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_,
         boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);*/
-    bool QueryBuilder::prepare_filter(
+    bool prepare_filter(
         boost::shared_ptr<ConditionsNode>& conditionsTree_,
-        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmapx);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx);
 
 
     /*
@@ -200,7 +200,7 @@ private:
 
     bool do_process_filtertree(
         boost::shared_ptr<ConditionsNode>& conditionsTree_,
-        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap);
 /*
     void do_process_node(
         QueryFiltering::FilteringTreeValue &filteringTreeRules,

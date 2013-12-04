@@ -13,14 +13,14 @@ ItemCondition::ItemCondition()
 void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
 {
     // no condition
-    if (filteringTreeRules_.empty() || !queryBuilder)
+    /*if (filteringTreeRules_.empty() || !queryBuilder)
         return;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     queryBuilder->prepare_filter(filteringTreeRules_, filterBitmap);
 
     pBitVector_.reset(new izenelib::ir::indexmanager::BitVector);
-    pBitVector_->importFromEWAH(*filterBitmap);
+    pBitVector_->importFromEWAH(*filterBitmap);*/
 }
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const

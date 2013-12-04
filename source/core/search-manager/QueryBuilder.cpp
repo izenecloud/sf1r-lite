@@ -61,8 +61,8 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-void QueryBuilder::prepare_filter(
-    const std::vector<QueryFiltering::FilteringType>& filtingList,
+bool QueryBuilder::do_process_filtertree(
+    boost::shared_ptr<ConditionsNode>& conditionsTree_,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
     if (conditionsTree_->conditionLeafList_.size() == 1 
@@ -72,19 +72,19 @@ void QueryBuilder::prepare_filter(
         {
             pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
 
-            QueryFiltering::FilteringOperation filterOperation = fconditionsTree_->conditionLeafList_[0].operation_;
+            QueryFiltering::FilteringOperation filterOperation = conditionsTree_->conditionLeafList_[0].operation_;
             const std::string& property = conditionsTree_->conditionLeafList_[0].property_;
             const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[0].values_;
 
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
 
-            filterCache_->set(conditionsTree_->conditionLeafList_[i], pFilterBitmap);
+            filterCache_->set(conditionsTree_->conditionLeafList_[0], pFilterBitmap);
         }
         return true;
     }
     /// not leaf node;
     std::string relation = conditionsTree_->relation_;
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmapTList1;
+    std::vector<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > filterBitmapTList1;
     filterBitmapTList1.resize(conditionsTree_->conditionLeafList_.size());
     for (unsigned int i = 0; i < conditionsTree_->conditionLeafList_.size(); ++i)
     {
@@ -92,17 +92,17 @@ void QueryBuilder::prepare_filter(
         {
             filterBitmapTList1[i].reset(new InvertedIndexManager::FilterBitmapT);
 
-            QueryFiltering::FilteringOperation filterOperation = fconditionsTree_->conditionLeafList_[i].operation_;
+            QueryFiltering::FilteringOperation filterOperation = conditionsTree_->conditionLeafList_[i].operation_;
             const std::string& property = conditionsTree_->conditionLeafList_[i].property_;
             const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[i].values_;
 
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, filterBitmapTList1[i]);
 
-            filterCache_->set(conditionsTree_->conditionLeafList_[i], ilterBitmapTList1[i]);
+            filterCache_->set(conditionsTree_->conditionLeafList_[i], filterBitmapTList1[i]);
         }
     }
 
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmapTList2;
+    std::vector<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > filterBitmapTList2;
     filterBitmapTList2.resize(conditionsTree_->pConditionsNodeList_.size());
     for (unsigned int j = 0; j < conditionsTree_->pConditionsNodeList_.size(); ++j)
     {
@@ -115,13 +115,13 @@ void QueryBuilder::prepare_filter(
         for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
         {
             boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicaland(*filterBitmapTList1[k], *dest);
+            pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
             pFilterBitmap = dest;
         }
         for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
         {
             boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicaland(*filterBitmapTList1[k], *dest);
+            pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
             pFilterBitmap = dest;
         }
     }
@@ -130,13 +130,13 @@ void QueryBuilder::prepare_filter(
         for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
         {
             boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicalor(*filterBitmapTList2[k], *dest);
+            pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
             pFilterBitmap = dest;
         }
         for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
         {
             boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicalor(*filterBitmapTList2[k], *dest);
+            pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
             pFilterBitmap = dest;
         }
     }
@@ -147,7 +147,7 @@ bool QueryBuilder::prepare_filter(
         boost::shared_ptr<ConditionsNode>& conditionsTree_,
         boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx)
 {
-    return do_process_filtertree(do_process_filtertree, pFilterBitmapx);
+    return do_process_filtertree(conditionsTree_, pFilterBitmapx);
 }
 /*
 void QueryBuilder::do_process_node(

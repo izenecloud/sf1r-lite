@@ -7,10 +7,11 @@
  * @brief support bool combination
  */
 #include "FilteringParser.h"
+
+#include <common/ValueConverter.h>
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/parsers/ConditionTreeParser.h>
 #include <common/BundleSchemaHelpers.h>
-#include <common/ValueConverter.h>
 
 namespace sf1r {
 
@@ -19,7 +20,7 @@ bool FilteringParser::parse_tree(const Value& conditions)
     clearMessages();
 
     ConditionTreeParser conditionsParser;
-    if (!conditionsParser.parse(conditions))
+    if (!conditionsParser.parseTree(conditions, filterConditionTree_))
     {
         error() = conditionsParser.errorMessage();
         return false;
@@ -83,8 +84,7 @@ bool FilteringParser::parse(const Value& conditions)
                 ValueConverter::driverValue2PropertyValue(
                         dataType,
                         condition(v),
-                        filteringRule.values_[v]
-                );
+                        filteringRule.values_[v]);
             }
         }
         
@@ -96,7 +96,7 @@ bool FilteringParser::parse(const Value& conditions)
             filterConditionTree_->relation_ = "and";
             for (unsigned int i = 0; i < filteringRulesList.size(); ++i)
             {
-                filterConditionTree_->conditionLeafList_.push_back(filteringRulesList[i])
+                filterConditionTree_->conditionLeafList_.push_back(filteringRulesList[i]);
             }
         }
     }

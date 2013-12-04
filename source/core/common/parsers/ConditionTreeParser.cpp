@@ -63,7 +63,7 @@ namespace sf1r {
  */
     using driver::Keys;
 
-    bool parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode)
+    bool ConditionTreeParser::parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode)
     {
         Value conditionArray;
         std::string relation;
@@ -74,7 +74,7 @@ namespace sf1r {
         const Value::ArrayType* cond_array = conditionArray.getPtr<Value::ArrayType>();
         if (!cond_array)
         {
-            error() = "Conditions must be an array";
+            //error() = "Conditions must be an array";
             return false;
         }
         
@@ -84,7 +84,7 @@ namespace sf1r {
             if (property_.empty())
             {
                 boost::shared_ptr<ConditionsNode> pChildNode(new ConditionsNode());
-                pnode->conditionLeafList_.push_back(pChildNode);
+                pnode->pConditionsNodeList_.push_back(pChildNode);
                 if ( !parseTree((*cond_array)[i], pChildNode))
                     return false;
             }
@@ -94,9 +94,9 @@ namespace sf1r {
                 conditionParser.parse((*cond_array)[i]);
 
                 QueryFiltering::FilteringType filterLeafNode;
-                filterLeafNode.operation_ = conditionParser.op();
+                ///filterLeafNode.operation_ = conditionParser.op(); // TODO
                 filterLeafNode.property_ = conditionParser.property();
-                filterLeafNode.values_ = conditionParser.array();
+                ///filterLeafNode.values_ = conditionParser.array(); // TODO
                 pnode->conditionLeafList_.push_back(filterLeafNode);
             }
         }
@@ -115,7 +115,7 @@ namespace sf1r {
 
         if (conditions.type() != Value::kObjectType)
         {
-            error() = "Condition must be an object.";
+            //error() = "Condition must be an object.";
             return false;
         }
 

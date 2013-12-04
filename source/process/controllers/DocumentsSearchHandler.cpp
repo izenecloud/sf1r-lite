@@ -489,7 +489,7 @@ bool DocumentsSearchHandler::parse()
     actionItem_.requireRelatedQueries_ = searchParser.isRequireRelatedQueries();
     // filteringParser
     swap(
-        actionItem_.filteringTreeList_,
+        actionItem_.filterTree_,
         filteringParser.mutableFilteringTreeRules()
     );
 
@@ -972,7 +972,7 @@ void DocumentsSearchHandler::addAclFilters()
     // ACL_ALLOW
     if (hasAclAllow)
     {
-        QueryFiltering::FilteringType filter;
+        /*QueryFiltering::FilteringType filter;
         filter.operation_ = QueryFiltering::INCLUDE;
         filter.property_ = "ACL_ALLOW";
 
@@ -1001,12 +1001,13 @@ void DocumentsSearchHandler::addAclFilters()
         {
             filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
         }
-        actionItem_.filteringTreeList_.swap(filteringTreeRules);
+        actionItem_.filteringTreeList_.swap(filteringTreeRules);*/
     }
 
     // ACL_DENY
     if (hasAclDeny)
     {
+        /*
         QueryFiltering::FilteringType filter;
         filter.operation_ = QueryFiltering::EXCLUDE;
         filter.property_ = "ACL_DENY";
@@ -1034,7 +1035,7 @@ void DocumentsSearchHandler::addAclFilters()
         {
             filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
         }
-        actionItem_.filteringTreeList_.swap(filteringTreeRules);
+        actionItem_.filteringTreeList_.swap(filteringTreeRules);*/
     }
 }
 

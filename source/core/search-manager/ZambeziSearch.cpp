@@ -106,14 +106,15 @@ bool ZambeziSearch::search(
             groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
-    const std::vector<QueryFiltering::FilteringType>& filterList =
-        actionOperation.actionItem_.filteringList_;
+    boost::shared_ptr<ConditionsNode>& filterTree =
+        actionOperation.actionItem_.filterTree_;
+
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
 
-    if (!filterList.empty())
+    if (!filterTree->empty())
     {
-        queryBuilder_.prepare_filter(filterList, filterBitmap);
+        queryBuilder_.prepare_filter(filterTree, filterBitmap);
         filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
         filterBitVector->importFromEWAH(*filterBitmap);
     }
