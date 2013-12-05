@@ -8,9 +8,10 @@
 #include <util/driver/Value.h>
 #include <util/driver/Parser.h>
 
+#include <bundles/index/IndexBundleConfiguration.h>
 #include <common/Keys.h>
-#include "ConditionParser.h"
-#include "ConditionsTree.h"
+#include <common/parsers/ConditionsTree.h>
+#include <common/parsers/ConditionParser.h>
 
 #include <vector>
 
@@ -20,8 +21,9 @@ using namespace izenelib::driver;
 class ConditionTreeParser : public ::izenelib::driver::Parser
 {
 public:
-    ConditionTreeParser()
+    ConditionTreeParser(const IndexBundleSchema& indexSchema)
     : conditionsTree_(new ConditionsNode())
+    , indexSchema_(indexSchema)
     {
     }
 
@@ -36,7 +38,7 @@ public:
 
 private:
     boost::shared_ptr<ConditionsNode> conditionsTree_;
-
+    const IndexBundleSchema& indexSchema_;
 };
 
 }

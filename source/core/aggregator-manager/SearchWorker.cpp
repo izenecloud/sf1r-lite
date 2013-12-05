@@ -480,10 +480,18 @@ bool SearchWorker::getSearchResult_(
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
+    if (actionOperation.actionItem_.filterTree_)
+    {
+        actionOperation.actionItem_.filterTree_->printConditionInfo();
+    }
+
     std::vector<QueryFiltering::FilteringType> filteringRules;
     if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
     {
-        actionOperation.actionItem_.filterTree_->getFilteringListSuffix(filteringRules);
+        if (actionOperation.actionItem_.filterTree_)
+        {
+            actionOperation.actionItem_.filterTree_->getFilteringListSuffix(filteringRules);
+        }
     }
 
     switch (actionOperation.actionItem_.searchingMode_.mode_)

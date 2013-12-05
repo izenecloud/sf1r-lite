@@ -8,9 +8,10 @@
  */
 #include "FilteringParser.h"
 
+#include "ConditionTreeParser.h"
 #include <common/ValueConverter.h>
 #include <common/parsers/ConditionArrayParser.h>
-#include <common/parsers/ConditionTreeParser.h>
+
 #include <common/BundleSchemaHelpers.h>
 
 namespace sf1r {
@@ -19,7 +20,7 @@ bool FilteringParser::parse_tree(const Value& conditions)
 {
     clearMessages();
 
-    ConditionTreeParser conditionsParser;
+    ConditionTreeParser conditionsParser(indexSchema_);
     if (!conditionsParser.parseTree(conditions, filterConditionTree_))
     {
         error() = conditionsParser.errorMessage();
@@ -43,6 +44,7 @@ bool FilteringParser::parse(const Value& conditions)
     }
     else if (conditions.type() == Value::kArrayType)
     {
+        std::cout << "---"<< std::endl;
         ConditionArrayParser conditionsParser;
         if (!conditionsParser.parse(conditions))
         {
@@ -109,62 +111,62 @@ bool FilteringParser::parse(const Value& conditions)
     return true;
 }
 
-QueryFiltering::FilteringOperation FilteringParser::toFilteringOperation(
-    const std::string& op
-)
-{
-    if (op == "=")
-    {
-        return QueryFiltering::EQUAL;
-    }
-    else if (op == "<>")
-    {
-        return QueryFiltering::NOT_EQUAL;
-    }
-    else if (op == "in")
-    {
-        return QueryFiltering::INCLUDE;
-    }
-    else if (op == ">")
-    {
-        return QueryFiltering::GREATER_THAN;
-    }
-    else if (op == ">=")
-    {
-        return QueryFiltering::GREATER_THAN_EQUAL;
-    }
-    else if (op == "<")
-    {
-        return QueryFiltering::LESS_THAN;
-    }
-    else if (op == "<=")
-    {
-        return QueryFiltering::LESS_THAN_EQUAL;
-    }
-    else if (op == "between")
-    {
-        return QueryFiltering::RANGE;
-    }
-    else if (op == "starts_with")
-    {
-        return QueryFiltering::PREFIX;
-    }
-    else if (op == "ends_with")
-    {
-        return QueryFiltering::SUFFIX;
-    }
-    else if (op == "contains")
-    {
-        return QueryFiltering::SUB_STRING;
-    }
-    else if (op == "not_in")
-    {
-        return QueryFiltering::EXCLUDE;
-    }
+// QueryFiltering::FilteringOperation FilteringParser::toFilteringOperation(
+//     const std::string& op
+// )
+// {
+//     if (op == "=")
+//     {
+//         return QueryFiltering::EQUAL;
+//     }
+//     else if (op == "<>")
+//     {
+//         return QueryFiltering::NOT_EQUAL;
+//     }
+//     else if (op == "in")
+//     {
+//         return QueryFiltering::INCLUDE;
+//     }
+//     else if (op == ">")
+//     {
+//         return QueryFiltering::GREATER_THAN;
+//     }
+//     else if (op == ">=")
+//     {
+//         return QueryFiltering::GREATER_THAN_EQUAL;
+//     }
+//     else if (op == "<")
+//     {
+//         return QueryFiltering::LESS_THAN;
+//     }
+//     else if (op == "<=")
+//     {
+//         return QueryFiltering::LESS_THAN_EQUAL;
+//     }
+//     else if (op == "between")
+//     {
+//         return QueryFiltering::RANGE;
+//     }
+//     else if (op == "starts_with")
+//     {
+//         return QueryFiltering::PREFIX;
+//     }
+//     else if (op == "ends_with")
+//     {
+//         return QueryFiltering::SUFFIX;
+//     }
+//     else if (op == "contains")
+//     {
+//         return QueryFiltering::SUB_STRING;
+//     }
+//     else if (op == "not_in")
+//     {
+//         return QueryFiltering::EXCLUDE;
+//     }
 
-    BOOST_ASSERT_MSG(false, "it should never go here");
+//     BOOST_ASSERT_MSG(false, "it should never go here");
 
-    return QueryFiltering::NULL_OPERATOR;
-}
+//     return QueryFiltering::NULL_OPERATOR;
+// }
 
 } // namespace sf1r

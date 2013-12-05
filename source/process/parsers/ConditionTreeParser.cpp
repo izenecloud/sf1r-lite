@@ -1,6 +1,8 @@
 
 #include "ConditionTreeParser.h"
+#include "FilteringParserHelper.h"
 #include <boost/algorithm/string/case_conv.hpp>
+
 #include <vector>
 #include <common/Keys.h>
 #include <iostream>
@@ -74,7 +76,7 @@ namespace sf1r {
         const Value::ArrayType* cond_array = conditionArray.getPtr<Value::ArrayType>();
         if (!cond_array)
         {
-            //error() = "Conditions must be an array";
+            error() = "Conditions must be an array";
             return false;
         }
         
@@ -92,11 +94,16 @@ namespace sf1r {
             {
                 ConditionParser conditionParser;
                 conditionParser.parse((*cond_array)[i]);
-
                 QueryFiltering::FilteringType filterLeafNode;
-                ///filterLeafNode.operation_ = conditionParser.op(); // TODO
-                filterLeafNode.property_ = conditionParser.property();
-                ///filterLeafNode.values_ = conditionParser.array(); // TODO
+
+
+                if (!do_paser(conditionParser, indexSchema_, filterLeafNode))
+                {
+                    error() = "Property's data type is unknown: " +
+                                        conditionParser.property();
+                    return false;
+                }
+                
                 pnode->conditionLeafList_.push_back(filterLeafNode);
             }
         }

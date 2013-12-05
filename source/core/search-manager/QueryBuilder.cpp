@@ -65,6 +65,7 @@ bool QueryBuilder::do_process_filtertree(
     boost::shared_ptr<ConditionsNode>& conditionsTree_,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
+    LOG(INFO) << "--" << std::endl;
     if (conditionsTree_->conditionLeafList_.size() == 1 
             && conditionsTree_->pConditionsNodeList_.size() == 0)
     {
@@ -110,34 +111,31 @@ bool QueryBuilder::do_process_filtertree(
             return false;
     }
 
+    const unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
+    const unsigned int wordBitNum = sizeof(InvertedIndexManager::FilterWordT) << 3;
+    const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+
+    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);//1
+    
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest;//(new InvertedIndexManager::FilterBitmapT);
     if (relation == "and")
     {
-        for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
+        pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
+        for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
         {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
             pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
-            pFilterBitmap = dest;
-        }
-        for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
-        {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
-            pFilterBitmap = dest;
+            (*pFilterBitmap).swap(*dest);
         }
     }
     else if (relation == "or")
     {
-        for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
+        pFilterBitmap->addStreamOfEmptyWords(false, wordsNum);
+        for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
         {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
             pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
-            pFilterBitmap = dest;
-        }
-        for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
-        {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
-            pFilterBitmap = dest;
+            (*pFilterBitmap).swap(*dest);
         }
     }
     return true;

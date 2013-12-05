@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <query-manager/QueryTypeDef.h>
+#include <glog/logging.h>
 
 #define MAXSIZE 5
 
@@ -51,7 +52,10 @@ struct ConditionsNode
             relation_ = "or";
         }
         else
+        {
+            LOG(ERROR) << "THE Relation must be \"AND\" or \"and\" or  \"OR\" or \"or\" ..."<< std::endl;
             return false;
+        }
 
         return true;
     }
@@ -60,6 +64,7 @@ struct ConditionsNode
     {
         if (conditionLeafList_.size() == 0 && pConditionsNodeList_.size() == 0)
             return true;
+        return false;
     }
 
     bool getFilteringListSuffix(std::vector<QueryFiltering::FilteringType>& filteringRules)
@@ -73,6 +78,13 @@ struct ConditionsNode
             filteringRules.push_back(*i);   
         }
         return true;
+    }
+
+    void printConditionInfo()
+    {
+        LOG(INFO) << ": relation:" << relation_;
+        std::cout << "LeafCondition number: " << conditionLeafList_.size() << std::endl;
+        std::cout << "NodeCondition number: " << pConditionsNodeList_.size() << std::endl;
     }
 };
 

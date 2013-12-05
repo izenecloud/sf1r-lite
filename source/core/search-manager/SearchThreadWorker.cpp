@@ -112,8 +112,10 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     LOG(INFO) << "search in thread worker begin prepare doc iterator -------- " << time(NULL);
     try
     {
-        //if (!filtingTreeList.empty()) // TODO
+        if (!filtingTreeList->empty())
+        {
             queryBuilder_.prepare_filter(filtingTreeList, pFilterIdSet);
+        }
         if (isFilterQuery == false)
         {
             pMultiPropertyIterator = queryBuilder_.prepare_dociterator(

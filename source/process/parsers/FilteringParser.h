@@ -5,6 +5,8 @@
  * @author Ian Yang
  * @date Created <2010-06-11 17:22:42>
  */
+
+#include "FilteringParserHelper.h"
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
@@ -40,9 +42,9 @@ public:
         return filterConditionTree_;
     }
 
-    static QueryFiltering::FilteringOperation toFilteringOperation(
-        const std::string& op
-    );
+    // static QueryFiltering::FilteringOperation toFilteringOperation(
+    //     const std::string& op
+    // );
     
 private:
     const IndexBundleSchema& indexSchema_;

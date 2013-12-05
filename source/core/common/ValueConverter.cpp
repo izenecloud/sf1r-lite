@@ -10,10 +10,12 @@
 #include <boost/mpl/contains.hpp>
 
 namespace sf1r {
+using namespace izenelib;
+using namespace izenelib::driver;
 
 void ValueConverter::driverValue2PropertyValue(
     sf1r::PropertyDataType dataType,
-    const driver::Value& driverValue,
+    const izenelib::driver::Value& driverValue,
     PropertyValue& propertyValue
 )
 {
