@@ -15,13 +15,17 @@ NS_SF1R_B5M_BEGIN
 class ScdDocProcessor {
 public:
     typedef boost::function<void (ScdDocument&) > ProcessorType;
-    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0)
+    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), self_writer_(false), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0)
     {
     }
 
     void AddInput(const std::string& scd_path)
     {
         input_.push_back(scd_path);
+    }
+    void AddInput(const std::vector<std::string>& scds)
+    {
+        input_.insert(input_.end(), scds.begin(), scds.end());
     }
     void SetOutput(const boost::shared_ptr<ScdTypeWriter>& writer)
     {
@@ -31,6 +35,7 @@ public:
     void SetOutput(const std::string& output_path)
     {
         writer_.reset(new ScdTypeWriter(output_path));
+        self_writer_ = true;
         //output_ = output_path;
     }
 
@@ -84,7 +89,7 @@ public:
     void FinishDocs()
     {
         pool_.wait();
-        if(writer_)
+        if(writer_&&self_writer_)
         {
             writer_->Close();
         }
@@ -109,6 +114,7 @@ private:
     ProcessorType p_;
     std::vector<std::string> input_;
     boost::shared_ptr<ScdTypeWriter> writer_;
+    bool self_writer_;
     int thread_num_;
     //boost::threadpool::thread_pool<> pool_;
     B5mThreadPool<ScdDocument> pool_;
