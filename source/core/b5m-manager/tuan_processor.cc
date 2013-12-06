@@ -2,6 +2,7 @@
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include "product_db.h"
+#include "tuan_clustering.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -29,20 +30,24 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
     if(scd_list.empty()) return false;
     typedef boost::unordered_map<std::string, std::string> MatchResult;
     MatchResult match_result;
+    bool use_clustering = true;
 
 
     {
         ProductTermAnalyzer analyzer(cma_path_);
         std::string work_dir = mdb_instance+"/work_dir";
+        B5MHelper::PrepareEmptyDir(work_dir);
 
-        boost::filesystem::create_directories(work_dir);
         std::string dd_container = work_dir +"/dd_container";
         std::string group_table_file = work_dir +"/group_table";
         GroupTableType group_table(group_table_file);
         group_table.Load();
 
         DDType dd(dd_container, &group_table);
-        //dd.SetFixK(12);
+        if(use_clustering)
+        {
+            dd.SetFixK(12);
+        }
         if(!dd.Open())
         {
             std::cout<<"DD open failed"<<std::endl;
@@ -138,6 +143,8 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
     const std::string& b5mo_path = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(b5mo_path);
     ScdWriter writer(b5mo_path, UPDATE_SCD);
+    typedef boost::unordered_map<std::string, std::vector<Document> > SimhashGroups;
+    SimhashGroups simhash_groups;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -175,12 +182,34 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
             else
             {
                 spid = it->second;
+                if(use_clustering)
+                {
+                    simhash_groups[spid].push_back(doc);
+                }
             }
             doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
             writer.Append(doc);
         }
     }
     writer.Close();
+    if(use_clustering)
+    {
+        idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","","");
+        idmlib::util::IDMAnalyzer* analyzer = new idmlib::util::IDMAnalyzer(aconfig);
+        for(SimhashGroups::const_iterator it=simhash_groups.begin();it!=simhash_groups.end();++it)
+        {
+            const std::vector<Document>& docs = it->second;
+            if(docs.size()<10) continue;
+            std::cerr<<"clustering start, size "<<docs.size()<<std::endl;
+            TuanClustering clustering(analyzer);
+            for(std::size_t i=0;i<docs.size();i++)
+            {
+                clustering.InsertDoc(docs[i]);
+            }
+            clustering.Build();
+        }
+        delete analyzer;
+    }
     PairwiseScdMerger merger(b5mo_path);
     std::size_t odoc_count = ScdParser::getScdDocCount(b5mo_path);
     LOG(INFO)<<"tuan o doc count "<<odoc_count<<std::endl;
