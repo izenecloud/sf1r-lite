@@ -9,7 +9,7 @@
  */
 
 #include "ActionItem.h"
-
+#include <glog/logging.h>
 namespace sf1r {
 
 struct QueryIdentity
@@ -89,6 +89,7 @@ struct QueryIdentity
 
     inline bool operator==(const QueryIdentity& other) const
     {
+        LOG (INFO) << conditonEqual(filterTree_, other.filterTree_) ;
         return rankingType == other.rankingType
             && searchingMode == other.searchingMode
             && simHash == other.simHash
@@ -98,7 +99,7 @@ struct QueryIdentity
             && properties == other.properties
             && counterList == other.counterList
             && sortInfo == other.sortInfo
-            && filterTree_ == other.filterTree_
+            && conditonEqual(filterTree_, other.filterTree_)
             && groupParam == other.groupParam
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
@@ -119,7 +120,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo &filterTree_ & groupParam & removeDuplicatedDocs 
+            & properties & counterList & sortInfo & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType & isRandomRank & isSynonym & isAnalyzeResult & querySource);
 };

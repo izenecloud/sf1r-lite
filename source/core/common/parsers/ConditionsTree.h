@@ -86,7 +86,36 @@ struct ConditionsNode
         std::cout << "LeafCondition number: " << conditionLeafList_.size() << std::endl;
         std::cout << "NodeCondition number: " << pConditionsNodeList_.size() << std::endl;
     }
+
+    // bool equal(const boost::shared_ptr<ConditionsNode>& conditionNode,
+    //             std::string& relation,
+    //             std::vector<QueryFiltering::FilteringType>& conditionLeafList,
+    //             std::vector<boost::shared_ptr<ConditionsNode> >& pConditionsNodeList)
+    // {
+    //     if (relation != conditionNode->relation_
+    //         || conditionLeafList != conditionNode->conditionLeafList_
+    //         || pConditionsNodeList.size() != conditionNode->pConditionsNodeList_.size())
+    //         return false;
+
+    //     std::vector<boost::shared_ptr<ConditionsNode> >::iterator iter = conditionNode->pConditionsNodeList_.begin();
+    //     std::vector<boost::shared_ptr<ConditionsNode> >::iterator iterEnd = conditionNode->pConditionsNodeList_.end();
+    //     for (; iter != iterEnd; ++iter)
+    //     {
+    //         if (! this->equal(*iter, ))
+    //         {
+    //             LOG(INFO) << "false...." << std::endl;
+    //             return false;
+    //         }
+    //     }
+
+    //     return true;
+    // }
+
 };
+
+bool conditonEqual(const boost::shared_ptr<ConditionsNode>& conditionNode1,
+    const boost::shared_ptr<ConditionsNode>& conditionNode2);
+
 
 /*
 class ConditionsNode

@@ -127,10 +127,22 @@ bool QueryBuilder::do_process_filtertree(
             pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
             (*pFilterBitmap).swap(*dest);
         }
+        for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
+        {
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*(filterBitmapTList2[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
+        }
     }
     else if (relation == "or")
     {
         pFilterBitmap->addStreamOfEmptyWords(false, wordsNum);
+        for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
+        {
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*(filterBitmapTList1[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
+        }
         for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
         {
             dest.reset(new InvertedIndexManager::FilterBitmapT);

@@ -1,74 +1,34 @@
 #include "ConditionsTree.h" 
 
 namespace sf1r {
-/*
-bool ConditionsNode::setRelation(const std::string relation)
+
+bool conditonEqual(const boost::shared_ptr<ConditionsNode>& conditionNode1,
+    const boost::shared_ptr<ConditionsNode>& conditionNode2)
 {
-    if (relation == "AND" || relation == "and")
+    if (conditionNode1 == NULL || conditionNode2 == NULL)
     {
-        relation_ = "and";
+        return true;
     }
-    else if (relation == "OR" || relation == "or")
+
+    if (conditionNode1->relation_ != conditionNode2->relation_
+            || conditionNode1->conditionLeafList_ != conditionNode2->conditionLeafList_
+            || conditionNode1->pConditionsNodeList_.size() != conditionNode2->pConditionsNodeList_.size())
+            return false;
+
+    std::vector<boost::shared_ptr<ConditionsNode> >::iterator iter1 = conditionNode1->pConditionsNodeList_.begin();
+    std::vector<boost::shared_ptr<ConditionsNode> >::iterator iterEnd1 = conditionNode1->pConditionsNodeList_.end();
+
+    std::vector<boost::shared_ptr<ConditionsNode> >::iterator iter2 = conditionNode2->pConditionsNodeList_.begin();
+    std::vector<boost::shared_ptr<ConditionsNode> >::iterator iterEnd2 = conditionNode2->pConditionsNodeList_.end();
+
+    for (; iter1 != iterEnd1 && iter2 != iterEnd2; ++iter1, ++iter2)
     {
-        relation_ = "or";
+        if (! conditonEqual(*iter1, *iter2))
+        {
+            return false;
+        }
     }
-    else
-        return false;
 
     return true;
 }
-
-std::string ConditionsNode::getRelation()
-{
-    return relation_;
-}
-void ConditionsNode::addConditionLeaf(const ConditionParser& condParser)
-{
-    conditionLeafList_.push_back(condParser);
-}
-
-void ConditionsNode::addConditionNode(const boost::shared_ptr<ConditionsNode> pCondNode)
-{
-    pConditionNodeList_.push_back(pCondNode);
-}
-
-// ConditionTree 
-ConditionsTree::ConditionsTree()
-{
-    isempty_ = true;
-}
-
-void ConditionsTree::init(boost::shared_ptr<ConditionsNode> proot)
-{
-    root_ = proot;
-    isempty_ = false;
-}
-
-void ConditionsTree::setRoot(boost::shared_ptr<ConditionsNode> proot)
-{
-    root_ = proot;
-    isempty_ = false;
-}
-
-boost::shared_ptr<ConditionsNode>& ConditionsTree::getRoot()
-{
-    return root_;
-}
-
-void ConditionsTree::addConditionLeaf(boost::shared_ptr<ConditionsNode>& pCurrentCondNode
-        , const ConditionParser& condParser)
-{
-    pCurrentCondNode->addConditionLeaf(condParser);
-}
-
-void ConditionsTree::addConditionNode(boost::shared_ptr<ConditionsNode>& pCurrentCondNode
-        , boost::shared_ptr<ConditionsNode> pCondNode)
-{
-    pCurrentCondNode->addConditionNode(pCondNode);
-}
-
-void ConditionsTree::printConditionsTree(boost::shared_ptr<ConditionsNode> pNode)
-{
-}
-*/
 }

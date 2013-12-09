@@ -382,7 +382,7 @@ public:
             && removeDuplicatedDocs_ == obj.removeDuplicatedDocs_
             && displayPropertyList_ == obj.displayPropertyList_
             && sortPriorityList_    == obj.sortPriorityList_
-            && filterTree_ == obj.filterTree_
+            && conditonEqual(filterTree_, obj.filterTree_)//filterTree_ == obj.filterTree_
             && rangePropertyName_ == obj.rangePropertyName_
             && groupParam_ == obj.groupParam_
             && strExp_ == obj.strExp_
