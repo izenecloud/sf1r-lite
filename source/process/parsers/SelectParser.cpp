@@ -94,7 +94,7 @@ bool SelectParser::parse(const Value& select)
         // use default properties
         std::vector<std::string> defaultSelectProperties;
 
-        if (searchingMode_ == SearchingMode::DefaultSearchingMode)
+        if (searchingMode_ == SearchingMode::DefaultSearchingMode || searchingMode_ == SearchingMode::NotUseSearchingMode)
         {
             std::set<std::string> setProperty;
             getDefaultZambeziSelectPropertyNames(zambeziConfig_, defaultSelectProperties);
@@ -231,11 +231,19 @@ bool SelectParser::parse(const Value& select)
                 return false;
             }   
         }
-        else
+        else if (searchingMode_ != SearchingMode::NotUseSearchingMode)
         {
             if (!getPropertyConfig(indexSchema_, propertyConfig))
             {
                 error() = "Unknown property in select: " + propertyConfig.getName() + " , not in Schema Config";
+                return false;
+            }
+        }
+        else
+        {
+            if (!getPropertyConfig(zambeziConfig_, propertyConfig) && !getPropertyConfig(indexSchema_, propertyConfig))
+            {
+                error() = "Unknown property in select: " + propertyConfig.getName() + " , not in Config";
                 return false;
             }
         }

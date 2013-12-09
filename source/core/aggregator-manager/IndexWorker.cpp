@@ -1337,7 +1337,6 @@ bool IndexWorker::insertOrUpdateSCD_(
 
     if(!documentManager_)
     {
-        LOG(INFO) << "---------========================";
         return false;
     }
     uint32_t n = 0;
@@ -2134,9 +2133,10 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
             continue;
 
         tempPropertyConfig.propertyName_ = fieldName;
-        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+        bool isIndexSchema = false;
+        IndexBundleSchema::iterator iter = bundleConfig_->findIndexProperty(tempPropertyConfig, isIndexSchema);
 
-        if (iter == bundleConfig_->indexSchema_.end())
+        if (!isIndexSchema)
             continue;
 
         if (iter->isRTypeString())
