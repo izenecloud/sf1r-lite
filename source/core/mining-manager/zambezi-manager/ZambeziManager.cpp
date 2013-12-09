@@ -125,7 +125,11 @@ void ZambeziManager::NormalizeScore(
     }
 
     for (unsigned int i = 0; i < scores.size(); ++i)
-        scores[i] = int((scores[i]/maxScore*100. + productScores[i])/10+0.5)*10;
+    {
+        double re = exp(scores[i]/100.);
+        re = 1. - 1./re;
+        scores[i] = int((re*100. + productScores[i])/10+0.5)*10;
+    }
 }
 
 }

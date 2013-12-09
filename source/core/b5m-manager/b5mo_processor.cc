@@ -147,7 +147,11 @@ void B5moProcessor::Process(ScdDocument& doc)
         //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
-        if(spid.empty()) type=NOT_SCD;
+        if(spid.empty())
+        {
+            type=NOT_SCD;
+            LOG(INFO)<<"DELETE pid empty : "<<sdocid<<std::endl;
+        }
         else
         {
             doc.property("uuid") = str_to_propstr(spid);
@@ -680,11 +684,46 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
         //odb_->flush();
     //}
 
-    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-    ScdDocProcessor sd_processor(p, thread_num);
-    sd_processor.AddInput(scd_path);
-    sd_processor.SetOutput(writer);
-    sd_processor.Process();
+    std::vector<std::string> r_scd_list;
+    std::vector<std::string> u_scd_list;
+    std::vector<std::string> d_scd_list;
+    std::vector<std::string> scd_list;
+    ScdParser::getScdList(scd_path, scd_list);
+    for(std::size_t i=0;i<scd_list.size();i++)
+    {
+        const std::string& scd = scd_list[i];
+        SCD_TYPE type = ScdParser::checkSCDType(scd);
+        if(type==RTYPE_SCD)
+        {
+            r_scd_list.push_back(scd);
+        }
+        else if(type==DELETE_SCD)
+        {
+            d_scd_list.push_back(scd);
+        }
+        else
+        {
+            u_scd_list.push_back(scd);
+        }
+    }
+    if(!r_scd_list.empty()||!d_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, 1);
+        sd_processor.AddInput(r_scd_list);
+        sd_processor.AddInput(d_scd_list);
+        sd_processor.SetOutput(writer);
+        sd_processor.Process();
+    }
+    if(!u_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, thread_num);
+        sd_processor.AddInput(u_scd_list);
+        sd_processor.SetOutput(writer);
+        sd_processor.Process();
+    }
+    writer->Close();
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();
