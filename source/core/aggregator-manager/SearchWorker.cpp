@@ -336,7 +336,10 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
-        //identity.filteringTreeList_ = item.filteringTreeList_; // todo
+        if (item.filterTree_)
+        {
+            identity.filterTree_ = item.filterTree_;
+        }
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
@@ -361,7 +364,10 @@ void SearchWorker::makeQueryIdentity(
         identity.properties = item.searchPropertyList_;
         identity.counterList = item.counterList_;
         identity.sortInfo = item.sortPriorityList_;
-        //identity.filteringTreeList_ = item.filteringTreeList_; todo
+        if (item.filterTree_)
+        {
+            identity.filterTree_ = item.filterTree_;
+        }
         identity.groupParam = item.groupParam_;
         identity.removeDuplicatedDocs = item.removeDuplicatedDocs_;
         identity.rangeProperty = item.rangePropertyName_;
@@ -480,10 +486,10 @@ bool SearchWorker::getSearchResult_(
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
-    if (actionOperation.actionItem_.filterTree_)
-    {
-        actionOperation.actionItem_.filterTree_->printConditionInfo();
-    }
+    // if (actionOperation.actionItem_.filterTree_)
+    // {
+    //     actionOperation.actionItem_.filterTree_->printConditionInfo();
+    // }
 
     std::vector<QueryFiltering::FilteringType> filteringRules;
     if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)

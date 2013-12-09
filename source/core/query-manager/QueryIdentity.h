@@ -89,7 +89,6 @@ struct QueryIdentity
 
     inline bool operator==(const QueryIdentity& other) const
     {
-        LOG (INFO) << conditonEqual(filterTree_, other.filterTree_) ;
         return rankingType == other.rankingType
             && searchingMode == other.searchingMode
             && simHash == other.simHash

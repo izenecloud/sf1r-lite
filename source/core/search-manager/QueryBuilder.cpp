@@ -65,7 +65,6 @@ bool QueryBuilder::do_process_filtertree(
     boost::shared_ptr<ConditionsNode>& conditionsTree_,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
-    LOG(INFO) << "--" << std::endl;
     if (conditionsTree_->conditionLeafList_.size() == 1 
             && conditionsTree_->pConditionsNodeList_.size() == 0)
     {
