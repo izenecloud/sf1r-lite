@@ -116,7 +116,7 @@ bool QueryBuilder::do_process_filtertree(
 
     pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);//1
     
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest;//(new InvertedIndexManager::FilterBitmapT);
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest;
     if (relation == "and")
     {
         pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
