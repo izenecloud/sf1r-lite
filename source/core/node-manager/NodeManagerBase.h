@@ -38,6 +38,8 @@ public:
     typedef boost::function<bool()> CanFailCBFuncT;
     typedef boost::function<bool(bool)> CanFailCBFuncT2;
     typedef boost::function<bool(int, const std::string&)> NewReqCBFuncT;
+    typedef boost::function<bool(const std::string&)> AliveCheckCBFuncT;
+
     enum NodeStateType
     {
         NODE_STATE_INIT,
@@ -164,6 +166,11 @@ public:
         cb_on_resume_sync_ = on_resume_sync;
     }
 
+    void setServerCheckCallback(AliveCheckCBFuncT alive_checker)
+    {
+        cb_alive_checker_ = alive_checker;
+    }
+
     inline bool isDistributed() const
     {
         return isDistributionEnabled_;
@@ -180,6 +187,8 @@ public:
     uint32_t getLastWriteReqId();
     bool checkElectingInAsyncMode(uint32_t newest_logid);
     bool isPrimaryReadyForCheckLog();
+    bool setWrittingNodeData();
+    void clearWrittingNodeData();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -255,6 +264,7 @@ protected:
     bool canAbortRequest();
     void stop();
     void setElectingState();
+    bool handlePrimaryTmpLostWhileWritting();
 
 protected:
     bool isDistributionEnabled_;
@@ -279,6 +289,7 @@ protected:
     std::string primaryBasePath_;
     std::string primaryNodeParentPath_;
     std::string primaryNodePath_;
+    std::string writting_flag_node_;
 
     boost::mutex mutex_;
     boost::condition_variable stop_cond_;
@@ -301,6 +312,8 @@ protected:
 
     NoFailCBFuncT cb_on_pause_sync_;
     NoFailCBFuncT cb_on_resume_sync_;
+
+    AliveCheckCBFuncT cb_alive_checker_;
 
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;
     //ElectingNodeMapT electing_secondaries_;

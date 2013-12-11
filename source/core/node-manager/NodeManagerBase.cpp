@@ -48,6 +48,7 @@ void NodeManagerBase::setZNodePaths()
     primaryNodeParentPath_ = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
     LOG(INFO) << " primary parent path is :" << primaryNodeParentPath_;
     primaryNodePath_ = ZooKeeperNamespace::getPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
+    writting_flag_node_ = primaryNodeParentPath_ + "/writting_flag_node";
 }
 
 
@@ -933,11 +934,67 @@ void NodeManagerBase::enterCluster(bool start_master)
     enterClusterAfterRecovery(start_master);
 }
 
+bool NodeManagerBase::handlePrimaryTmpLostWhileWritting()
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+
+    if (s_enable_async_)
+    {
+        return false;
+    }
+
+    if (!zookeeper_->isZNodeExists(writting_flag_node_, ZooKeeper::NOT_WATCH))
+        return false;
+    std::string data;
+    if(!zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::NOT_WATCH))
+    {
+        LOG(INFO) << "get node data failed :" << writting_flag_node_;
+        return false;
+    }
+    ZNode node;
+    node.loadKvString(data);
+    std::string ip = node.getStrValue(ZNode::KEY_HOST);
+    LOG(INFO) << "checking alive for writting flag node with ip: " << ip;
+    if (!cb_alive_checker_(ip))
+    {
+        LOG(WARNING) << "the writting node is not alive, the node is really dead.";
+        zookeeper_->deleteZNode(writting_flag_node_);
+        return false;
+    }
+
+    LOG(WARNING) << "this node is still alive, maybe temporally unavailable. just wait. my state: " << nodeState_;
+    if (nodeState_ != NODE_STATE_STARTED &&
+        nodeState_ != NODE_STATE_ELECTING &&
+        nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+    {
+        LOG(INFO) << "no need to handle tmp lost.";
+        return false;
+    }
+
+    // primary is tmp lost .
+    LOG(INFO) << "unregister myself primary to wait the tmp lost primary : " << self_primary_path_;
+    if (!self_primary_path_.empty())
+        unregisterPrimary();
+
+    if (nodeState_ == NODE_STATE_STARTED)
+        nodeState_ = NODE_STATE_ELECTING;
+
+    setElectingState();
+    updateNodeState();
+
+    sleep(10);
+    return true;
+}
+
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
     if (nodeState_ == NODE_STATE_RECOVER_FINISHING)
         return;
     stopping_ = false;
+
+    if(handlePrimaryTmpLostWhileWritting())
+        return;
 
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
@@ -1180,6 +1237,37 @@ NodeManagerBase::NodeStateType NodeManagerBase::getPrimaryState()
     NodeStateType state = getNodeState(curr_primary_path_);
     LOG(INFO) << "primary state is : " << state;
     return state;
+}
+
+bool NodeManagerBase::setWrittingNodeData()
+{
+    if (s_enable_async_)
+        return true;
+    std::string ip = SuperNodeManager::get()->getLocalHostIP();
+    ZNode znode;
+    znode.setValue(ZNode::KEY_HOST, ip);
+    if (zookeeper_ && !zookeeper_->createZNode(writting_flag_node_, znode.serialize()))
+    {
+        std::string data;
+        znode.clear();
+        zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::NOT_WATCH);
+        znode.loadKvString(data);
+        if (znode.getStrValue(ZNode::KEY_HOST) == ip)
+            return true;
+        LOG (ERROR) << "Failed to set writting node data : " << zookeeper_->getErrorString();
+        return false;
+    }
+    return true;
+}
+
+void NodeManagerBase::clearWrittingNodeData()
+{
+    if (s_enable_async_)
+        return;
+    if (zookeeper_)
+    {
+        zookeeper_->deleteZNode(writting_flag_node_);
+    }
 }
 
 void NodeManagerBase::beginReqProcess()
@@ -1606,6 +1694,9 @@ void NodeManagerBase::checkForPrimaryElecting()
 
     if (!isNeedReEnterCluster())
     {
+        if (handlePrimaryTmpLostWhileWritting())
+            return;
+
         updateCurrentPrimary();
         need_check_electing_ = false;
         if (isPrimaryWithoutLock())
