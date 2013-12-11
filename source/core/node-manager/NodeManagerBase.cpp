@@ -944,10 +944,10 @@ bool NodeManagerBase::handlePrimaryTmpLostWhileWritting()
         return false;
     }
 
-    if (!zookeeper_->isZNodeExists(writting_flag_node_, ZooKeeper::NOT_WATCH))
+    if (!zookeeper_->isZNodeExists(writting_flag_node_, ZooKeeper::WATCH))
         return false;
     std::string data;
-    if(!zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::NOT_WATCH))
+    if(!zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::WATCH))
     {
         LOG(INFO) << "get node data failed :" << writting_flag_node_;
         return false;
@@ -956,6 +956,17 @@ bool NodeManagerBase::handlePrimaryTmpLostWhileWritting()
     node.loadKvString(data);
     std::string ip = node.getStrValue(ZNode::KEY_HOST);
     LOG(INFO) << "checking alive for writting flag node with ip: " << ip;
+    if (ip == SuperNodeManager::get()->getLocalHostIP())
+    {
+        // myself.
+        if (nodeState_ != NODE_STATE_PROCESSING_REQ_RUNNING ||
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
+        {
+            LOG(INFO) << "delete the left writting_flag_node_ : " << nodeState_;
+            zookeeper_->deleteZNode(writting_flag_node_);
+        }
+        return false;
+    }
     if (!cb_alive_checker_(ip))
     {
         LOG(WARNING) << "the writting node is not alive, the node is really dead.";
@@ -984,6 +995,7 @@ bool NodeManagerBase::handlePrimaryTmpLostWhileWritting()
     updateNodeState();
 
     sleep(10);
+    zookeeper_->setZNodeData(writting_flag_node_, data);
     return true;
 }
 
@@ -1250,7 +1262,7 @@ bool NodeManagerBase::setWrittingNodeData()
     {
         std::string data;
         znode.clear();
-        zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::NOT_WATCH);
+        zookeeper_->getZNodeData(writting_flag_node_, data, ZooKeeper::WATCH);
         znode.loadKvString(data);
         if (znode.getStrValue(ZNode::KEY_HOST) == ip)
             return true;
@@ -1266,6 +1278,7 @@ void NodeManagerBase::clearWrittingNodeData()
         return;
     if (zookeeper_)
     {
+        LOG(INFO) << "clearing the writting flag node.";
         zookeeper_->deleteZNode(writting_flag_node_);
     }
 }
@@ -1432,6 +1445,10 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
         LOG(WARNING) << "secondary node was deleted : " << path;
         LOG(INFO) << "recheck node for electing or request process on " << self_primary_path_;
         checkSecondaryState(false);        
+    }
+    else if (need_check_electing_)
+    {
+        checkForPrimaryElecting();
     }
 }
 
@@ -1689,14 +1706,13 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
+    if (handlePrimaryTmpLostWhileWritting())
+        return;
 
     need_check_recover_ =  true;
 
     if (!isNeedReEnterCluster())
     {
-        if (handlePrimaryTmpLostWhileWritting())
-            return;
-
         updateCurrentPrimary();
         need_check_electing_ = false;
         if (isPrimaryWithoutLock())
