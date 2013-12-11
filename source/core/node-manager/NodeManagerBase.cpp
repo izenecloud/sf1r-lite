@@ -48,7 +48,7 @@ void NodeManagerBase::setZNodePaths()
     primaryNodeParentPath_ = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
     LOG(INFO) << " primary parent path is :" << primaryNodeParentPath_;
     primaryNodePath_ = ZooKeeperNamespace::getPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
-    writting_flag_node_ = primaryNodeParentPath_ + "/writting_flag_node";
+    writting_flag_node_ = primaryNodeParentPath_ + "_writting_flag_node";
 }
 
 
