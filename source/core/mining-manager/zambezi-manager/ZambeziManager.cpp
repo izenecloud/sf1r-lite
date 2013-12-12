@@ -5,6 +5,7 @@
 #include "../group-manager/GroupManager.h"
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
+#include "util/fmath/fmath.hpp"
 
 #include <configuration-manager/ZambeziConfig.h>
 #include <fstream>
@@ -126,9 +127,9 @@ void ZambeziManager::NormalizeScore(
 
     for (unsigned int i = 0; i < scores.size(); ++i)
     {
-        double re = exp(scores[i]/100.);
-        re = 1. - 1./re;
-        scores[i] = int((re*100. + productScores[i])/10+0.5)*10;
+        float x = fmath::exp((float)(scores[i]/60000.*-1));
+        x = (1-x)/(1+x);
+        scores[i] = int((x*100. + productScores[i])/10+0.5)*10;
     }
 }
 

@@ -10,8 +10,8 @@
 #include <common/PropertyValue.h>
 
 namespace sf1r {
-using namespace izenelib;
-using namespace izenelib::driver;
+// using namespace izenelib;
+// using namespace izenelib::driver;
 
 class ValueConverter
 {
@@ -20,7 +20,7 @@ public:
     /// dataType.
     static void driverValue2PropertyValue(
         sf1r::PropertyDataType dataType,
-        const driver::Value& driverValue,
+        const izenelib::driver::Value& driverValue,
         PropertyValue& propertyValue
     );
 

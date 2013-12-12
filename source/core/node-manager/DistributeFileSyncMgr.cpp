@@ -450,6 +450,8 @@ void DistributeFileSyncMgr::init()
             SuperNodeManager::get()->getFileSyncRpcPort(), 4));
     transfer_rpcserver_->start();
     loadCachedCheckSum();
+    NodeManagerBase::get()->setServerCheckCallback(boost::bind(&RpcServerConnection::testServer, conn_mgr_,
+        _1, SuperNodeManager::get()->getFileSyncRpcPort()));
 }
 
 DistributeFileSyncMgr::~DistributeFileSyncMgr()

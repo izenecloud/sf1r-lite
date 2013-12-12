@@ -97,8 +97,12 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     std::auto_ptr<DocumentIterator> scoreDocIterPtr;
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
 
-    std::vector<QueryFiltering::FilteringType>& filtingList =
-        actionOperation.actionItem_.filteringList_;
+    //std::vector<QueryFiltering::FilteringTreeValue>& filtingTreeList =
+    //    actionOperation.actionItem_.filteringTreeList_;
+
+    boost::shared_ptr<ConditionsNode>& filtingTreeList = 
+                    actionOperation.actionItem_.filterTree_;
+
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet;
 
     // when query is "*"
@@ -108,9 +112,10 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     LOG(INFO) << "search in thread worker begin prepare doc iterator -------- " << time(NULL);
     try
     {
-        if (!filtingList.empty())
-            queryBuilder_.prepare_filter(filtingList, pFilterIdSet);
-
+        if (!filtingTreeList->empty())
+        {
+            queryBuilder_.prepare_filter(filtingTreeList, pFilterIdSet);
+        }
         if (isFilterQuery == false)
         {
             pMultiPropertyIterator = queryBuilder_.prepare_dociterator(
