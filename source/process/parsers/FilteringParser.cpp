@@ -44,7 +44,6 @@ bool FilteringParser::parse(const Value& conditions)
     }
     else if (conditions.type() == Value::kArrayType)
     {
-        std::cout << "---"<< std::endl;
         ConditionArrayParser conditionsParser;
         if (!conditionsParser.parse(conditions))
         {
