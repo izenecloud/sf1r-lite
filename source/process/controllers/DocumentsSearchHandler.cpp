@@ -972,7 +972,7 @@ void DocumentsSearchHandler::addAclFilters()
     // ACL_ALLOW
     if (hasAclAllow)
     {
-        /*QueryFiltering::FilteringType filter;
+        QueryFiltering::FilteringType filter;
         filter.operation_ = QueryFiltering::INCLUDE;
         filter.property_ = "ACL_ALLOW";
 
@@ -983,31 +983,12 @@ void DocumentsSearchHandler::addAclFilters()
         PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
-        QueryFiltering::FilteringTreeValue filteringTreeValue;
-        filteringTreeValue.fitleringType_ = filter;
-        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules;
-        QueryFiltering::FilteringTreeValue filteringTreeValue_root;
-        filteringTreeValue_root.isRelationNode_ = true;
-
-        if (actionItem_.filteringTreeList_.size() == 0)
-            filteringTreeValue_root.childNum_ = 1;
-        else
-            filteringTreeValue_root.childNum_ = 2;
-
-        filteringTreeValue_root.relation_ = "and";
-        filteringTreeRules.push_back(filteringTreeValue_root);
-        filteringTreeRules.push_back(filteringTreeValue);
-        for (unsigned int i = 0; i < actionItem_.filteringTreeList_.size(); ++i)
-        {
-            filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
-        }
-        actionItem_.filteringTreeList_.swap(filteringTreeRules);*/
+        izenelib::util::swapBack(actionItem_.filterTree_->conditionLeafList_, filter);
     }
 
     // ACL_DENY
     if (hasAclDeny)
     {
-        /*
         QueryFiltering::FilteringType filter;
         filter.operation_ = QueryFiltering::EXCLUDE;
         filter.property_ = "ACL_DENY";
@@ -1017,25 +998,7 @@ void DocumentsSearchHandler::addAclFilters()
             filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
         }
 
-        QueryFiltering::FilteringTreeValue filteringTreeValue;
-        filteringTreeValue.fitleringType_ = filter;
-        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules;
-        QueryFiltering::FilteringTreeValue filteringTreeValue_root;
-        filteringTreeValue_root.isRelationNode_ = true;
-
-        if (actionItem_.filteringTreeList_.size() == 0)
-            filteringTreeValue_root.childNum_ = 1;
-        else
-            filteringTreeValue_root.childNum_ = 2;
-
-        filteringTreeValue_root.relation_ = "and";
-        filteringTreeRules.push_back(filteringTreeValue_root);
-        filteringTreeRules.push_back(filteringTreeValue);
-        for (unsigned int i = 0; i < actionItem_.filteringTreeList_.size(); ++i)
-        {
-            filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
-        }
-        actionItem_.filteringTreeList_.swap(filteringTreeRules);*/
+        izenelib::util::swapBack(actionItem_.filterTree_->conditionLeafList_, filter);
     }
 }
 
