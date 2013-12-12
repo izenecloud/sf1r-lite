@@ -67,7 +67,7 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
             {
                 if(n%10000==0)
                 {
-                    LOG(INFO)<<"Find Documents "<<n<<std::endl;
+                    LOG(INFO)<<"Find Documents A "<<n<<std::endl;
                 }
                 SCDDoc& scddoc = *(*doc_iter);
                 SCDDoc::iterator p = scddoc.begin();
@@ -140,9 +140,6 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
     }
     LOG(INFO)<<"match result size "<<match_result.size()<<std::endl;
     //std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance);
-    const std::string& b5mo_path = b5mm_.b5mo_path;
-    B5MHelper::PrepareEmptyDir(b5mo_path);
-    ScdWriter writer(b5mo_path, UPDATE_SCD);
     typedef boost::unordered_map<std::string, std::vector<Document> > SimhashGroups;
     SimhashGroups simhash_groups;
 
@@ -159,7 +156,7 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
         {
             if(n%10000==0)
             {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
+                LOG(INFO)<<"Find Documents B "<<n<<std::endl;
             }
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
@@ -187,29 +184,79 @@ bool TuanProcessor::Generate(const std::string& mdb_instance)
                     simhash_groups[spid].push_back(doc);
                 }
             }
-            doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
-            writer.Append(doc);
         }
     }
-    writer.Close();
     if(use_clustering)
     {
         idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","","");
         idmlib::util::IDMAnalyzer* analyzer = new idmlib::util::IDMAnalyzer(aconfig);
+        std::size_t max_cluster_size = 0;
         for(SimhashGroups::const_iterator it=simhash_groups.begin();it!=simhash_groups.end();++it)
         {
             const std::vector<Document>& docs = it->second;
-            if(docs.size()<10) continue;
-            std::cerr<<"clustering start, size "<<docs.size()<<std::endl;
+            //if(docs.size()<50) continue;
+            //std::cerr<<"clustering start, size "<<docs.size()<<std::endl;
             TuanClustering clustering(analyzer);
             for(std::size_t i=0;i<docs.size();i++)
             {
                 clustering.InsertDoc(docs[i]);
             }
-            clustering.Build();
+            clustering.Build(match_result);
+            if(clustering.MaxClusterSize()>max_cluster_size)
+            {
+                max_cluster_size = clustering.MaxClusterSize();
+            }
         }
         delete analyzer;
+        LOG(INFO)<<"Max Cluster Size: "<<max_cluster_size<<std::endl;
     }
+
+    const std::string& b5mo_path = b5mm_.b5mo_path;
+    B5MHelper::PrepareEmptyDir(b5mo_path);
+    ScdWriter writer(b5mo_path, UPDATE_SCD);
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        //int scd_type = ScdParser::checkSCDType(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin();
+          doc_iter!= parser.end(); ++doc_iter, ++n)
+        {
+            if(n%10000==0)
+            {
+                LOG(INFO)<<"Find Documents C "<<n<<std::endl;
+            }
+            Document doc;
+            SCDDoc& scddoc = *(*doc_iter);
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
+            {
+                const std::string& property_name = p->first;
+                doc.property(property_name) = p->second;
+            }
+            Document::doc_prop_value_strtype oid;
+            std::string soid;
+            doc.getProperty("DOCID", oid);
+            soid = propstr_to_str(oid);
+            std::string spid;
+            MatchResult::const_iterator it = match_result.find(soid);
+            if(it==match_result.end())
+            {
+                spid = soid;
+            }
+            else
+            {
+                spid = it->second;
+            }
+            doc.property("uuid") = str_to_propstr(spid, UString::UTF_8);
+            writer.Append(doc);
+        }
+    }
+    writer.Close();
+
     PairwiseScdMerger merger(b5mo_path);
     std::size_t odoc_count = ScdParser::getScdDocCount(b5mo_path);
     LOG(INFO)<<"tuan o doc count "<<odoc_count<<std::endl;
