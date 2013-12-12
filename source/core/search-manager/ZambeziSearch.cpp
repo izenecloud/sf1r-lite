@@ -119,8 +119,10 @@ bool ZambeziSearch::search(
     const std::vector<std::string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
     const std::string& query = actionOperation.actionItem_.env_.queryString_;
 
-    LOG(INFO) << "zambezi search for query: " << query;
+    izenelib::ir::Zambezi::Algorithm algorithm;
+    getZambeziAlgorithm(actionOperation.actionItem_.searchingMode_.algorithm_, algorithm);
 
+    LOG(INFO) << "zambezi search for query: " << query;
     if (query.empty())
         return false;
 
@@ -169,15 +171,16 @@ bool ZambeziSearch::search(
     else
         zambeziManager_->getTokenizer()->getTokenResults(query, tokenList);
     
-    zambeziManager_->search(tokenList, kZambeziTopKNum, search_in_properties,
-                            candidates, scores);
+    zambeziManager_->search(algorithm, tokenList, kZambeziTopKNum,
+                            search_in_properties, candidates, scores);
 
     if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
         AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
-        zambeziManager_->search(subTokenList, kZambeziTopKNum, search_in_properties,
-                                    candidates, scores);
+
+        zambeziManager_->search(algorithm, subTokenList, kZambeziTopKNum, 
+                                search_in_properties, candidates, scores);
     }
 
     if (candidates.empty())
@@ -509,6 +512,38 @@ void ZambeziSearch::normalizeScore_(
     {
         scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
     }
+}
+
+bool ZambeziSearch::getZambeziAlgorithm(
+     const int &algorithm,
+     izenelib::ir::Zambezi::Algorithm& Algorithm)
+{
+    if (algorithm == 0)
+    {
+        Algorithm = izenelib::ir::Zambezi::SVS;
+        return true;
+    }
+    else if (algorithm == 1)
+    {
+        Algorithm = izenelib::ir::Zambezi::WAND;
+        return true;
+    }
+    else if (algorithm == 2)
+    {
+        Algorithm = izenelib::ir::Zambezi::MBWAND;
+        return true;
+    }
+    else if (algorithm == 3)
+    {
+        Algorithm = izenelib::ir::Zambezi::BWAND_OR;
+        return true;
+    }
+    else if (algorithm == 4)
+    {
+        Algorithm = izenelib::ir::Zambezi::BWAND_AND;
+        return true;
+    }
+    return false;
 }
 
 }

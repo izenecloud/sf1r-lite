@@ -324,6 +324,39 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "zambezi")
         {
             searchingModeInfo_.mode_ = SearchingMode::ZAMBEZI;
+
+            // add Zambezi Algorithm
+
+            if (searching_mode.hasKey(Keys::algorithm) )
+            {
+                Value::StringType algorithm = asString(searching_mode[Keys::algorithm]);
+                boost::to_lower(algorithm);
+                if (algorithm == "svs")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::SVS;
+                }
+                else if (algorithm == "wand")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::WAND;
+                }
+                else if (algorithm == "bwand_and")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::BWAND_AND;
+                }
+                else if (algorithm == "bwand_or")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::BWAND_OR;
+                }
+                else if (algorithm == "mbwand")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::MBWAND;
+                }
+                else
+                {
+                    error() = "The Zambezi search algorithm:" + algorithm + " is wrong";
+                    return false;
+                }
+            }
         }
         else if (mode == "ad_index")
         {

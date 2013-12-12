@@ -34,7 +34,8 @@ SearchingModeInfo::SearchingModeInfo(void):
     useOriginalQuery_(true),
     usefuzzy_(false),
     filtermode_(SearchingMode::DefaultFilterMode),
-    useQueryPrune_(true)
+    useQueryPrune_(true),
+    algorithm_(0)
 {
 }
 

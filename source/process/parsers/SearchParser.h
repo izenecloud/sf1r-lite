@@ -7,7 +7,7 @@
  */
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
-
+#include <ir/Zambezi/Consts.hpp>
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
 #include <mining-manager/group-manager/GroupParam.h>

@@ -19,8 +19,6 @@
 
 namespace sf1r
 {
-const izenelib::ir::Zambezi::Algorithm kAlgorithm =
-    izenelib::ir::Zambezi::SVS;
     
 namespace faceted
 {
@@ -46,6 +44,7 @@ public:
     bool open();
 
     void search(
+        izenelib::ir::Zambezi::Algorithm algorithm,
         const std::vector<std::pair<std::string, int> >& tokens,
         uint32_t limit,
         const std::vector<std::string>& propertyList,

@@ -63,7 +63,7 @@ void ZambeziManager::createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex, unsign
     }
     else if (config_.indexType_ == ZambeziIndexType::PostionIndexType)
     {
-        zambeziIndex = new PositionalIndex(izenelib::ir::Zambezi::NON_POSITIONAL, poolSize, config_.poolCount, config_.vocabSize);
+        zambeziIndex = new PositionalIndex(izenelib::ir::Zambezi::NON_POSITIONAL, poolSize, config_.poolCount, config_.vocabSize, config_.reverse);
     }
 }
 
@@ -122,12 +122,23 @@ bool ZambeziManager::open()
 }
 
 void ZambeziManager::search(
+        izenelib::ir::Zambezi::Algorithm algorithm,
         const std::vector<std::pair<std::string, int> >& tokens,
         uint32_t limit,
         const std::vector<std::string>& propertyList,
         std::vector<docid_t>& docids,
         std::vector<float>& scores)
 {
+
+    if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
+    {
+        if (algorithm != izenelib::ir::Zambezi::SVS)
+        {
+           algorithm = izenelib::ir::Zambezi::SVS;
+           LOG(WARNING) << "The AttrInvertedInde only use SVS algorithm !!!";
+        }
+    }
+
     LOG(INFO) << "[ZambeziManager::search] Search tokens: ";
     for (unsigned int i = 0; i < tokens.size(); ++i)
     {
@@ -139,7 +150,7 @@ void ZambeziManager::search(
     // in one property
     if (propertyList.size() == 1)
     {    
-        property_index_map_[propertyList[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docids, scores);
+        property_index_map_[propertyList[0]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docids, scores);
         LOG(INFO) << "Search property:" << propertyList[0] 
                   << " ,zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
@@ -149,7 +160,7 @@ void ZambeziManager::search(
     // only one property
     if (propertyList_.size() == 1)
     {    
-        property_index_map_[propertyList_[0]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docids, scores);
+        property_index_map_[propertyList_[0]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docids, scores);
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -168,7 +179,7 @@ void ZambeziManager::search(
     std::vector<float> weightList;
     for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
-        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(kAlgorithm, tokens, limit, config_.searchBuffer, docidsList[i], scoresList[i]);
+        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docidsList[i], scoresList[i]);
         weightList.push_back(config_.getWeight(searchPropertyList[i]));
     }
 
@@ -178,8 +189,11 @@ void ZambeziManager::search(
     {
         if (docidsList[i].size() != scoresList[i].size())
         {
-            LOG(INFO) << "[ERROR] dismatch doclist and scorelist";
-            return;
+            LOG(WARNING) << "[WARNING] dismatch doclist size:("<< docidsList[i].size() << ") and scorelist size:(" << scoresList.size() << ")" ;
+            if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
+                return;
+            else
+                scoresList[i].resize(docidsList[i].size(), 0);
         }
     }
 

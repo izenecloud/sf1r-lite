@@ -13,6 +13,7 @@
 #include <mining-manager/group-manager/PropValueTable.h> // pvid_t
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/attr-manager/AttrManager.h>
+#include <ir/Zambezi/Consts.hpp>
 #include <mining-manager/attr-manager/AttrTable.h>
 #include <index-manager/zambezi-tokenizer/ZambeziTokenizer.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -78,6 +79,10 @@ private:
     void getAnalyzedQuery_(
         const std::string& rawQuery,
         izenelib::util::UString& analyzedQuery);
+
+    bool getZambeziAlgorithm(
+         const int &algorithm,
+         izenelib::ir::Zambezi::Algorithm& Algorithm);
 
 private:
     DocumentManager& documentManager_;
