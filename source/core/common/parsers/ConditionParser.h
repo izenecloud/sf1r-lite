@@ -7,6 +7,7 @@
  */
 #include <util/driver/Value.h>
 #include <util/driver/Parser.h>
+#include <iostream>
 
 namespace sf1r {
 
@@ -38,6 +39,11 @@ public:
         return op_;
     }
 
+    const Value::ArrayType& array() const
+    {
+        return array_;
+    }
+
     bool parse(const Value& condition);
 
     void swap(ConditionParser& other)
@@ -47,6 +53,10 @@ public:
         swap(property_, other.property_);
         swap(op_, other.op_);
         swap(error(), other.error());
+    }
+        void print()
+    {
+        std::cout<<"property: "<<property_ << " op: " << op_ << std::endl;;
     }
 
 private:
