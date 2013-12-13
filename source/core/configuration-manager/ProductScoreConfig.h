@@ -39,6 +39,8 @@ struct ProductScoreConfig
     score_t minLimit;
     score_t maxLimit;
 
+    score_t zoomin;
+
     bool isDebug; /// whether print debug message
 
     std::vector<ProductScoreConfig> factors;
@@ -71,6 +73,7 @@ private:
         ar & weight;
         ar & minLimit;
         ar & maxLimit;
+        ar & zoomin;
         ar & isDebug;
         ar & factors;
     }

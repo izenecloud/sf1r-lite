@@ -9,6 +9,7 @@ ProductScoreConfig::ProductScoreConfig()
     , weight(0)
     , minLimit(0)
     , maxLimit(0)
+    , zoomin(1)
     , isDebug(false)
 {}
 
