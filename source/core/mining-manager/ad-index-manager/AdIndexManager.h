@@ -6,7 +6,6 @@
 #define SF1_AD_INDEX_MANAGER_H_
 
 #include "AdMiningTask.h"
-#include "AdClickPredictor.h"
 #include <boost/lexical_cast.hpp>
 #include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -20,6 +19,8 @@ namespace sf1r
 
 class MiningTask;
 class DocumentManager;
+class AdMessage;
+class AdClickPredictor;
 
 class AdIndexManager
 {
@@ -39,6 +40,8 @@ public:
         return adMiningTask_;
     }
 
+    void onAdStreamMessage(const std::vector<AdMessage>& msg_list);
+
     bool search(const std::vector<std::pair<std::string, std::string> >& info,
             std::vector<docid_t>& docids,
             std::vector<float>& topKRankScoreList,
@@ -50,12 +53,13 @@ private:
     std::string indexPath_;
 
     std::string clickPredictorWorkingPath_;
+    std::string ad_selector_data_path_;
 
     boost::shared_ptr<DocumentManager>& documentManager_;
 
     AdMiningTask* adMiningTask_;
 
-    AdClickPredictor* adClickPredictor_;
+    AdClickPredictor* ad_click_predictor_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
 };

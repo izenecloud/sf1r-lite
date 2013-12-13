@@ -7,9 +7,7 @@
 
 #include <util/singleton.h>
 #include <idmlib/ctr/AdPredictor.hpp>
-#include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/mutex.hpp>
 #include <string>
@@ -17,8 +15,6 @@
 
 namespace sf1r
 {
-
-class AdMessage;
 
 class AdClickPredictor {
 public:
@@ -43,12 +39,17 @@ public:
     void init(const std::string& path);
     void stop();
 
-    void onAdStreamMessage(const std::vector<AdMessage>&);
-
     void update(const AssignmentT& assignment, bool click)
     {
         writeLock lock(rwMutex_);
         predictor_->update(assignment, click);
+    }
+
+    double predict(const AssignmentT& assignment_left,
+        const AssignmentT& assignment_right)
+    {
+        readLock lock(rwMutex_);
+        return predictor_->predict(assignment_left, assignment_right);
     }
 
     double predict(const AssignmentT& assignment)

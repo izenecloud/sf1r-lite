@@ -1,8 +1,10 @@
 #include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <mining-manager/ad-index-manager/AdStreamSubscriber.h>
+#include <node-manager/SuperNodeManager.h>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <glog/logging.h>
 
 namespace bfs=boost::filesystem;
 using namespace sf1r;
@@ -10,8 +12,8 @@ static std::vector<std::vector<std::pair<std::string, std::string> > > predict_t
 const int thread_num = 8;
 const size_t attr_name_size = 100;
 const size_t attr_value_size = 1000;
-const size_t train_num = 500000000;
-const size_t test_num = 1000000;
+const size_t train_num = 5000;
+const size_t test_num = 10000;
 
 void predict_func(AdClickPredictor* pad)
 {
@@ -70,7 +72,6 @@ void stream_update_func()
         AdStreamSubscriber::get()->onAdMessage(msglist);
     }
     LOG(INFO) << "stream update finished.";
-    //AdStreamSubscriber::get()->stop();
 }
 
 int main()
@@ -156,8 +157,11 @@ int main()
     ofs.close();
     ifs.close();
 
+    DistributedCommonConfig config;
+    config.localHost_ = "172.16.5.11";
+    SuperNodeManager::get()->init(config);
 
-    //AdStreamSubscriber::get()->init("localhost", 9998);
+    AdStreamSubscriber::get()->init("172.16.5.30", 19850);
 
     AdClickPredictor ad;
     ad.init("/opt/mine/ad_ctr_test");
@@ -204,6 +208,8 @@ int main()
         test_threads.add_thread(new boost::thread(boost::bind(&predict_func, &ad)));
     }
     test_threads.join_all();
+    sleep(10000);
+    AdStreamSubscriber::get()->stop();
     //write_thread->join();
     //delete write_thread;
     //test_threads.clear();

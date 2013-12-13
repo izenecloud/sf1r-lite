@@ -3,13 +3,17 @@
  */
 
 #include "AdIndexManager.h"
+#include "AdStreamSubscriber.h"
+#include "AdSelector.h"
+#include "AdClickPredictor.h"
 #include <search-manager/HitQueue.h>
 #include <algorithm>
 
-const size_t MAX_AD_COUNT = 20;
-
 namespace sf1r
 {
+
+static const int MAX_AD_COUNT = 20;
+static const std::string adlog_topic = "b5manlog";
 
 AdIndexManager::AdIndexManager(
         const std::string& indexPath,
@@ -25,12 +29,15 @@ AdIndexManager::AdIndexManager(
 
 AdIndexManager::~AdIndexManager()
 {
+    // unsubscribe should make sure all callback finished and 
+    // no any callback will be send later.
+    AdStreamSubscriber::get()->unsubscribe(adlog_topic);
+
     if(adMiningTask_)
         delete adMiningTask_;
-/*
-    if(adClickPredictor_)
-        delete adClickPredictor_;
-*/
+
+    ad_click_predictor_->stop();
+    AdClickPredictor::get()->stop();
 }
 
 bool AdIndexManager::buildMiningTask()
@@ -38,14 +45,43 @@ bool AdIndexManager::buildMiningTask()
     adMiningTask_ = new AdMiningTask(indexPath_, documentManager_);
     adMiningTask_->load();
 
-/*
-    adClickPredictor_ = new AdClickPredictor(clickPredictorWorkingPath_);
-*/
-    adClickPredictor_ = AdClickPredictor::get();
-    adClickPredictor_->init(clickPredictorWorkingPath_);
-    adClickPredictor_->load();
+    ad_click_predictor_ = AdClickPredictor::get();
+    ad_click_predictor_->init(clickPredictorWorkingPath_);
+    AdSelector::get()->init(ad_selector_data_path_);
+    bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
+    if (!ret)
+    {
+        LOG(ERROR) << "subscribe the click log failed !!!!!!";
+    }
 
     return true;
+}
+
+void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
+{
+    static int cnt = 0;
+    if (cnt % 10000 == 0)
+    {
+        for (size_t i = 0; i < msg_list.size(); ++i)
+        {
+            LOG(INFO) << "stream data: " << msg_list[i].body;
+        }
+        LOG(INFO) << "got ad stream data. size: " << msg_list.size() << ", total " << cnt;
+    }
+    cnt += msg_list.size();
+    std::vector<std::pair<AdClickPredictor::AssignmentT, bool> > assignment_list;
+    // read from stream msg and convert it to assignment list.
+    for(size_t i = 0; i < assignment_list.size(); ++i)
+    {
+        ad_click_predictor_->update(assignment_list[i].first, assignment_list[i].second);
+        if (assignment_list[i].second)
+        {
+            // get docid from adid.
+            docid_t docid;
+            AdSelector::get()->updateClicked(docid);
+        }
+        AdSelector::get()->updateSegments(assignment_list[i].first);
+    }
 }
 
 bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string> >& info,
@@ -75,7 +111,7 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
 
     boost::shared_ptr<HitQueue> scoreItemQueue;
 
-    uint32_t heapSize = std::min(MAX_AD_COUNT, dnfIDs.size());
+    uint32_t heapSize = std::min((std::size_t)MAX_AD_COUNT, dnfIDs.size());
 
     scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
@@ -103,9 +139,9 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
             else if(mode == 1)
             {
                 // calculate CTR
-                double ctr = adClickPredictor_->predict(info);
+                //double ctr = adClickPredictor_->predict(info);
                 // calculate eCPM
-                score = ctr * price * 1000;
+                //score = ctr * price * 1000;
             }
             ScoreDoc scoreItem(*it, score);
             scoreItemQueue->insert(scoreItem);
