@@ -34,7 +34,7 @@ public:
     ~ZambeziIndexManager();
     
     // this is a real time index;
-    virtual bool isRealTime() { return true; }
+    virtual bool isRealTime() { return false; }
     virtual void flush(bool force) {}
     virtual void optimize(bool wait) {}
 
