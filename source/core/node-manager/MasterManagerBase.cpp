@@ -297,9 +297,9 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             else
             {
                 watchAll();
-                //checkForWriteReq();
             }
             updateServiceReadStateWithoutLock("ReadyForRead", true);
+            checkForWriteReq();
         }
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
@@ -328,6 +328,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         doStart();
         LOG (WARNING) << " restarted in MasterManagerBase for ZooKeeper Service finished";
         updateServiceReadStateWithoutLock("ReadyForRead", true);
+        checkForWriteReq();
     }
 }
 
@@ -543,6 +544,7 @@ void MasterManagerBase::checkForWriteReq()
         checkForNewWriteReq();
         break;
     default:
+        LOG(INFO) << "master state is not ready for check write: " << masterState_;
         break;
     }
 }
@@ -672,7 +674,7 @@ bool MasterManagerBase::isAllShardNodeOK(const std::vector<shardid_t>& shardids)
         {
             LOG(INFO) << "shardid not found while check for ok. " << getShardidStr(shardids[i]);
         }
-        if (!it->second->worker_.isGood_)
+        else if (!it->second->worker_.isGood_)
         {
             LOG(INFO) << "shardid not ready." << getShardidStr(shardids[i]);
             return false;

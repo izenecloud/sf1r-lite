@@ -45,6 +45,7 @@
 (cname)\
 (collection)\
 (collection_config)\
+(condition_array)\
 (conditions)\
 (content)\
 (context)\
@@ -170,6 +171,7 @@
 (record)\
 (refined_query)\
 (related_queries)\
+(relation)\
 (remote_ip)\
 (remove_duplicated_result)\
 (resource)\
@@ -232,16 +234,6 @@
 /* LOCATIONS
 
 DOCID
-  process/controllers/DocumentsController.cpp:615
-  process/controllers/DocumentsController.cpp:682
-  process/controllers/DocumentsController.cpp:957
-  process/controllers/DocumentsController.cpp:1029
-  process/controllers/DocumentsController.cpp:1122
-  process/controllers/DocumentsGetHandler.cpp:278
-  process/controllers/DocumentsGetHandler.cpp:280
-  process/controllers/DocumentsGetHandler.cpp:330
-  process/controllers/DocumentsGetHandler.cpp:356
-  process/controllers/FacetedController.cpp:968
   process/log-server/LogDispatchHandler.cpp:221
   process/log-server/LogDispatchHandler.cpp:435
   process/log-server/LogDispatchHandler.cpp:445
@@ -249,21 +241,21 @@ DOCID
   process/log-server/LogDispatchHandler.cpp:566
   process/log-server/LogDispatchHandler.cpp:609
   process/log-server/LogDispatchHandler.cpp:615
+  process/controllers/DocumentsGetHandler.cpp:277
+  process/controllers/DocumentsGetHandler.cpp:279
+  process/controllers/DocumentsGetHandler.cpp:329
+  process/controllers/DocumentsGetHandler.cpp:355
+  process/controllers/DocumentsController.cpp:615
+  process/controllers/DocumentsController.cpp:682
+  process/controllers/DocumentsController.cpp:957
+  process/controllers/DocumentsController.cpp:1029
+  process/controllers/DocumentsController.cpp:1122
+  process/controllers/FacetedController.cpp:968
 
 DistributeStatus
   process/controllers/StatusController.cpp:106
 
 ITEMID
-  process/controllers/RecommendController.cpp:187
-  process/controllers/RecommendController.cpp:196
-  process/controllers/RecommendController.cpp:517
-  process/controllers/RecommendController.cpp:600
-  process/controllers/RecommendController.cpp:603
-  process/controllers/RecommendController.cpp:681
-  process/controllers/RecommendController.cpp:684
-  process/controllers/RecommendController.cpp:749
-  process/controllers/RecommendController.cpp:824
-  process/controllers/RecommendController.cpp:830
   process/log-server/LogDispatchHandler.cpp:470
   process/log-server/LogDispatchHandler.cpp:480
   process/log-server/LogDispatchHandler.cpp:515
@@ -277,6 +269,16 @@ ITEMID
   process/log-server/LogDispatchHandler.cpp:631
   process/log-server/LogDispatchHandler.cpp:651
   process/log-server/LogDispatchHandler.cpp:659
+  process/controllers/RecommendController.cpp:187
+  process/controllers/RecommendController.cpp:196
+  process/controllers/RecommendController.cpp:517
+  process/controllers/RecommendController.cpp:600
+  process/controllers/RecommendController.cpp:603
+  process/controllers/RecommendController.cpp:681
+  process/controllers/RecommendController.cpp:684
+  process/controllers/RecommendController.cpp:749
+  process/controllers/RecommendController.cpp:824
+  process/controllers/RecommendController.cpp:830
 
 MemoryStatus
   process/controllers/StatusController.cpp:107
@@ -286,6 +288,7 @@ NormalizeQuery
   process/controllers/QueryNormalizeController.cpp:87
 
 USERID
+  process/parsers/SearchParser.cpp:165
   process/controllers/DocumentsController.cpp:961
   process/controllers/RecommendController.cpp:135
   process/controllers/RecommendController.cpp:147
@@ -299,7 +302,6 @@ USERID
   process/controllers/RecommendController.cpp:823
   process/controllers/RecommendController.cpp:829
   process/controllers/RecommendController.cpp:987
-  process/parsers/SearchParser.cpp:165
 
 _categories
   process/renderers/DocumentsRenderer.cpp:192
@@ -312,16 +314,16 @@ _duplicated_document_count
   process/renderers/DocumentsRenderer.cpp:171
 
 _id
-  process/controllers/DocumentsGetHandler.cpp:273
-  process/controllers/DocumentsGetHandler.cpp:275
-  process/controllers/DocumentsGetHandler.cpp:330
-  process/controllers/DocumentsGetHandler.cpp:348
-  process/controllers/FacetedController.cpp:414
   process/renderers/DocumentsRenderer.cpp:112
   process/renderers/DocumentsRenderer.cpp:156
+  process/controllers/DocumentsGetHandler.cpp:272
+  process/controllers/DocumentsGetHandler.cpp:274
+  process/controllers/DocumentsGetHandler.cpp:329
+  process/controllers/DocumentsGetHandler.cpp:347
+  process/controllers/FacetedController.cpp:414
 
 _image_id
-  process/controllers/DocumentsGetHandler.cpp:197
+  process/controllers/DocumentsGetHandler.cpp:196
 
 _rank
   process/renderers/DocumentsRenderer.cpp:157
@@ -340,36 +342,32 @@ action
   process/log-server/LogDispatchHandler.cpp:358
 
 ad_search
-  process/parsers/SearchParser.cpp:596
-
-algorithm
-  process/parsers/SearchParser.cpp:330
-  process/parsers/SearchParser.cpp:332
+  process/parsers/SearchParser.cpp:539
 
 analyzer
-  process/parsers/SearchParser.cpp:254
+  process/parsers/SearchParser.cpp:305
 
 analyzer_result
-  process/controllers/DocumentsSearchHandler.cpp:662
-  process/controllers/DocumentsSearchHandler.cpp:682
+  process/controllers/DocumentsSearchHandler.cpp:639
+  process/controllers/DocumentsSearchHandler.cpp:659
 
 apply_la
-  process/parsers/SearchParser.cpp:255
+  process/parsers/SearchParser.cpp:306
 
 aspect
   process/controllers/DocumentsController.cpp:1045
 
 attr
-  process/controllers/DocumentsSearchHandler.cpp:415
-  process/controllers/DocumentsSearchHandler.cpp:878
+  process/controllers/DocumentsSearchHandler.cpp:396
+  process/controllers/DocumentsSearchHandler.cpp:855
 
 attr_label
-  process/parsers/SearchParser.cpp:565
+  process/parsers/SearchParser.cpp:508
 
 attr_name
-  process/parsers/SearchParser.cpp:579
   process/renderers/DocumentsRenderer.cpp:381
   process/renderers/SplitPropValueRenderer.cpp:97
+  process/parsers/SearchParser.cpp:522
 
 attr_result
   process/parsers/AttrParser.cpp:28
@@ -380,72 +378,72 @@ attr_top
   process/parsers/AttrParser.cpp:35
 
 attr_value
-  process/parsers/SearchParser.cpp:580
+  process/parsers/SearchParser.cpp:523
 
 attr_values
   process/renderers/SplitPropValueRenderer.cpp:99
 
 auto_select_limit
-  process/parsers/SearchParser.cpp:546
+  process/parsers/SearchParser.cpp:489
 
 boost_group_label
-  process/parsers/SearchParser.cpp:626
+  process/parsers/SearchParser.cpp:569
 
 category
   process/controllers/ExtractKeywordsController.cpp:88
-  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:74
   core/mining-manager/merchant-score-manager/MerchantScoreRenderer.cpp:31
+  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:74
 
 category_id
   process/controllers/FacetedController.cpp:433
   process/controllers/FacetedController.cpp:435
 
 category_score
-  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:49
   core/mining-manager/merchant-score-manager/MerchantScoreRenderer.cpp:23
+  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:49
 
 cid
   process/controllers/FacetedController.cpp:416
 
 clear
-  process/controllers/CollectionController.cpp:227
-  process/controllers/CollectionController.cpp:229
+  process/controllers/CollectionController.cpp:221
+  process/controllers/CollectionController.cpp:223
 
 cname
   process/controllers/FacetedController.cpp:417
 
 collection
-  process/controllers/CollectionController.cpp:127
-  process/controllers/CollectionController.cpp:225
-  process/controllers/CollectionController.cpp:302
-  process/controllers/CollectionController.cpp:322
-  process/controllers/CollectionController.cpp:502
-  process/controllers/CollectionController.cpp:576
-  process/controllers/CollectionController.cpp:724
-  process/controllers/CollectionController.cpp:780
-  process/controllers/CollectionController.cpp:838
-  process/controllers/CollectionController.cpp:963
-  process/controllers/CollectionController.cpp:1030
-  process/controllers/CollectionController.cpp:1078
-  process/controllers/DocumentsGetHandler.cpp:48
-  process/controllers/DocumentsSearchHandler.cpp:89
-  process/controllers/LogAnalysisController.cpp:493
-  process/controllers/LogAnalysisController.cpp:519
-  process/controllers/LogAnalysisController.cpp:891
-  process/controllers/LogAnalysisController.cpp:999
-  process/controllers/Sf1Controller.cpp:169
   process/log-server/LogDispatchHandler.cpp:83
   process/log-server/LogDispatchHandler.cpp:134
   process/log-server/LogDispatchHandler.cpp:187
   process/log-server/LogDispatchHandler.cpp:262
   process/log-server/LogDispatchHandler.cpp:308
+  process/controllers/DocumentsGetHandler.cpp:47
+  process/controllers/Sf1Controller.cpp:169
+  process/controllers/DocumentsSearchHandler.cpp:89
+  process/controllers/CollectionController.cpp:127
+  process/controllers/CollectionController.cpp:219
+  process/controllers/CollectionController.cpp:296
+  process/controllers/CollectionController.cpp:316
+  process/controllers/CollectionController.cpp:491
+  process/controllers/CollectionController.cpp:565
+  process/controllers/CollectionController.cpp:713
+  process/controllers/CollectionController.cpp:769
+  process/controllers/CollectionController.cpp:827
+  process/controllers/CollectionController.cpp:952
+  process/controllers/CollectionController.cpp:1019
+  process/controllers/CollectionController.cpp:1067
+  process/controllers/LogAnalysisController.cpp:493
+  process/controllers/LogAnalysisController.cpp:519
+  process/controllers/LogAnalysisController.cpp:891
+  process/controllers/LogAnalysisController.cpp:999
 
 collection_config
-  process/controllers/CollectionController.cpp:839
+  process/controllers/CollectionController.cpp:828
 
 conditions
-  process/controllers/DocumentsGetHandler.cpp:318
-  process/controllers/DocumentsSearchHandler.cpp:391
+  process/controllers/DocumentsGetHandler.cpp:317
+  process/controllers/DocumentsSearchHandler.cpp:372
   process/controllers/LogAnalysisController.cpp:73
   process/controllers/LogAnalysisController.cpp:75
   process/controllers/LogAnalysisController.cpp:114
@@ -453,10 +451,10 @@ conditions
   process/controllers/RecommendController.cpp:213
 
 content
+  process/controllers/TopicController.cpp:329
   process/controllers/FacetedController.cpp:76
   process/controllers/FacetedController.cpp:128
   process/controllers/LogAnalysisController.cpp:242
-  process/controllers/TopicController.cpp:329
 
 context
   process/controllers/DocumentsController.cpp:965
@@ -469,35 +467,35 @@ controller
   process/log-server/LogDispatchHandler.cpp:183
 
 count
+  process/parsers/SearchParser.cpp:254
   process/controllers/AutoFillController.cpp:125
+  process/controllers/DocumentsSearchHandler.cpp:884
   process/controllers/DocumentsController.cpp:1082
   process/controllers/DocumentsController.cpp:1117
-  process/controllers/DocumentsSearchHandler.cpp:907
+  process/controllers/ProductController.cpp:390
+  process/controllers/ProductController.cpp:391
+  process/controllers/ProductController.cpp:402
   process/controllers/LogAnalysisController.cpp:363
   process/controllers/LogAnalysisController.cpp:507
   process/controllers/LogAnalysisController.cpp:591
   process/controllers/LogAnalysisController.cpp:652
   process/controllers/LogAnalysisController.cpp:818
-  process/controllers/ProductController.cpp:390
-  process/controllers/ProductController.cpp:391
-  process/controllers/ProductController.cpp:402
-  process/parsers/SearchParser.cpp:203
 
 counter
   process/controllers/StatusController.cpp:87
 
 custom_rank
-  process/controllers/DocumentsSearchHandler.cpp:395
-  process/controllers/DocumentsSearchHandler.cpp:398
+  process/controllers/DocumentsSearchHandler.cpp:376
+  process/controllers/DocumentsSearchHandler.cpp:379
 
 date
   process/controllers/TopicController.cpp:202
 
 date_range
-  process/controllers/ProductController.cpp:151
-  process/controllers/ProductController.cpp:153
   process/controllers/TopicController.cpp:283
   process/controllers/TopicController.cpp:285
+  process/controllers/ProductController.cpp:151
+  process/controllers/ProductController.cpp:153
 
 days
   process/controllers/ProductController.cpp:389
@@ -507,7 +505,7 @@ delete_info
   process/controllers/LogAnalysisController.cpp:833
 
 disable_sharding
-  process/controllers/CommandsController.cpp:83
+  process/controllers/CommandsController.cpp:82
 
 doccount
   process/controllers/FacetedController.cpp:184
@@ -525,21 +523,21 @@ docid_list
   process/controllers/ProductController.cpp:56
 
 document_count
-  process/controllers/CommandsController.cpp:80
-  process/controllers/StatusController.cpp:70
-  process/controllers/StatusController.cpp:85
   process/renderers/DocumentsRenderer.cpp:238
   process/renderers/DocumentsRenderer.cpp:298
   process/renderers/DocumentsRenderer.cpp:346
   process/renderers/DocumentsRenderer.cpp:352
   process/renderers/DocumentsRenderer.cpp:382
   process/renderers/DocumentsRenderer.cpp:392
+  process/controllers/StatusController.cpp:70
+  process/controllers/StatusController.cpp:85
+  process/controllers/CommandsController.cpp:79
 
 document_support_count
   process/renderers/DocumentsRenderer.cpp:268
 
 duplicate_with
-  process/controllers/DocumentsGetHandler.cpp:110
+  process/controllers/DocumentsGetHandler.cpp:109
 
 duration
   process/controllers/LogAnalysisController.cpp:503
@@ -555,13 +553,13 @@ elapsed_time
   process/controllers/StatusController.cpp:81
 
 end
-  process/controllers/ProductController.cpp:155
   process/controllers/TopicController.cpp:287
+  process/controllers/ProductController.cpp:155
 
 errors
-  process/controllers/CollectionController.cpp:81
   process/controllers/Sf1Controller.cpp:75
   process/controllers/Sf1Controller.cpp:96
+  process/controllers/CollectionController.cpp:81
 
 event
   process/controllers/RecommendController.cpp:89
@@ -581,7 +579,7 @@ expression
   process/parsers/CustomRankingParser.cpp:91
 
 faceted
-  process/controllers/DocumentsSearchHandler.cpp:868
+  process/controllers/DocumentsSearchHandler.cpp:845
 
 filename
   process/log-server/LogDispatchHandler.cpp:71
@@ -591,37 +589,37 @@ filename
   process/log-server/LogDispatchHandler.cpp:357
 
 filter_mode
-  process/parsers/SearchParser.cpp:411
-  process/parsers/SearchParser.cpp:413
+  process/parsers/SearchParser.cpp:419
+  process/parsers/SearchParser.cpp:421
 
 force
   process/controllers/ProductController.cpp:92
 
 force_backup
-  process/controllers/CollectionController.cpp:676
+  process/controllers/CollectionController.cpp:665
 
 freq
+  process/controllers/TopicController.cpp:203
   process/controllers/DocumentsController.cpp:852
   process/controllers/RecommendController.cpp:1139
-  process/controllers/TopicController.cpp:203
 
 func
   core/common/parsers/SelectFieldParser.cpp:32
 
 group
-  process/controllers/DocumentsSearchHandler.cpp:411
-  process/controllers/DocumentsSearchHandler.cpp:873
+  process/controllers/DocumentsSearchHandler.cpp:392
+  process/controllers/DocumentsSearchHandler.cpp:850
 
 group_label
+  process/renderers/DocumentsRenderer.cpp:413
+  process/parsers/SearchParser.cpp:444
   process/controllers/DocumentsController.cpp:854
   process/controllers/DocumentsController.cpp:1172
   process/controllers/DocumentsController.cpp:1186
-  process/parsers/SearchParser.cpp:501
-  process/renderers/DocumentsRenderer.cpp:417
 
 group_property
+  process/renderers/DocumentsRenderer.cpp:411
   process/controllers/DocumentsController.cpp:1159
-  process/renderers/DocumentsRenderer.cpp:416
 
 groupby
   process/controllers/LogAnalysisController.cpp:164
@@ -639,7 +637,7 @@ header
   process/log-server/LogDispatchHandler.cpp:184
 
 highlight
-  process/parsers/SelectParser.cpp:182
+  process/parsers/SelectParser.cpp:156
 
 hit_docs_num
   process/controllers/LogAnalysisController.cpp:495
@@ -652,14 +650,14 @@ host
   process/log-server/LogDispatchHandler.cpp:260
 
 id
+  process/renderers/DocumentsRenderer.cpp:297
+  process/controllers/TopicController.cpp:270
   process/controllers/DocumentsController.cpp:642
   process/controllers/FacetedController.cpp:183
   process/controllers/FacetedController.cpp:298
-  process/controllers/TopicController.cpp:270
-  process/renderers/DocumentsRenderer.cpp:297
 
 in
-  process/parsers/SearchParser.cpp:432
+  process/parsers/SearchParser.cpp:203
 
 include_items
   process/controllers/RecommendController.cpp:979
@@ -668,8 +666,8 @@ index
   process/controllers/StatusController.cpp:67
 
 index_scd_path
-  process/controllers/CollectionController.cpp:749
-  process/controllers/CommandsController.cpp:85
+  process/controllers/CollectionController.cpp:738
+  process/controllers/CommandsController.cpp:84
 
 input_items
   process/controllers/RecommendController.cpp:978
@@ -688,31 +686,31 @@ is_require_related
   process/parsers/SearchParser.cpp:200
 
 items
-  process/controllers/RecommendController.cpp:588
-  process/controllers/RecommendController.cpp:668
-  process/controllers/RecommendController.cpp:1140
   process/log-server/LogDispatchHandler.cpp:506
   process/log-server/LogDispatchHandler.cpp:533
   process/log-server/LogDispatchHandler.cpp:585
   process/log-server/LogDispatchHandler.cpp:641
+  process/controllers/RecommendController.cpp:588
+  process/controllers/RecommendController.cpp:668
+  process/controllers/RecommendController.cpp:1140
 
 key
-  process/controllers/CollectionController.cpp:1031
-  process/controllers/CollectionController.cpp:1079
+  process/controllers/CollectionController.cpp:1020
+  process/controllers/CollectionController.cpp:1068
 
 keywords
+  process/parsers/SearchParser.cpp:158
   process/controllers/AutoFillController.cpp:118
   process/controllers/CollectionHandler.cpp:63
-  process/controllers/CollectionHandler.cpp:72
+  process/controllers/CollectionHandler.cpp:77
   process/controllers/DocumentsController.cpp:1145
-  process/controllers/ExtractKeywordsController.cpp:41
-  process/controllers/ExtractKeywordsController.cpp:105
   process/controllers/FacetedController.cpp:748
   process/controllers/QueryCorrectionController.cpp:70
+  process/controllers/ExtractKeywordsController.cpp:41
+  process/controllers/ExtractKeywordsController.cpp:105
   process/controllers/QueryRecommendController.cpp:30
   process/controllers/RecommendController.cpp:609
   process/controllers/RecommendController.cpp:989
-  process/parsers/SearchParser.cpp:158
 
 label
   process/renderers/DocumentsRenderer.cpp:237
@@ -744,28 +742,28 @@ limit
   core/common/parsers/PageInfoParser.cpp:20
   core/common/parsers/PageInfoParser.cpp:22
   process/controllers/AutoFillController.cpp:93
+  process/controllers/TopicController.cpp:243
+  process/controllers/TopicController.cpp:245
   process/controllers/DocumentsController.cpp:833
   process/controllers/DocumentsController.cpp:1133
   process/controllers/DocumentsController.cpp:1135
-  process/controllers/KeywordsController.cpp:89
   process/controllers/LogAnalysisController.cpp:226
   process/controllers/LogAnalysisController.cpp:282
   process/controllers/LogAnalysisController.cpp:399
-  process/controllers/TopicController.cpp:243
-  process/controllers/TopicController.cpp:245
+  process/controllers/KeywordsController.cpp:89
 
 log_keywords
   process/parsers/SearchParser.cpp:198
 
 lucky
-  process/parsers/SearchParser.cpp:389
-  process/parsers/SearchParser.cpp:391
+  process/parsers/SearchParser.cpp:397
+  process/parsers/SearchParser.cpp:399
 
 manmade
   process/controllers/FacetedController.cpp:408
 
 max
-  process/controllers/DocumentsSearchHandler.cpp:896
+  process/controllers/DocumentsSearchHandler.cpp:873
 
 max_count
   process/controllers/RecommendController.cpp:974
@@ -773,8 +771,8 @@ max_count
 
 merchant
   process/controllers/LogAnalysisController.cpp:817
-  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:25
   core/mining-manager/merchant-score-manager/MerchantScoreRenderer.cpp:20
+  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:25
 
 merchant_count
   process/controllers/LogAnalysisController.cpp:589
@@ -790,7 +788,7 @@ meta
   process/controllers/StatusController.cpp:83
 
 min
-  process/controllers/DocumentsSearchHandler.cpp:895
+  process/controllers/DocumentsSearchHandler.cpp:872
 
 min_freq
   process/controllers/RecommendController.cpp:1115
@@ -799,28 +797,28 @@ mining
   process/controllers/StatusController.cpp:91
 
 mode
-  process/parsers/SearchParser.cpp:288
-  process/parsers/SearchParser.cpp:290
+  process/parsers/SearchParser.cpp:339
+  process/parsers/SearchParser.cpp:341
 
 name
+  process/parsers/CustomRankingParser.cpp:125
   process/controllers/AutoFillController.cpp:124
+  process/controllers/TopicController.cpp:77
+  process/controllers/TopicController.cpp:132
+  process/controllers/TopicController.cpp:214
   process/controllers/DocumentsController.cpp:645
   process/controllers/DocumentsController.cpp:710
   process/controllers/DocumentsController.cpp:718
   process/controllers/FacetedController.cpp:182
   process/controllers/FacetedController.cpp:297
-  process/controllers/TopicController.cpp:77
-  process/controllers/TopicController.cpp:132
-  process/controllers/TopicController.cpp:214
-  process/parsers/CustomRankingParser.cpp:125
 
 name_entity
-  process/controllers/DocumentsSearchHandler.cpp:863
+  process/controllers/DocumentsSearchHandler.cpp:840
 
 name_entity_item
+  process/renderers/DocumentsRenderer.cpp:267
   process/parsers/SearchParser.cpp:172
   process/parsers/SearchParser.cpp:182
-  process/renderers/DocumentsRenderer.cpp:267
 
 name_entity_list
   process/renderers/DocumentsRenderer.cpp:259
@@ -857,8 +855,8 @@ order_id
   process/controllers/RecommendController.cpp:586
 
 original_query
-  process/parsers/SearchParser.cpp:402
-  process/parsers/SearchParser.cpp:404
+  process/parsers/SearchParser.cpp:410
+  process/parsers/SearchParser.cpp:412
 
 page_count
   process/controllers/LogAnalysisController.cpp:499
@@ -877,7 +875,7 @@ params
   process/parsers/CustomRankingParser.cpp:80
 
 path
-  process/controllers/CollectionController.cpp:1123
+  process/controllers/CollectionController.cpp:1112
 
 popular
   process/controllers/KeywordsController.cpp:151
@@ -885,7 +883,7 @@ popular
   process/controllers/KeywordsController.cpp:161
 
 popular_queries
-  process/controllers/DocumentsSearchHandler.cpp:848
+  process/controllers/DocumentsSearchHandler.cpp:825
 
 port
   process/log-server/LogDispatchHandler.cpp:58
@@ -937,54 +935,54 @@ progress
 
 property
   core/common/parsers/ConditionParser.cpp:45
-  core/common/parsers/OrderParser.cpp:22
   core/common/parsers/SelectFieldParser.cpp:30
+  core/common/parsers/OrderParser.cpp:22
+  process/renderers/DocumentsRenderer.cpp:345
+  process/parsers/SearchParser.cpp:216
+  process/parsers/SearchParser.cpp:265
+  process/parsers/SearchParser.cpp:458
+  process/parsers/SearchParser.cpp:553
+  process/parsers/SelectParser.cpp:155
+  process/parsers/RangeParser.cpp:36
+  process/parsers/GroupingParser.cpp:57
   process/controllers/DocumentsController.cpp:1109
   process/controllers/ProductController.cpp:387
-  process/parsers/GroupingParser.cpp:57
-  process/parsers/RangeParser.cpp:36
-  process/parsers/SearchParser.cpp:214
-  process/parsers/SearchParser.cpp:449
-  process/parsers/SearchParser.cpp:515
-  process/parsers/SearchParser.cpp:610
-  process/parsers/SelectParser.cpp:181
-  process/renderers/DocumentsRenderer.cpp:345
 
 quantity
   process/controllers/RecommendController.cpp:607
 
 query
   process/controllers/DocumentsController.cpp:965
-  process/controllers/KeywordsController.cpp:257
-  process/controllers/KeywordsController.cpp:351
   process/controllers/LogAnalysisController.cpp:361
   process/controllers/LogAnalysisController.cpp:491
   process/controllers/LogAnalysisController.cpp:517
   process/controllers/LogAnalysisController.cpp:890
   process/controllers/LogAnalysisController.cpp:998
+  process/controllers/KeywordsController.cpp:257
+  process/controllers/KeywordsController.cpp:351
 
 query_prune
-  process/parsers/SearchParser.cpp:295
-  process/parsers/SearchParser.cpp:295
-  process/parsers/SearchParser.cpp:319
-  process/parsers/SearchParser.cpp:319
+  process/parsers/SearchParser.cpp:346
+  process/parsers/SearchParser.cpp:346
+  process/parsers/SearchParser.cpp:370
+  process/parsers/SearchParser.cpp:370
 
 query_source
   process/parsers/SearchParser.cpp:167
 
 range
-  process/controllers/DocumentsSearchHandler.cpp:419
-  process/controllers/DocumentsSearchHandler.cpp:894
-  process/controllers/ProductController.cpp:283
   process/parsers/GroupingParser.cpp:62
   process/parsers/GroupingParser.cpp:64
+  process/controllers/DocumentsSearchHandler.cpp:400
+  process/controllers/DocumentsSearchHandler.cpp:871
+  process/controllers/ProductController.cpp:283
 
 rank
   process/controllers/DocumentsController.cpp:967
 
 ranking_model
-  process/parsers/SearchParser.cpp:261
-  process/parsers/SearchParser.cpp:263
+  process/parsers/SearchParser.cpp:312
+  process/parsers/SearchParser.cpp:314
 
 realtime
   process/controllers/KeywordsController.cpp:152
@@ -992,7 +990,7 @@ realtime
   process/controllers/KeywordsController.cpp:188
 
 realtime_queries
-  process/controllers/DocumentsSearchHandler.cpp:853
+  process/controllers/DocumentsSearchHandler.cpp:830
 
 reasons
   process/controllers/RecommendController.cpp:1028
@@ -1011,21 +1009,39 @@ record
   process/log-server/LogDispatchHandler.cpp:222
 
 refined_query
-  process/controllers/DocumentsSearchHandler.cpp:919
+  process/controllers/DocumentsSearchHandler.cpp:896
   process/controllers/QueryCorrectionController.cpp:92
   process/controllers/QueryCorrectionController.cpp:94
 
 related_queries
-  process/controllers/DocumentsSearchHandler.cpp:843
+  process/controllers/DocumentsSearchHandler.cpp:820
 
 remote_ip
-  process/controllers/DocumentsGetHandler.cpp:47
+  process/controllers/DocumentsGetHandler.cpp:46
   process/controllers/DocumentsSearchHandler.cpp:88
 
 remove_duplicated_result
-  process/controllers/DocumentsSearchHandler.cpp:661
+  process/controllers/DocumentsSearchHandler.cpp:638
 
 resource
+  process/log-server/LogDispatchHandler.cpp:330
+  process/log-server/LogDispatchHandler.cpp:435
+  process/log-server/LogDispatchHandler.cpp:445
+  process/log-server/LogDispatchHandler.cpp:470
+  process/log-server/LogDispatchHandler.cpp:480
+  process/log-server/LogDispatchHandler.cpp:506
+  process/log-server/LogDispatchHandler.cpp:533
+  process/log-server/LogDispatchHandler.cpp:559
+  process/log-server/LogDispatchHandler.cpp:566
+  process/log-server/LogDispatchHandler.cpp:572
+  process/log-server/LogDispatchHandler.cpp:579
+  process/log-server/LogDispatchHandler.cpp:585
+  process/log-server/LogDispatchHandler.cpp:609
+  process/log-server/LogDispatchHandler.cpp:615
+  process/log-server/LogDispatchHandler.cpp:625
+  process/log-server/LogDispatchHandler.cpp:631
+  process/log-server/LogDispatchHandler.cpp:641
+  process/controllers/Sf1Controller.cpp:220
   process/controllers/DocumentsController.cpp:431
   process/controllers/DocumentsController.cpp:474
   process/controllers/DocumentsController.cpp:530
@@ -1052,10 +1068,10 @@ resource
   process/controllers/FacetedController.cpp:786
   process/controllers/FacetedController.cpp:827
   process/controllers/FacetedController.cpp:974
-  process/controllers/KeywordsController.cpp:252
-  process/controllers/KeywordsController.cpp:346
   process/controllers/ProductController.cpp:105
   process/controllers/ProductController.cpp:107
+  process/controllers/KeywordsController.cpp:252
+  process/controllers/KeywordsController.cpp:346
   process/controllers/RecommendController.cpp:138
   process/controllers/RecommendController.cpp:167
   process/controllers/RecommendController.cpp:213
@@ -1068,37 +1084,23 @@ resource
   process/controllers/RecommendController.cpp:827
   process/controllers/RecommendController.cpp:973
   process/controllers/RecommendController.cpp:1111
-  process/controllers/Sf1Controller.cpp:220
-  process/log-server/LogDispatchHandler.cpp:330
-  process/log-server/LogDispatchHandler.cpp:435
-  process/log-server/LogDispatchHandler.cpp:445
-  process/log-server/LogDispatchHandler.cpp:470
-  process/log-server/LogDispatchHandler.cpp:480
-  process/log-server/LogDispatchHandler.cpp:506
-  process/log-server/LogDispatchHandler.cpp:533
-  process/log-server/LogDispatchHandler.cpp:559
-  process/log-server/LogDispatchHandler.cpp:566
-  process/log-server/LogDispatchHandler.cpp:572
-  process/log-server/LogDispatchHandler.cpp:579
-  process/log-server/LogDispatchHandler.cpp:585
-  process/log-server/LogDispatchHandler.cpp:609
-  process/log-server/LogDispatchHandler.cpp:615
-  process/log-server/LogDispatchHandler.cpp:625
-  process/log-server/LogDispatchHandler.cpp:631
-  process/log-server/LogDispatchHandler.cpp:641
 
 resources
+  process/controllers/DocumentsGetHandler.cpp:55
+  process/controllers/DocumentsGetHandler.cpp:187
+  process/controllers/DocumentsGetHandler.cpp:442
+  process/controllers/DocumentsGetHandler.cpp:461
+  process/controllers/DocumentsGetHandler.cpp:493
+  process/controllers/TopicController.cpp:70
+  process/controllers/TopicController.cpp:125
+  process/controllers/TopicController.cpp:193
+  process/controllers/TopicController.cpp:257
+  process/controllers/DocumentsSearchHandler.cpp:797
+  process/controllers/DocumentsSearchHandler.cpp:808
   process/controllers/DocumentsController.cpp:637
   process/controllers/DocumentsController.cpp:703
   process/controllers/DocumentsController.cpp:847
   process/controllers/DocumentsController.cpp:1039
-  process/controllers/DocumentsGetHandler.cpp:56
-  process/controllers/DocumentsGetHandler.cpp:188
-  process/controllers/DocumentsGetHandler.cpp:443
-  process/controllers/DocumentsGetHandler.cpp:462
-  process/controllers/DocumentsGetHandler.cpp:494
-  process/controllers/DocumentsSearchHandler.cpp:820
-  process/controllers/DocumentsSearchHandler.cpp:831
   process/controllers/FacetedController.cpp:171
   process/controllers/FacetedController.cpp:233
   process/controllers/FacetedController.cpp:286
@@ -1109,24 +1111,20 @@ resources
   process/controllers/ProductController.cpp:403
   process/controllers/RecommendController.cpp:1008
   process/controllers/RecommendController.cpp:1133
-  process/controllers/TopicController.cpp:70
-  process/controllers/TopicController.cpp:125
-  process/controllers/TopicController.cpp:193
-  process/controllers/TopicController.cpp:257
 
 result
   process/controllers/KeywordsController.cpp:263
   process/controllers/KeywordsController.cpp:357
 
 score
-  process/controllers/DocumentsController.cpp:1053
-  process/controllers/FacetedController.cpp:975
   process/renderers/DocumentsRenderer.cpp:383
   process/renderers/DocumentsRenderer.cpp:393
-  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:32
-  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:96
+  process/controllers/DocumentsController.cpp:1053
+  process/controllers/FacetedController.cpp:975
   core/mining-manager/merchant-score-manager/MerchantScoreRenderer.cpp:21
   core/mining-manager/merchant-score-manager/MerchantScoreRenderer.cpp:29
+  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:32
+  core/mining-manager/merchant-score-manager/MerchantScoreParser.cpp:96
 
 score_type
   process/controllers/FacetedController.cpp:969
@@ -1135,39 +1133,39 @@ search
   process/controllers/CollectionHandler.cpp:61
   process/controllers/CollectionHandler.cpp:63
   process/controllers/CollectionHandler.cpp:65
-  process/controllers/CollectionHandler.cpp:72
-  process/controllers/DocumentsSearchHandler.cpp:373
+  process/controllers/CollectionHandler.cpp:77
+  process/controllers/DocumentsSearchHandler.cpp:368
 
 search_session
-  process/controllers/DocumentsGetHandler.cpp:232
-  process/controllers/DocumentsGetHandler.cpp:235
+  process/controllers/DocumentsGetHandler.cpp:231
+  process/controllers/DocumentsGetHandler.cpp:234
 
 searching_mode
-  process/parsers/SearchParser.cpp:287
+  process/parsers/SearchParser.cpp:338
 
 seconds
   process/controllers/TestController.cpp:43
 
 select
-  process/controllers/DocumentsGetHandler.cpp:213
-  process/controllers/DocumentsSearchHandler.cpp:387
+  process/controllers/DocumentsGetHandler.cpp:212
+  process/controllers/DocumentsSearchHandler.cpp:364
   process/controllers/FacetedController.cpp:787
-  process/controllers/KeywordsController.cpp:92
-  process/controllers/KeywordsController.cpp:96
   process/controllers/LogAnalysisController.cpp:33
   process/controllers/LogAnalysisController.cpp:35
+  process/controllers/KeywordsController.cpp:92
+  process/controllers/KeywordsController.cpp:96
   process/controllers/RecommendController.cpp:231
 
 sentence
   process/controllers/DocumentsController.cpp:1052
 
 session_id
+  process/parsers/SearchParser.cpp:166
   process/controllers/DocumentsController.cpp:963
   process/controllers/LogAnalysisController.cpp:501
   process/controllers/LogAnalysisController.cpp:527
   process/controllers/RecommendController.cpp:515
   process/controllers/RecommendController.cpp:988
-  process/parsers/SearchParser.cpp:166
 
 sim_list
   process/controllers/DocumentsController.cpp:711
@@ -1176,18 +1174,18 @@ similar
   process/controllers/TopicController.cpp:207
 
 similar_to
-  process/controllers/DocumentsGetHandler.cpp:67
+  process/controllers/DocumentsGetHandler.cpp:66
   process/controllers/TopicController.cpp:267
   process/controllers/TopicController.cpp:269
 
 similar_to_image
-  process/controllers/DocumentsGetHandler.cpp:150
+  process/controllers/DocumentsGetHandler.cpp:149
 
 snippet
-  process/parsers/SelectParser.cpp:196
+  process/parsers/SelectParser.cpp:170
 
 sort
-  process/controllers/DocumentsSearchHandler.cpp:403
+  process/controllers/DocumentsSearchHandler.cpp:384
   process/controllers/LogAnalysisController.cpp:57
   process/controllers/LogAnalysisController.cpp:59
 
@@ -1195,16 +1193,16 @@ source
   process/controllers/LogAnalysisController.cpp:241
 
 split_property_value
-  process/parsers/SelectParser.cpp:184
+  process/parsers/SelectParser.cpp:158
 
 star
   process/controllers/RecommendController.cpp:832
 
 start
+  process/controllers/TopicController.cpp:286
   process/controllers/ProductController.cpp:154
   process/controllers/ProductController.cpp:446
   process/controllers/ProductController.cpp:448
-  process/controllers/TopicController.cpp:286
 
 status
   process/controllers/StatusController.cpp:68
@@ -1221,14 +1219,14 @@ sub_property
   process/parsers/GroupingParser.cpp:58
 
 summary
+  process/parsers/SelectParser.cpp:159
   process/controllers/DocumentsController.cpp:1047
-  process/parsers/SelectParser.cpp:185
 
 summary_property_alias
-  process/parsers/SelectParser.cpp:193
+  process/parsers/SelectParser.cpp:167
 
 summary_sentence_count
-  process/parsers/SelectParser.cpp:189
+  process/parsers/SelectParser.cpp:163
 
 synonym_list
   process/controllers/SynonymController.cpp:51
@@ -1240,7 +1238,7 @@ system_events
   process/controllers/LogAnalysisController.cpp:235
 
 taxonomy
-  process/controllers/DocumentsSearchHandler.cpp:858
+  process/controllers/DocumentsSearchHandler.cpp:835
 
 taxonomy_label
   process/parsers/SearchParser.cpp:170
@@ -1251,14 +1249,15 @@ text
   process/controllers/ExtractKeywordsController.cpp:78
 
 threshold
-  process/parsers/SearchParser.cpp:376
-  process/parsers/SearchParser.cpp:378
+  process/parsers/SearchParser.cpp:384
+  process/parsers/SearchParser.cpp:386
 
 time_info
   process/controllers/LogAnalysisController.cpp:837
   process/controllers/LogAnalysisController.cpp:841
 
 timestamp
+  process/controllers/ProductController.cpp:303
   process/controllers/LogAnalysisController.cpp:243
   process/controllers/LogAnalysisController.cpp:505
   process/controllers/LogAnalysisController.cpp:531
@@ -1268,7 +1267,6 @@ timestamp
   process/controllers/LogAnalysisController.cpp:1040
   process/controllers/LogAnalysisController.cpp:1044
   process/controllers/LogAnalysisController.cpp:1052
-  process/controllers/ProductController.cpp:303
 
 title
   process/controllers/ExtractKeywordsController.cpp:104
@@ -1280,11 +1278,11 @@ top_docs
   process/controllers/FacetedController.cpp:734
 
 top_group_label
-  process/controllers/DocumentsSearchHandler.cpp:883
+  process/controllers/DocumentsSearchHandler.cpp:860
 
 top_k_count
-  process/controllers/DocumentsSearchHandler.cpp:136
-  process/controllers/DocumentsSearchHandler.cpp:229
+  process/controllers/DocumentsSearchHandler.cpp:127
+  process/controllers/DocumentsSearchHandler.cpp:220
 
 topic
   process/controllers/TopicController.cpp:194
@@ -1293,15 +1291,15 @@ topic
 
 total_count
   process/controllers/AutoFillController.cpp:115
+  process/controllers/DocumentsGetHandler.cpp:55
+  process/controllers/DocumentsGetHandler.cpp:98
+  process/controllers/DocumentsGetHandler.cpp:137
+  process/controllers/DocumentsGetHandler.cpp:201
+  process/controllers/DocumentsGetHandler.cpp:493
   process/controllers/CollectionHandler.cpp:61
-  process/controllers/CollectionHandler.cpp:76
-  process/controllers/DocumentsGetHandler.cpp:56
-  process/controllers/DocumentsGetHandler.cpp:99
-  process/controllers/DocumentsGetHandler.cpp:138
-  process/controllers/DocumentsGetHandler.cpp:202
-  process/controllers/DocumentsGetHandler.cpp:494
-  process/controllers/DocumentsSearchHandler.cpp:129
-  process/controllers/DocumentsSearchHandler.cpp:228
+  process/controllers/CollectionHandler.cpp:81
+  process/controllers/DocumentsSearchHandler.cpp:120
+  process/controllers/DocumentsSearchHandler.cpp:219
 
 total_freq
   process/controllers/RecommendController.cpp:1005
@@ -1310,11 +1308,11 @@ ts
   process/controllers/TopicController.cpp:195
 
 type
+  process/renderers/DocumentsRenderer.cpp:257
+  process/parsers/CustomRankingParser.cpp:138
   process/controllers/ExtractKeywordsController.cpp:51
   process/controllers/ExtractKeywordsController.cpp:62
   process/controllers/ExtractKeywordsController.cpp:73
-  process/parsers/CustomRankingParser.cpp:138
-  process/renderers/DocumentsRenderer.cpp:257
 
 unit
   process/parsers/GroupingParser.cpp:59
@@ -1324,14 +1322,14 @@ update_info
   process/controllers/LogAnalysisController.cpp:825
 
 use_fuzzy
-  process/parsers/SearchParser.cpp:407
-  process/parsers/SearchParser.cpp:409
+  process/parsers/SearchParser.cpp:415
+  process/parsers/SearchParser.cpp:417
 
 use_original_keyword
-  process/parsers/SearchParser.cpp:256
+  process/parsers/SearchParser.cpp:307
 
 use_synonym_extension
-  process/parsers/SearchParser.cpp:257
+  process/parsers/SearchParser.cpp:308
 
 user_queries
   process/controllers/LogAnalysisController.cpp:349
@@ -1344,27 +1342,27 @@ user_queries
   process/controllers/LogAnalysisController.cpp:990
 
 uuid
-  process/controllers/DocumentsGetHandler.cpp:394
+  process/controllers/DocumentsGetHandler.cpp:393
   process/controllers/ProductController.cpp:73
 
 value
   core/common/parsers/ConditionParser.cpp:52
   core/common/parsers/ConditionParser.cpp:59
   core/common/parsers/ConditionParser.cpp:66
-  process/controllers/CollectionController.cpp:1032
-  process/controllers/CollectionController.cpp:1094
+  process/parsers/SearchParser.cpp:466
+  process/parsers/SearchParser.cpp:554
+  process/parsers/CustomRankingParser.cpp:139
+  process/parsers/CustomRankingParser.cpp:146
+  process/parsers/CustomRankingParser.cpp:151
+  process/controllers/CollectionController.cpp:1021
+  process/controllers/CollectionController.cpp:1083
+  process/controllers/ProductController.cpp:388
   process/controllers/ExtractKeywordsController.cpp:48
   process/controllers/ExtractKeywordsController.cpp:59
   process/controllers/ExtractKeywordsController.cpp:70
   process/controllers/ExtractKeywordsController.cpp:95
   process/controllers/ExtractKeywordsController.cpp:113
-  process/controllers/ProductController.cpp:388
   process/controllers/RecommendController.cpp:95
-  process/parsers/CustomRankingParser.cpp:139
-  process/parsers/CustomRankingParser.cpp:146
-  process/parsers/CustomRankingParser.cpp:151
-  process/parsers/SearchParser.cpp:523
-  process/parsers/SearchParser.cpp:611
 
 weight
   process/controllers/ExtractKeywordsController.cpp:50

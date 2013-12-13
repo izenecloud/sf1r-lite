@@ -227,7 +227,7 @@
             <xs:attribute name="masterport" type="PortType" use="required"/>
             <xs:attribute name="datarecvport" type="PortType" use="required"/>
             <xs:attribute name="filesyncport" type="PortType" use="required"/>
-            <xs:attribute name="checklevel" use="optional">
+            <xs:attribute name="check_level_" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="0"/>

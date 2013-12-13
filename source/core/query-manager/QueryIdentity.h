@@ -9,7 +9,7 @@
  */
 
 #include "ActionItem.h"
-
+#include <glog/logging.h>
 namespace sf1r {
 
 struct QueryIdentity
@@ -49,7 +49,7 @@ struct QueryIdentity
 
     std::vector<std::pair<std::string , bool> > sortInfo;
 
-    std::vector<QueryFiltering::FilteringType> filterInfo;
+    boost::shared_ptr<ConditionsNode> filterTree_;
 
     /// @brief param for group filter
     faceted::GroupParam groupParam;
@@ -98,7 +98,7 @@ struct QueryIdentity
             && properties == other.properties
             && counterList == other.counterList
             && sortInfo == other.sortInfo
-            && filterInfo == other.filterInfo
+            && conditonEqual(filterTree_, other.filterTree_)
             && groupParam == other.groupParam
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
@@ -119,7 +119,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo & filterInfo & groupParam & removeDuplicatedDocs 
+            & properties & counterList & sortInfo & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType & isRandomRank & isSynonym & isAnalyzeResult & querySource);
 };

@@ -119,7 +119,7 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
     {
         boost::filesystem::create_directories(AutofillPath_);
     }
-    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
     leveldbPath_ = AutofillPath_ + "/leveldb";
     ItemdbPath_ = AutofillPath_ + "/itemdb";
     std::string IDPath = AutofillPath_ + "/id/";
@@ -1277,6 +1277,7 @@ void AutoFillChildManager::updateFromLog()
 
 void AutoFillChildManager::flush()
 {
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
     dbTable_.flush();
     dbItem_.flush();
     SaveItem();

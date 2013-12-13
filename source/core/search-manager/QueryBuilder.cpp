@@ -62,68 +62,189 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
-void QueryBuilder::prepare_filter(
-    const std::vector<QueryFiltering::FilteringType>& filtingList,
+bool QueryBuilder::do_process_filtertree(
+    boost::shared_ptr<ConditionsNode>& conditionsTree_,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
-    if (!indexManagerPtr_)
-        return;
-    
-    if (filtingList.size() == 1)
+    if (conditionsTree_->conditionLeafList_.size() == 1 
+            && conditionsTree_->pConditionsNodeList_.size() == 0)
     {
-        const QueryFiltering::FilteringType& filteringItem= filtingList[0];
-        QueryFiltering::FilteringOperation filterOperation = filteringItem.operation_;
-        const std::string& property = filteringItem.property_;
-        const std::vector<PropertyValue>& filterParam = filteringItem.values_;
-        if (!filterCache_->get(filteringItem, pFilterBitmap))
+        if (!filterCache_->get(conditionsTree_->conditionLeafList_[0], pFilterBitmap))
         {
             pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
+
+            QueryFiltering::FilteringOperation filterOperation = conditionsTree_->conditionLeafList_[0].operation_;
+            const std::string& property = conditionsTree_->conditionLeafList_[0].property_;
+            const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[0].values_;
+
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
-            filterCache_->set(filteringItem, pFilterBitmap);
+
+            filterCache_->set(conditionsTree_->conditionLeafList_[0], pFilterBitmap);
+        }
+        return true;
+    }
+    /// not leaf node;
+    std::string relation = conditionsTree_->relation_;
+    std::vector<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > filterBitmapTList1;
+    filterBitmapTList1.resize(conditionsTree_->conditionLeafList_.size());
+    for (unsigned int i = 0; i < conditionsTree_->conditionLeafList_.size(); ++i)
+    {
+        if (!filterCache_->get(conditionsTree_->conditionLeafList_[i], filterBitmapTList1[i]))
+        {
+            filterBitmapTList1[i].reset(new InvertedIndexManager::FilterBitmapT);
+
+            QueryFiltering::FilteringOperation filterOperation = conditionsTree_->conditionLeafList_[i].operation_;
+            const std::string& property = conditionsTree_->conditionLeafList_[i].property_;
+            const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[i].values_;
+
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, filterBitmapTList1[i]);
+
+            filterCache_->set(conditionsTree_->conditionLeafList_[i], filterBitmapTList1[i]);
         }
     }
-    else
+
+    std::vector<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > filterBitmapTList2;
+    filterBitmapTList2.resize(conditionsTree_->pConditionsNodeList_.size());
+    for (unsigned int j = 0; j < conditionsTree_->pConditionsNodeList_.size(); ++j)
     {
-        const unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-        const unsigned int wordBitNum = sizeof(InvertedIndexManager::FilterWordT) << 3;
-        const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+        if (!do_process_filtertree(conditionsTree_->pConditionsNodeList_[j], filterBitmapTList2[j]))
+            return false;
+    }
 
-        pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
+    const unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
+    const unsigned int wordBitNum = sizeof(InvertedIndexManager::FilterWordT) << 3;
+    const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+
+    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);//1
+    
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest;
+    if (relation == "and")
+    {
         pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
-        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap2;
-        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap3;
-
-        try
+        for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
         {
-            std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
-            for (; iter != filtingList.end(); ++iter)
-            {
-                QueryFiltering::FilteringOperation filterOperation = iter->operation_;
-                const std::string& property = iter->property_;
-                const std::vector<PropertyValue>& filterParam = iter->values_;
-                if (!filterCache_->get(*iter, pFilterBitmap2))
-                {
-                    pFilterBitmap2.reset(new InvertedIndexManager::FilterBitmapT);
-                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap2);
-                    filterCache_->set(*iter, pFilterBitmap2);
-                }
-                pFilterBitmap3.reset(new InvertedIndexManager::FilterBitmapT);
-                if (iter->logic_ == QueryFiltering::OR)
-                {
-                    (*pFilterBitmap).logicalor(*pFilterBitmap2, *pFilterBitmap3);
-                }
-                else // if (iter->logic_ == QueryFiltering::AND)
-                {
-                    (*pFilterBitmap).logicaland(*pFilterBitmap2, *pFilterBitmap3);
-                }
-                (*pFilterBitmap).swap(*pFilterBitmap3);
-            }
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
         }
-        catch (std::exception& e)
+        for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
         {
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*(filterBitmapTList2[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
+        }
+    }
+    else if (relation == "or")
+    {
+        pFilterBitmap->addStreamOfEmptyWords(false, wordsNum);
+        for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
+        {
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*(filterBitmapTList1[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
+        }
+        for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
+        {
+            dest.reset(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
+            (*pFilterBitmap).swap(*dest);
+        }
+    }
+    return true;
+}
+
+bool QueryBuilder::prepare_filter(
+        boost::shared_ptr<ConditionsNode>& conditionsTree_,
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx)
+{
+    return do_process_filtertree(conditionsTree_, pFilterBitmapx);
+}
+/*
+void QueryBuilder::do_process_node(
+    QueryFiltering::FilteringTreeValue &filteringTreeRules
+    , std::stack<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> >& BitMapSetStack
+    , boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
+{
+    std::string relation = filteringTreeRules.relation_;
+    std::vector<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > pFilterBitmaplist;
+    pFilterBitmaplist.resize(filteringTreeRules.childNum_);
+
+    for (unsigned int j = 0; j < filteringTreeRules.childNum_; ++j)
+    {
+        pFilterBitmaplist[j] = BitMapSetStack.top();
+        BitMapSetStack.pop();
+    }
+    //get new FitlerBitMap by the relation
+    pFilterBitmap = pFilterBitmaplist[0];
+    if (relation == "and")
+    {
+        for (unsigned int k = 1; k < pFilterBitmaplist.size(); ++k)
+        {
+            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*pFilterBitmaplist[k], *dest);
+            pFilterBitmap = dest;
+        }
+    }
+    else if (relation == "or")
+    {
+        for (unsigned int k = 1; k < pFilterBitmaplist.size(); ++k)
+        {
+            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest(new InvertedIndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*pFilterBitmaplist[k], *dest);
+            pFilterBitmap = dest;
         }
     }
 }
+
+void QueryBuilder::prepare_filter(
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_,
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx)
+{
+    // use stack to deal with filteringTreeRules_
+    std::stack<boost::shared_ptr<InvertedIndexManager::FilterBitmapT> > BitMapSetStack;
+    //for buttom to top
+    for (int i = filteringTreeRules_.size() - 1; i >= 0; i--)
+    {
+        if (filteringTreeRules_[i].isRelationNode_)
+        {
+            if (i != 0)
+            {
+                boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
+                pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
+                
+                do_process_node(filteringTreeRules_[i]
+                                , BitMapSetStack
+                                , pFilterBitmap);
+
+                BitMapSetStack.push(pFilterBitmap);
+            }
+            else
+            {
+                do_process_node(filteringTreeRules_[i]
+                                , BitMapSetStack
+                                , pFilterBitmapx);
+            }
+
+        }
+        else
+        {
+            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
+            
+            if (!filterCache_->get(filteringTreeRules_[i].fitleringType_, pFilterBitmap))
+            {
+                pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
+                QueryFiltering::FilteringOperation filterOperation = filteringTreeRules_[i].fitleringType_.operation_;
+                const std::string& property = filteringTreeRules_[i].fitleringType_.property_;
+                const std::vector<PropertyValue>& filterParam = filteringTreeRules_[i].fitleringType_.values_;
+                indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
+                filterCache_->set(filteringTreeRules_[i].fitleringType_, pFilterBitmap);
+            }
+            
+            BitMapSetStack.push(pFilterBitmap);
+        }
+    }
+}
+*/
 
 WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
     const SearchKeywordOperation& actionOperation,

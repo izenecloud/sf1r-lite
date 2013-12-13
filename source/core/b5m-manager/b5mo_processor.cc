@@ -9,6 +9,7 @@
 #include <product-manager/uuid_generator.h>
 #include <sf1r-net/RpcServerConnectionConfig.h>
 #include <am/sequence_file/ssfr.h>
+#include <util/filesystem.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -18,13 +19,9 @@
 using namespace sf1r;
 using namespace sf1r::b5m;
 
-B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
-    int mode, 
-    sf1r::RpcServerConnectionConfig* img_server_config)
-:odb_(odb), matcher_(matcher), sorter_(NULL), omapper_(NULL), mode_(mode), img_server_cfg_(img_server_config)
-,attr_(matcher->GetAttributeNormalize())
-//,attr_(NULL)
-//, stat1_(0), stat2_(0), stat3_(0)
+B5moProcessor::B5moProcessor(const B5mM& b5mm)
+:b5mm_(b5mm), odb_(NULL), matcher_(NULL), sorter_(NULL), omapper_(NULL), mode_(0), img_server_cfg_(NULL)
+,attr_(NULL)
 {
     status_.AddCategoryGroup("^电脑办公.*$","电脑办公", 0.001);
     status_.AddCategoryGroup("^手机数码>手机$","手机", 0.001);
@@ -38,6 +35,8 @@ B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
 
 B5moProcessor::~B5moProcessor()
 {
+    if(odb_!=NULL) delete odb_;
+    if(matcher_!=NULL) delete matcher_;
 }
 void B5moProcessor::LoadMobileSource(const std::string& file)
 {
@@ -148,7 +147,11 @@ void B5moProcessor::Process(ScdDocument& doc)
         //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         odb_->get(sdocid, spid);
         old_spid = spid;
-        if(spid.empty()) type=NOT_SCD;
+        if(spid.empty())
+        {
+            type=NOT_SCD;
+            LOG(INFO)<<"DELETE pid empty : "<<sdocid<<std::endl;
+        }
         else
         {
             doc.property("uuid") = str_to_propstr(spid);
@@ -250,6 +253,26 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         matcher_->Process(doc, product, true);
         status_.Insert(doc, product);
+        if(product.type==Product::BOOK)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("BOOK");
+        }
+        else if(product.type==Product::SPU)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("SPU");
+        }
+        else if(product.type==Product::FASHION)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("FASHION");
+        }
+        else if(product.type==Product::ATTRIB)
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("ATTRIB");
+        }
+        else
+        {
+            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("NOTP");
+        }
     }
     else
     {
@@ -477,8 +500,48 @@ void B5moProcessor::OMapperChange_(LastOMapperItem& item)
     item.writer->Append(value.doc, value.doc.type);
 }
 
-bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance, const std::string& last_mdb_instance, int thread_num)
+bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string& last_mdb_instance)
 {
+    namespace bfs = boost::filesystem;
+    if(!b5mm_.mobile_source.empty()&&bfs::exists(b5mm_.mobile_source))
+    {
+        LoadMobileSource(b5mm_.mobile_source);
+    }
+    if(!b5mm_.human_match.empty()&&bfs::exists(b5mm_.human_match))
+    {
+        SetHumanMatchFile(b5mm_.human_match);
+    }
+    const std::string& scd_path = b5mm_.scd_path;
+    int thread_num = b5mm_.thread_num;
+    const std::string& knowledge = b5mm_.knowledge;
+    matcher_ = new ProductMatcher;
+    matcher_->SetCmaPath(b5mm_.cma_path);
+    if(knowledge.empty()) matcher_->ForceOpen();
+    else
+    {
+        if(!matcher_->Open(knowledge)) return false;
+    }
+    attr_ = matcher_->GetAttributeNormalize();
+    mode_ = b5mm_.mode;
+    LOG(INFO)<<"B5moGenerator start, mode "<<mode_<<", thread_num "<<thread_num<<", scd "<<scd_path<<std::endl;
+    std::string odb_path = B5MHelper::GetOdbPath(mdb_instance);
+    if(bfs::exists(odb_path))
+    {
+        bfs::remove_all(odb_path);
+    }
+    if(!last_mdb_instance.empty())
+    {
+        std::string last_odb_path = B5MHelper::GetOdbPath(last_mdb_instance);
+        if(!bfs::exists(last_odb_path))
+        {
+            LOG(ERROR)<<"last odb does not exist "<<last_odb_path<<std::endl;
+            return false;
+        }
+        LOG(INFO)<<"copying "<<last_odb_path<<" to "<<odb_path<<std::endl;
+        izenelib::util::filesystem::copy_directory(last_odb_path, odb_path);
+        LOG(INFO)<<"copy finished"<<std::endl;
+    }
+    odb_ = new OfferDb(odb_path);
     if(!odb_->is_open())
     {
         LOG(INFO)<<"open odb..."<<std::endl;
@@ -489,8 +552,8 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         }
         LOG(INFO)<<"odb open successfully"<<std::endl;
     }
-    namespace bfs = boost::filesystem;
-    std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
+    //std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
+    std::string output_dir = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(output_dir);
     std::string sorter_path = B5MHelper::GetB5moBlockPath(mdb_instance); 
     B5MHelper::PrepareEmptyDir(sorter_path);
@@ -621,11 +684,46 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         //odb_->flush();
     //}
 
-    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-    ScdDocProcessor sd_processor(p, thread_num);
-    sd_processor.AddInput(scd_path);
-    sd_processor.SetOutput(writer);
-    sd_processor.Process();
+    std::vector<std::string> r_scd_list;
+    std::vector<std::string> u_scd_list;
+    std::vector<std::string> d_scd_list;
+    std::vector<std::string> scd_list;
+    ScdParser::getScdList(scd_path, scd_list);
+    for(std::size_t i=0;i<scd_list.size();i++)
+    {
+        const std::string& scd = scd_list[i];
+        SCD_TYPE type = ScdParser::checkSCDType(scd);
+        if(type==RTYPE_SCD)
+        {
+            r_scd_list.push_back(scd);
+        }
+        else if(type==DELETE_SCD)
+        {
+            d_scd_list.push_back(scd);
+        }
+        else
+        {
+            u_scd_list.push_back(scd);
+        }
+    }
+    if(!r_scd_list.empty()||!d_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, 1);
+        sd_processor.AddInput(r_scd_list);
+        sd_processor.AddInput(d_scd_list);
+        sd_processor.SetOutput(writer);
+        sd_processor.Process();
+    }
+    if(!u_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, thread_num);
+        sd_processor.AddInput(u_scd_list);
+        sd_processor.SetOutput(writer);
+        sd_processor.Process();
+    }
+    writer->Close();
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();

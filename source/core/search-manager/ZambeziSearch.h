@@ -37,6 +37,7 @@ namespace faceted
 {
 class GroupFilterBuilder;
 class PropValueTable;
+class OntologyRep;
 }
 
 class ZambeziSearch : public SearchBase
@@ -76,6 +77,12 @@ private:
         PropSharedLockSet& propSharedLockSet,
         faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
 
+    void getTopAttrs_(
+        const std::vector<unsigned int>& docIdList,
+        faceted::GroupParam& groupParam,
+        PropSharedLockSet& propSharedLockSet,
+        faceted::OntologyRep& attrRep);
+
     void getAnalyzedQuery_(
         const std::string& rawQuery,
         izenelib::util::UString& analyzedQuery);
@@ -96,6 +103,8 @@ private:
     ZambeziManager* zambeziManager_;
 
     const faceted::PropValueTable* categoryValueTable_;
+
+    const faceted::PropValueTable* merchantValueTable_;
 
     faceted::AttrManager* attrManager_;
 

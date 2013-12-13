@@ -13,6 +13,7 @@
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <index-manager/zambezi-manager/ZambeziManager.h>
+#include <util/fmath/fmath.hpp>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
@@ -23,6 +24,8 @@
 #include <glog/logging.h>
 #include <iostream>
 #include <set>
+#include <math.h>
+#include <algorithm>
 #include <boost/scoped_ptr.hpp>
 
 namespace sf1r
@@ -35,6 +38,12 @@ const std::size_t kZambeziTopKNum = 1e6;
 
 const std::string kTopLabelPropName = "Category";
 const size_t kRootCateNum = 10;
+
+const std::string kMerchantPropName = "Source";
+const izenelib::util::UString::EncodingType kEncodeType =
+    izenelib::util::UString::UTF_8;
+const izenelib::util::UString kAttrExcludeMerchant =
+    izenelib::util::UString("淘宝网", kEncodeType);
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
 
@@ -57,6 +66,7 @@ ZambeziSearch::ZambeziSearch(
     , groupFilterBuilder_(NULL)
     , zambeziManager_(zambeziManager)
     , categoryValueTable_(NULL)
+    , merchantValueTable_(NULL)
 {
 }
 
@@ -65,6 +75,7 @@ void ZambeziSearch::setMiningManager(
 {
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
+    merchantValueTable_ = miningManager->GetPropValueTable(kMerchantPropName);
     attrManager_= miningManager->GetAttributeManager();
     numericTableBuilder_ = miningManager->GetNumericTableBuilder();
 }
@@ -123,6 +134,7 @@ bool ZambeziSearch::search(
     getZambeziAlgorithm(actionOperation.actionItem_.searchingMode_.algorithm_, algorithm);
 
     LOG(INFO) << "zambezi search for query: " << query;
+
     if (query.empty())
         return false;
 
@@ -150,14 +162,15 @@ bool ZambeziSearch::search(
             groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
-    const std::vector<QueryFiltering::FilteringType>& filterList =
-        actionOperation.actionItem_.filteringList_;
+    boost::shared_ptr<ConditionsNode>& filterTree =
+        actionOperation.actionItem_.filterTree_;
+
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
 
-    if (!filterList.empty())
+    if (!filterTree->empty())
     {
-        queryBuilder_.prepare_filter(filterList, filterBitmap);
+        queryBuilder_.prepare_filter(filterTree, filterBitmap);
         filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
         filterBitVector->importFromEWAH(*filterBitmap);
     }
@@ -261,6 +274,7 @@ bool ZambeziSearch::search(
             resultList[i] = scoreItem; 
         }
     }
+    /// end
 
     searchResult.totalCount_ = totalCount;
     std::size_t topKCount = 0;
@@ -306,33 +320,10 @@ bool ZambeziSearch::search(
         groupFilter->getGroupRep(searchResult.groupRep_, tempAttrRep);
     }
 
-    // get attr results for top docs
-    if (originIsAttrGroup && groupFilterBuilder_)
+    if (originIsAttrGroup)
     {
-        izenelib::util::ClockTimer attrTimer;
-
-        faceted::GroupParam attrGroupParam;
-        attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
-        attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
-        attrGroupParam.searchMode_ = groupParam.searchMode_;
-        attrGroupParam.isAttrToken_ = zambeziManager_->isAttrTokenize();
-
-        boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
-            groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));
-
-        if (attrGroupFilter)
-        {
-            const size_t topNum = std::min(docIdList.size(), kAttrTopDocNum);
-            for (size_t i = 0; i < topNum; ++i)
-            {
-                attrGroupFilter->test(docIdList[i]);
-            }
-
-            faceted::GroupRep tempGroupRep;
-            attrGroupFilter->getGroupRep(tempGroupRep, searchResult.attrRep_);
-        }
-
-        LOG(INFO) << "attrGroupFilter costs :" << attrTimer.elapsed() << " seconds";
+        getTopAttrs_(docIdList, groupParam, propSharedLockSet,
+                     searchResult.attrRep_);
     }
 
     if (sorter)
@@ -354,7 +345,6 @@ void ZambeziSearch::getTopLabels_(
     const std::vector<float>& rankScoreList,
     PropSharedLockSet& propSharedLockSet,
     faceted::GroupParam::GroupLabelScoreMap& topLabelMap)
-
 {
     if (!categoryValueTable_)
         return;
@@ -414,6 +404,57 @@ void ZambeziSearch::getTopLabels_(
               << ", costs: " << timer.elapsed() << " seconds";
 }
 
+void ZambeziSearch::getTopAttrs_(
+    const std::vector<unsigned int>& docIdList,
+    faceted::GroupParam& groupParam,
+    PropSharedLockSet& propSharedLockSet,
+    faceted::OntologyRep& attrRep)
+{
+    if (!groupFilterBuilder_)
+        return;
+
+    izenelib::util::ClockTimer timer;
+
+    faceted::GroupParam attrGroupParam;
+    attrGroupParam.isAttrGroup_ = groupParam.isAttrGroup_ = true;
+    attrGroupParam.attrGroupNum_ = groupParam.attrGroupNum_;
+    attrGroupParam.searchMode_ = groupParam.searchMode_;
+
+    boost::scoped_ptr<faceted::GroupFilter> attrGroupFilter(
+        groupFilterBuilder_->createFilter(attrGroupParam, propSharedLockSet));
+
+    if (!attrGroupFilter)
+        return;
+
+    faceted::PropValueTable::pvid_t excludeMerchantId = 0;
+    if (merchantValueTable_)
+    {
+        std::vector<izenelib::util::UString> path;
+        path.push_back(kAttrExcludeMerchant);
+
+        propSharedLockSet.insertSharedLock(merchantValueTable_);
+        excludeMerchantId = merchantValueTable_->propValueId(path, false);
+    }
+
+    size_t testNum = 0;
+    for (size_t i = 0; i < docIdList.size() && testNum < kAttrTopDocNum; ++i)
+    {
+        docid_t docId = docIdList[i];
+
+        if (excludeMerchantId &&
+            merchantValueTable_->testDoc(docId, excludeMerchantId))
+            continue;
+
+        attrGroupFilter->test(docId);
+        ++testNum;
+    }
+
+    faceted::GroupRep tempGroupRep;
+    attrGroupFilter->getGroupRep(tempGroupRep, attrRep);
+
+    LOG(INFO) << "attrGroupFilter costs :" << timer.elapsed() << " seconds";
+}
+
 void ZambeziSearch::getAnalyzedQuery_(
     const std::string& rawQuery,
     izenelib::util::UString& analyzedQuery)
@@ -462,12 +503,16 @@ void ZambeziSearch::normalizeScore_(
 
     std::string propName = "itemcount";
     std::string propName_comment = "CommentCount";
+    std::string propName_sales = "SalesAmount";
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
         numericTableBuilder_->createPropertyTable(propName);
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
         numericTableBuilder_->createPropertyTable(propName_comment);
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable_sales =
+        numericTableBuilder_->createPropertyTable(propName_sales);
 
     if (numericTable)
         sharedLockSet.insertSharedLock(numericTable.get());
@@ -477,40 +522,54 @@ void ZambeziSearch::normalizeScore_(
 
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
+        int32_t itemcount = 1;
+        if (numericTable)
+            numericTable->getInt32Value(docids[i], itemcount, false);
+
         uint32_t attr_size = 1;
-        if (attTable)
+         if (attTable)
         {
             faceted::AttrTable::ValueIdList attrvids;
             attTable->getValueIdList(docids[i], attrvids);
-            attr_size = std::min(attrvids.size(), size_t(10));
+            attr_size += std::min(attrvids.size(), size_t(30))*10.;
         }
 
-        int32_t itemcount = 1;
-        if (numericTable)
-        {
-            numericTable->getInt32Value(docids[i], itemcount, false);
-            attr_size += std::min(itemcount, 50);
-        }
 
-        if (numericTable_comment)
-        {
-            int32_t commentcount = 1;
-            numericTable_comment->getInt32Value(docids[i], commentcount, false);
-            if (itemcount != 0)
-                attr_size += std::min(commentcount/itemcount, 100);
-            else
-                attr_size += std::min(commentcount, 100);
+        // int32_t itemcount = 1;
+        // if (numericTable)
+        // {
+        //     numericTable->getInt32Value(docids[i], itemcount, false);
+        //     attr_size += std::min(itemcount, 50);
+        // }
 
-        }
+        // if (numericTable_comment)
+        // {
+        //     int32_t commentcount = 1;
+        //     numericTable_comment->getInt32Value(docids[i], commentcount, false);
+        //     if (itemcount != 0)
+        //         attr_size += std::min(commentcount/itemcount, 100);
+        //     else
+        //         attr_size += std::min(commentcount, 100);
 
-        scores[i] = scores[i] * pow(attr_size, 0.3);
+        // }
+        // if (numericTable_sales)
+        // {
+        //     int32_t salescount = 0;
+        //     numericTable_sales->getInt32Value(docids[i], salescount, false);
+        //     attr_size += (double)salescount/itemcount;
+        // }
+
+
+        scores[i] = scores[i] + attr_size;
         if (scores[i] > maxScore)
             maxScore = scores[i];
     }
 
     for (unsigned int i = 0; i < scores.size(); ++i)
     {
-        scores[i] = int(scores[i] / maxScore * 100) + productScores[i];
+        float x = fmath::exp((float)(scores[i]/60000.*-1));
+        x = (1-x)/(1+x);
+        scores[i] = int((x*100. + productScores[i])/10+0.5)*10;
     }
 }
 

@@ -32,7 +32,7 @@ B5mpDocGenerator::B5mpDocGenerator()
     pic_weighter_.insert(std::make_pair("天猫", 0));
     pic_weighter_.insert(std::make_pair("淘宝网", 0));
 }
-void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc, bool spu_only)
+void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
 {
     pdoc.type=UPDATE_SCD;
     int64_t itemcount=0;
@@ -147,7 +147,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             }
             catch(std::exception& ex)
             {
-                std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
+                //std::cerr<<"sales amount error: ["<<samount<<"] on oid "<<oid<<std::endl;
             }
         }
         std::string ccount;
@@ -161,7 +161,7 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
             }
             catch(std::exception& ex)
             {
-                std::cerr<<"comment count error: ["<<ccount<<"] on oid "<<oid<<std::endl;
+                //std::cerr<<"comment count error: ["<<ccount<<"] on oid "<<oid<<std::endl;
             }
         }
     }
@@ -262,7 +262,6 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
         pdoc.type=DELETE_SCD;
         pdoc.clearExceptDOCID();
     }
-    if(spu_only&&pdoc.type==UPDATE_SCD&&independent) pdoc.type = NOT_SCD;
 }
 
 bool B5mpDocGenerator::SubDocCompare_(const Document& x, const Document& y)
