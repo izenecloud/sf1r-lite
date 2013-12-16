@@ -28,7 +28,7 @@ public:
 
     virtual score_t score(docid_t docId);
 
-    score_t calculate(score_t value);
+    score_t calculate(score_t value) const;
 
 private:
     const ProductScoreConfig& config_;

@@ -29,7 +29,7 @@ score_t NumericExponentScorer::score(docid_t docId)
     return 0;
 }
 
-score_t NumericExponentScorer::calculate(score_t value)
+score_t NumericExponentScorer::calculate(score_t value) const
 {
     config_.limitScore(value);
 

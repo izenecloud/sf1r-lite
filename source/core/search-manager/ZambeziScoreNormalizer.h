@@ -8,13 +8,13 @@
 
 #include <common/inttypes.h>
 #include <common/PropSharedLockSet.h>
+#include <mining-manager/product-scorer/NumericExponentScorer.h>
 
 #include <vector>
 
 namespace sf1r
 {
 class MiningManager;
-class NumericPropertyTableBuilder;
 
 namespace faceted { class AttrTable; }
 
@@ -30,7 +30,9 @@ public:
         PropSharedLockSet& sharedLockSet);
 
 private:
-    NumericPropertyTableBuilder& numericTableBuilder_;
+    const NumericExponentScorer exponentScorer_;
+
+    const float relevanceWeight_;
 
     const faceted::AttrTable* attrTable_;
 };

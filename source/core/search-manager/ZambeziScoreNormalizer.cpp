@@ -1,5 +1,4 @@
 #include "ZambeziScoreNormalizer.h"
-#include <search-manager/NumericPropertyTableBuilder.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/attr-manager/AttrTable.h>
 #include <util/fmath/fmath.hpp>
@@ -8,7 +7,9 @@ namespace sf1r
 {
 
 ZambeziScoreNormalizer::ZambeziScoreNormalizer(MiningManager& miningManager)
-        : numericTableBuilder_(*miningManager.GetNumericTableBuilder())
+        : exponentScorer_(miningManager.getMiningSchema().
+                          product_ranking_config.scores[ZAMBEZI_RELEVANCE_SCORE])
+        , relevanceWeight_(exponentScorer_.weight())
         , attrTable_(miningManager.GetAttrTable())
 {
 }
@@ -24,38 +25,19 @@ void ZambeziScoreNormalizer::normalizeScore(
         sharedLockSet.insertSharedLock(attrTable_);
     }
 
-    std::string propName = "itemcount";
-    boost::shared_ptr<NumericPropertyTableBase> numericTable =
-            numericTableBuilder_.createPropertyTable(propName);
-
-    if (numericTable)
-    {
-        sharedLockSet.insertSharedLock(numericTable.get());
-    }
-
     for (uint32_t i = 0; i < docids.size(); ++i)
     {
-        int32_t itemcount = 1;
-        if (numericTable)
-        {
-            numericTable->getInt32Value(docids[i], itemcount, false);
-        }
-
-        uint32_t attr_size = 1;
+        float attrScore = 1;
         if (attrTable_)
         {
-            faceted::AttrTable::ValueIdList attrvids;
-            attrTable_->getValueIdList(docids[i], attrvids);
-            attr_size += std::min(attrvids.size(), size_t(30))*10.;
+            faceted::AttrTable::ValueIdList vids;
+            attrTable_->getValueIdList(docids[i], vids);
+            attrScore += std::min(vids.size(), std::size_t(30)) * 10;
         }
-        relevanceScores[i] += attr_size;
-    }
 
-    for (unsigned int i = 0; i < relevanceScores.size(); ++i)
-    {
-        float x = fmath::exp((float)(relevanceScores[i]/60000.*-1));
-        x = (1-x)/(1+x);
-        relevanceScores[i] = int((x*100. + productScores[i])/10+0.5)*10;
+        float normScore = relevanceScores[i] + attrScore;
+        normScore = exponentScorer_.calculate(normScore);
+        relevanceScores[i] = normScore*relevanceWeight_ + productScores[i];
     }
 }
 

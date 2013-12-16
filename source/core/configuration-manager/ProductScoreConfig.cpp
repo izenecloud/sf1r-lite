@@ -50,15 +50,14 @@ std::string ProductScoreConfig::toStr() const
 
     oss << "weight: " << weight
         << ", min: " << minLimit
-        << ", max: " << maxLimit << std::endl;
+        << ", max: " << maxLimit
+        << ", zoomin: " << zoomin
+        << std::endl;
 
-    if (!factors.empty())
+    for (std::size_t i = 0; i < factors.size(); ++i)
     {
-        for (std::size_t i = 0; i < factors.size(); ++i)
-        {
-            oss << "factor: " << i << ", "
-                << factors[i].toStr();
-        }
+        oss << "factor: " << i << ", "
+            << factors[i].toStr();
     }
 
     return oss.str();
