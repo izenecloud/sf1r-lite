@@ -113,6 +113,31 @@ bool ProductPrice::Parse(const std::string& str)
     }
     return true;
 }
+ProductPriceType ProductPrice::ParseValue(const izenelib::util::UString& ustr)
+{
+    std::string str;
+    ustr.convertString(str, izenelib::util::UString::UTF_8);
+    return ParseValue(str);
+}
+
+ProductPriceType ProductPrice::ParseValue(const std::string& str)
+{
+    ProductPrice pprice;
+    if(!pprice.Parse(str))
+    {
+        return -1.0;
+    }
+    ProductPriceType price;
+    pprice.GetMid(price);
+    return price;
+}
+
+ProductPriceType ProductPrice::ParseDocPrice(const Document& doc, const std::string& price_property_name)
+{
+    std::string sprice;
+    doc.getString(price_property_name, sprice);
+    return ProductPrice::ParseValue(sprice);
+}
 
 std::string ProductPrice::ToString() const
 {

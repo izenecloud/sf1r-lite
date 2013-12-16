@@ -220,8 +220,8 @@ bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 
     response().addWarning(filteringParser.warningMessage());
 
-    std::swap(itemCondition.filteringList_,
-        filteringParser.mutableFilteringRules());
+    std::swap(itemCondition.filterTree_,
+        filteringParser.mutableFilteringTreeRules());
 
     return true;
 }

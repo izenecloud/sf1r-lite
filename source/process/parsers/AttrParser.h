@@ -7,7 +7,6 @@
  */
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
-
 namespace sf1r {
 
 /// @addtogroup parsers

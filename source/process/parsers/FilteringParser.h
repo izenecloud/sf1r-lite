@@ -5,6 +5,8 @@
  * @author Ian Yang
  * @date Created <2010-06-11 17:22:42>
  */
+
+#include "FilteringParserHelper.h"
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
@@ -12,7 +14,9 @@
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <query-manager/QueryTypeDef.h>
 
+#include <common/parsers/ConditionsTree.h>
 #include <string>
+#include <stack>
 
 namespace sf1r {
 
@@ -25,31 +29,28 @@ public:
         const MiningSchema& miningSchema)
     : indexSchema_(indexSchema)
     , miningSchema_(miningSchema)
+    , filterConditionTree_(new ConditionsNode())
     {}
 
     bool parse(const Value& conditions);
     
-    std::vector<QueryFiltering::FilteringType>&
-    mutableFilteringRules()
+    bool parse_tree(const Value& conditions);
+
+    boost::shared_ptr<ConditionsNode>&
+    mutableFilteringTreeRules()
     {
-        return filteringRules_;
+        return filterConditionTree_;
     }
 
-    const std::vector<QueryFiltering::FilteringType>&
-    filteringRules() const
-    {
-        return filteringRules_;
-    }
-
-    static QueryFiltering::FilteringOperation toFilteringOperation(
-        const std::string& op
-    );
+    // static QueryFiltering::FilteringOperation toFilteringOperation(
+    //     const std::string& op
+    // );
     
 private:
     const IndexBundleSchema& indexSchema_;
     const MiningSchema& miningSchema_;
 
-    std::vector<QueryFiltering::FilteringType> filteringRules_;
+    boost::shared_ptr<ConditionsNode> filterConditionTree_;
 };
 
 } // namespace sf1r

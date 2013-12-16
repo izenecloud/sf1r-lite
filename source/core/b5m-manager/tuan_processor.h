@@ -30,7 +30,7 @@ class TuanProcessor{
         bool dd(const TuanProcessorAttach& other) const
         {
             if(sid!=other.sid) return false;
-            //return true;
+            return true;
             ProductPriceType mid1;
             ProductPriceType mid2;
             if(!price.GetMid(mid1)) return false;
