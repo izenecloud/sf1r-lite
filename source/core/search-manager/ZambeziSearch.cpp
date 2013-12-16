@@ -292,7 +292,7 @@ void ZambeziSearch::getTopLabels_(
     izenelib::util::ClockTimer timer;
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
-    typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
+    typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, faceted::GroupPathScoreInfo> > TopCatIdsT;
     TopCatIdsT topCateIds;
     const std::size_t topNum = docIdList.size();
     std::set<faceted::PropValueTable::pvid_t> rootCateIds;
@@ -319,7 +319,7 @@ void ZambeziSearch::getTopLabels_(
             }
             if (!is_exist)
             {
-                topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+                topCateIds.push_back(std::make_pair(catId, faceted::GroupPathScoreInfo(rankScoreList[i], docIdList[i])));
 
                 category_id_t rootId = categoryValueTable_->getRootValueId(catId);
                 rootCateIds.insert(rootId);
