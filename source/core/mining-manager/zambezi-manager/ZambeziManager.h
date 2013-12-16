@@ -7,8 +7,6 @@
 #define SF1R_ZAMBEZI_MANAGER_H
 
 #include <common/inttypes.h>
-#include <common/PropSharedLockSet.h>
-#include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <glog/logging.h>
@@ -20,12 +18,6 @@
 namespace sf1r
 {
 
-namespace faceted
-{
-class GroupManager;
-class AttrManager;
-}
-
 class DocumentManager;
 class MiningTask;
 class ZambeziConfig;
@@ -33,10 +25,7 @@ class ZambeziConfig;
 class ZambeziManager
 {
 public:
-    ZambeziManager(
-            const ZambeziConfig& config,
-            faceted::AttrManager* attrManager,
-            NumericPropertyTableBuilder* numericTableBuilder);
+    ZambeziManager(const ZambeziConfig& config);
 
     bool open();
 
@@ -58,20 +47,10 @@ public:
                   << ", costs: " << timer.elapsed() << " seconds";
     }
 
-    void NormalizeScore(
-        std::vector<docid_t>& docids,
-        std::vector<float>& scores,
-        std::vector<float>& productScores,
-        PropSharedLockSet &sharedLockSet);
-
 private:
     const ZambeziConfig& config_;
 
-    faceted::AttrManager* attrManager_;
-
     izenelib::ir::Zambezi::AttrScoreInvertedIndex indexer_;
-
-    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r
