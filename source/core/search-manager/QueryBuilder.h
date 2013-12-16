@@ -22,6 +22,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/threadpool.hpp>
+#include <common/parsers/ConditionsTree.h>
 
 #include <vector>
 
@@ -77,14 +78,18 @@ public:
         bool readPositions,
         const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
     );
+/*
+    void prepare_filter(
+        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_,
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);*/
+    bool prepare_filter(
+        boost::shared_ptr<ConditionsNode>& conditionsTree_,
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx);
+
 
     /*
     *@brief Generate Filter, filter will be released by the user.
     */
-    void prepare_filter(
-        const std::vector<QueryFiltering::FilteringType>& filtingList,
-        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap
-    );
 
     void reset_cache();
 
@@ -192,6 +197,15 @@ private:
         std::vector<termid_t>& outTermIds,
         std::vector<termid_t>& outTermIndexes
     );
+
+    bool do_process_filtertree(
+        boost::shared_ptr<ConditionsNode>& conditionsTree_,
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap);
+/*
+    void do_process_node(
+        QueryFiltering::FilteringTreeValue &filteringTreeRules,
+        std::stack<boost::shared_ptr<IndexManager::FilterBitmapT> >& BitMapSetStack, 
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);*/
 
 private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;

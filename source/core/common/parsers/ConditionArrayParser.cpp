@@ -11,7 +11,7 @@ namespace sf1r {
  *
  * The @b conditions field is an array. It specifies filtering conditions on
  * properties. All conditions are combined using AND, i.e., returned result must
- * satisfied all conditions.
+ * satisfied all conditions.This conditions can also be a tree-like construtcion, see @b ConditionTreeParser.
  *
  * Every item is an object of following fields:
  * - @b property* (@c String): Which property current condition applies on.
@@ -49,7 +49,6 @@ namespace sf1r {
  *   {"property":"rating", "operator":">", "value":3}
  * ]
  * @endcode
- *
  */
 
 ConditionArrayParser::ConditionArrayParser()
@@ -59,12 +58,7 @@ bool ConditionArrayParser::parse(const Value& conditions)
 {
     clearMessages();
     parsers_.clear();
-
-    if (conditions.type() == Value::kNullType)
-    {
-        return true;
-    }
-
+    
     const Value::ArrayType* array = conditions.getPtr<Value::ArrayType>();
     if (!array)
     {
