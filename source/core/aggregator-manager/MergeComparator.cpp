@@ -145,7 +145,7 @@ bool greaterThan(DocumentComparator* comp1, size_t idx1, wdocid_t left_docid,
         {
             float v1 = ((float*)dataList1)[idx1];
             float v2 = ((float*)dataList2)[idx2];
-            if (v1 == v2) continue;
+            if (std::fabs(v1 - v2) <= std::numeric_limits<float>::epsilon()) continue;
             return pSortProperty1->isReverse() ? (v1 < v2) : (v1 > v2);
         }
         else if (dataType1 == SortPropertyData::DATA_TYPE_STRING)
