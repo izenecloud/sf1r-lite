@@ -46,30 +46,6 @@ void AdSelector::init(const std::string& segments_data_path, AdClickPredictor* p
         throw std::runtime_error("no default features");
     }
 
-    std::ifstream ifs(std::string(segments_data_path_ + "/clicked_ad.data").c_str());
-    if (ifs.good())
-    {
-        std::size_t num = 0;
-        ifs.read((char*)&num, sizeof(num));
-        std::vector<docid_t> clicked_list(num);
-        ifs.read((char*)clicked_list[0], sizeof(docid_t)*num);
-        for(size_t i = 0; i < clicked_list.size(); ++i)
-        {
-            clicked_ads_.set(clicked_list[i]);
-        }
-    }
-    std::ifstream ifs_seg(std::string(segments_data_path_ + "/all_segments.data").c_str());
-    if (ifs_seg.good())
-    {
-        std::size_t len = 0;
-        ifs_seg.read((char*)&len, sizeof(len));
-        std::string data;
-        data.resize(len);
-        ifs_seg.read((char*)data[0], len);
-        izenelib::util::izene_deserialization<FeatureMapT> izd(data.data(), data.size());
-        izd.read_image(all_segments_);
-    }
-
     if (all_segments_.empty())
     {
         all_segments_ = default_full_features_;
@@ -109,11 +85,35 @@ void AdSelector::init(const std::string& segments_data_path, AdClickPredictor* p
     ctr_update_thread_ = boost::thread(boost::bind(&AdSelector::updateFunc, this));
 }
 
-void AdSelector::stop()
+void AdSelector::load()
 {
-    ctr_update_thread_.interrupt();
-    ctr_update_thread_.join();
+    std::ifstream ifs(std::string(segments_data_path_ + "/clicked_ad.data").c_str());
+    if (ifs.good())
+    {
+        std::size_t num = 0;
+        ifs.read((char*)&num, sizeof(num));
+        std::vector<docid_t> clicked_list(num);
+        ifs.read((char*)clicked_list[0], sizeof(docid_t)*num);
+        for(size_t i = 0; i < clicked_list.size(); ++i)
+        {
+            clicked_ads_.set(clicked_list[i]);
+        }
+    }
+    std::ifstream ifs_seg(std::string(segments_data_path_ + "/all_segments.data").c_str());
+    if (ifs_seg.good())
+    {
+        std::size_t len = 0;
+        ifs_seg.read((char*)&len, sizeof(len));
+        std::string data;
+        data.resize(len);
+        ifs_seg.read((char*)data[0], len);
+        izenelib::util::izene_deserialization<FeatureMapT> izd(data.data(), data.size());
+        izd.read_image(all_segments_);
+    }
+}
 
+void AdSelector::save()
+{
     std::ofstream ofs(std::string(segments_data_path_ + "/clicked_ad.data").c_str());
     std::vector<docid_t> clicked_list;
     for(std::size_t i = 0; i < clicked_ads_.size(); ++i)
@@ -125,6 +125,7 @@ void AdSelector::stop()
     ofs.write((const char*)&len, sizeof(len));
     if (!clicked_list.empty())
         ofs.write((const char*)&clicked_list[0], sizeof(clicked_list[0])*clicked_list.size());
+    ofs.flush();
 
     std::ofstream ofs_seg(std::string(segments_data_path_ + "/all_segments.data").c_str());
     len = 0;
@@ -133,6 +134,15 @@ void AdSelector::stop()
     izs.write_image(buf, len);
     ofs_seg.write((const char*)&len, sizeof(len));
     ofs_seg.write(buf, len);
+    ofs_seg.flush();
+}
+
+void AdSelector::stop()
+{
+    ctr_update_thread_.interrupt();
+    ctr_update_thread_.join();
+
+    save();
 }
 
 void AdSelector::updateFunc()
@@ -142,6 +152,7 @@ void AdSelector::updateFunc()
         try
         {
             computeHistoryCTR();
+            save();
             struct timespec ts;
             ts.tv_sec = 10;
             ts.tv_nsec = 0;
@@ -226,6 +237,9 @@ void AdSelector::computeHistoryCTR()
     // update the history ctr every few hours.
     // Compute the CTR for each user segment and each ad segment.
     //
+    std::string history_ctr_file = segments_data_path_ + "/history_ctr.txt";
+    std::ofstream ofs_history(history_ctr_file.c_str());
+
     std::map<std::string, std::size_t> segments_counter = init_counter_;
     std::map<std::string, std::size_t>::iterator counter_it = segments_counter.begin();
     assert(segments_counter.size() == all_segments_.size() &&
@@ -243,7 +257,9 @@ void AdSelector::computeHistoryCTR()
             key += value;
             segment_data.push_back(std::make_pair(segit->first, value));
         }
-        history_ctr_data_[key] = ad_click_predictor_->predict(segment_data);
+        double ctr_res = ad_click_predictor_->predict(segment_data);
+        history_ctr_data_[key] = ctr_res;
+        ofs_history << key << " : " << ctr_res << std::endl;
         while (counter_it->second >= all_segments_[counter_it->first].size() - 1)
         {
             ++counter_it;
@@ -253,6 +269,7 @@ void AdSelector::computeHistoryCTR()
         if (counter_it != segments_counter.end())
             ++(counter_it->second);
     }
+    ofs_history.flush();
     LOG(INFO) << "update history ctr finished.";
 }
 

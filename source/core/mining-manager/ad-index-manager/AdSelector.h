@@ -40,6 +40,8 @@ public:
 
     void updateClicked(docid_t ad_id);
     void updateSegments(const FeatureT& segments);
+    void load();
+    void save();
 
 private:
 
