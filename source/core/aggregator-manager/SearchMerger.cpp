@@ -19,7 +19,7 @@ using faceted::GroupPathScoreInfo;
 
 static bool IsGreaterGPScoreInfo(const GroupPathScoreInfo& left, const GroupPathScoreInfo& right)
 {
-    if (std::fabs(left.score - right.score) < std::numeric_limits<double>::epsilon())
+    if (std::fabs(left.score - right.score) <= std::numeric_limits<double>::epsilon())
     {
         LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
             << ", docid : " << left.wdocid << " VS " << right.wdocid;

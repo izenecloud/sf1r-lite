@@ -100,7 +100,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     //std::vector<QueryFiltering::FilteringTreeValue>& filtingTreeList =
     //    actionOperation.actionItem_.filteringTreeList_;
 
-    boost::shared_ptr<ConditionsNode>& filtingTreeList = 
+    ConditionsNode& filtingTreeList = 
                     actionOperation.actionItem_.filterTree_;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet;
@@ -112,7 +112,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     LOG(INFO) << "search in thread worker begin prepare doc iterator -------- " << time(NULL);
     try
     {
-        if (!filtingTreeList->empty())
+        if (!filtingTreeList.empty())
         {
             queryBuilder_.prepare_filter(filtingTreeList, pFilterIdSet);
         }

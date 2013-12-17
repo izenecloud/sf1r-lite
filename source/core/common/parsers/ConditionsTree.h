@@ -12,20 +12,24 @@
 #include <boost/scoped_ptr.hpp>
 #include <query-manager/QueryTypeDef.h>
 #include <glog/logging.h>
+#include <common/sf1_msgpack_serialization_types.h>
+#include <3rdparty/msgpack/msgpack.hpp>
+#include <util/izene_serialization.h>
+#include <net/aggregator/Util.h>
 
-#define MAXSIZE 5
 
 //using namespace izenelib::driver;
 namespace sf1r {
 
 ///this is node with relatonship, the leaf node is FilteringType;
-struct ConditionsNode
+class ConditionsNode
 {
+public:
     std::string relation_;
     
     std::vector<QueryFiltering::FilteringType> conditionLeafList_;
     
-    std::vector<boost::shared_ptr<ConditionsNode> > pConditionsNodeList_;
+    std::vector<ConditionsNode> conditionsNodeList_;
 
     ConditionsNode()
     : relation_("and")
@@ -33,12 +37,12 @@ struct ConditionsNode
 
     bool isLeafNode()
     {
-        return conditionLeafList_.size() != 0 && pConditionsNodeList_.size() == 0;
+        return conditionLeafList_.size() != 0 && conditionsNodeList_.size() == 0;
     }
 
     unsigned int getChildNum()
     {
-        return conditionLeafList_.size() + pConditionsNodeList_.size();
+        return conditionLeafList_.size() + conditionsNodeList_.size();
     }
 
     bool setRelation(const std::string relation)
@@ -62,14 +66,14 @@ struct ConditionsNode
 
     bool empty()
     {
-        if (conditionLeafList_.size() == 0 && pConditionsNodeList_.size() == 0)
+        if (conditionLeafList_.size() == 0 && conditionsNodeList_.size() == 0)
             return true;
         return false;
     }
 
     bool getFilteringListSuffix(std::vector<QueryFiltering::FilteringType>& filteringRules)
     {
-        if (relation_ != "and" || pConditionsNodeList_.size() != 0)
+        if (relation_ != "and" || conditionsNodeList_.size() != 0)
             return false;
 
         for (std::vector<QueryFiltering::FilteringType>::iterator i = conditionLeafList_.begin();
@@ -84,113 +88,41 @@ struct ConditionsNode
     {
         LOG(INFO) << ": relation:" << relation_;
         std::cout << "LeafCondition number: " << conditionLeafList_.size() << std::endl;
-        std::cout << "NodeCondition number: " << pConditionsNodeList_.size() << std::endl;
+        std::cout << "NodeCondition number: " << conditionsNodeList_.size() << std::endl;
     }
 
-    // bool equal(const boost::shared_ptr<ConditionsNode>& conditionNode,
-    //             std::string& relation,
-    //             std::vector<QueryFiltering::FilteringType>& conditionLeafList,
-    //             std::vector<boost::shared_ptr<ConditionsNode> >& pConditionsNodeList)
-    // {
-    //     if (relation != conditionNode->relation_
-    //         || conditionLeafList != conditionNode->conditionLeafList_
-    //         || pConditionsNodeList.size() != conditionNode->pConditionsNodeList_.size())
-    //         return false;
-
-    //     std::vector<boost::shared_ptr<ConditionsNode> >::iterator iter = conditionNode->pConditionsNodeList_.begin();
-    //     std::vector<boost::shared_ptr<ConditionsNode> >::iterator iterEnd = conditionNode->pConditionsNodeList_.end();
-    //     for (; iter != iterEnd; ++iter)
-    //     {
-    //         if (! this->equal(*iter, ))
-    //         {
-    //             LOG(INFO) << "false...." << std::endl;
-    //             return false;
-    //         }
-    //     }
-
-    //     return true;
-    // }
-
-};
-
-bool conditonEqual(const boost::shared_ptr<ConditionsNode>& conditionNode1,
-    const boost::shared_ptr<ConditionsNode>& conditionNode2);
-
-
-/*
-class ConditionsNode
-{
-public:
-    ConditionsNode()
+    ConditionsNode& operator=(const ConditionsNode& obj)
     {
-        relation_ = "and";  // the default relation is "and";
+        relation_ = obj.relation_;
+        conditionLeafList_ = obj.conditionLeafList_;
+        conditionsNodeList_ = obj.conditionsNodeList_;
+        return (*this);
     }
 
-    ~ConditionsNode()
+    bool operator==(const ConditionsNode& obj) const
     {
+        return relation_ == obj.relation_
+        && conditionLeafList_ == obj.conditionLeafList_
+        && conditionsNodeList_ == obj.conditionsNodeList_;
     }
 
-    bool isLeafNode()
-    {
-        return conditionLeafList_.size() != 0 && pConditionNodeList_.size() == 0;
-    }
+    DATA_IO_LOAD_SAVE(ConditionsNode, & relation_ & conditionLeafList_ & conditionsNodeList_);
 
-    unsigned int getChildNum()
-    {
-        return conditionLeafList_.size() + pConditionNodeList_.size();
-    }
-
-    bool setRelation(const std::string relation);
-    std::string getRelation();
-    void addConditionLeaf(const ConditionParser& condParser);
-    void addConditionNode(const boost::shared_ptr<ConditionsNode> pCondNode);
-
-    std::vector<ConditionParser>& getConditionLeafList()
-    {
-        return conditionLeafList_;
-    }
-    std::vector<boost::shared_ptr<ConditionsNode> >& getConditionNodeList()
-    {
-        return pConditionNodeList_;
-    }
+    MSGPACK_DEFINE(relation_, conditionLeafList_, conditionsNodeList_);
 
 private:
-    std::string relation_;
-    std::vector<ConditionParser> conditionLeafList_;
-    std::vector<boost::shared_ptr<ConditionsNode> > pConditionNodeList_;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & relation_;
+        ar & conditionLeafList_;
+        ar & conditionsNodeList_;
+    }
 };
 
-class ConditionsTree
-{
-public:
-    ConditionsTree();
-
-    ~ConditionsTree()
-    {
-    }
-    void init(boost::shared_ptr<ConditionsNode> proot);
-
-    bool isEmpty()
-    {
-        return isempty_;
-    }
-
-    void setRoot(boost::shared_ptr<ConditionsNode> proot);
-
-    boost::shared_ptr<ConditionsNode>& getRoot();
-
-    void addConditionLeaf(boost::shared_ptr<ConditionsNode>& pCurrentCondNode
-        , const ConditionParser& condParser);
-
-    void addConditionNode(boost::shared_ptr<ConditionsNode>& pCurrentCondNode
-        , boost::shared_ptr<ConditionsNode> pCondNode);
-
-    void printConditionsTree(boost::shared_ptr<ConditionsNode> pNode);
-
-private:
-    boost::shared_ptr<ConditionsNode> root_;
-    bool isempty_;
-};*/
+bool conditonEqual(const ConditionsNode& conditionNode1,
+    const ConditionsNode& conditionNode2);
 
 }
 
