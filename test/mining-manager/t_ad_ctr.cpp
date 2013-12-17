@@ -45,6 +45,23 @@ void training_func(AdClickPredictor* pad, std::vector<std::string>* attr_name_li
     LOG(INFO) << "update finished.";
 }
 
+void training_func_2(AdClickPredictor* pad, std::vector<std::vector<std::pair<std::string, std::string
+> > >* training_data, std::vector<bool>* clicked_list_data )
+{
+    LOG(INFO) << "training size: " << (*training_data).size() << "," << (*clicked_list_data).size();
+    {
+        for(size_t k = 0; k < (*training_data).size(); ++k)
+        {
+            const std::vector<std::pair<std::string, std::string> >& item = (*training_data)[k];
+            pad->update(item, (*clicked_list_data)[k]);
+            if (k % 10000 == 0)
+                LOG(INFO) << "updated : " << k;
+            usleep(100);
+        }
+    }
+    LOG(INFO) << "update finished.";
+}
+
 std::string gen_rand_str()
 {
     size_t rand_len = rand() % 100 + 3;
@@ -80,8 +97,8 @@ int main()
     srand(time(NULL));
     if (!bfs::exists("/opt/mine/ad_ctr_test"))
         return 0;
-    bfs::remove_all("/opt/mine/ad_ctr_test/data");
-    bfs::create_directories("/opt/mine/ad_ctr_test/data");
+    //bfs::remove_all("/opt/mine/ad_ctr_test/data");
+    //bfs::create_directories("/opt/mine/ad_ctr_test/data");
 
     LOG(INFO) << "begin generate training test data.";
     std::ifstream ifs("/opt/mine/track2/training.txt");
@@ -121,8 +138,15 @@ int main()
     attr_name_list.push_back("TitleID");
     attr_name_list.push_back("DescriptionID");
     attr_name_list.push_back("UserID");
+
+    std::vector<std::vector<std::pair<std::string, std::string> > > stream_train_testdata;
+    std::vector<bool> clicked_list;
+    stream_train_testdata.reserve(train_num);
+    clicked_list.reserve(train_num);
+
     while(ifs.good() && training_readed < train_num)
     {
+        std::vector<std::pair<std::string, std::string> > tmp;
         std::vector<std::string> attr_value_list(attr_name_list.size());
         uint32_t clicked = 0;
         uint32_t impressioned = 0;
@@ -136,16 +160,23 @@ int main()
             for(size_t j = 0; j < attr_name_list.size(); ++j)
             {
                 ofs << attr_name_list[j] << ":" << attr_value_list[j] << " ";
+                tmp.push_back(std::make_pair(attr_name_list[j], attr_value_list[j]));
             }
             ofs << "1" << std::endl;
+
+            stream_train_testdata.push_back(tmp);
+            clicked_list.push_back(true);
         }
         for (size_t click_num = 0; click_num < impressioned; ++click_num)
         {
             for(size_t j = 0; j < attr_name_list.size(); ++j)
             {
                 ofs << attr_name_list[j] << ":" << attr_value_list[j] << " ";
+                tmp.push_back(std::make_pair(attr_name_list[j], attr_value_list[j]));
             }
             ofs << "0" << std::endl;
+            stream_train_testdata.push_back(tmp);
+            clicked_list.push_back(false);
         }
         ++training_readed;
         if (training_readed % 1000000 == 0)
@@ -166,9 +197,9 @@ int main()
     AdClickPredictor ad;
     ad.init("/opt/mine/ad_ctr_test");
     LOG(INFO) << "begin training data.";
-    ad.preProcess();
-    ad.train();
-    ad.postProcess();
+    //ad.preProcess();
+    //ad.train();
+    //ad.postProcess();
 
     LOG(INFO) << "begin generate predict test data.";
     // load test data from file.
@@ -200,7 +231,8 @@ int main()
     }
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
-
+    //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));
+    //
     LOG(INFO) << "begin do predict test.";
     boost::thread_group test_threads;
     for(int i = 0; i < thread_num; ++i)
