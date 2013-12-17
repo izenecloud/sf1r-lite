@@ -241,12 +241,13 @@ void AdSelector::computeHistoryCTR()
     std::ofstream ofs_history(history_ctr_file.c_str());
 
     std::map<std::string, std::size_t> segments_counter = init_counter_;
-    std::map<std::string, std::size_t>::iterator counter_it = segments_counter.begin();
     assert(segments_counter.size() == all_segments_.size() &&
        all_segments_.size() == default_full_features_.size());
 
+    std::map<std::string, std::size_t>::reverse_iterator counter_it = segments_counter.rbegin();
+    std::map<std::string, std::size_t>::reverse_iterator inc_counter_it = segments_counter.rbegin();
 
-    while(counter_it != segments_counter.end())
+    while(inc_counter_it != segments_counter.rend())
     {
         std::string key;
         std::vector<std::pair<std::string, std::string> > segment_data;
@@ -254,20 +255,25 @@ void AdSelector::computeHistoryCTR()
             segit != all_segments_.end(); ++segit)
         {
             std::string value = segit->second[segments_counter[segit->first]];
-            key += value;
+            key += "|" + value + "|";
             segment_data.push_back(std::make_pair(segit->first, value));
         }
         double ctr_res = ad_click_predictor_->predict(segment_data);
         history_ctr_data_[key] = ctr_res;
         ofs_history << key << " : " << ctr_res << std::endl;
+
         while (counter_it->second >= all_segments_[counter_it->first].size() - 1)
         {
+            counter_it->second = 0;
             ++counter_it;
-            if (counter_it == segments_counter.end())
+            if (counter_it == segments_counter.rend())
                 break;
         }
-        if (counter_it != segments_counter.end())
+        if (counter_it != segments_counter.rend())
             ++(counter_it->second);
+        else
+            break;
+        counter_it = inc_counter_it;
     }
     ofs_history.flush();
     LOG(INFO) << "update history ctr finished.";
@@ -279,10 +285,10 @@ void AdSelector::updateSegments(const FeatureT& segments)
     for(FeatureT::const_iterator cit = segments.begin();
         cit != segments.end(); ++cit)
     {
-        FeatureMapT::iterator uit = updated_segments_.find(cit->first);
-        if (uit == updated_segments_.end())
-            continue;
-        uit->second.push_back(cit->second);
+        //FeatureMapT::iterator uit = updated_segments_.find(cit->first);
+        //if (uit == updated_segments_.end())
+        //    continue;
+        updated_segments_[cit->first].push_back(cit->second);
     }
 }
 
