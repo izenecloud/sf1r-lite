@@ -59,7 +59,7 @@ void GroupLabelPreProcessor::pushTopLabels_(
          pathIt != pathVec.end(); ++pathIt)
     {
         totalLabels[propName].push_back(*pathIt);
-        pathScoreVec.push_back(std::make_pair(*pathIt, 0));
+        pathScoreVec.push_back(std::make_pair(*pathIt, GroupPathScoreInfo()));
     }
     autoSelectLabels[propName].swap(pathScoreVec);
 }

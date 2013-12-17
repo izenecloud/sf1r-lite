@@ -2584,7 +2584,7 @@ void MiningManager::getGroupAttrRep_(
         topScoreLabels.resize(topLabels.size());
         for(size_t i = 0; i < topLabels.size(); ++i)
         {
-            topScoreLabels[i] = std::make_pair(topLabels[i], 0);
+            topScoreLabels[i] = std::make_pair(topLabels[i], faceted::GroupPathScoreInfo());
         }
     }
 
