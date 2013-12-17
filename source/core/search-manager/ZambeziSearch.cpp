@@ -31,7 +31,7 @@ namespace sf1r
 namespace
 {
 const std::size_t kAttrTopDocNum = 200;
-const std::size_t kZambeziTopKNum = 1e6;
+const std::size_t kZambeziTopKNum = 5e5;
 
 const std::string kTopLabelPropName = "Category";
 const size_t kRootCateNum = 10;
@@ -106,13 +106,13 @@ bool ZambeziSearch::search(
             groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
-    boost::shared_ptr<ConditionsNode>& filterTree =
+    ConditionsNode& filterTree =
         actionOperation.actionItem_.filterTree_;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     boost::shared_ptr<izenelib::ir::indexmanager::BitVector> filterBitVector;
 
-    if (!filterTree->empty())
+    if (!filterTree.empty())
     {
         queryBuilder_.prepare_filter(filterTree, filterBitmap);
         filterBitVector.reset(new izenelib::ir::indexmanager::BitVector);
