@@ -47,7 +47,7 @@ bool AdIndexManager::buildMiningTask()
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
-    AdSelector::get()->init(ad_selector_data_path_);
+    AdSelector::get()->init(ad_selector_data_path_, ad_click_predictor_);
     bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
     if (!ret)
     {

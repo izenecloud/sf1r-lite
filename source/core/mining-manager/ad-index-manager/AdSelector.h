@@ -27,7 +27,7 @@ public:
     AdSelector();
     ~AdSelector();
 
-    void init(const std::string& segments_data_path);
+    void init(const std::string& segments_data_path, AdClickPredictor* pad_predictor);
     void stop();
 
     bool selectFromRecommend(const FeatureT& user_info, std::size_t max_return,

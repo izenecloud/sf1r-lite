@@ -19,12 +19,13 @@ AdSelector::AdSelector()
 
 AdSelector::~AdSelector()
 {
+    stop();
 }
 
-void AdSelector::init(const std::string& segments_data_path)
+void AdSelector::init(const std::string& segments_data_path, AdClickPredictor* pad_predictor)
 {
     segments_data_path_ = segments_data_path;
-    ad_click_predictor_ = AdClickPredictor::get();
+    ad_click_predictor_ = pad_predictor;
     //
     // load default all features from config file.
     std::ifstream ifs_def(std::string(segments_data_path_ + "/all_feature_name.txt").c_str());
@@ -247,9 +248,10 @@ void AdSelector::computeHistoryCTR()
         {
             ++counter_it;
             if (counter_it == segments_counter.end())
-                return;
+                break;
         }
-        ++(counter_it->second);
+        if (counter_it != segments_counter.end())
+            ++(counter_it->second);
     }
     LOG(INFO) << "update history ctr finished.";
 }
@@ -389,6 +391,10 @@ bool AdSelector::select(const FeatureT& user_info,
     {
         LOG(ERROR) << "ad features not match doclist.";
         return false;
+    }
+    if (ad_doclist.empty())
+    {
+        return selectFromRecommend(user_info, max_return, ad_doclist);
     }
     std::size_t max_clicked_retnum = max_return/3 + 1;
     std::size_t max_unclicked_retnum = max_return - max_clicked_retnum;
