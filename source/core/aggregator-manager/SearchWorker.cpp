@@ -350,10 +350,7 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::ZAMBEZI:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
-        if (item.filterTree_)
-        {
-            identity.filterTree_ = item.filterTree_;
-        }
+        identity.filterTree_ = item.filterTree_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
