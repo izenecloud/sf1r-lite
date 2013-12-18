@@ -65,14 +65,14 @@ namespace sf1r {
  */
     using driver::Keys;
 
-    bool ConditionTreeParser::parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode)
+    bool ConditionTreeParser::parseTree(const Value& conditions, ConditionsNode& node)
     {
         Value conditionArray;
         std::string relation;
         conditionArray = conditions[Keys::condition_array];
         relation = asString(conditions[Keys::relation]);
 
-        pnode->setRelation(relation);
+        node.setRelation(relation);
         const Value::ArrayType* cond_array = conditionArray.getPtr<Value::ArrayType>();
         if (!cond_array)
         {
@@ -85,10 +85,10 @@ namespace sf1r {
             std::string property_ = asString(((*cond_array)[i])[Keys::property]); // check if is leaf-node
             if (property_.empty())
             {
-                boost::shared_ptr<ConditionsNode> pChildNode(new ConditionsNode());
-                pnode->pConditionsNodeList_.push_back(pChildNode);
-                if ( !parseTree((*cond_array)[i], pChildNode))
+                ConditionsNode conditionNode;
+                if ( !parseTree((*cond_array)[i], conditionNode))
                     return false;
+                node.conditionsNodeList_.push_back(conditionNode);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace sf1r {
                     return false;
                 }
                 
-                pnode->conditionLeafList_.push_back(filterLeafNode);
+                node.conditionLeafList_.push_back(filterLeafNode);
             }
         }
 

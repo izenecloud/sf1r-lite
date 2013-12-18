@@ -382,7 +382,7 @@ public:
             && removeDuplicatedDocs_ == obj.removeDuplicatedDocs_
             && displayPropertyList_ == obj.displayPropertyList_
             && sortPriorityList_    == obj.sortPriorityList_
-            && conditonEqual(filterTree_, obj.filterTree_)//filterTree_ == obj.filterTree_
+            && filterTree_ == obj.filterTree_
             && rangePropertyName_ == obj.rangePropertyName_
             && groupParam_ == obj.groupParam_
             && strExp_ == obj.strExp_
@@ -538,7 +538,7 @@ public:
     /// @brief a list of new tree-like filteringType for bool combination option
     ///
     ///std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
-    boost::shared_ptr<ConditionsNode> filterTree_;
+    ConditionsNode filterTree_;
     ///
     /// @brief a list of counters
     ///
@@ -586,12 +586,12 @@ public:
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & disableGetDocs_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
-             & displayPropertyList_ & sortPriorityList_ & counterList_ & rangePropertyName_ & groupParam_
+             & displayPropertyList_ & sortPriorityList_ & filterTree_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_ & isAnalyzeResult_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, disableGetDocs_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, counterList_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filterTree_, counterList_,
             rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_,
             isAnalyzeResult_);
 
@@ -659,7 +659,7 @@ public:
     //std::vector<QueryFiltering::FilteringType> filteringList_;
 
 	/// @brief filtering tree-likes options
-    boost::shared_ptr<ConditionsNode> filterTree_;    
+    ConditionsNode filterTree_;    
     
     void print(std::ostream& out = std::cout) const
     {

@@ -23,7 +23,7 @@ struct ItemCondition
     ItemManager* itemManager_;
 
     /**filtering conditions */
-    boost::shared_ptr<ConditionsNode> filterTree_;
+    ConditionsNode filterTree_;
 
 
     /** bit 1 for meet condition, bit 0 for not meet condition */

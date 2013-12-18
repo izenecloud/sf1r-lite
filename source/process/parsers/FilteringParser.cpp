@@ -95,10 +95,10 @@ bool FilteringParser::parse(const Value& conditions)
 
         if (conditionCount != 0)
         {
-            filterConditionTree_->relation_ = "and";
+            filterConditionTree_.relation_ = "and";
             for (unsigned int i = 0; i < filteringRulesList.size(); ++i)
             {
-                filterConditionTree_->conditionLeafList_.push_back(filteringRulesList[i]);
+                filterConditionTree_.conditionLeafList_.push_back(filteringRulesList[i]);
             }
         }
     }

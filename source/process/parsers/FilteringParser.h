@@ -29,15 +29,13 @@ public:
         const MiningSchema& miningSchema)
     : indexSchema_(indexSchema)
     , miningSchema_(miningSchema)
-    , filterConditionTree_(new ConditionsNode())
     {}
 
     bool parse(const Value& conditions);
     
     bool parse_tree(const Value& conditions);
 
-    boost::shared_ptr<ConditionsNode>&
-    mutableFilteringTreeRules()
+    ConditionsNode& mutableFilteringTreeRules()
     {
         return filterConditionTree_;
     }
@@ -49,8 +47,7 @@ public:
 private:
     const IndexBundleSchema& indexSchema_;
     const MiningSchema& miningSchema_;
-
-    boost::shared_ptr<ConditionsNode> filterConditionTree_;
+    ConditionsNode filterConditionTree_;
 };
 
 } // namespace sf1r

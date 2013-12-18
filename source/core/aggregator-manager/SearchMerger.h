@@ -10,6 +10,7 @@
 #include <net/aggregator/BindCallProxyBase.h>
 #include <net/aggregator/WorkerResults.h>
 #include <common/inttypes.h>
+#include <mining-manager/group-manager/GroupParam.h>
 
 #include <map>
 #include <boost/shared_ptr.hpp>
@@ -76,6 +77,8 @@ public:
     void HookDistributeRequestForSearch(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
     void getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult);
     void getDistKeyCount(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult);
+    static void mergeScoreGroupLabel(faceted::GroupParam::GroupLabelScoreMap& mergeto,
+        const faceted::GroupParam::GroupLabelScoreMap& from, workerid_t from_workerid);
 
 private:
     //std::size_t TOP_K_NUM;

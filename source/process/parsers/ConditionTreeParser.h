@@ -22,22 +22,21 @@ class ConditionTreeParser : public ::izenelib::driver::Parser
 {
 public:
     ConditionTreeParser(const IndexBundleSchema& indexSchema)
-    : conditionsTree_(new ConditionsNode())
-    , indexSchema_(indexSchema)
+    : indexSchema_(indexSchema)
     {
     }
 
     bool parse(const Value& conditions);
 
-    boost::shared_ptr<ConditionsNode>& parsedConditions()
+    ConditionsNode parsedConditions()
     {
         return conditionsTree_;
     }
 
-    bool parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode);
+    bool parseTree(const Value& conditions, ConditionsNode& node);
 
 private:
-    boost::shared_ptr<ConditionsNode> conditionsTree_;
+    ConditionsNode conditionsTree_;
     const IndexBundleSchema& indexSchema_;
 };
 
