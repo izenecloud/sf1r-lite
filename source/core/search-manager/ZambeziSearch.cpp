@@ -52,6 +52,9 @@ const MonomorphicFilter<true> kAllPassFilter;
 
 bool DocLess(const ScoreDoc& o1, const ScoreDoc& o2)
 {
+    if (o1.score == o2.score)
+        return (o1.docId > o2.docId);
+        
     return (o1.score > o2.score);
 }
 
@@ -299,9 +302,9 @@ bool ZambeziSearch::search(
     LOG(INFO) << "resultList size: " << resultList.size() 
               << ", topKCount: " << topKCount;
 
-    for (unsigned int i = resultList.size() - topKCount; i < resultList.size(); ++i)
+    for (unsigned int i = 0; i < topKCount; ++i)
     {
-        const ScoreDoc& scoreItem =  resultList[i];//need to ASC
+        const ScoreDoc& scoreItem =  resultList[i + offset];
         docIdList[i] = scoreItem.docId;
         rankScoreList[i] = scoreItem.score;
         if (customRanker)
@@ -309,6 +312,17 @@ bool ZambeziSearch::search(
             customScoreList[i] = scoreItem.custom_score;
         }
     }
+
+    // for (unsigned int i = resultList.size() - topKCount; i < resultList.size(); ++i)
+    // {
+    //     const ScoreDoc& scoreItem =  resultList[i];//need to ASC
+    //     docIdList[i] = scoreItem.docId;
+    //     rankScoreList[i] = scoreItem.score;
+    //     if (customRanker)
+    //     {
+    //         customScoreList[i] = scoreItem.custom_score;
+    //     }
+    // }
 
     if (groupFilter)
     {
