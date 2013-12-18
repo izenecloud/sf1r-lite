@@ -42,6 +42,10 @@ class ScoreSortedHitQueue : public HitQueue
     protected:
         bool lessThan(const ScoreDoc& o1, const ScoreDoc& o2) const
         {
+            if (std::fabs(o1.score - o2.score) < std::numeric_limits<score_t>::epsilon())
+            {
+                return o1.docId < o2.docId;
+            }
             return (o1.score < o2.score);
         }
     };
