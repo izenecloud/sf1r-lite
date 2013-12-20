@@ -98,5 +98,7 @@ double AttrTokenizeWrapper::att_value_weight(
 
 std::vector<char*>** AttrTokenizeWrapper::get_TermCategory(const std::string& query)
 {
+    if (!queryMultiCatesDict_)
+        return NULL;
     return queryMultiCatesDict_->value(KString(query), true);
 }
