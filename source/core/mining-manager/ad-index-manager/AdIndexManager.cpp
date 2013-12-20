@@ -12,7 +12,8 @@
 namespace sf1r
 {
 
-static const int MAX_AD_COUNT = 20;
+static const int MAX_SEARCH_AD_COUNT = 2000;
+static const int MAX_SELECT_AD_COUNT = 20;
 static const std::string adlog_topic = "b5manlog";
 
 AdIndexManager::AdIndexManager(
@@ -47,7 +48,7 @@ bool AdIndexManager::buildMiningTask()
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
-    AdSelector::get()->init(ad_selector_data_path_, ad_click_predictor_);
+    AdSelector::get()->init(ad_selector_data_path_, ad_click_predictor_, documentManager_.get());
     bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
     if (!ret)
     {
@@ -85,10 +86,12 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
 }
 
 bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string> >& info,
-        std::vector<docid_t>& docids,
-        std::vector<float>& topKScoreRankList,
-        std::size_t& totalCount)
+    std::vector<docid_t>& docids,
+    std::vector<float>& topKScoreRankList,
+    std::size_t& totalCount)
 {
+    std::string ad_search_query;
+
     boost::unordered_set<uint32_t> dnfIDs;
 
     adMiningTask_->retrieve(info, dnfIDs);
@@ -111,11 +114,18 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
 
     boost::shared_ptr<HitQueue> scoreItemQueue;
 
-    uint32_t heapSize = std::min((std::size_t)MAX_AD_COUNT, dnfIDs.size());
+    // Note: ad feature can be attribute.
+    std::vector<docid_t>  cpc_ads_result;
+    std::vector<AdSelector::FeatureMapT> cpc_ads_features;
+    cpc_ads_result.reserve(dnfIDs.size());
+    cpc_ads_features.reserve(dnfIDs.size());
+
+    uint32_t heapSize = std::min((std::size_t)MAX_SEARCH_AD_COUNT, dnfIDs.size());
 
     scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
     LOG(INFO)<<"dnfIDs.size(): "<<dnfIDs.size()<<endl;
+    std::vector<std::string> value_list;
     for(boost::unordered_set<uint32_t>::iterator it = dnfIDs.begin();
             it != dnfIDs.end(); it++ )
     {
@@ -124,48 +134,67 @@ bool AdIndexManager::search(const std::vector<std::pair<std::string, std::string
             float price = 0.0;
             float score = 0.0;
             int32_t mode = 0;
-            if(numericTable)
-            {
-                numericTable->getFloatValue(*it, price, false);
-            }
             if(numericTable_mode)
             {
                 numericTable_mode->getInt32Value(*it, mode, false);
             }
             if(mode == 0)
             {
+                if(numericTable)
+                {
+                    numericTable->getFloatValue(*it, price, false);
+                }
                 score = price;
             }
             else if(mode == 1)
             {
-                // calculate CTR
-                //double ctr = adClickPredictor_->predict(info);
-                // calculate eCPM
-                //score = ctr * price * 1000;
+                cpc_ads_result.push_back(*it);
+                cpc_ads_features.push_back(AdSelector::FeatureMapT());
+                AdSelector::get()->getDefaultFeatures(cpc_ads_features.back(), AdSelector::AdSeg);
+                for (AdSelector::FeatureMapT::iterator feature_it = cpc_ads_features.back().begin();
+                    feature_it != cpc_ads_features.back().end(); ++feature_it)
+                {
+                    uint32_t featureid;
+                    // for multivalue we can use a int value to stand for.
+                    //featureTable[feature_it->first]->getFeatureId(*it, featureid, false);
+                    //getValueListByFeatureId(featureid, value_list);
+                    //
+                    cpc_ads_features.back()[feature_it->first].swap(value_list);
+                }
+                continue;
             }
             ScoreDoc scoreItem(*it, score);
             scoreItemQueue->insert(scoreItem);
         }
     }
-
-    std::vector<docid_t> topDocids;
-    std::vector<float> scores;
-
-    unsigned int scoreSize = scoreItemQueue->size();
-    for(unsigned int i=0; i<scoreSize;i++)
+    LOG(INFO) << "begin select ads from cpc cand result : " << cpc_ads_result.size();
+    // select some ads using some strategy to maximize the CPC.
+    AdSelector::get()->select(info, cpc_ads_features, MAX_SELECT_AD_COUNT,
+        cpc_ads_result, scored_result, MAX_SEARCH_AD_COUNT);
+    LOG(INFO) << "end select ads from result.";
+    // calculate eCPM
+    for (std::size_t i = 0; i < cpc_ads_result.size(); ++i)
     {
-        const ScoreDoc& scoreItem = scoreItemQueue->pop();
-        topDocids.push_back(scoreItem.docId);
-        scores.push_back(scoreItem.score);
+        float price = 0;
+        if(numericTable)
+        {
+            numericTable->getFloatValue(cpc_ads_result[i], price, false);
+        }
+        double score = scored_result[i] * price * 1000;
+        ScoreDoc item(cpc_ads_result[i], score);
+        scoreItemQueue->insert(item);
     }
 
-    std::vector<docid_t>::iterator it1 = topDocids.end();
-    std::vector<float>::iterator it2 = scores.end();
-    while(it1 != topDocids.begin())
+    unsigned int scoreSize = scoreItemQueue->size();
+
+    docids.resize(scoreSize);
+    topKRankScoreList.resize(scoreSize);
+
+    for (int i = scoreSize - 1; i >= 0; --i)
     {
-        it1--;it2--;
-        docids.push_back(*it1);
-        topKScoreRankList.push_back(*it2);
+        const ScoreDoc& item = scoreItemQueue->pop();
+        docids[i] = item.docId;
+        topKScoreRankList[i] = item.score;
     }
     totalCount = docids.size();
 

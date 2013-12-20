@@ -1,6 +1,8 @@
 #include "AdSelector.h"
 #include "AdClickPredictor.h"
 #include <search-manager/HitQueue.h>
+#include <document-manager/DocumentManager.h>
+
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
 
@@ -47,10 +49,12 @@ void AdSelector::loadDef(const std::string& file, FeatureMapT& def_features,
     }
 }
 
-void AdSelector::init(const std::string& segments_data_path, AdClickPredictor* pad_predictor)
+void AdSelector::init(const std::string& segments_data_path,
+    AdClickPredictor* pad_predictor, DocumentManager* doc_mgr)
 {
     segments_data_path_ = segments_data_path;
     ad_click_predictor_ = pad_predictor;
+    documentManager_ = doc_mgr;
     //
     // load default all features from config file.
     loadDef(segments_data_path_ + "/all_user_feature_name.txt", default_full_features_[UserSeg], init_counter_[UserSeg]);
@@ -99,6 +103,11 @@ void AdSelector::init(const std::string& segments_data_path, AdClickPredictor* p
         }
     }
     ctr_update_thread_ = boost::thread(boost::bind(&AdSelector::updateFunc, this));
+}
+
+void AdSelector::getDefaultFeatures(FeatureMapT& feature_name_list, SegType type)
+{
+    feature_name_list = default_full_features_[type];
 }
 
 void AdSelector::load()
@@ -434,7 +443,8 @@ void AdSelector::selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std:
 
 bool AdSelector::selectFromRecommend(const FeatureT& user_info,
     std::size_t max_return,
-    std::vector<docid_t>& recommended_doclist
+    std::vector<docid_t>& recommended_doclist,
+    std::vector<float>& score_list
     )
 {
     // select the ads from recommend system if no any search results.
@@ -445,8 +455,10 @@ bool AdSelector::selectFromRecommend(const FeatureT& user_info,
 // this can be done while indexing the ad data.
 bool AdSelector::select(const FeatureT& user_info,
     const std::vector<FeatureMapT>& ad_feature_list, 
-    std::size_t max_return,
-    std::vector<docid_t>& ad_doclist)
+    std::size_t max_select,
+    std::vector<docid_t>& ad_doclist,
+    std::vector<float>& score_list,
+    std::size_t max_ret_num)
 {
     if (ad_feature_list.size() != ad_doclist.size())
     {
@@ -455,14 +467,14 @@ bool AdSelector::select(const FeatureT& user_info,
     }
     if (ad_doclist.empty())
     {
-        return selectFromRecommend(user_info, max_return, ad_doclist);
+        return selectFromRecommend(user_info, max_select, ad_doclist, score_list);
     }
 
     std::vector<std::string> user_seg_str;
     getUserSegmentStr(user_seg_str, user_info);
 
-    std::size_t max_clicked_retnum = max_return/3 + 1;
-    std::size_t max_unclicked_retnum = max_return - max_clicked_retnum;
+    std::size_t max_clicked_retnum = max_select/3 + 1;
+    std::size_t max_unclicked_retnum = max_select- max_clicked_retnum;
 
     std::map<docid_t, const FeatureMapT*> clicked_docfeature_list;
     std::vector<docid_t> unclicked_doclist;

@@ -15,6 +15,8 @@ namespace sf1r
 {
 
 class AdClickPredictor;
+class DocumentManager;
+
 class AdSelector
 {
 public:
@@ -34,21 +36,27 @@ public:
     AdSelector();
     ~AdSelector();
 
-    void init(const std::string& segments_data_path, AdClickPredictor* pad_predictor);
+    void init(const std::string& segments_data_path,
+        AdClickPredictor* pad_predictor,
+        DocumentManager* doc_mgr);
     void stop();
 
     bool selectFromRecommend(const FeatureT& user_info, std::size_t max_return,
-        std::vector<docid_t>& recommended_doclist);
+        std::vector<docid_t>& recommended_doclist,
+        std::vector<float>& score_list);
 
     bool select(const FeatureT& user_info,
         const std::vector<FeatureMapT>& ad_feature_list, 
-        std::size_t max_return,
-        std::vector<docid_t>& ad_doclist);
+        std::size_t max_select,
+        std::vector<docid_t>& ad_doclist,
+        std::vector<float>& score_list,
+        std::size_t max_ret_num);
 
     void updateClicked(docid_t ad_id);
     void updateSegments(const FeatureT& segments, SegType type);
     void load();
     void save();
+    void getDefaultFeatures(std::vector<std::string>& feature_name_list, SegType type);
 
 private:
 
@@ -66,6 +74,7 @@ private:
         std::map<std::string, std::size_t> segments_counter,
         std::vector<std::pair<std::string, FeatureT> >& all_keys);
 
+    DocumentManager* documentManager_;
     std::string segments_data_path_;
     AdClickPredictor* ad_click_predictor_;
     boost::unordered_map<std::string, double> history_ctr_data_;
