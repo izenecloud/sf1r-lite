@@ -92,6 +92,27 @@ void stream_update_func()
     LOG(INFO) << "stream update finished.";
 }
 
+void select_ad_func(const std::vector<docid_t>& cand_docs,
+    const std::vector<AdSelector::FeatureMapT> cand_ad_info,
+    const AdSelector::FeatureT& userinfo)
+{
+    for (size_t i = 0; i < 10000; ++i)
+    {
+        std::vector<docid_t> results = cand_docs;
+        AdSelector::get()->select(userinfo, cand_ad_info, 10, results);
+
+        if (i % 1000 == 0)
+        {
+            LOG(INFO) << "selected ads are :";
+            for (size_t j = 0; j < results.size(); ++j)
+            {
+                std::cout << results[j] << ", ";
+            }
+            std::cout << std::endl;
+        }
+    }
+}
+
 int main()
 {
 
@@ -190,10 +211,10 @@ int main()
     ifs.close();
 
     DistributedCommonConfig config;
-    config.localHost_ = "172.16.5.11";
+    config.localHost_ = "localhost";
     SuperNodeManager::get()->init(config);
 
-    AdStreamSubscriber::get()->init("172.16.5.30", 19850);
+    //AdStreamSubscriber::get()->init("172.16.5.30", 19850);
 
     AdClickPredictor ad;
     ad.init("/opt/mine/ad_ctr_test");
@@ -231,75 +252,99 @@ int main()
         ++cnt;
     }
 
-    bfs::create_directories("/opt/mine/ad_ctr_test/selector/");
-    std::ofstream ofs_selector("/opt/mine/ad_ctr_test/selector/all_feature_name.txt");
+    std::string selector_base_path("/opt/mine/ad_ctr_test/selector/");
+    bfs::create_directories(selector_base_path);
+    std::ofstream ofs_selector(std::string(selector_base_path + "/all_feature_name.txt").c_str());
     ofs_selector << "Category" << std::endl;
     ofs_selector << "Topic" << std::endl;
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
-    AdSelector::get()->init("/opt/mine/ad_ctr_test/selector/", &ad);
-    for (size_t i = 0; i < 10000; ++i)
+    AdSelector::get()->init(selector_base_path, &ad);
+    bfs::remove(selector_base_path + "/clicked_ad.data");
+
+    static const int total_ad_num = 7000000;
+    static const int clicked_rate = 901;
+    static const int sponsor_searched_rate = 99;
+    for (size_t i = 0; i < total_ad_num; ++i)
     {
-        if (i % 2 == 0)
+        if (i % clicked_rate == 0)
             AdSelector::get()->updateClicked(i);
     }
-    AdSelector::FeatureT new_segs;
-    new_segs.push_back(std::make_pair("Category", "Computer"));
-    new_segs.push_back(std::make_pair("Category", "Cloth"));
-    new_segs.push_back(std::make_pair("Topic", "iPhone"));
-    new_segs.push_back(std::make_pair("Topic", "Android"));
-    new_segs.push_back(std::make_pair("Age", "18"));
-    new_segs.push_back(std::make_pair("Age", "28"));
-    new_segs.push_back(std::make_pair("Age", "38"));
-    new_segs.push_back(std::make_pair("Gender", "male"));
-    new_segs.push_back(std::make_pair("Gender", "female"));
-    AdSelector::get()->updateSegments(new_segs);
+    AdSelector::FeatureT new_ad_segs;
+    new_ad_segs.push_back(std::make_pair("Category", "Computer"));
+    new_ad_segs.push_back(std::make_pair("Category", "Cloth"));
+    new_ad_segs.push_back(std::make_pair("Topic", "iPhone"));
+    new_ad_segs.push_back(std::make_pair("Topic", "Android"));
+    AdSelector::get()->updateSegments(new_ad_segs, AdSelector::AdSeg);
+
+    AdSelector::FeatureT new_user_segs;
+    new_user_segs.push_back(std::make_pair("Age", "18"));
+    new_user_segs.push_back(std::make_pair("Age", "28"));
+    new_user_segs.push_back(std::make_pair("Age", "38"));
+    new_user_segs.push_back(std::make_pair("Gender", "male"));
+    new_user_segs.push_back(std::make_pair("Gender", "female"));
+    AdSelector::get()->updateSegments(new_user_segs, AdSelector::UserSeg);
     AdSelector::FeatureT userinfo;
     userinfo.push_back(std::make_pair("Age", "28"));
+    userinfo.push_back(std::make_pair("Age", "38"));
     userinfo.push_back(std::make_pair("Gender", "male"));
-    AdSelector::FeatureT adinfo[4];
-    adinfo[0].push_back(std::make_pair("Topic", "iPhone"));
-    adinfo[1].push_back(std::make_pair("Topic", "Android"));
-    adinfo[2].push_back(std::make_pair("Category", "Cloth"));
-    adinfo[3].push_back(std::make_pair("Category", "Computer"));
-    adinfo[3].push_back(std::make_pair("Topic", "iPhone"));
+    AdSelector::FeatureMapT adinfo[4];
+    adinfo[0]["Topic"].push_back("iPhone");
+    adinfo[0]["Topic"].push_back("Android");
+    adinfo[1]["Topic"].push_back("Android");
+    adinfo[2]["Category"].push_back("Cloth");
+    adinfo[3]["Category"].push_back("Computer");
+    adinfo[3]["Topic"].push_back("iPhone");
     std::vector<docid_t> cand_docs;
-    std::vector<AdSelector::FeatureT> cand_ad_info;
-    for (size_t i = 1; i < 10000; ++i)
+    std::vector<AdSelector::FeatureMapT> cand_ad_info;
+    for (size_t i = 1; i < total_ad_num; ++i)
     {
-        if (i % 7 == 0)
+        if (i % sponsor_searched_rate == 0)
         {
             cand_docs.push_back(i);
             cand_ad_info.push_back(adinfo[rand()%4]);
         }
-        if (i % 500 == 0)
-        {
-            std::vector<docid_t> results = cand_docs;
-            AdSelector::get()->select(userinfo, cand_ad_info, 10, results);
+    }
 
+    sleep(10);
+    LOG(INFO) << "begin test ad select.";
+    //boost::thread_group test_ad_selector_threads;
+    //for(int i = 0; i < thread_num; ++i)
+    //{
+    //    test_ad_selector_threads.add_thread(new boost::thread(boost::bind(&select_ad_func, cand_docs, cand_ad_info, userinfo)));
+    //}
+    //test_ad_selector_threads.join_all();
+
+    for (size_t i = 0; i < 10000; ++i)
+    {
+        std::vector<docid_t> results = cand_docs;
+        AdSelector::get()->select(userinfo, cand_ad_info, 10, results);
+
+        if (i % 1000 == 0)
+        {
             LOG(INFO) << "selected ads are :";
             for (size_t j = 0; j < results.size(); ++j)
             {
                 std::cout << results[j] << ", ";
             }
             std::cout << std::endl;
-            sleep(1);
         }
     }
+    LOG(INFO) << "end test for ad select.";
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));
     //
-    LOG(INFO) << "begin do predict test.";
-    boost::thread_group test_threads;
-    for(int i = 0; i < thread_num; ++i)
-    {
-        test_threads.add_thread(new boost::thread(boost::bind(&predict_func, &ad)));
-    }
-    test_threads.join_all();
-    sleep(10000);
-    AdStreamSubscriber::get()->stop();
+    //LOG(INFO) << "begin do predict test.";
+    //boost::thread_group test_threads;
+    //for(int i = 0; i < thread_num; ++i)
+    //{
+    //    test_threads.add_thread(new boost::thread(boost::bind(&predict_func, &ad)));
+    //}
+    //test_threads.join_all();
+    //sleep(100);
+    //AdStreamSubscriber::get()->stop();
     //write_thread->join();
     //delete write_thread;
     //test_threads.clear();

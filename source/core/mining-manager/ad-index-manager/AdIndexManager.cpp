@@ -80,7 +80,7 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
             docid_t docid;
             AdSelector::get()->updateClicked(docid);
         }
-        AdSelector::get()->updateSegments(assignment_list[i].first);
+        AdSelector::get()->updateSegments(assignment_list[i].first, AdSelector::UserSeg);
     }
 }
 
