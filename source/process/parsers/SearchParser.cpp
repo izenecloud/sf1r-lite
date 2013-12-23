@@ -465,12 +465,13 @@ bool SearchParser::parse(const Value& search)
 
             if (searchingModeInfo_.mode_ == SearchingMode::ZAMBEZI)
             {
-                if (!zambeziConfig_.checkValidationConfig(properties_[i]))
+                if (!zambeziConfig_.checkValidationIndexConfig(properties_[i]))
                 {
                     error() = "Unknown property in search/in Using zambezi: " +
                       propertyConfig.getName();
                     return false;
                 }
+                continue;
             }
             else if (!getPropertyConfig(indexSchema_, propertyConfig) )
             {
@@ -479,7 +480,7 @@ bool SearchParser::parse(const Value& search)
                 return false;
             }
 
-            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_)) //TODO
+            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
             {
                 warning() = "Property is not indexed, ignore it: " +
                             propertyConfig.getName();

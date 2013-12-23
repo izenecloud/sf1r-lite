@@ -238,6 +238,19 @@ public:
         return false;
     }
 
+    bool checkValidationIndexConfig(const std::string& property) const
+    {
+        for (std::vector<ZambeziProperty>::const_iterator i = properties.begin(); i != properties.end(); ++i)
+            if (property == i->name && i->isTokenizer)
+                return true;
+
+        for (std::vector<ZambeziVirtualProperty>::const_iterator i = virtualPropeties.begin(); i != virtualPropeties.end(); ++i)
+            if (property == i->name)
+                return true;
+
+        return false;
+    }
+
     /**
      * @brief set ZambeziIndexSchema after zambezi config is parsered;
      *        and, check there is no vialid property in zambezi config;
