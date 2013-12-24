@@ -21,6 +21,13 @@ class MiningTask;
 class DocumentManager;
 class AdMessage;
 class AdClickPredictor;
+class SearchKeywordOperation;
+class KeywordSearchResult;
+class SearchBase;
+namespace faceted
+{
+    class GroupManager;
+}
 
 class AdIndexManager
 {
@@ -29,7 +36,9 @@ public:
             const std::string& indexPath,
             const std::string& clickPredictorWorkingPath,
             boost::shared_ptr<DocumentManager>& dm,
-            NumericPropertyTableBuilder* ntb);
+            NumericPropertyTableBuilder* ntb,
+            SearchBase* searcher,
+            faceted::GroupManager* grp_mgr);
 
     ~AdIndexManager();
 
@@ -42,11 +51,21 @@ public:
 
     void onAdStreamMessage(const std::vector<AdMessage>& msg_list);
 
-    bool search(const std::vector<std::pair<std::string, std::string> >& info,
+    std::string getValueStrFromPropId(uint32_t pvid);
+
+    void rankAndSelect(
+        std::vector<std::pair<std::string, std::string> > userinfo,
+        std::vector<docid_t>& docids,
+        std::vector<float>& topKScoreRankList,
+        std::size_t& totalCount);
+    bool searchByQuery(const SearchKeywordOperation& actionOperation,
+        KeywordSearchResult& searchResult);
+    bool searchByDNF(const std::vector<std::pair<std::string, std::string> >& info,
             std::vector<docid_t>& docids,
             std::vector<float>& topKRankScoreList,
             std::size_t& totalCount
             );
+    void postMining(docid_t startid, docid_t endid);
 
 private:
 
@@ -56,12 +75,11 @@ private:
     std::string ad_selector_data_path_;
 
     boost::shared_ptr<DocumentManager>& documentManager_;
-
     AdMiningTask* adMiningTask_;
-
     AdClickPredictor* ad_click_predictor_;
-
     NumericPropertyTableBuilder* numericTableBuilder_;
+    SearchBase* ad_searcher_;
+    faceted::GroupManager* groupManager_;
 };
 
 } //namespace sf1r

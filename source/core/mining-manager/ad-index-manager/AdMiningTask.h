@@ -24,6 +24,7 @@ class AdMiningTask : public MiningTask
 public:
     typedef boost::shared_lock<boost::shared_mutex> readLock;
     typedef boost::unique_lock<boost::shared_mutex> writeLock;
+    typedef boost::function<void(docid_t, docid_t)> PostCBType_;
 
     AdMiningTask(
             const std::string& path,
@@ -55,6 +56,10 @@ public:
 
     void save();
     bool load();
+    void setPostProcessFunc(PostCBType_ cb)
+    {
+        postCB_ = cb;
+    }
 
 private:
 
@@ -69,6 +74,7 @@ private:
     boost::shared_ptr<AdIndexType> incrementalAdIndex_;
 
     docid_t startDocId_;
+    PostCBType_ postCB_;
 };
 
 } //namespace sf1r

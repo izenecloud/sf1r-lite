@@ -96,10 +96,11 @@ void select_ad_func(const std::vector<docid_t>& cand_docs,
     const std::vector<AdSelector::FeatureMapT> cand_ad_info,
     const AdSelector::FeatureT& userinfo)
 {
+    std::vector<double> score_list;
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->select(userinfo, cand_ad_info, 10, results);
+        AdSelector::get()->select(userinfo, cand_ad_info, 10, results, score_list, 20000);
 
         if (i % 1000 == 0)
         {
@@ -260,7 +261,7 @@ int main()
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
-    AdSelector::get()->init(selector_base_path, &ad);
+    AdSelector::get()->init(selector_base_path, &ad, NULL);
     bfs::remove(selector_base_path + "/clicked_ad.data");
 
     static const int total_ad_num = 7000000;
@@ -316,10 +317,11 @@ int main()
     //}
     //test_ad_selector_threads.join_all();
 
+    std::vector<double> score_list;
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->select(userinfo, cand_ad_info, 10, results);
+        AdSelector::get()->select(userinfo, cand_ad_info, 10, results, score_list, 20000);
 
         if (i % 1000 == 0)
         {

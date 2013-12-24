@@ -82,6 +82,10 @@ bool AdMiningTask::preProcess(int64_t timestamp)
 
 bool AdMiningTask::postProcess()
 {
+    if (postCB_)
+    {
+        postCB_(startDocId_, documentManager_->getMaxDocId());
+    }
     std::ofstream ofs(indexPath_.c_str(), std::ios_base::binary);
     if(!ofs)
     {

@@ -5,6 +5,7 @@
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
+#include <boost/unordered_set.hpp>
 
 #define MAX_HISTORY_CTR_NUM 1024*1024*16
 
@@ -39,7 +40,7 @@ void AdSelector::loadDef(const std::string& file, FeatureMapT& def_features,
         std::getline(ifs_def, feature_name);
         if (!feature_name.empty())
         {
-            def_features[feature_name] = std::vector<std::string>();
+            def_features[feature_name] = FeatureValueT();
             init_counter[feature_name] = 0;
         }
     }
@@ -90,7 +91,7 @@ void AdSelector::init(const std::string& segments_data_path,
                     ++allseg_it;
             }
 
-            std::vector<std::string> tmp;
+            FeatureValueT tmp;
             tmp.push_back(UnknownStr);
             for(FeatureMapT::const_iterator it = default_full_features_[i].begin();
                 it != default_full_features_[i].end(); ++it)
@@ -255,6 +256,7 @@ void AdSelector::computeHistoryCTR()
             it != all_segments_[seg_index].end(); ++it)
         {
             distinct_values[seg_index][it->first].insert(it->second.begin(), it->second.end());
+            LOG(INFO) << "seg type: " << seg_index << ", seg_name:" << it->first << ", segment value num: " << it->second.size();
         }
 
         if (!updated_segments_[seg_index].empty())
@@ -304,6 +306,16 @@ void AdSelector::computeHistoryCTR()
     }
     ofs_history.flush();
     LOG(INFO) << "update history ctr finished. total : " << history_ctr_data_.size();
+}
+
+void AdSelector::updateSegments(const std::string& segment_name, const std::set<std::string>& segments, SegType type)
+{
+    boost::unique_lock<boost::mutex> lock(segment_mutex_);
+    std::pair<FeatureMapT::iterator, bool> inserted_it = updated_segments_[type].insert(std::make_pair(segment_name, std::vector<std::string>()));
+    for(std::set<std::string>::const_iterator cit = segments.begin(); cit != segments.end(); ++cit)
+    {
+        inserted_it.first->second.push_back(*cit);
+    }
 }
 
 void AdSelector::updateSegments(const FeatureT& segments, SegType type)
@@ -444,7 +456,7 @@ void AdSelector::selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std:
 bool AdSelector::selectFromRecommend(const FeatureT& user_info,
     std::size_t max_return,
     std::vector<docid_t>& recommended_doclist,
-    std::vector<float>& score_list
+    std::vector<double>& score_list
     )
 {
     // select the ads from recommend system if no any search results.
@@ -457,7 +469,7 @@ bool AdSelector::select(const FeatureT& user_info,
     const std::vector<FeatureMapT>& ad_feature_list, 
     std::size_t max_select,
     std::vector<docid_t>& ad_doclist,
-    std::vector<float>& score_list,
+    std::vector<double>& score_list,
     std::size_t max_ret_num)
 {
     if (ad_feature_list.size() != ad_doclist.size())
@@ -483,6 +495,7 @@ bool AdSelector::select(const FeatureT& user_info,
     std::size_t max_tmp_clicked_num = max_clicked_retnum * 2;
     ScoreSortedHitQueue tmp_clicked_scorelist(max_tmp_clicked_num);
 
+    boost::unordered_set<docid_t> unique_docid_list(ad_doclist.size() * 2);
     for(size_t i = 0; i < ad_doclist.size(); ++i)
     {
         if (clicked_ads_.test(ad_doclist[i]))
@@ -501,6 +514,7 @@ bool AdSelector::select(const FeatureT& user_info,
         {
             unclicked_doclist.push_back(ad_doclist[i]);
         }
+        unique_docid_list.insert(ad_doclist[i]);
     }
 
     std::size_t scoresize = tmp_clicked_scorelist.size();
@@ -529,15 +543,36 @@ bool AdSelector::select(const FeatureT& user_info,
         selectByRandSelectPolicy(max_unclicked_retnum, unclicked_doclist);
     }
     scoresize = clicked_scorelist.size();
-    ad_doclist.resize(scoresize + unclicked_doclist.size());
+    score_list.resize(ad_doclist.size());
     std::size_t ret_i = 0;
+    double min_score = 0;
     for(int i = scoresize - 1; i >= 0; --i)
     {
-        ad_doclist[ret_i++] = clicked_scorelist.pop().docId;
+        const ScoreDoc& item = clicked_scorelist.pop();
+        ad_doclist[i] = item.docId;
+        score_list[i] = item.score;
+        if (item.score < min_score)
+            min_score = item.score;
+        unique_docid_list.erase(item.docId);
+        ++ret_i;
     }
     for(size_t i = 0; i < unclicked_doclist.size(); ++i)
     {
-        ad_doclist[ret_i++] = unclicked_doclist[i];
+        ad_doclist[ret_i] = unclicked_doclist[i];
+        score_list[ret_i] = min_score - 1;
+        unique_docid_list.erase(unclicked_doclist[i]);
+        ++ret_i;
+    }
+    ad_doclist.resize(max_ret_num);
+    score_list.resize(ad_doclist.size());
+    for(boost::unordered_set<docid_t>::const_iterator it = unique_docid_list.begin();
+        it != unique_docid_list.end(); ++it)
+    {
+        if (ret_i >= ad_doclist.size())
+            break;
+        ad_doclist[ret_i] = *it;
+        score_list[ret_i] = min_score - 10;
+        ++ret_i;
     }
     return !ad_doclist.empty();
 }

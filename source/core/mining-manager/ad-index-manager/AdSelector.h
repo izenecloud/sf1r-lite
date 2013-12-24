@@ -31,8 +31,11 @@ public:
         TotalSeg
     };
 
+    // value may have multi possible values, each elem in the vector stand for
+    //  the each value.
+    typedef std::vector<std::string> FeatureValueT;
     typedef std::vector<std::pair<std::string, std::string> > FeatureT;
-    typedef std::map<std::string, std::vector<std::string> > FeatureMapT;
+    typedef std::map<std::string, FeatureValueT > FeatureMapT;
     AdSelector();
     ~AdSelector();
 
@@ -43,20 +46,21 @@ public:
 
     bool selectFromRecommend(const FeatureT& user_info, std::size_t max_return,
         std::vector<docid_t>& recommended_doclist,
-        std::vector<float>& score_list);
+        std::vector<double>& score_list);
 
     bool select(const FeatureT& user_info,
         const std::vector<FeatureMapT>& ad_feature_list, 
         std::size_t max_select,
         std::vector<docid_t>& ad_doclist,
-        std::vector<float>& score_list,
+        std::vector<double>& score_list,
         std::size_t max_ret_num);
 
     void updateClicked(docid_t ad_id);
     void updateSegments(const FeatureT& segments, SegType type);
+    void updateSegments(const std::string& segment_name, const std::set<std::string>& segments, SegType type);
     void load();
     void save();
-    void getDefaultFeatures(std::vector<std::string>& feature_name_list, SegType type);
+    void getDefaultFeatures(FeatureMapT& feature_name_list, SegType type);
 
 private:
 

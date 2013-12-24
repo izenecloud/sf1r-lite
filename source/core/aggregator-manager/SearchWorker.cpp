@@ -543,7 +543,7 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::AD_INDEX:
-        if (!miningManager_->getAdIndexManager()->search(
+        if (!miningManager_->getAdIndexManager()->searchByDNF(
                     actionOperation.actionItem_.adSearchPropertyValue_,
                     resultItem.topKDocs_,
                     resultItem.topKRankScoreList_,

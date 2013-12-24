@@ -222,6 +222,7 @@ MiningManager::MiningManager(
 
 MiningManager::~MiningManager()
 {
+    if (adIndexManager_) delete adIndexManager_;
     if (multiThreadMiningTaskBuilder_) delete multiThreadMiningTaskBuilder_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
@@ -250,7 +251,6 @@ MiningManager::~MiningManager()
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
-    if (adIndexManager_) delete adIndexManager_;
 
     close();
 }
@@ -3097,7 +3097,10 @@ bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
     const bfs::path filePath(adIndexDir / "index.bin");
     adIndexConfig.indexFilePath = filePath.string();
 
-    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath, adIndexConfig.clickPredictorWorkingPath, document_manager_, numericTableBuilder_);
+    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath,
+        adIndexConfig.clickPredictorWorkingPath,
+        document_manager_, numericTableBuilder_,
+        searchManager_->normalSearch_.get(), groupManager_);
     adIndexManager_->buildMiningTask();
 
     miningTaskBuilder_->addTask(
