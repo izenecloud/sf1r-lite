@@ -93,7 +93,7 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
     }
 }
 
-std::string AdIndexManager::getValueStrFromPropId(uint32_t pvid)
+inline std::string AdIndexManager::getValueStrFromPropId(uint32_t pvid)
 {
     return boost::lexical_cast<std::string>(pvid) + "-";
     //    // may have multi value.

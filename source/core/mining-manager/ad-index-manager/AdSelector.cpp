@@ -5,7 +5,7 @@
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
-#include <boost/unordered_set.hpp>
+#include <boost/dynamic_bitset.hpp>
 
 #define MAX_HISTORY_CTR_NUM 1024*1024*16
 
@@ -176,6 +176,7 @@ void AdSelector::stop()
 
 void AdSelector::updateFunc()
 {
+    sleep(10);
     while(true)
     {
         try
@@ -495,7 +496,9 @@ bool AdSelector::select(const FeatureT& user_info,
     std::size_t max_tmp_clicked_num = max_clicked_retnum * 2;
     ScoreSortedHitQueue tmp_clicked_scorelist(max_tmp_clicked_num);
 
-    boost::unordered_set<docid_t> unique_docid_list(ad_doclist.size() * 2);
+    docid_t min_doc = ad_doclist[0];
+    docid_t max_doc = ad_doclist[ad_doclist.size() - 1];
+    boost::dynamic_bitset<> unique_docid_list(std::max(min_doc, max_doc));
     for(size_t i = 0; i < ad_doclist.size(); ++i)
     {
         if (clicked_ads_.test(ad_doclist[i]))
@@ -514,7 +517,9 @@ bool AdSelector::select(const FeatureT& user_info,
         {
             unclicked_doclist.push_back(ad_doclist[i]);
         }
-        unique_docid_list.insert(ad_doclist[i]);
+        unique_docid_list.set(ad_doclist[i]);
+        min_doc = std::min(min_doc, ad_doclist[i]);
+        max_doc = std::max(max_doc, ad_doclist[i]);
     }
 
     std::size_t scoresize = tmp_clicked_scorelist.size();
@@ -553,26 +558,28 @@ bool AdSelector::select(const FeatureT& user_info,
         score_list[i] = item.score;
         if (item.score < min_score)
             min_score = item.score;
-        unique_docid_list.erase(item.docId);
+        unique_docid_list.reset(item.docId);
         ++ret_i;
     }
     for(size_t i = 0; i < unclicked_doclist.size(); ++i)
     {
         ad_doclist[ret_i] = unclicked_doclist[i];
         score_list[ret_i] = min_score - 1;
-        unique_docid_list.erase(unclicked_doclist[i]);
+        unique_docid_list.reset(unclicked_doclist[i]);
         ++ret_i;
     }
     ad_doclist.resize(max_ret_num);
     score_list.resize(ad_doclist.size());
-    for(boost::unordered_set<docid_t>::const_iterator it = unique_docid_list.begin();
-        it != unique_docid_list.end(); ++it)
+    for(docid_t i = min_doc; i <= max_doc; ++i)
     {
-        if (ret_i >= ad_doclist.size())
+        if (ret_i >= max_ret_num)
             break;
-        ad_doclist[ret_i] = *it;
-        score_list[ret_i] = min_score - 10;
-        ++ret_i;
+        if (unique_docid_list.test(i))
+        {
+            ad_doclist[ret_i] = i;
+            score_list[ret_i] = min_score - 10;
+            ++ret_i;
+        }
     }
     return !ad_doclist.empty();
 }

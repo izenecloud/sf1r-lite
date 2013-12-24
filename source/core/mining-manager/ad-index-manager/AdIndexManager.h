@@ -51,7 +51,7 @@ public:
 
     void onAdStreamMessage(const std::vector<AdMessage>& msg_list);
 
-    std::string getValueStrFromPropId(uint32_t pvid);
+    inline std::string getValueStrFromPropId(uint32_t pvid);
 
     void rankAndSelect(
         std::vector<std::pair<std::string, std::string> > userinfo,
