@@ -55,6 +55,7 @@ bool AdIndexManager::buildMiningTask()
 {
     adMiningTask_ = new AdMiningTask(indexPath_, documentManager_);
     adMiningTask_->load();
+    adMiningTask_->setPostProcessFunc(boost::bind(&AdIndexManager::postMining, this, _1, _2));
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
@@ -107,6 +108,7 @@ inline std::string AdIndexManager::getValueStrFromPropId(uint32_t pvid)
 
 void AdIndexManager::postMining(docid_t startid, docid_t endid)
 {
+    LOG(INFO) << "ad mining finished from: " << startid << " to " << endid;
     PropSharedLockSet propSharedLockSet;
     std::vector<faceted::PropValueTable*> pvt_list;
     std::vector<std::set<std::string> > all_kinds_ad_segments;
