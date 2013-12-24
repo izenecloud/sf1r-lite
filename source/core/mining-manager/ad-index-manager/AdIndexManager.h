@@ -57,7 +57,7 @@ public:
     void rankAndSelect(
         std::vector<std::pair<std::string, std::string> > userinfo,
         std::vector<docid_t>& docids,
-        std::vector<float>& topKScoreRankList,
+        std::vector<float>& topKRankScoreList,
         std::size_t& totalCount);
     bool searchByQuery(const SearchKeywordOperation& actionOperation,
         KeywordSearchResult& searchResult);

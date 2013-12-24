@@ -260,8 +260,17 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     }
     else
     {
-        STOP_PROFILER( cacheoverhead )
+        STOP_PROFILER( cacheoverhead );
 
+        if (actionItem.searchingMode_.mode_ == SearchingMode::AD_INDEX)
+        {
+            if (miningManager_->getAdIndexManager())
+            {
+                miningManager_->getAdIndexManager()->rankAndSelect(
+                    std::vector<std::pair<std::string, std::string> >(),
+                    resultItem.topKDocs_, resultItem.topKRankScoreList_, resultItem.totalCount_);
+            }
+        }
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);
 

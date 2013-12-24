@@ -93,6 +93,7 @@ private:
     typedef boost::random::uniform_int_distribution<uint32_t> DistributionT;
     EngineT random_eng_;
     boost::random::variate_generator<EngineT&, DistributionT>  random_gen_;
+    bool need_refresh_;
 
 };
 

@@ -21,6 +21,7 @@ AdSelector::AdSelector()
     :history_ctr_data_(MAX_HISTORY_CTR_NUM)
      , random_eng_(std::time(NULL))
      , random_gen_(random_eng_, DistributionT())
+     , need_refresh_(true)
 {
 }
 
@@ -182,6 +183,7 @@ void AdSelector::updateFunc()
         try
         {
             computeHistoryCTR();
+            need_refresh_ = false;
             save();
             struct timespec ts;
             ts.tv_sec = 10;
@@ -190,6 +192,8 @@ void AdSelector::updateFunc()
             while(times++ < 360)
             {
                 boost::this_thread::interruption_point();
+                if (need_refresh_)
+                    break;
                 nanosleep(&ts, NULL);
             }
         }
@@ -312,6 +316,7 @@ void AdSelector::computeHistoryCTR()
 void AdSelector::updateSegments(const std::string& segment_name, const std::set<std::string>& segments, SegType type)
 {
     boost::unique_lock<boost::mutex> lock(segment_mutex_);
+    need_refresh_ = true;
     std::pair<FeatureMapT::iterator, bool> inserted_it = updated_segments_[type].insert(std::make_pair(segment_name, std::vector<std::string>()));
     for(std::set<std::string>::const_iterator cit = segments.begin(); cit != segments.end(); ++cit)
     {

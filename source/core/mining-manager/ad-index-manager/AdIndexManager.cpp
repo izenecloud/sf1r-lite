@@ -149,9 +149,10 @@ void AdIndexManager::postMining(docid_t startid, docid_t endid)
 
 void AdIndexManager::rankAndSelect(const std::vector<std::pair<std::string, std::string> > userinfo,
     std::vector<docid_t>& docids,
-    std::vector<float>& topKScoreRankList,
+    std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)
 {
+    LOG(INFO) << "begin rank ads from searched result : " << docids.size();
     typedef std::vector<docid_t>::iterator InputIterator;
 
     std::string propName = "Price";
@@ -262,13 +263,13 @@ void AdIndexManager::rankAndSelect(const std::vector<std::pair<std::string, std:
     unsigned int scoreSize = scoreItemQueue->size();
 
     docids.resize(scoreSize);
-    topKScoreRankList.resize(scoreSize);
+    topKRankScoreList.resize(scoreSize);
 
     for (int i = scoreSize - 1; i >= 0; --i)
     {
         const ScoreDoc& item = scoreItemQueue->pop();
         docids[i] = item.docId;
-        topKScoreRankList[i] = item.score;
+        topKRankScoreList[i] = item.score;
     }
     totalCount = docids.size();
 }
@@ -290,7 +291,7 @@ bool AdIndexManager::searchByQuery(const SearchKeywordOperation& actionOperation
 
 bool AdIndexManager::searchByDNF(const std::vector<std::pair<std::string, std::string> >& info,
     std::vector<docid_t>& docids,
-    std::vector<float>& topKScoreRankList,
+    std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)
 {
     boost::unordered_set<uint32_t> dnfIDs;
@@ -306,7 +307,7 @@ bool AdIndexManager::searchByDNF(const std::vector<std::pair<std::string, std::s
         docids[i++] = *it;
     }
 
-    rankAndSelect(info, docids, topKScoreRankList, totalCount);
+    rankAndSelect(info, docids, topKRankScoreList, totalCount);
     return true;
 }
 
