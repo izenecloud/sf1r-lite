@@ -3099,6 +3099,7 @@ bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
 
     adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath,
         adIndexConfig.clickPredictorWorkingPath,
+        system_resource_path_ + "/ad_resource",
         document_manager_, numericTableBuilder_,
         searchManager_->normalSearch_.get(), groupManager_);
     adIndexManager_->buildMiningTask();

@@ -23,12 +23,14 @@ static const std::string adlog_topic = "b5manlog";
 AdIndexManager::AdIndexManager(
         const std::string& indexPath,
         const std::string& clickPredictorWorkingPath,
+        const std::string& ad_resource_path,
         boost::shared_ptr<DocumentManager>& dm,
         NumericPropertyTableBuilder* ntb,
         SearchBase* searcher,
         faceted::GroupManager* grp_mgr)
     : indexPath_(indexPath),
       clickPredictorWorkingPath_(clickPredictorWorkingPath),
+      ad_selector_data_path_(ad_resource_path + "/ad_selector"),
       documentManager_(dm),
       numericTableBuilder_(ntb),
       ad_searcher_(searcher),
