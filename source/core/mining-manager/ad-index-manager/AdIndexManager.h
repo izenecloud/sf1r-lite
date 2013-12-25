@@ -6,6 +6,7 @@
 #define SF1_AD_INDEX_MANAGER_H_
 
 #include "AdMiningTask.h"
+#include "AdSelector.h"
 #include <boost/lexical_cast.hpp>
 #include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -52,16 +53,14 @@ public:
 
     void onAdStreamMessage(const std::vector<AdMessage>& msg_list);
 
-    inline std::string getValueStrFromPropId(uint32_t pvid);
-
     void rankAndSelect(
-        std::vector<std::pair<std::string, std::string> > userinfo,
+        const AdSelector::FeatureT& userinfo,
         std::vector<docid_t>& docids,
         std::vector<float>& topKRankScoreList,
         std::size_t& totalCount);
     bool searchByQuery(const SearchKeywordOperation& actionOperation,
         KeywordSearchResult& searchResult);
-    bool searchByDNF(const std::vector<std::pair<std::string, std::string> >& info,
+    bool searchByDNF(const AdSelector::FeatureT& info,
             std::vector<docid_t>& docids,
             std::vector<float>& topKRankScoreList,
             std::size_t& totalCount

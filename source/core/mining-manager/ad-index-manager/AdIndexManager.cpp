@@ -11,7 +11,9 @@
 #include <query-manager/ActionItem.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/HitQueue.h>
+#include <util/ustring/UString.h>
 #include <algorithm>
+
 
 namespace sf1r
 {
@@ -19,6 +21,24 @@ namespace sf1r
 static const int MAX_SEARCH_AD_COUNT = 20000;
 static const int MAX_SELECT_AD_COUNT = 20;
 static const std::string adlog_topic = "b5manlog";
+
+static inline void getValueStrFromPropId(faceted::PropValueTable* pvt,
+    const faceted::PropValueTable::PropIdList& propids, AdSelector::FeatureValueT& value_list)
+{
+    //return boost::lexical_cast<std::string>(pvid) + "-";
+    value_list.clear();
+    // may have multi value.
+    std::vector<izenelib::util::UString> value;
+    for (size_t k = 0; k < propids.size(); ++k)
+    {
+        pvt->propValuePath(propids[k], value, false);
+        if (value.empty()) continue;
+        std::string valuestr;
+        value[0].convertString(valuestr, izenelib::util::UString::UTF_8);
+        value_list.push_back(valuestr);
+    }
+}
+
 
 AdIndexManager::AdIndexManager(
         const std::string& indexPath,
@@ -81,29 +101,23 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
         LOG(INFO) << "got ad stream data. size: " << msg_list.size() << ", total " << cnt;
     }
     cnt += msg_list.size();
-    std::vector<std::pair<AdClickPredictor::AssignmentT, bool> > assignment_list;
+    std::vector<AdClickPredictor::AssignmentT> user_segs;
+    std::vector<AdClickPredictor::AssignmentT> ad_segs;
+    std::vector<bool> click_list;
     // read from stream msg and convert it to assignment list.
-    for(size_t i = 0; i < assignment_list.size(); ++i)
+    
+    assert(user_segs.size() == ad_segs.size() && ad_segs.size() == click_list.size());
+    for(size_t i = 0; i < user_segs.size(); ++i)
     {
-        ad_click_predictor_->update(assignment_list[i].first, assignment_list[i].second);
-        if (assignment_list[i].second)
+        ad_click_predictor_->update(user_segs[i], ad_segs[i], click_list[i]);
+        if (click_list[i])
         {
             // get docid from adid.
             docid_t docid;
             AdSelector::get()->updateClicked(docid);
         }
-        AdSelector::get()->updateSegments(assignment_list[i].first, AdSelector::UserSeg);
+        AdSelector::get()->updateSegments(user_segs[i], AdSelector::UserSeg);
     }
-}
-
-inline std::string AdIndexManager::getValueStrFromPropId(uint32_t pvid)
-{
-    return boost::lexical_cast<std::string>(pvid) + "-";
-    //    // may have multi value.
-    //    std::vector<std::string> value;
-    //    pvt_list[feature_index]->propValuePath(propids[k], value);
-    //    if (value.empty()) continue;
-    //    value_list.push_back(value[0]);
 }
 
 void AdIndexManager::postMining(docid_t startid, docid_t endid)
@@ -125,6 +139,7 @@ void AdIndexManager::postMining(docid_t startid, docid_t endid)
     all_kinds_ad_segments.resize(pvt_list.size());
 
     faceted::PropValueTable::PropIdList propids;
+    AdSelector::FeatureValueT value_list;
     for (docid_t i = startid; i <= endid; ++i)
     {
         for (std::size_t feature_index = 0; feature_index < pvt_list.size(); ++feature_index)
@@ -132,11 +147,8 @@ void AdIndexManager::postMining(docid_t startid, docid_t endid)
             if (pvt_list[feature_index])
             {
                 pvt_list[feature_index]->getPropIdList(i, propids);
-                // get the string value for the id.
-                for (size_t k = 0; k < propids.size(); ++k)
-                {
-                    all_kinds_ad_segments[feature_index].insert(getValueStrFromPropId(propids[k]));
-                }
+                getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
+                all_kinds_ad_segments[feature_index].insert(value_list.begin(), value_list.end());
             }
         }
     }
@@ -149,7 +161,7 @@ void AdIndexManager::postMining(docid_t startid, docid_t endid)
     }
 }
 
-void AdIndexManager::rankAndSelect(const std::vector<std::pair<std::string, std::string> > userinfo,
+void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
     std::vector<docid_t>& docids,
     std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)
@@ -219,7 +231,6 @@ void AdIndexManager::rankAndSelect(const std::vector<std::pair<std::string, std:
                 cpc_ads_features.push_back(AdSelector::FeatureMapT());
                 AdSelector::get()->getDefaultFeatures(cpc_ads_features.back(), AdSelector::AdSeg);
                 faceted::PropValueTable::PropIdList propids;
-                std::vector<std::string> str_values;
 
                 std::size_t feature_index = 0;
                 for (AdSelector::FeatureMapT::iterator feature_it = cpc_ads_features.back().begin();
@@ -228,13 +239,9 @@ void AdIndexManager::rankAndSelect(const std::vector<std::pair<std::string, std:
                     if (pvt_list[feature_index])
                     {
                         pvt_list[feature_index]->getPropIdList(*it, propids);
-                        // get the string value for the id.
-                        for (size_t k = 0; k < propids.size(); ++k)
-                        {
-                            str_values.push_back(getValueStrFromPropId(propids[k]));
-                        }
+                        getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
                     }
-                    feature_it->second.swap(str_values);
+                    feature_it->second.swap(value_list);
                     ++feature_index;
                 }
                 continue;
@@ -291,7 +298,7 @@ bool AdIndexManager::searchByQuery(const SearchKeywordOperation& actionOperation
     return ret;
 }
 
-bool AdIndexManager::searchByDNF(const std::vector<std::pair<std::string, std::string> >& info,
+bool AdIndexManager::searchByDNF(const AdSelector::FeatureT& info,
     std::vector<docid_t>& docids,
     std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)

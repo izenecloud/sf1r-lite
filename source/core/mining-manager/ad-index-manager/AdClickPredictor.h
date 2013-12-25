@@ -39,6 +39,12 @@ public:
     void init(const std::string& path);
     void stop();
 
+    void update(const AssignmentT& assignment_left, const AssignmentT& assignment_right, bool click)
+    {
+        writeLock lock(rwMutex_);
+        predictor_->update(assignment_left, assignment_right, click);
+    }
+
     void update(const AssignmentT& assignment, bool click)
     {
         writeLock lock(rwMutex_);
