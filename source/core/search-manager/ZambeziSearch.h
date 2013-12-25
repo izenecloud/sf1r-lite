@@ -19,6 +19,7 @@
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,7 @@ class SearchManagerPreProcessor;
 class QueryBuilder;
 class ZambeziManager;
 class PropSharedLockSet;
+class ZambeziScoreNormalizer;
 class ProductScorer;
 class HitQueue;
 class ScoreDoc;
@@ -105,6 +107,8 @@ private:
     const faceted::PropValueTable* categoryValueTable_;
 
     const faceted::PropValueTable* merchantValueTable_;
+
+    boost::scoped_ptr<ZambeziScoreNormalizer> zambeziScoreNormalizer_;
 
     faceted::AttrManager* attrManager_;
 

@@ -923,7 +923,6 @@ void RecoveryChecker::onRecoverCallback(bool startup)
         }
     }
 
-    setForceExitFlag();
     syncSCDFiles();
     syncToNewestReqLog();
 
@@ -1366,18 +1365,24 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
 
 bool RecoveryChecker::onRecoverCheckLog(bool is_primary)
 {
+    bool ret = false;
     if (NodeManagerBase::isAsyncEnabled())
     {
-        return checkIfLogForward(is_primary);
+        ret = checkIfLogForward(is_primary);
+        if (ret)
+            setForceExitFlag();
+        return ret;
     }
     LOG(INFO) << "check log for re-connect.";
     uint32_t lastid = NodeManagerBase::get()->getLastWriteReqId();
     if (lastid == 0)
-        return true;
-    if (lastid == reqlog_mgr_->getLastSuccessReqId())
+    {
+        ret = true;
+    }
+    else if (lastid == reqlog_mgr_->getLastSuccessReqId())
     {
         LOG(INFO) << "current last is same as zookeeper";
-        return true;
+        ret = true;
     }
     else if (lastid > reqlog_mgr_->getLastSuccessReqId())
     {
@@ -1390,10 +1395,14 @@ bool RecoveryChecker::onRecoverCheckLog(bool is_primary)
         {
             LOG(WARNING) << "last update write request id to zookeeper may lost. need re-update.";
             NodeManagerBase::get()->updateLastWriteReqId(reqlog_mgr_->getLastSuccessReqId());
-            return true;
+            ret = true;
         }
     }
-    return false;
+
+    if (ret)
+        setForceExitFlag();
+
+    return ret;
 }
 
 void RecoveryChecker::syncSCDFiles()

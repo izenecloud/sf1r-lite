@@ -136,6 +136,7 @@ class AttrManager;
 class OntologyManager;
 class CTRManager;
 class GroupFilterBuilder;
+class AttrTable;
 }
 
 
@@ -444,6 +445,8 @@ public:
     void onIndexUpdated(size_t docNum);
 
     const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
+
+    const faceted::AttrTable* GetAttrTable() const;
 
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
     {

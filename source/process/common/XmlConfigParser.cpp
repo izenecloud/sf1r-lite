@@ -2614,6 +2614,12 @@ void CollectionConfig::parseScoreAttr(
     getAttribute_FloatType(scoreNode, "min", scoreConfig.minLimit, false);
     getAttribute_FloatType(scoreNode, "max", scoreConfig.maxLimit, false);
     getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
+
+    getAttribute_FloatType(scoreNode, "zoomin", scoreConfig.zoomin, false);
+    if (scoreConfig.zoomin == 0)
+    {
+        throw XmlConfigParserException("Require non-zero value for <Score zoomin>");
+    }
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

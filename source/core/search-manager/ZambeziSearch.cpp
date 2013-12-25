@@ -1,5 +1,6 @@
 #include "ZambeziSearch.h"
 #include "ZambeziFilter.h"
+#include "ZambeziScoreNormalizer.h"
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "QueryBuilder.h"
@@ -79,6 +80,7 @@ void ZambeziSearch::setMiningManager(
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
     merchantValueTable_ = miningManager->GetPropValueTable(kMerchantPropName);
+    zambeziScoreNormalizer_.reset(new ZambeziScoreNormalizer(*miningManager));
     attrManager_= miningManager->GetAttributeManager();
     numericTableBuilder_ = miningManager->GetNumericTableBuilder();
 }
