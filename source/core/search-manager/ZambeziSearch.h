@@ -61,11 +61,11 @@ public:
         std::size_t offset);
 
 private:
-    void normalizeScore_(
-        std::vector<docid_t>& docids,
-        std::vector<float>& scores,
-        std::vector<float>& productScores,
-        PropSharedLockSet &sharedLockSet);
+    // void normalizeScore_(
+    //     std::vector<docid_t>& docids,
+    //     std::vector<float>& scores,
+    //     std::vector<float>& productScores,
+    //     PropSharedLockSet &sharedLockSet);
     
     void normalizeTopDocs_(
         const boost::scoped_ptr<ProductScorer>& productScorer, 

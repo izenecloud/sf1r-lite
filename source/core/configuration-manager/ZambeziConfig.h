@@ -30,8 +30,11 @@ struct ZambeziIndexType
 };
 
 /**
- * @brief : this is the base configuration for Zambezi index;
- *
+ * @brief: this is the base configuration for Zambezi index;
+ * @weight: used to rank for each property, *weight;
+ * @isFilter: if isFilter is true, then the property can be used as
+ *           a filter, and the property is stored in numbericTable;
+ * @isTokenizer : if isTokenizer is true, the property will be built in zambezi index;
  */
 struct ZambeziProperty
 {
@@ -63,7 +66,7 @@ struct ZambeziProperty
 
 /**
  * @brief : this is the configuration for Zambezi index virtual preporty;
- *
+ * all virtualProperties will be used to build zambezi index;
  */
 class ZambeziVirtualProperty : public ZambeziProperty
 {
