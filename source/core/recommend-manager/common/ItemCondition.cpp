@@ -13,7 +13,7 @@ ItemCondition::ItemCondition()
 void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
 {
     // no condition
-    if (filterTree_->empty() || !queryBuilder)
+    if (filterTree_.empty() || !queryBuilder)
         return;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;

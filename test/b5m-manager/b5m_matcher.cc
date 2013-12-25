@@ -266,6 +266,7 @@ int do_main(int ac, char** av)
         ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
         ("map-test", "do category mapper test")
+        ("syn-test", "do attribute syn test")
         ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
         ("b5m-match", "make b5m matching")
         ("psm-index", "psm index")
@@ -639,6 +640,23 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"discover process failed"<<std::endl;
             return EXIT_FAILURE;
         }
+    } 
+    if (vm.count("syn-test")) {
+        if( knowledge_dir.empty() || name.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        //ProductMatcher::Clear(knowledge_dir, mode);
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        ilplib::knlp::AttributeNormalize* attr = matcher.GetAttributeNormalize();
+        name = attr->attr_normalize(name);
+        std::cout<<"[After Normalize]"<<name<<std::endl;
     } 
     if (vm.count("map-index")) {
         if( knowledge_dir.empty()||scd_path.empty())

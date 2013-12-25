@@ -30,6 +30,10 @@ public:
     bool Parse(const izenelib::util::UString& ustr);
 
     bool Parse(const std::string& str);
+    static ProductPriceType ParseValue(const izenelib::util::UString& ustr);
+
+    static ProductPriceType ParseValue(const std::string& str);
+    static ProductPriceType ParseDocPrice(const Document& doc, const std::string& price_property_name="Price");
 
     std::string ToString() const;
 
