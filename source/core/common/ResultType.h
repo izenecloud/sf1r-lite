@@ -291,6 +291,7 @@ public:
     std::vector<docid_t> docsInPage_;
     /// A list of ranked docId. First docId gets high rank score.
     std::vector<docid_t> topKDocs_;
+    std::vector<docid_t> adCachedTopKDocs_;
 
     /// A list of workerids. The sequence is following \c topKDocs_.
     std::vector<uint32_t> topKWorkerIds_;

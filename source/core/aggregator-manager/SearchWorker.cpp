@@ -266,6 +266,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         {
             if (miningManager_->getAdIndexManager())
             {
+                resultItem.topKDocs_.swap(resultItem.adCachedTopKDocs_);
                 miningManager_->getAdIndexManager()->rankAndSelect(
                     std::vector<std::pair<std::string, std::string> >(),
                     resultItem.topKDocs_, resultItem.topKRankScoreList_, resultItem.totalCount_);

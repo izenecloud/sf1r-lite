@@ -42,6 +42,7 @@ public:
     typedef std::vector<std::string> FeatureValueT;
     typedef std::vector<std::pair<std::string, std::string> > FeatureT;
     typedef std::map<std::string, FeatureValueT > FeatureMapT;
+    typedef uint16_t  SegIdT;
     AdSelector();
     ~AdSelector();
 
@@ -56,18 +57,15 @@ public:
         std::vector<double>& score_list);
 
     bool select(const FeatureT& user_info,
-        //const std::vector<FeatureMapT>& ad_feature_list, 
         std::size_t max_select,
         std::vector<docid_t>& ad_doclist,
         std::vector<double>& score_list,
-        std::size_t max_ret_num,
         PropSharedLockSet& propSharedLockSet);
 
     bool selectForTest(const FeatureT& user_info,
         std::size_t max_select,
         std::vector<docid_t>& ad_doclist,
-        std::vector<double>& score_list,
-        std::size_t max_ret_num);
+        std::vector<double>& score_list);
 
     void updateClicked(docid_t ad_id);
     void updateSegments(const FeatureT& segments, SegType type);
@@ -76,7 +74,7 @@ public:
     void save();
     void getDefaultFeatures(FeatureMapT& feature_name_list, SegType type);
     void getAdSegmentStrList(docid_t ad_id, std::vector<std::string>& retstr_list);
-    void updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<uint32_t>& segids);
+    void updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<SegIdT>& segids);
     void updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, const std::vector<FeatureMapT>& ad_feature_list);
     void miningAdSegmentStr(docid_t startid, docid_t endid);
 
@@ -90,20 +88,20 @@ private:
     void selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std::vector<docid_t>& unclicked_doclist);
     void computeHistoryCTR();
     double getHistoryCTR(const std::vector<std::string>& all_fullkey);
-    void expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<uint32_t>& ad_segid_list);
+    void expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<SegIdT>& ad_segid_list);
     void expandSegmentStr(std::vector<std::string>& seg_str_list, const FeatureMapT& feature_list);
     void getUserSegmentStr(std::vector<std::string>& user_seg_str_list, const FeatureT& user_info);
     void getAllPossibleSegStr(const FeatureMapT& segments,
         std::map<std::string, std::size_t> segments_counter,
         std::vector<std::pair<std::string, FeatureT> >& all_keys);
 
-    typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, uint32_t,
+    typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, SegIdT,
             izenelib::util::ReadWriteLock,
-            izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, uint32_t>,
-            izenelib::ir::idmanager::HashIDGenerator<std::string, uint32_t>,
-            izenelib::ir::idmanager::EmptyIDStorage<std::string, uint32_t>,
-            izenelib::ir::idmanager::UniqueIDGenerator<std::string, uint32_t>,
-            izenelib::ir::idmanager::EmptyIDStorage<std::string, uint32_t> > AdSegIDManager;
+            izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, SegIdT>,
+            izenelib::ir::idmanager::HashIDGenerator<std::string, SegIdT>,
+            izenelib::ir::idmanager::EmptyIDStorage<std::string, SegIdT>,
+            izenelib::ir::idmanager::UniqueIDGenerator<std::string, SegIdT>,
+            izenelib::ir::idmanager::EmptyIDStorage<std::string, SegIdT> > AdSegIDManager;
 
     faceted::GroupManager* groupManager_;
     std::string res_path_;
@@ -122,8 +120,11 @@ private:
     EngineT random_eng_;
     boost::random::variate_generator<EngineT&, DistributionT>  random_gen_;
     bool need_refresh_;
-    std::vector< std::vector<uint32_t> >  ad_segid_data_;
+    // store the multi segment ids for each ad document
+    std::vector< std::vector<SegIdT> >  ad_segid_data_;
+    // the segment string --> segment id relationship
     boost::shared_ptr<AdSegIDManager> ad_segid_mgr_;
+    // the segment id --> segment string relationship.
     Lux::IO::Array  ad_segid_str_data_;
     boost::shared_mutex ad_segid_mutex_;
 };

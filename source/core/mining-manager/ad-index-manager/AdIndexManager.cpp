@@ -137,7 +137,7 @@ void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
     cpc_ads_result.reserve(docids.size());
     cpc_ads_features.reserve(docids.size());
 
-    uint32_t heapSize = std::min((std::size_t)MAX_SEARCH_AD_COUNT, docids.size());
+    uint32_t heapSize = std::min((std::size_t)MAX_SELECT_AD_COUNT, docids.size());
     scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
     for(InputIterator it = docids.begin();
@@ -173,7 +173,7 @@ void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
     // select some ads using some strategy to maximize the CPC.
     std::vector<double> score_list;
     AdSelector::get()->select(userinfo, MAX_SELECT_AD_COUNT,
-        cpc_ads_result, score_list, MAX_SEARCH_AD_COUNT, propSharedLockSet);
+        cpc_ads_result, score_list, propSharedLockSet);
     LOG(INFO) << "end select ads from result.";
     // calculate eCPM
     for (std::size_t i = 0; i < cpc_ads_result.size(); ++i)
@@ -212,6 +212,7 @@ bool AdIndexManager::searchByQuery(const SearchKeywordOperation& actionOperation
     const std::vector<std::pair<std::string, std::string> > userinfo;
     if (ret)
     {
+        searchResult.adCachedTopKDocs_ = searchResult.topKDocs_;
         rankAndSelect(userinfo, searchResult.topKDocs_, searchResult.topKRankScoreList_, searchResult.totalCount_);
     }
     return ret;

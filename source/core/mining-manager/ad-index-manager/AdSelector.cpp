@@ -86,6 +86,7 @@ void AdSelector::init(const std::string& res_path,
     loadDef(res_path_ + "/all_ad_feature_name.txt", default_full_features_[AdSeg], init_counter_[AdSeg]);
 
     load();
+    bfs::create_directories(segments_data_path_ + "/segid/");
     ad_segid_mgr_.reset(new AdSegIDManager(segments_data_path_ + "/segid/"));
     ad_segid_str_data_.set_noncluster_params(Lux::IO::Linked);
     ad_segid_str_data_.set_lock_type(Lux::IO::LOCK_THREAD);
@@ -176,7 +177,18 @@ void AdSelector::load()
     }
     LOG(INFO) << "segments loaded: " << all_segments_.size();
 
-    //ad_segid_data_.init(segments_data_path_ + "/ad_segid.data");
+    std::ifstream ifs_segid_data(std::string(segments_data_path_ + "/ad_segid.data").c_str());
+    if (ifs_segid_data.good())
+    {
+        std::size_t len = 0;
+        ifs_segid_data.read((char*)&len, sizeof(len));
+        std::string data;
+        data.resize(len);
+        ifs_segid_data.read((char*)&data[0], len);
+        izenelib::util::izene_deserialization<std::vector<std::vector<SegIdT> > > izd(data.data(), data.size());
+        izd.read_image(ad_segid_data_);
+    }
+    LOG(INFO) << "ad_segid data loaded: " << ad_segid_data_.size();
 }
 
 void AdSelector::save()
@@ -204,8 +216,16 @@ void AdSelector::save()
     ofs_seg.flush();
 
     ad_segid_mgr_->flush();
+
     boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
-    //ad_segid_data_.flush();
+    std::ofstream ofs_segid_data(std::string(segments_data_path_ + "/ad_segid.data").c_str());
+    len = 0;
+    buf = NULL;
+    izenelib::util::izene_serialization<std::vector<std::vector<SegIdT> > > izs_segid_data(ad_segid_data_);
+    izs_segid_data.write_image(buf, len);
+    ofs_segid_data.write((const char*)&len, sizeof(len));
+    ofs_segid_data.write(buf, len);
+    ofs_segid_data.flush();
 }
 
 void AdSelector::stop()
@@ -223,7 +243,7 @@ void AdSelector::getAdSegmentStrList(docid_t ad_id, std::vector<std::string>& re
     if (ad_id > ad_segid_data_.size())
         return;
     boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
-    const std::vector<uint32_t>& segids = ad_segid_data_[ad_id];
+    const std::vector<SegIdT>& segids = ad_segid_data_[ad_id];
     for(size_t i = 0; i < segids.size(); ++i)
     {
         Lux::IO::data_t *val_p = NULL;
@@ -237,7 +257,7 @@ void AdSelector::getAdSegmentStrList(docid_t ad_id, std::vector<std::string>& re
     }
 }
 
-void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<uint32_t>& segids)
+void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<SegIdT>& segids)
 {
     std::vector<std::string> seg_str_list;
     seg_str_list.push_back("");
@@ -247,7 +267,7 @@ void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feat
     {
         if (seg_str_list[j].empty())
             continue;
-        uint32_t segid;
+        SegIdT segid;
         ad_segid_mgr_->getDocIdByDocName(seg_str_list[j], segid, true);
         segids.push_back(segid);
         ad_segid_str_data_.put(segid, seg_str_list[j].data(), seg_str_list.size(), Lux::IO::OVERWRITE);
@@ -265,7 +285,7 @@ void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feat
 void AdSelector::updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, const std::vector<FeatureMapT>& ad_feature_list)
 {
     assert(ad_doclist.size() == ad_feature_list.size());
-    std::vector<uint32_t> segids;
+    std::vector<SegIdT> segids;
     for(size_t i = 0; i < ad_doclist.size(); ++i)
     {
         updateAdSegmentStr(ad_doclist[i], ad_feature_list[i], segids);
@@ -292,7 +312,7 @@ void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
 
     faceted::PropValueTable::PropIdList propids;
     FeatureValueT value_list;
-    std::vector<uint32_t> segids;
+    std::vector<SegIdT> segids;
     for (docid_t i = startid; i <= endid; ++i)
     {
         FeatureMapT ad_feature;
@@ -452,7 +472,7 @@ void AdSelector::computeHistoryCTR()
             std::string ad_seg_str;
             if (!all_fullkey[AdSeg][j].first.empty())
             {
-                uint32_t segid = 0;
+                SegIdT segid = 0;
                 ad_segid_mgr_->getDocIdByDocName(all_fullkey[AdSeg][j].first, segid, true);
                 ad_seg_str = boost::lexical_cast<std::string>(segid);
             }
@@ -495,7 +515,7 @@ void AdSelector::updateClicked(docid_t ad_id)
     clicked_ads_.set(ad_id);
 }
 
-void AdSelector::expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<uint32_t>& ad_segid_list)
+void AdSelector::expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<SegIdT>& ad_segid_list)
 {
     if (ad_segid_list.empty())
     {
@@ -633,11 +653,9 @@ bool AdSelector::selectFromRecommend(const FeatureT& user_info,
 // the ad feature should be full of all possible kinds of feature,
 // this can be done while indexing the ad data.
 bool AdSelector::select(const FeatureT& user_info,
-    //const std::vector<FeatureMapT>& ad_feature_list, 
     std::size_t max_select,
     std::vector<docid_t>& ad_doclist,
     std::vector<double>& score_list,
-    std::size_t max_ret_num,
     PropSharedLockSet& propSharedLockSet)
 {
     //if (ad_feature_list.size() != ad_doclist.size())
@@ -663,9 +681,6 @@ bool AdSelector::select(const FeatureT& user_info,
     std::size_t max_tmp_clicked_num = max_clicked_retnum * 2;
     ScoreSortedHitQueue tmp_clicked_scorelist(max_tmp_clicked_num);
 
-    docid_t min_doc = ad_doclist[0];
-    docid_t max_doc = ad_doclist[ad_doclist.size() - 1];
-    boost::dynamic_bitset<> unique_docid_list(std::max(min_doc, max_doc));
     for(size_t i = 0; i < ad_doclist.size(); ++i)
     {
         if (clicked_ads_.test(ad_doclist[i]))
@@ -686,9 +701,6 @@ bool AdSelector::select(const FeatureT& user_info,
         {
             unclicked_doclist.push_back(ad_doclist[i]);
         }
-        unique_docid_list.set(ad_doclist[i]);
-        min_doc = std::min(min_doc, ad_doclist[i]);
-        max_doc = std::max(max_doc, ad_doclist[i]);
     }
 
     std::size_t scoresize = tmp_clicked_scorelist.size();
@@ -751,40 +763,26 @@ bool AdSelector::select(const FeatureT& user_info,
         score_list[i] = item.score;
         if (item.score < min_score)
             min_score = item.score;
-        unique_docid_list.reset(item.docId);
         ++ret_i;
     }
     for(size_t i = 0; i < unclicked_doclist.size(); ++i)
     {
         ad_doclist[ret_i] = unclicked_doclist[i];
         score_list[ret_i] = min_score - 1;
-        unique_docid_list.reset(unclicked_doclist[i]);
         ++ret_i;
     }
-    ad_doclist.resize(max_ret_num);
+    ad_doclist.resize(max_select);
     score_list.resize(ad_doclist.size());
-    for(docid_t i = min_doc; i <= max_doc; ++i)
-    {
-        if (ret_i >= max_ret_num)
-            break;
-        if (unique_docid_list.test(i))
-        {
-            ad_doclist[ret_i] = i;
-            score_list[ret_i] = min_score - 10;
-            ++ret_i;
-        }
-    }
     return !ad_doclist.empty();
 }
 
 bool AdSelector::selectForTest(const FeatureT& user_info,
     std::size_t max_select,
     std::vector<docid_t>& ad_doclist,
-    std::vector<double>& score_list,
-    std::size_t max_ret_num)
+    std::vector<double>& score_list)
 {
     PropSharedLockSet propSharedLockSet;
-    return select(user_info, max_select, ad_doclist, score_list, max_ret_num, propSharedLockSet);
+    return select(user_info, max_select, ad_doclist, score_list, propSharedLockSet);
 }
 
 }

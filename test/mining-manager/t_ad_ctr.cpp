@@ -100,7 +100,7 @@ void select_ad_func(const std::vector<docid_t>& cand_docs,
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->selectForTest(userinfo, 10, results, score_list, 2000);
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list);
 
         if (i % 1000 == 0)
         {
@@ -322,7 +322,7 @@ int main()
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->selectForTest(userinfo, 10, results, score_list, 2000);
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list);
 
         //if (i % 1000 == 0)
         //{
