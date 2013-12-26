@@ -2,6 +2,7 @@
 #include "AdClickPredictor.h"
 #include <search-manager/HitQueue.h>
 #include <document-manager/DocumentManager.h>
+#include <mining-manager/group-manager/GroupManager.h>
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -17,11 +18,30 @@ namespace sf1r
 static const std::string linker("-");
 static const std::string UnknownStr("Unknown");
 
+static inline void getValueStrFromPropId(faceted::PropValueTable* pvt,
+    const faceted::PropValueTable::PropIdList& propids, AdSelector::FeatureValueT& value_list)
+{
+    //return boost::lexical_cast<std::string>(pvid) + "-";
+    value_list.clear();
+    // may have multi value.
+    std::vector<izenelib::util::UString> value;
+    for (size_t k = 0; k < propids.size(); ++k)
+    {
+        pvt->propValuePath(propids[k], value, false);
+        if (value.empty()) continue;
+        std::string valuestr;
+        value[0].convertString(valuestr, izenelib::util::UString::UTF_8);
+        value_list.push_back(valuestr);
+    }
+}
+
+
 AdSelector::AdSelector()
     :history_ctr_data_(MAX_HISTORY_CTR_NUM)
      , random_eng_(std::time(NULL))
      , random_gen_(random_eng_, DistributionT())
      , need_refresh_(true)
+     , ad_segid_str_data_(Lux::IO::NONCLUSTER)
 {
 }
 
@@ -51,18 +71,33 @@ void AdSelector::loadDef(const std::string& file, FeatureMapT& def_features,
     }
 }
 
-void AdSelector::init(const std::string& segments_data_path,
-    AdClickPredictor* pad_predictor, DocumentManager* doc_mgr)
+void AdSelector::init(const std::string& res_path,
+    const std::string& segments_data_path,
+    AdClickPredictor* pad_predictor,
+    faceted::GroupManager* grp_mgr)
 {
+    res_path_ = res_path;
     segments_data_path_ = segments_data_path;
     ad_click_predictor_ = pad_predictor;
-    documentManager_ = doc_mgr;
+    groupManager_ = grp_mgr;
     //
     // load default all features from config file.
-    loadDef(segments_data_path_ + "/all_user_feature_name.txt", default_full_features_[UserSeg], init_counter_[UserSeg]);
-    loadDef(segments_data_path_ + "/all_ad_feature_name.txt", default_full_features_[AdSeg], init_counter_[AdSeg]);
+    loadDef(res_path_ + "/all_user_feature_name.txt", default_full_features_[UserSeg], init_counter_[UserSeg]);
+    loadDef(res_path_ + "/all_ad_feature_name.txt", default_full_features_[AdSeg], init_counter_[AdSeg]);
 
     load();
+    ad_segid_mgr_.reset(new AdSegIDManager(segments_data_path_ + "/segid/"));
+    ad_segid_str_data_.set_noncluster_params(Lux::IO::Linked);
+    ad_segid_str_data_.set_lock_type(Lux::IO::LOCK_THREAD);
+
+    if (bfs::exists(segments_data_path_ + "ad_segid_str.data"))
+    {
+        ad_segid_str_data_.open(segments_data_path_ + "/ad_segid_str.data", Lux::IO::DB_RDWR);
+    }
+    else
+    {
+        ad_segid_str_data_.open(segments_data_path_ + "/ad_segid_str.data", Lux::IO::DB_CREAT);
+    }
 
     all_segments_.resize(TotalSeg);
     for (size_t i = 0; i < TotalSeg; ++i)
@@ -140,6 +175,8 @@ void AdSelector::load()
         izd.read_image(all_segments_);
     }
     LOG(INFO) << "segments loaded: " << all_segments_.size();
+
+    //ad_segid_data_.init(segments_data_path_ + "/ad_segid.data");
 }
 
 void AdSelector::save()
@@ -165,6 +202,10 @@ void AdSelector::save()
     ofs_seg.write((const char*)&len, sizeof(len));
     ofs_seg.write(buf, len);
     ofs_seg.flush();
+
+    ad_segid_mgr_->flush();
+    boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
+    //ad_segid_data_.flush();
 }
 
 void AdSelector::stop()
@@ -173,6 +214,111 @@ void AdSelector::stop()
     ctr_update_thread_.join();
 
     save();
+    ad_segid_str_data_.close();
+}
+
+// one ad may have belong to multi segments.
+void AdSelector::getAdSegmentStrList(docid_t ad_id, std::vector<std::string>& retstr_list)
+{
+    if (ad_id > ad_segid_data_.size())
+        return;
+    boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
+    const std::vector<uint32_t>& segids = ad_segid_data_[ad_id];
+    for(size_t i = 0; i < segids.size(); ++i)
+    {
+        Lux::IO::data_t *val_p = NULL;
+        bool ret = ad_segid_str_data_.get(segids[i], &val_p, Lux::IO::SYSTEM);
+        if (ret && val_p->size > 0)
+        {
+            retstr_list.push_back(std::string());
+            retstr_list.back().assign((const char*)val_p->data, val_p->size);
+        }
+        ad_segid_str_data_.clean_data(val_p);
+    }
+}
+
+void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<uint32_t>& segids)
+{
+    std::vector<std::string> seg_str_list;
+    seg_str_list.push_back("");
+    expandSegmentStr(seg_str_list, ad_feature);
+    segids.clear();
+    for(size_t j = 0; j < seg_str_list.size(); ++j)
+    {
+        if (seg_str_list[j].empty())
+            continue;
+        uint32_t segid;
+        ad_segid_mgr_->getDocIdByDocName(seg_str_list[j], segid, true);
+        segids.push_back(segid);
+        ad_segid_str_data_.put(segid, seg_str_list[j].data(), seg_str_list.size(), Lux::IO::OVERWRITE);
+    }
+    if (ad_docid >= ad_segid_data_.size())
+    {
+        boost::unique_lock<boost::shared_mutex> guard;
+        if (ad_docid >= ad_segid_data_.size())
+            ad_segid_data_.resize(ad_docid + 1);
+    }
+    boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
+    ad_segid_data_[ad_docid].swap(segids);
+}
+
+void AdSelector::updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, const std::vector<FeatureMapT>& ad_feature_list)
+{
+    assert(ad_doclist.size() == ad_feature_list.size());
+    std::vector<uint32_t> segids;
+    for(size_t i = 0; i < ad_doclist.size(); ++i)
+    {
+        updateAdSegmentStr(ad_doclist[i], ad_feature_list[i], segids);
+    }
+}
+
+void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
+{
+    PropSharedLockSet propSharedLockSet;
+    std::vector<faceted::PropValueTable*> pvt_list;
+    std::vector<std::string>  prop_name;
+    std::vector<std::set<std::string> > all_kinds_ad_segments;
+    const FeatureMapT& def_feature_names = default_full_features_[AdSeg];
+    for (FeatureMapT::const_iterator feature_it = def_feature_names.begin();
+        feature_it != def_feature_names.end(); ++feature_it)
+    {
+        faceted::PropValueTable* pvt = groupManager_->getPropValueTable(feature_it->first);
+        if (pvt)
+            propSharedLockSet.insertSharedLock(pvt);
+        pvt_list.push_back(pvt);
+        prop_name.push_back(feature_it->first);
+    }
+    all_kinds_ad_segments.resize(pvt_list.size());
+
+    faceted::PropValueTable::PropIdList propids;
+    FeatureValueT value_list;
+    std::vector<uint32_t> segids;
+    for (docid_t i = startid; i <= endid; ++i)
+    {
+        FeatureMapT ad_feature;
+        for (std::size_t feature_index = 0; feature_index < pvt_list.size(); ++feature_index)
+        {
+            if (pvt_list[feature_index])
+            {
+                pvt_list[feature_index]->getPropIdList(i, propids);
+                getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
+                ad_feature[prop_name[feature_index]] = value_list;
+                all_kinds_ad_segments[feature_index].insert(value_list.begin(), value_list.end());
+            }
+        }
+        updateAdSegmentStr(i, ad_feature, segids);
+        if (i % 10000 == 0)
+        {
+            LOG(INFO) << "ad segment mining :" << i;
+        }
+    }
+
+    FeatureMapT::const_iterator it = def_feature_names.begin();
+    for (std::size_t i = 0; i < all_kinds_ad_segments.size(); ++i)
+    {
+        LOG(INFO) << "found total segments : " << all_kinds_ad_segments[i].size() << "  for : " << it->first;
+        updateSegments(it->first, all_kinds_ad_segments[i], AdSeg);
+    }
 }
 
 void AdSelector::updateFunc()
@@ -303,8 +449,15 @@ void AdSelector::computeHistoryCTR()
     {
         for (size_t j = 0; j < all_fullkey[AdSeg].size(); ++j)
         {
+            std::string ad_seg_str;
+            if (!all_fullkey[AdSeg][j].first.empty())
+            {
+                uint32_t segid = 0;
+                ad_segid_mgr_->getDocIdByDocName(all_fullkey[AdSeg][j].first, segid, true);
+                ad_seg_str = boost::lexical_cast<std::string>(segid);
+            }
             double ctr_res = ad_click_predictor_->predict(all_fullkey[UserSeg][i].second, all_fullkey[AdSeg][j].second);
-            std::string key = all_fullkey[UserSeg][i].first + all_fullkey[AdSeg][j].first;
+            std::string key = all_fullkey[UserSeg][i].first + ad_seg_str;
             history_ctr_data_[key] = ctr_res;
             ofs_history << key << " : " << ctr_res << std::endl;
         }
@@ -342,23 +495,34 @@ void AdSelector::updateClicked(docid_t ad_id)
     clicked_ads_.set(ad_id);
 }
 
-//void AdSelector::fillExistFeatures(FeatureMapT& ad_feature_list, const FeatureT& ad_features)
-//{
-//    for (FeatureMapT::iterator it = ad_feature_list.begin();
-//        it != ad_feature_list.end(); ++it)
-//    {
-//        it->second.clear();
-//    }
-//    for(size_t i = 0; i < ad_features.size(); ++i)
-//    {
-//        FeatureMapT::iterator it = full_feature_list.find(ad_features[i].first);
-//        if (it == full_feature_list.end())
-//        {
-//            continue;
-//        }
-//        it->second.push_back(ad_features[i].second);
-//    }
-//}
+void AdSelector::expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<uint32_t>& ad_segid_list)
+{
+    if (ad_segid_list.empty())
+    {
+        // ignored feature. Any feature value.
+    }
+    else if (ad_segid_list.size() == 1)
+    {
+        for(size_t i = 0; i < seg_str_list.size(); ++i)
+        {
+            seg_str_list[i] += boost::lexical_cast<std::string>(ad_segid_list[0]);
+        }
+    }
+    else
+    {
+        // for multi feature values we just get the highest ctr.
+        std::size_t oldsize = seg_str_list.size();
+        for(size_t i = 0; i < oldsize; ++i)
+        {
+            for(size_t j = 1; j < ad_segid_list.size(); ++j)
+            {
+                seg_str_list.push_back(seg_str_list[i]);
+                seg_str_list.back() += boost::lexical_cast<std::string>(ad_segid_list[j]);
+            }
+            seg_str_list[i] += boost::lexical_cast<std::string>(ad_segid_list[0]);
+        }
+    }
+}
 
 void AdSelector::expandSegmentStr(std::vector<std::string>& seg_str_list, const FeatureMapT& feature_list)
 {
@@ -404,11 +568,8 @@ void AdSelector::getUserSegmentStr(std::vector<std::string>& user_seg_str_list, 
     expandSegmentStr(user_seg_str_list, user_feature_list);
 }
 
-double AdSelector::getHistoryCTR(const std::vector<std::string>& user_seg_str_list, const FeatureMapT& ad_feature_list)
+double AdSelector::getHistoryCTR(const std::vector<std::string>& all_fullkey)
 {
-    std::vector<std::string> all_fullkey = user_seg_str_list;
-    expandSegmentStr(all_fullkey, ad_feature_list);
-
     if (all_fullkey.empty())
         return 0;
 
@@ -472,17 +633,18 @@ bool AdSelector::selectFromRecommend(const FeatureT& user_info,
 // the ad feature should be full of all possible kinds of feature,
 // this can be done while indexing the ad data.
 bool AdSelector::select(const FeatureT& user_info,
-    const std::vector<FeatureMapT>& ad_feature_list, 
+    //const std::vector<FeatureMapT>& ad_feature_list, 
     std::size_t max_select,
     std::vector<docid_t>& ad_doclist,
     std::vector<double>& score_list,
-    std::size_t max_ret_num)
+    std::size_t max_ret_num,
+    PropSharedLockSet& propSharedLockSet)
 {
-    if (ad_feature_list.size() != ad_doclist.size())
-    {
-        LOG(ERROR) << "ad features not match doclist.";
-        return false;
-    }
+    //if (ad_feature_list.size() != ad_doclist.size())
+    //{
+    //    LOG(ERROR) << "ad features not match doclist.";
+    //    return false;
+    //}
     if (ad_doclist.empty())
     {
         return selectFromRecommend(user_info, max_select, ad_doclist, score_list);
@@ -494,7 +656,7 @@ bool AdSelector::select(const FeatureT& user_info,
     std::size_t max_clicked_retnum = max_select/3 + 1;
     std::size_t max_unclicked_retnum = max_select- max_clicked_retnum;
 
-    std::map<docid_t, const FeatureMapT*> clicked_docfeature_list;
+    //std::map<docid_t, const FeatureMapT*> clicked_docfeature_list;
     std::vector<docid_t> unclicked_doclist;
     unclicked_doclist.reserve(ad_doclist.size());
 
@@ -509,11 +671,13 @@ bool AdSelector::select(const FeatureT& user_info,
         if (clicked_ads_.test(ad_doclist[i]))
         {
             // for clicked item, we filter the result first by the history ctr.
-            clicked_docfeature_list[ad_doclist[i]] = &(ad_feature_list[i]);
+            //clicked_docfeature_list[ad_doclist[i]] = &(ad_feature_list[i]);
             double score = 0;
             if (ad_doclist.size() > max_tmp_clicked_num)
             {
-                score = getHistoryCTR(user_seg_str, ad_feature_list[i]);
+                std::vector<std::string> all_fullkey = user_seg_str;
+                expandSegmentStr(all_fullkey, ad_segid_data_[i]);
+                score = getHistoryCTR(all_fullkey);
             }
             ScoreDoc item(ad_doclist[i], score);
             tmp_clicked_scorelist.insert(item);
@@ -531,18 +695,42 @@ bool AdSelector::select(const FeatureT& user_info,
     // rank the finally filtered clicked item by realtime CTR. 
     ScoreSortedHitQueue clicked_scorelist(max_clicked_retnum);
     FeatureT ad_features;
+
+    std::vector<faceted::PropValueTable*> pvt_list;
+    const FeatureMapT& ad_full_features = default_full_features_[AdSeg];
+    for (FeatureMapT::const_iterator feature_it = ad_full_features.begin();
+        feature_it != ad_full_features.end(); ++feature_it)
+    {
+        faceted::PropValueTable* pvt = NULL;
+        if (groupManager_)
+            groupManager_->getPropValueTable(feature_it->first);
+
+        if (pvt)
+            propSharedLockSet.insertSharedLock(pvt);
+        pvt_list.push_back(pvt);
+    }
+
+    std::vector<std::string> value_list;
     for(int i = scoresize - 1; i >= 0; --i)
     {
         ScoreDoc item;
         item.docId = tmp_clicked_scorelist.pop().docId;
+
         ad_features.clear();
-        const FeatureMapT& tmp = *(clicked_docfeature_list[item.docId]);
-        for(FeatureMapT::const_iterator ad_it = tmp.begin(); ad_it != tmp.end(); ++ad_it)
+        faceted::PropValueTable::PropIdList propids;
+        std::size_t feature_index = 0;
+        for(FeatureMapT::const_iterator ad_it = ad_full_features.begin(); ad_it != ad_full_features.end(); ++ad_it)
         {
-            for(size_t j = 0; j < ad_it->second.size(); ++j)
+            if (pvt_list[feature_index])
             {
-                ad_features.push_back(std::make_pair(ad_it->first, ad_it->second[j]));
+                pvt_list[feature_index]->getPropIdList(item.docId, propids);
+                getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
+                for(std::size_t j = 0; j < value_list.size(); ++j)
+                {
+                    ad_features.push_back(std::make_pair(ad_it->first, value_list[j]));
+                }
             }
+            ++feature_index;
         }
         item.score = ad_click_predictor_->predict(user_info, ad_features);
         clicked_scorelist.insert(item);
@@ -587,6 +775,16 @@ bool AdSelector::select(const FeatureT& user_info,
         }
     }
     return !ad_doclist.empty();
+}
+
+bool AdSelector::selectForTest(const FeatureT& user_info,
+    std::size_t max_select,
+    std::vector<docid_t>& ad_doclist,
+    std::vector<double>& score_list,
+    std::size_t max_ret_num)
+{
+    PropSharedLockSet propSharedLockSet;
+    return select(user_info, max_select, ad_doclist, score_list, max_ret_num, propSharedLockSet);
 }
 
 }

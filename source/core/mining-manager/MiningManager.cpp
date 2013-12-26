@@ -3094,12 +3094,9 @@ bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
 
     if (adIndexManager_) delete adIndexManager_;
 
-    const bfs::path filePath(adIndexDir / "index.bin");
-    adIndexConfig.indexFilePath = filePath.string();
-
-    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath,
-        adIndexConfig.clickPredictorWorkingPath,
+    adIndexManager_ = new AdIndexManager(
         system_resource_path_ + "/ad_resource",
+        adIndexDir.string(),
         document_manager_, numericTableBuilder_,
         searchManager_->normalSearch_.get(), groupManager_);
     adIndexManager_->buildMiningTask();

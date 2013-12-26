@@ -34,9 +34,8 @@ class AdIndexManager
 {
 public:
     AdIndexManager(
-            const std::string& indexPath,
-            const std::string& clickPredictorWorkingPath,
             const std::string& ad_resource_path,
+            const std::string& ad_data_path,
             boost::shared_ptr<DocumentManager>& dm,
             NumericPropertyTableBuilder* ntb,
             SearchBase* searcher,
@@ -72,6 +71,7 @@ private:
     std::string indexPath_;
 
     std::string clickPredictorWorkingPath_;
+    std::string ad_selector_res_path_;
     std::string ad_selector_data_path_;
 
     boost::shared_ptr<DocumentManager>& documentManager_;

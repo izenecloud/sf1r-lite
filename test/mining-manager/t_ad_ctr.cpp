@@ -100,7 +100,7 @@ void select_ad_func(const std::vector<docid_t>& cand_docs,
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->select(userinfo, cand_ad_info, 10, results, score_list, 20000);
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list, 2000);
 
         if (i % 1000 == 0)
         {
@@ -261,7 +261,7 @@ int main()
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
-    AdSelector::get()->init(selector_base_path, &ad, NULL);
+    AdSelector::get()->init(selector_base_path, selector_base_path, &ad, NULL);
     bfs::remove(selector_base_path + "/clicked_ad.data");
 
     static const int total_ad_num = 7000000;
@@ -308,6 +308,7 @@ int main()
         }
     }
 
+    AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
     sleep(10);
     LOG(INFO) << "begin test ad select.";
     //boost::thread_group test_ad_selector_threads;
@@ -321,17 +322,17 @@ int main()
     for (size_t i = 0; i < 10000; ++i)
     {
         std::vector<docid_t> results = cand_docs;
-        AdSelector::get()->select(userinfo, cand_ad_info, 10, results, score_list, 20000);
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list, 2000);
 
-        if (i % 1000 == 0)
-        {
-            LOG(INFO) << "selected ads are :";
-            for (size_t j = 0; j < results.size(); ++j)
-            {
-                std::cout << results[j] << ", ";
-            }
-            std::cout << std::endl;
-        }
+        //if (i % 1000 == 0)
+        //{
+        //    LOG(INFO) << "selected ads are :";
+        //    for (size_t j = 0; j < results.size(); ++j)
+        //    {
+        //        std::cout << results[j] << ", ";
+        //    }
+        //    std::cout << std::endl;
+        //}
     }
     LOG(INFO) << "end test for ad select.";
 

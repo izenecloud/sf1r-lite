@@ -22,35 +22,18 @@ static const int MAX_SEARCH_AD_COUNT = 20000;
 static const int MAX_SELECT_AD_COUNT = 20;
 static const std::string adlog_topic = "b5manlog";
 
-static inline void getValueStrFromPropId(faceted::PropValueTable* pvt,
-    const faceted::PropValueTable::PropIdList& propids, AdSelector::FeatureValueT& value_list)
-{
-    //return boost::lexical_cast<std::string>(pvid) + "-";
-    value_list.clear();
-    // may have multi value.
-    std::vector<izenelib::util::UString> value;
-    for (size_t k = 0; k < propids.size(); ++k)
-    {
-        pvt->propValuePath(propids[k], value, false);
-        if (value.empty()) continue;
-        std::string valuestr;
-        value[0].convertString(valuestr, izenelib::util::UString::UTF_8);
-        value_list.push_back(valuestr);
-    }
-}
-
 
 AdIndexManager::AdIndexManager(
-        const std::string& indexPath,
-        const std::string& clickPredictorWorkingPath,
         const std::string& ad_resource_path,
+        const std::string& ad_data_path,
         boost::shared_ptr<DocumentManager>& dm,
         NumericPropertyTableBuilder* ntb,
         SearchBase* searcher,
         faceted::GroupManager* grp_mgr)
-    : indexPath_(indexPath),
-      clickPredictorWorkingPath_(clickPredictorWorkingPath),
-      ad_selector_data_path_(ad_resource_path + "/ad_selector"),
+    : indexPath_(ad_data_path + "/index.bin"),
+      clickPredictorWorkingPath_(ad_data_path + "/ctr_predictor"),
+      ad_selector_res_path_(ad_resource_path + "/ad_selector"),
+      ad_selector_data_path_(ad_data_path + "/ad_selector"),
       documentManager_(dm),
       numericTableBuilder_(ntb),
       ad_searcher_(searcher),
@@ -79,7 +62,7 @@ bool AdIndexManager::buildMiningTask()
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
-    AdSelector::get()->init(ad_selector_data_path_, ad_click_predictor_, documentManager_.get());
+    AdSelector::get()->init(ad_selector_res_path_, ad_selector_data_path_, ad_click_predictor_, groupManager_);
     bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
     if (!ret)
     {
@@ -123,42 +106,7 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
 void AdIndexManager::postMining(docid_t startid, docid_t endid)
 {
     LOG(INFO) << "ad mining finished from: " << startid << " to " << endid;
-    PropSharedLockSet propSharedLockSet;
-    std::vector<faceted::PropValueTable*> pvt_list;
-    std::vector<std::set<std::string> > all_kinds_ad_segments;
-    AdSelector::FeatureMapT def_feature_names;
-    AdSelector::get()->getDefaultFeatures(def_feature_names, AdSelector::AdSeg);
-    for (AdSelector::FeatureMapT::const_iterator feature_it = def_feature_names.begin();
-        feature_it != def_feature_names.end(); ++feature_it)
-    {
-        faceted::PropValueTable* pvt = groupManager_->getPropValueTable(feature_it->first);
-        if (pvt)
-            propSharedLockSet.insertSharedLock(pvt);
-        pvt_list.push_back(pvt);
-    }
-    all_kinds_ad_segments.resize(pvt_list.size());
-
-    faceted::PropValueTable::PropIdList propids;
-    AdSelector::FeatureValueT value_list;
-    for (docid_t i = startid; i <= endid; ++i)
-    {
-        for (std::size_t feature_index = 0; feature_index < pvt_list.size(); ++feature_index)
-        {
-            if (pvt_list[feature_index])
-            {
-                pvt_list[feature_index]->getPropIdList(i, propids);
-                getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
-                all_kinds_ad_segments[feature_index].insert(value_list.begin(), value_list.end());
-            }
-        }
-    }
-
-    AdSelector::FeatureMapT::const_iterator it = def_feature_names.begin();
-    for (std::size_t i = 0; i < all_kinds_ad_segments.size(); ++i)
-    {
-        LOG(INFO) << "found total segments : " << all_kinds_ad_segments[i].size() << "  for : " << it->first;
-        AdSelector::get()->updateSegments(it->first, all_kinds_ad_segments[i], AdSelector::AdSeg);
-    }
+    AdSelector::get()->miningAdSegmentStr(startid, endid);
 }
 
 void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
@@ -192,19 +140,6 @@ void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
     uint32_t heapSize = std::min((std::size_t)MAX_SEARCH_AD_COUNT, docids.size());
     scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
-    std::vector<faceted::PropValueTable*> pvt_list;
-    AdSelector::FeatureMapT def_feature_names;
-    AdSelector::get()->getDefaultFeatures(def_feature_names, AdSelector::AdSeg);
-    for (AdSelector::FeatureMapT::iterator feature_it = def_feature_names.begin();
-        feature_it != def_feature_names.end(); ++feature_it)
-    {
-        faceted::PropValueTable* pvt = groupManager_->getPropValueTable(feature_it->first);
-        if (pvt)
-            propSharedLockSet.insertSharedLock(pvt);
-        pvt_list.push_back(pvt);
-    }
-
-    std::vector<std::string> value_list;
     for(InputIterator it = docids.begin();
             it != docids.end(); it++ )
     {
@@ -228,22 +163,6 @@ void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
             else if(mode == 1)
             {
                 cpc_ads_result.push_back(*it);
-                cpc_ads_features.push_back(AdSelector::FeatureMapT());
-                AdSelector::get()->getDefaultFeatures(cpc_ads_features.back(), AdSelector::AdSeg);
-                faceted::PropValueTable::PropIdList propids;
-
-                std::size_t feature_index = 0;
-                for (AdSelector::FeatureMapT::iterator feature_it = cpc_ads_features.back().begin();
-                    feature_it != cpc_ads_features.back().end(); ++feature_it)
-                {
-                    if (pvt_list[feature_index])
-                    {
-                        pvt_list[feature_index]->getPropIdList(*it, propids);
-                        getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
-                    }
-                    feature_it->second.swap(value_list);
-                    ++feature_index;
-                }
                 continue;
             }
             ScoreDoc scoreItem(*it, score);
@@ -253,8 +172,8 @@ void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
     LOG(INFO) << "begin select ads from cpc cand result : " << cpc_ads_result.size();
     // select some ads using some strategy to maximize the CPC.
     std::vector<double> score_list;
-    AdSelector::get()->select(userinfo, cpc_ads_features, MAX_SELECT_AD_COUNT,
-        cpc_ads_result, score_list, MAX_SEARCH_AD_COUNT);
+    AdSelector::get()->select(userinfo, MAX_SELECT_AD_COUNT,
+        cpc_ads_result, score_list, MAX_SEARCH_AD_COUNT, propSharedLockSet);
     LOG(INFO) << "end select ads from result.";
     // calculate eCPM
     for (std::size_t i = 0; i < cpc_ads_result.size(); ++i)
