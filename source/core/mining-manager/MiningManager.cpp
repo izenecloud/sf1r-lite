@@ -51,6 +51,8 @@
 #include "category-classify/CategoryClassifyMiningTask.h"
 #include "title-scorer/TitleScoreList.h"
 #include "title-scorer/TitleScoreMiningTask.h"
+#include "product-forward/ProductForwardManager.h"
+#include "product-forward/ProductForwardMiningTask.h"
 
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
@@ -201,6 +203,7 @@ MiningManager::MiningManager(
     , productScoreManager_(NULL)
     , categoryClassifyTable_(NULL)
     , titleScoreList_(NULL)
+    , productForwardManager_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
@@ -233,6 +236,7 @@ MiningManager::~MiningManager()
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (categoryClassifyTable_) delete categoryClassifyTable_;
     if (titleScoreList_) delete titleScoreList_;
+    if (productForwardManager_) delete productForwardManager_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
@@ -684,6 +688,13 @@ bool MiningManager::open()
                             return false;
                     }
                 }
+            }
+
+            if (mining_schema_.suffixmatch_schema.product_forward_enable)
+            {
+LOG(INFO)<<"init product forward "<<"matcher= "<<mining_schema_.product_matcher_enable;
+LOG(INFO)<<initProductForwardManager_();
+//                initProductForwardManager_();
             }
         }
         if (mining_schema_.product_matcher_enable)
@@ -2482,9 +2493,24 @@ bool MiningManager::GetSuffixMatch(
         }
 
         suffixMatchTime = elapsedFromLast(clock, lastSec);
-
-        searchManager_->fuzzySearchRanker_.rankByProductScore(
+        
+        if (mining_schema_.suffixmatch_schema.product_forward_enable)
+        {
+            //limit res_list to at most 100
+            std::vector<std::pair<double, uint32_t> > tmp_res;
+            for (size_t i = 0; i < std::min((size_t)100, res_list.size()); ++i)
+                tmp_res.push_back(res_list[i]);
+            std::vector<std::pair<double, uint32_t> > final_res;
+            productForwardManager_->forwardSearch(pattern_orig, tmp_res, final_res);
+LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.size();
+            final_res.swap(res_list);
+            totalCount = res_list.size();
+        }
+        else
+        {
+            searchManager_->fuzzySearchRanker_.rankByProductScore(
                 actionOperation.actionItem_, res_list, isCompare);
+        }
 
         productScoreTime = elapsedFromLast(clock, lastSec);
 
@@ -2916,6 +2942,37 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
 
     return true;
 }
+
+bool MiningManager::initProductForwardManager_()
+{
+    if (productForwardManager_) delete productForwardManager_;
+
+    const bfs::path parentDir(collectionDataPath_);
+LOG(INFO)<<parentDir.string();
+    const bfs::path forwardDir(parentDir / "forward_index");
+LOG(INFO)<<forwardDir.string();
+    bfs::create_directories(forwardDir);
+    productForwardManager_ = new ProductForwardManager(forwardDir.string(), 
+                                    std::string("Title"),
+                                    suffixMatchManager_->getProductTokenizer());
+     if (!productForwardManager_->open())
+    {
+        LOG(ERROR) << "open " << forwardDir << " failed";
+//        return false;
+    }
+//LOG (INFO) << "USE Forward Index ,....";
+if (document_manager_) LOG(INFO)<<"document ok";
+if (suffixMatchManager_->getProductTokenizer()) LOG(INFO)<<"tokenizer ok";
+if (productForwardManager_) LOG(INFO)<<"forward ok";
+    MiningTask* miningTask_forward =  new ProductForwardMiningTask(document_manager_,
+                                            suffixMatchManager_->getProductTokenizer(),
+                                            productForwardManager_);
+LOG(INFO)<<"miningtask ok";    
+    multiThreadMiningTaskBuilder_->addTask(miningTask_forward);
+LOG(INFO)<<"product init ok";
+    return true;
+}
+
 
 bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankConfig)
 {

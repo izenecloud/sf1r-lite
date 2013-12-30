@@ -2,8 +2,10 @@
 #define SF1R_COMMON_PRODUCT_TOKENIZER_H_
 
 #include <util/ustring/UString.h>
+#include <util/string/kstring.hpp>
 #include <util/singleton.h>
 #include <am/succinct/ux-trie/uxTrie.hpp>
+#include <knlp/title_pca.h>
 #include <common/type_defs.h>
 #include <string>
 #include <list>
@@ -15,11 +17,18 @@ namespace cma
 class Analyzer;
 class Knowledge;
 }
+namespace ilplib
+{
+namespace knlp
+{
+    class TitlePca;
+}
 
+}
 namespace sf1r
 {
 using izenelib::util::UString;
-
+using izenelib::util::KString;
 class TrieFactory
 {
     std::map<std::string, izenelib::am::succinct::ux::Trie*> tries_;
@@ -110,6 +119,11 @@ public:
             UString& refined_results);
     bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
     bool GetSynonymId(const UString& pattern, int& setid);
+
+    void B5TTokenize(const std::string& src, uint32_t& brand, uint32_t& model, std::vector<uint32_t>& res);
+    void GetFeatureTerms(const std::string& src, std::string& res);
+    void GetFeatureTerms(const std::string& src, uint32_t& brand, uint32_t& model, std::vector<uint32_t>& res, const size_t mode = 0);
+
     void SetProductMatcher(b5m::ProductMatcher* matcher)
     {
         matcher_ = matcher;
@@ -127,6 +141,8 @@ private:
     void InitWithDict_(const std::string& dict_path);
 
     void InitDict_(const std::string& dict_name);
+
+    static bool cmp_(const std::pair<std::string, float> x, const std::pair<std::string, float> y);
 
     double GetTokenResultsByKNlp_(
             const std::string& pattern,
@@ -157,6 +173,7 @@ private:
             izenelib::am::succinct::ux::Trie* dict_trie,
             double trie_score);
 
+
     void DoBigram_(
             const UString& pattern,
             std::list<std::pair<UString,double> >& tokens,
@@ -179,6 +196,8 @@ private:
 
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
+
+    ilplib::knlp::TitlePca* titlePca_;
 
     b5m::ProductMatcher* matcher_;
     CategoryClassifyTable* categoryClassifyTable_;

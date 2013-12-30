@@ -107,6 +107,7 @@ class ProductScoreManager;
 class OfflineProductScorerFactory;
 class CategoryClassifyTable;
 class TitleScoreList;
+class ProductForwardManager;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
@@ -485,6 +486,11 @@ public:
         return titleScoreList_;
     }
 
+    ProductForwardManager* GetProductForwardManger()
+    {
+        return productForwardManager_;
+    }
+
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
@@ -638,6 +644,7 @@ private:
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
+    bool initProductForwardManager_();
 
     bool initZambeziManager_(ZambeziConfig& zambeziConfig);
 
@@ -754,6 +761,9 @@ private:
 
     /** list stores all the documents' productTokenizer score*/
     TitleScoreList* titleScoreList_;
+
+    /** The forward index, for B5MA only*/
+    ProductForwardManager* productForwardManager_;
 
     /** the knowledge of top labels for category boosting */
     GroupLabelKnowledge* groupLabelKnowledge_;
