@@ -96,6 +96,7 @@
 #include <la-manager/LAManager.h>
 #include <la-manager/KNlpDictMonitor.h>
 #include <la-manager/AttrTokenizeWrapper.h>
+#include <la-manager/TitlePCAWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -692,9 +693,8 @@ bool MiningManager::open()
 
             if (mining_schema_.suffixmatch_schema.product_forward_enable)
             {
-LOG(INFO)<<"init product forward "<<"matcher= "<<mining_schema_.product_matcher_enable;
-LOG(INFO)<<initProductForwardManager_();
-//                initProductForwardManager_();
+                TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/");
+                initProductForwardManager_();
             }
         }
         if (mining_schema_.product_matcher_enable)
@@ -2948,9 +2948,7 @@ bool MiningManager::initProductForwardManager_()
     if (productForwardManager_) delete productForwardManager_;
 
     const bfs::path parentDir(collectionDataPath_);
-LOG(INFO)<<parentDir.string();
     const bfs::path forwardDir(parentDir / "forward_index");
-LOG(INFO)<<forwardDir.string();
     bfs::create_directories(forwardDir);
     productForwardManager_ = new ProductForwardManager(forwardDir.string(), 
                                     std::string("Title"),
@@ -2958,18 +2956,12 @@ LOG(INFO)<<forwardDir.string();
      if (!productForwardManager_->open())
     {
         LOG(ERROR) << "open " << forwardDir << " failed";
-//        return false;
     }
-//LOG (INFO) << "USE Forward Index ,....";
-if (document_manager_) LOG(INFO)<<"document ok";
-if (suffixMatchManager_->getProductTokenizer()) LOG(INFO)<<"tokenizer ok";
-if (productForwardManager_) LOG(INFO)<<"forward ok";
     MiningTask* miningTask_forward =  new ProductForwardMiningTask(document_manager_,
                                             suffixMatchManager_->getProductTokenizer(),
                                             productForwardManager_);
-LOG(INFO)<<"miningtask ok";    
-    multiThreadMiningTaskBuilder_->addTask(miningTask_forward);
-LOG(INFO)<<"product init ok";
+    miningTaskBuilder_->addTask(miningTask_forward);
+    LOG(INFO)<<"product forward init ok";
     return true;
 }
 

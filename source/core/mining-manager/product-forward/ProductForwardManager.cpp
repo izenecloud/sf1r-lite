@@ -29,26 +29,21 @@ bool ProductForwardManager::save(unsigned int last_doc)
 {
     std::string documentScorePath = dirPath_ + "/forward.dict";
     std::string documentNumPath = dirPath_ + "/forward.size";
-//    std::string documentTxt = dirPath_ + "/doc.txt";
     fstream fout;
     fstream fout_size;
-//    fstream fout_txt;
     fout.open(documentScorePath.c_str(), ios::app | ios::out);
     fout_size.open(documentNumPath.c_str(), ios::out);
 
     if(fout_size.is_open())
     {
-//        fout_size.write(reinterpret_cast< char *>(&last_doc), sizeof(unsigned int));
         fout_size << last_doc;
         fout_size.close();
     }
-LOG(INFO)<<lastDocid_<<' '<<last_doc<<' '<<forward_index_.size();
     if(fout.is_open())
     {
         ReadLock lock(mutex_);
         for (unsigned int i = lastDocid_ + 1; i < forward_index_.size(); ++i)
             fout << forward_index_[i] << endl;
-//            fout.write(reinterpret_cast< char *>(&forward_index_[i]), sizeof(double));
         fout.close();
         lastDocid_ = last_doc;
     }
@@ -79,21 +74,14 @@ bool ProductForwardManager::load()
     {
         return false;
     }
-    else
-    {
-LOG(INFO)<<documentNumPath.c_str();
-LOG(INFO)<<documentScorePath.c_str();
-    }
     fin.open(documentScorePath.c_str(), ios::in);
     fin_size.open(documentNumPath.c_str(), ios::in);
 
     if (fin_size.is_open())
     {
-//        fin_size.read(reinterpret_cast< char *>(&lastDocid_),  sizeof(docid_t));
         fin_size >> lastDocid_;
         fin_size.close();
     }
-LOG(INFO)<<"read size "<<lastDocid_;
 
     std::vector<std::string> tmp_index;
     tmp_index.reserve(lastDocid_ + 1);
@@ -110,7 +98,6 @@ LOG(INFO)<<"read size "<<lastDocid_;
         }
         fin.close();
     }
-LOG(INFO)<<"read title ok "<<tmp_index.size()<<' '<<lastDocid_;
     if (tmp_index.size() != lastDocid_ + 1)
         return false;
     WriteLock lockK(mutex_);
@@ -127,7 +114,6 @@ void ProductForwardManager::clear()
     }
     std::string documentScorePath = dirPath_ + "/forward.dict";
     std::string documentNumPath = dirPath_ + "/forward.size";
-//    forward_index_.clear();
     try
     {
         if (boost::filesystem::exists(documentScorePath))
@@ -151,8 +137,8 @@ void ProductForwardManager::resize(unsigned int size)
 bool ProductForwardManager::insert(std::vector<std::string>& index)
 {
     WriteLock lock(mutex_);
-    forward_index_ = index;
-LOG(INFO)<<"index size = "<<index.size()<<' '<<forward_index_.size();
+    forward_index_.swap(index);
+    LOG(INFO)<<"old index size = "<<index.size()<<"new = "<<forward_index_.size();
     return true;
 }
 
@@ -167,7 +153,6 @@ void ProductForwardManager::copy(std::vector<std::string>& index)
 
 std::string ProductForwardManager::getIndex(unsigned int index)
 {
-//LOG(INFO)<<index<<' '<<lastDocid_<<' '<<forward_index_.size();
     ReadLock lock(mutex_);
     if (index < lastDocid_ && index < forward_index_.size())
         return forward_index_[index];
@@ -183,7 +168,6 @@ void ProductForwardManager::forwardSearch(const std::string& src, const std::vec
 {
     if (docs.empty() || src.empty())
         return ;
-//    size_t thres = std::min((size_t)5, docs.size());
     std::vector<std::pair<double, docid_t> > score;
     score.reserve(docs.size());
 
@@ -195,15 +179,9 @@ void ProductForwardManager::forwardSearch(const std::string& src, const std::vec
         q_score += (i+1)*(i+1);
     for (size_t i = 0; i < docs.size(); ++i)
     {
-        score.push_back(std::make_pair(ProductForwardManager::compare_(q_brand, q_model, q_res, q_score, docs[i].second), docs[i].second));
-
+        double sc = ProductForwardManager::compare_(q_brand, q_model, q_res, q_score, docs[i].second);
+        score.push_back(std::make_pair(sc, docs[i].second));
     }
-/*
-    std::sort(score.begin(), score.end(), ProductForwardManager::cmp_);
-    res.reserve(thres);
-    for (size_t i = 0; i < thres; ++i)
-        res.push_back(score[i]);
-*/        
     double maxs = 0, ind = 0;
     for (size_t i = 0; i < score.size(); ++i)
         if (score[i].first > maxs)
@@ -221,15 +199,16 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
     std::vector<uint32_t> t_res;
     uint32_t t_brand, t_model;
     tokenizer_->GetFeatureTerms(title_string, t_brand, t_model, t_res, 0);
-//LOG(INFO)<<docid<<' '<<title<<'\n'<<query.size()<<' '<<title_res.size();
     double score = 0, t_score = 0;
     double same = 0;
-    if (q_brand == t_brand)
+    if (q_brand == t_brand && q_brand > 0)
     {
-        if (q_model == t_model)
+        if (q_model == t_model && q_model > 0)
             return 2;
         score += 0.5;
     }
+    if (q_res.empty() || t_res.empty())
+        return score;
     for (size_t i = 0; i < t_res.size(); ++i)
         t_score += (i+1)*(i+1);
     size_t p = 0, q = 0;
@@ -249,7 +228,6 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
     }
     if (t_score>1e-7 && q_score>1e-7)
         score += same / sqrt(t_score * q_score);
-LOG(INFO)<<docid<<' '<<t_score<<' '<<same<<' '<<score;
     return score;
 }
 

@@ -32,7 +32,7 @@ public:
     
     void resize(unsigned int size);
     bool insert(std::vector<std::string>& tmp_index);
-    const docid_t getLastDocId_() const { return lastDocid_; }
+    const docid_t getLastDocId() const { return lastDocid_; }
 
     std::string getIndex(unsigned int index);
     bool save(unsigned int last_doc);

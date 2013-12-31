@@ -4,8 +4,8 @@
 #include <util/ustring/UString.h>
 #include <util/string/kstring.hpp>
 #include <util/singleton.h>
+#include <la-manager/TitlePCAWrapper.h>
 #include <am/succinct/ux-trie/uxTrie.hpp>
-#include <knlp/title_pca.h>
 #include <common/type_defs.h>
 #include <string>
 #include <list>
@@ -17,14 +17,7 @@ namespace cma
 class Analyzer;
 class Knowledge;
 }
-namespace ilplib
-{
-namespace knlp
-{
-    class TitlePca;
-}
 
-}
 namespace sf1r
 {
 using izenelib::util::UString;
@@ -197,7 +190,6 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
 
-    ilplib::knlp::TitlePca* titlePca_;
 
     b5m::ProductMatcher* matcher_;
     CategoryClassifyTable* categoryClassifyTable_;

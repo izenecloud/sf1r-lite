@@ -38,8 +38,8 @@ void ProductTokenizer::setCategoryClassifyTable(CategoryClassifyTable* table)
 
 void ProductTokenizer::Init_(const std::string& dict_path)
 {
-    std::string title_pca_path = dict_path + "/../../title_pca/";
-    titlePca_ = new ilplib::knlp::TitlePca(title_pca_path);
+//    std::string title_pca_path = dict_path + "/../../title_pca/";
+//    titlePCA_ = new ilplib::knlp::TitlePCA(title_pca_path);
     switch(type_)
     {
     case TOKENIZER_CMA:
@@ -187,25 +187,16 @@ bool ProductTokenizer::cmp_(const std::pair<std::string, float> x, const std::pa
     return x.second > y.second;
 }
 
-//res just saves terms in the dictionary
+//res should just saves terms in the dictionary
 void ProductTokenizer::B5TTokenize(const std::string& src, uint32_t& brand, uint32_t& model, std::vector<uint32_t>& res)
 {
-/*
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    double minValue = knlpWrapper->getMin();
-
-    std::vector<std::pair<KNlpWrapper::string_t, double> > token_res;
-    knlpWrapper->fmmTokenize(KNlpWrapper::string_t(src), token_res);
-    for (size_t i = 0; i < token_res.size(); ++i)
-        if (fabs(minValue - token_res[i].second) > 1e-6)
-            res.push_back(token_res[i].first);
-*/
     std::vector<std::pair<std::string, float> > sub_tokens;
     std::vector<std::pair<std::string, float> > r;
     std::string b;
     std::string m;
 
-    titlePca_->pca(b, m, r, sub_tokens, 0);
+    TitlePCAWrapper* title_pca = TitlePCAWrapper::get();
+    title_pca->pca(src, r, b, m, sub_tokens, 0);
 
     if (!b.empty())
         brand = izenelib::util::HashFunction<std::string>::generateHash32(b);
@@ -217,41 +208,31 @@ void ProductTokenizer::B5TTokenize(const std::string& src, uint32_t& brand, uint
         model = 0;
 
     //remove duplicate
+    if (r.empty())
+        return;
+    sort(r.begin(), r.end(), ProductTokenizer::cmp_);
     std::vector<uint32_t> tmp_res;
     for (size_t i = 0; i < r.size(); ++i)
     {
         uint32_t tmp = izenelib::util::HashFunction<std::string>::generateHash32(r[i].first);
         tmp_res.push_back(tmp);
     }
-    
-    sort(r.begin(), r.end(), ProductTokenizer::cmp_);
-    res.reserve(r.size());
+    res.reserve(5);
     res.push_back(tmp_res[0]);
     for (size_t i = 1; i < tmp_res.size(); ++i)
     {
         if (tmp_res[i] != tmp_res[i-1])
+        {
             res.push_back(tmp_res[i]);
+            if (res.size() == 5)
+                break;
+        }
     }
 }
 
 void ProductTokenizer::GetFeatureTerms(const std::string& src, std::string& res)
 {
 //save
-/*
-    std::vector<KNlpWrapper::string_t> token_res;
-    B5TTokenize(src, token_res);
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-//TODO need remove duplicate and sort by term id
-    std::stringstream ss;
-    for (size_t i = 0; i < token_res.size(); ++i)
-    {
-//        ss << token_res[i];
-        ss << knlpWrapper->termid(token_res[i]);
-        if (i < token_res.size() - 1)
-            ss << ' ';
-    }
-    res = std::string(ss.str());
-*/    
     uint32_t brand, model;
     std::vector<uint32_t> r;
     B5TTokenize(src, brand, model, r);
@@ -273,52 +254,12 @@ void ProductTokenizer::GetFeatureTerms(const std::string& src, uint32_t& brand, 
 {
 //read
 //mode==0 means work on index, ==1 means on query
-/*
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    std::vector<std::pair<size_t, double> > tmp_res;
-
     if (!mode)
     {
         std::vector<std::string> arr;
         boost::split(arr, src, boost::is_any_of(" "));
-        tmp_res.resize(arr.size());
-        for(size_t i = 0; i < arr.size(); ++i)
-        {
-            tmp_res[i].first = atoi(arr[i].c_str());
-        }
-    }
-    else
-    {
-        std::vector<KNlpWrapper::string_t> token_res;
-        B5TTokenize(src, token_res);
-        tmp_res.resize(token_res.size());
-
-        std::stringstream ss;
-        for (size_t i = 0; i < token_res.size(); ++i)
-        {
-            tmp_res[i].first = knlpWrapper->termid(token_res[i]);
-        }
-//TODO sort by term id and remove duplicate should only for query, now is for both index and query
-    }
-    if (tmp_res.empty())
-        return;
-    sort(tmp_res.begin(), tmp_res.end());
-    res.reserve(tmp_res.size());
-    res.push_back(tmp_res[0]);
-    for (size_t i = 1; i < tmp_res.size(); ++i)
-    {
-        if (tmp_res[i].first != tmp_res[i-1].first)
-            res.push_back(tmp_res[i]);
-    }
-    for (size_t i = 0; i < res.size(); ++i)
-    {
-        res[i].second = knlpWrapper->score(res[i].first);
-    }
-*/
-    if (!mode)
-    {
-        std::vector<std::string> arr;
-        boost::split(arr, src, boost::is_any_of(" "));
+        if (arr.size() < 2)
+            return ;
         brand = atoi(arr[0].c_str());
         model = atoi(arr[1].c_str());
         res.resize(arr.size()-2);

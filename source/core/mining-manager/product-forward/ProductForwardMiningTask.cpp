@@ -4,7 +4,6 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <icma/icma.h>
-#include <la-manager/KNlpWrapper.h>
 #include <document-manager/DocumentManager.h>
 
 namespace sf1r
@@ -33,12 +32,10 @@ bool ProductForwardMiningTask::buildDocument(docid_t docID, const Document& doc)
         const std::string pname("Title");
         doc.getString(pname, src);
         std::string res;
-        tokenizer_->GetFeatureTerms(src, res);//example: res="1,fd-we12,2,5,89,65"
-//        forward_index_->insert(docID, res);
+        tokenizer_->GetFeatureTerms(src, res);
         tmp_index_.push_back(res);
     }
     else//插入空串
-//        forward_index_->insert(docID, src);
         tmp_index_.push_back(src);
 
     return true;
@@ -48,21 +45,16 @@ bool ProductForwardMiningTask::buildDocument(docid_t docID, const Document& doc)
 
 docid_t ProductForwardMiningTask::getLastDocId()
 {
-    return forward_index_->getLastDocId_() + 1;
+    return forward_index_->getLastDocId() + 1;
 }
 
 bool ProductForwardMiningTask::preProcess(int64_t timestamp)
 {
-    if (forward_index_->getLastDocId_() == 0)
+    if (forward_index_->getLastDocId() == 0)
     {
         forward_index_->clear();
     }
-LOG(INFO)<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11 DOC NUM(last, max) = "<<forward_index_->getLastDocId_()<<' '<<document_manager_->getMaxDocId();
-//    if (forward_index_->getLastDocId_() < document_manager_->getMaxDocId())
-//    {
-//        forward_index_->resize(document_manager_->getMaxDocId() + 1);
-//    }
-    if (forward_index_->getLastDocId_() + 1 > document_manager_->getMaxDocId())
+    if (forward_index_->getLastDocId() + 1 > document_manager_->getMaxDocId())
         return false;
     forward_index_->copy(tmp_index_);
     tmp_index_.reserve(document_manager_->getMaxDocId() + 1);
