@@ -10,7 +10,7 @@ namespace sf1r
 namespace Recommend
 {
 
-static std::string uuid = ".PrefixTable";
+static std::string uuid = "PrefixTable";
 std::size_t PrefixTable::PREFIX_SIZE = 2;
 
 PrefixTable::PrefixTable(const std::string& workdir)

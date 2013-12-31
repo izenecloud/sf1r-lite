@@ -194,6 +194,7 @@ CorrectionEngine::CorrectionEngine(const std::string& workdir)
     : pinyin_(NULL)
     , prefix_(NULL)
     , filter_(NULL)
+    , udef_(NULL)
     , parsers_(NULL)
     , pyConverter_(NULL)
     , pyApproximator_(NULL)
@@ -208,6 +209,7 @@ CorrectionEngine::CorrectionEngine(const std::string& workdir)
     pinyin_ = new PinyinTable(workdir_);
     prefix_ = new PrefixTable(workdir_);
     filter_ = new Filter(workdir_ + "/filter/");
+    udef_   = new UserDefineTable(workdir_ + "user-define");
     parsers_ = new ParserFactory();
     
     UQCateEngine::workdir = workdir_;
@@ -239,6 +241,11 @@ CorrectionEngine:: ~CorrectionEngine()
     {
         delete filter_;
         filter_ = NULL;
+    }
+    if (NULL != udef_)
+    {
+        delete udef_;
+        udef_ = NULL;
     }
     if (NULL != parsers_)
     {
@@ -309,7 +316,9 @@ bool CorrectionEngine::isNeedBuild(const std::string& path) const
                 return true;
         }
     }
-    return filter_->isNeedBuild(path +"/filter/");
+    if (filter_->isNeedBuild(path + "/filter/"))
+        return true;
+    return udef_->isNeedBuild(path + "/user-define/");
 }
 
 void CorrectionEngine::buildEngine(const std::string& path)
@@ -347,6 +356,7 @@ void CorrectionEngine::buildEngine(const std::string& path)
     }
     
     filter_->buildFilter(path + "/filter/");
+    udef_->build(path + "/user-define/");
     timestamp_ = time(NULL);
     flush();
 }
@@ -381,6 +391,7 @@ void CorrectionEngine::clear()
     pinyin_->clear();
     prefix_->clear();
     filter_->clear();
+    udef_  ->clear();
     UQCateEngine::getInstance().clear();
 }
 
@@ -389,6 +400,7 @@ void CorrectionEngine::flush() const
     pinyin_->flush();
     prefix_->flush();
     filter_->flush();
+    udef_  ->flush();
     UQCateEngine::getInstance().flush();
     
     std::string path = workdir_;
@@ -417,6 +429,11 @@ bool CorrectionEngine::correct(const std::string& str, std::string& results, dou
     izenelib::util::UString uself(userQuery, izenelib::util::UString::UTF_8);
     if (uself.length() <= 1)
         return false;
+
+    if (udef_->search(userQuery, results))
+    {
+        return true;
+    }
 
     if (filter_->isFilter(userQuery))
     {
