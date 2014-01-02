@@ -38,8 +38,8 @@ UserDefineTable::UserDefineTable(const std::string& workdir)
         path += uuid;
         if (boost::filesystem::exists(path.c_str()))
         {
-            boost::filesystem::path p(path);
-            if ((0 < timestamp_) && (timestamp_ >= boost::filesystem::last_write_time(p)))
+            //boost::filesystem::path p(path);
+            //if ((0 < timestamp_) && (timestamp_ >= boost::filesystem::last_write_time(p)))
             {
                 std::ifstream ifs(path.c_str(), std::ios::binary);
                 boost::archive::text_iarchive ia(ifs);
@@ -178,6 +178,13 @@ void UserDefineTable::flush() const
     std::ofstream ofs(path.c_str(), std::ofstream::trunc);
     boost::archive::text_oarchive oa(ofs);
     oa << table_;
+    ofs.close();
+    
+    path = workdir_;
+    path += "/";
+    path += timestamp;
+    ofs.open(path.c_str());
+    ofs<<timestamp_;
     ofs.close();
 }
 
