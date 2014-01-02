@@ -327,7 +327,7 @@ void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
             }
         }
         updateAdSegmentStr(i, ad_feature, segids);
-        if (i % 10000 == 0)
+        if (i % 100000 == 0)
         {
             LOG(INFO) << "ad segment mining :" << i;
         }

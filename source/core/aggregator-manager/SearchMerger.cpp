@@ -546,7 +546,7 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
         std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;
         for(uint32_t i=0;i<workerResults.size();i++)
         {
-            const idmlib::cc::CCInput32& tg_input = workerResults.result(i).tg_input;
+            const idmlib::cc::CCInput32& tg_input = workerResults.result(i).tg_info_.tg_input;
             if(tg_input.concept_list.size()>0)
             {
                 input_list.push_back(std::make_pair(workerResults.workerId(i), tg_input) );
@@ -561,7 +561,7 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
             tg_manager->AggregateInput(top_wdoclist, input_list, input);
             LOG(INFO)<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
             TaxonomyRep taxonomyRep;
-            if( tg_manager->GetResult(input, taxonomyRep, mergeResult.neList_) )
+            if( tg_manager->GetResult(input, taxonomyRep, mergeResult.tg_info_.neList_) )
             {
                 taxonomyRep.fill(mergeResult);
             }

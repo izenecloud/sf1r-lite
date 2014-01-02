@@ -277,17 +277,31 @@ int main()
     new_ad_segs.push_back(std::make_pair("Category", "Cloth"));
     new_ad_segs.push_back(std::make_pair("Topic", "iPhone"));
     new_ad_segs.push_back(std::make_pair("Topic", "Android"));
+    for (size_t i = 0; i < 100; ++i)
+    {
+        new_ad_segs.push_back(std::make_pair("Category", gen_rand_str()));
+    }
+    for (size_t i = 0; i < 100; ++i)
+    {
+        new_ad_segs.push_back(std::make_pair("Topic", gen_rand_str()));
+    }
     AdSelector::get()->updateSegments(new_ad_segs, AdSelector::AdSeg);
 
     AdSelector::FeatureT new_user_segs;
     new_user_segs.push_back(std::make_pair("Age", "18"));
     new_user_segs.push_back(std::make_pair("Age", "28"));
+    new_user_segs.push_back(std::make_pair("Age", "30"));
     new_user_segs.push_back(std::make_pair("Age", "38"));
+    for (size_t i = 0; i < 100; ++i)
+    {
+        new_user_segs.push_back(std::make_pair("Age", boost::lexical_cast<std::string>(i)));
+    }
     new_user_segs.push_back(std::make_pair("Gender", "male"));
     new_user_segs.push_back(std::make_pair("Gender", "female"));
     AdSelector::get()->updateSegments(new_user_segs, AdSelector::UserSeg);
     AdSelector::FeatureT userinfo;
     userinfo.push_back(std::make_pair("Age", "28"));
+    userinfo.push_back(std::make_pair("Age", "30"));
     userinfo.push_back(std::make_pair("Age", "38"));
     userinfo.push_back(std::make_pair("Gender", "male"));
     AdSelector::FeatureMapT adinfo[4];
@@ -309,7 +323,7 @@ int main()
     }
 
     AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
-    sleep(10);
+    sleep(30);
     LOG(INFO) << "begin test ad select.";
     //boost::thread_group test_ad_selector_threads;
     //for(int i = 0; i < thread_num; ++i)

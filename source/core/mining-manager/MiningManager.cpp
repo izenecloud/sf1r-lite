@@ -1758,7 +1758,7 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 
     izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
 
-    bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_input);
+    bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_info_.tg_input);
     return ret;
 
 }

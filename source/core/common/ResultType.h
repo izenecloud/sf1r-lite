@@ -86,13 +86,77 @@ typedef ErrorInfo ResultBase;
 // Definition of divided search results
 #include "DistributeResultType.h"
 
+struct TGResultInfo
+{
+    // --------------------------------[ Taxonomy List ]
+
+    idmlib::cc::CCInput32 tg_input;
+
+    /// Taxonomy string list.
+    std::vector<PropertyValue::PropertyValueStrType> taxonomyString_;
+
+    /// A list which stores the number of documents which are related to the specific TG item.
+    std::vector<count_t> numOfTGDocs_;
+
+    /// A list which stores the id list of documents which are related to the specific TG item.
+    std::vector<std::vector<uint64_t> > tgDocIdList_;
+
+    /// TaxnomyLevel is used for displaying hierarchical taxonomy result. It will start from 0.
+    ///
+    /// (ex)
+    /// <TgLabel name=”finantial” num=”2”>
+    ///     <TgLabel name=”target2” num”3”>
+    ///         <TgLabel name=”target3” num=”2”/>
+    ///     </TgLabel>
+    /// </TgLabel>
+    /// <TgLabel name=”bank” num=”4”/>
+    ///
+    /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
+    std::vector<uint32_t> taxonomyLevel_; // Start From 0
+
+    NEResultList neList_;
+
+    void swap(TGResultInfo& other)
+    {
+        tg_input.swap(other.tg_input);
+        taxonomyString_.swap(other.taxonomyString_);
+        numOfTGDocs_.swap(other.numOfTGDocs_);
+        tgDocIdList_.swap(other.tgDocIdList_);
+        taxonomyLevel_.swap(other.taxonomyLevel_);
+        neList_.swap(other.neList_);
+    }
+
+    void print(std::ostream& out = std::cout) const
+    {
+        stringstream ss;
+        ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
+        for (size_t i = 0; i < taxonomyString_.size(); i++)
+        {
+            string s;
+            s = propstr_to_str(taxonomyString_[i]);
+            ss << s << ", ";
+        }
+        ss << endl;
+
+        ss << "numOfTGDocs_    : " << numOfTGDocs_.size() << endl;
+        for (size_t i = 0; i < numOfTGDocs_.size(); i++)
+        {
+            ss << numOfTGDocs_[i] << ", ";
+        }
+        ss << endl;
+    }
+
+    MSGPACK_DEFINE(tg_input, taxonomyString_, numOfTGDocs_, tgDocIdList_, taxonomyLevel_, neList_);
+};
+
 class KeywordSearchResult : public ErrorInfo
 {
 public:
 
     KeywordSearchResult()
         : encodingType_(izenelib::util::UString::UTF_8)
-        , totalCount_(0), docsInPage_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
+        , totalCount_(0), docsInPage_(0), topKDocs_(0), adCachedTopKDocs_(0)
+        , topKRankScoreList_(0), topKCustomRankScoreList_(0)
         , start_(0), count_(0)
         , timeStamp_(0), TOP_K_NUM(0)
     {
@@ -229,24 +293,10 @@ public:
             }
             ss << endl;
         }
-        ss << endl;
 
-        ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
-        for (size_t i = 0; i < taxonomyString_.size(); i++)
-        {
-            string s;
-            s = propstr_to_str(taxonomyString_[i]);
-            ss << s << ", ";
-        }
-        ss << endl;
+        tg_info_.print(out);
 
-        ss << "numOfTGDocs_    : " << numOfTGDocs_.size() << endl;
-        for (size_t i = 0; i < numOfTGDocs_.size(); i++)
-        {
-            ss << numOfTGDocs_[i] << ", ";
-        }
         ss << endl;
-
         ss << "onto_rep_ : " <<endl;
         ss << onto_rep_.ToString();
         ss << "groupRep_ : " <<endl;
@@ -362,33 +412,7 @@ public:
 
     std::vector<std::vector<PropertyValue::PropertyValueStrType> > docCategories_;
 
-    // --------------------------------[ Taxonomy List ]
-
-    idmlib::cc::CCInput32 tg_input;
-
-    /// Taxonomy string list.
-    std::vector<PropertyValue::PropertyValueStrType> taxonomyString_;
-
-    /// A list which stores the number of documents which are related to the specific TG item.
-    std::vector<count_t> numOfTGDocs_;
-
-    /// A list which stores the id list of documents which are related to the specific TG item.
-    std::vector<std::vector<uint64_t> > tgDocIdList_;
-
-    /// TaxnomyLevel is used for displaying hierarchical taxonomy result. It will start from 0.
-    ///
-    /// (ex)
-    /// <TgLabel name=”finantial” num=”2”>
-    ///     <TgLabel name=”target2” num”3”>
-    ///         <TgLabel name=”target3” num=”2”/>
-    ///     </TgLabel>
-    /// </TgLabel>
-    /// <TgLabel name=”bank” num=”4”/>
-    ///
-    /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
-    std::vector<uint32_t> taxonomyLevel_; // Start From 0
-
-    NEResultList neList_;
+    TGResultInfo  tg_info_;
     // --------------------------------[ Related Query ]
 
     sf1r::faceted::OntologyRep onto_rep_;
@@ -464,6 +488,7 @@ public:
         counterResults_.swap(other.counterResults_);
         docsInPage_.swap(other.docsInPage_);
         topKDocs_.swap(other.topKDocs_);
+        adCachedTopKDocs_.swap(other.adCachedTopKDocs_);
         topKWorkerIds_.swap(other.topKWorkerIds_);
         topKtids_.swap(other.topKtids_);
         topKRankScoreList_.swap(other.topKRankScoreList_);
@@ -479,12 +504,7 @@ public:
         numberOfDuplicatedDocs_.swap(other.numberOfDuplicatedDocs_);
         numberOfSimilarDocs_.swap(other.numberOfSimilarDocs_);
         docCategories_.swap(other.docCategories_);
-        tg_input.swap(other.tg_input);
-        taxonomyString_.swap(other.taxonomyString_);
-        numOfTGDocs_.swap(other.numOfTGDocs_);
-        taxonomyLevel_.swap(other.taxonomyLevel_);
-        tgDocIdList_.swap(other.tgDocIdList_);
-        neList_.swap(other.neList_);
+        tg_info_.swap(other.tg_info_);
         onto_rep_.swap(other.onto_rep_);
         groupRep_.swap(other.groupRep_);
         attrRep_.swap(other.attrRep_);
@@ -506,12 +526,12 @@ public:
 
     MSGPACK_DEFINE(
             rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
-            queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+            queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, adCachedTopKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
-            tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,
-            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
+            tg_info_,
+            onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
 };
 
 
