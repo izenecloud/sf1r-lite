@@ -52,11 +52,11 @@ bool TitlePCAWrapper::loadDictFiles(const std::string& dictDir)
     return true;
 }
 
-void TitlePCAWrapper::pca(std::string line, 
-        std::vector<std::pair<std::string, float> >& tks, 
-        std::string& brand, 
+void TitlePCAWrapper::pca(const std::string& line,
+        std::vector<std::pair<std::string, float> >& tks,
+        std::string& brand,
         std::string& model_type,
-        std::vector<std::pair<std::string, float> >& sub_tks, bool do_sub = false)const
+        std::vector<std::pair<std::string, float> >& sub_tks, bool do_sub) const
 {
     title_pca_->pca(line, tks, brand, model_type, sub_tks, do_sub);
 }

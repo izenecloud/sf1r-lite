@@ -32,7 +32,7 @@ public:
     ~TitlePCAWrapper();
 
     bool loadDictFiles(const std::string& dictDir);
-    void pca(std::string line,
+    void pca(const std::string& line,
          std::vector<std::pair<std::string, float> >& tks,
          std::string& brand,
          std::string& model_type,
