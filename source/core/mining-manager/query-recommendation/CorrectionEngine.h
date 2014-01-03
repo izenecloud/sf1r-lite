@@ -9,6 +9,7 @@
 #include "pinyin/PinYin.h"
 #include "Filter.h"
 #include "UQCateEngine.h"
+#include "UserDefineTable.h"
 
 namespace sf1r
 {
@@ -59,6 +60,7 @@ private:
     PinyinTable* pinyin_;
     PrefixTable* prefix_;
     Filter*      filter_; 
+    UserDefineTable*udef_;
     ParserFactory* parsers_;
     PinYinConverter* pyConverter_;
     PinYinConverter* pyApproximator_;

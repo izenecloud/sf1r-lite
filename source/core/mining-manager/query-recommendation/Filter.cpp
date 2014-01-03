@@ -10,7 +10,7 @@ namespace sf1r
 namespace Recommend
 {
 
-static std::string uuid = ".Filter";
+static std::string uuid = "Filter";
 static std::string timestamp = ".FilterTimestamp";
 
 Filter::Filter(const std::string& workdir)
