@@ -152,10 +152,8 @@ void SuffixMatchManager::GetTokenResults(const std::string& pattern,
                                 double& rank_boundary)
 {
     tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery);
-    getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
 }
 
-//getSuffixSearchRankThreshold
 void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
 {
     double minor_score_sum = 0;

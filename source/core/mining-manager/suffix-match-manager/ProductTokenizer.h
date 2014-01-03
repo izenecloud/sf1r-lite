@@ -137,6 +137,11 @@ private:
 
     static bool cmp_(const std::pair<std::string, float> x, const std::pair<std::string, float> y);
 
+    void GetTokenResultsByPCA_(
+        const std::string& source,
+        std::list<std::pair<UString,double> >& major_tokens,
+        std::list<std::pair<UString,double> >& minor_tokens);
+
     double GetTokenResultsByKNlp_(
             const std::string& pattern,
             std::list<std::pair<UString,double> >& token_results,

@@ -410,7 +410,7 @@ bool ProductTokenizer::GetTokenResults(
     std::list<std::pair<UString,double> > temp_minor_tokens;
     UString temp_refined_results;
 
-    GetTokenResultsByKNlp_(pattern, minor_tokens, temp_refined_results);
+    GetTokenResultsByPCA_(pattern, major_tokens, minor_tokens);
 
     if (!is_refine_result)
         return true;
@@ -437,6 +437,37 @@ bool ProductTokenizer::GetTokenResults(
 
     return false;
 }
+
+void ProductTokenizer::GetTokenResultsByPCA_(
+    const std::string& source,
+    std::list<std::pair<UString,double> >& major_tokens,
+    std::list<std::pair<UString,double> >& minor_tokens)
+{
+    typedef std::vector<std::pair<std::string, float> > TokenScores;
+    TokenScores tokens, subTokens;
+    std::string brand;
+    std::string model;
+
+    TitlePCAWrapper* titlePCA = TitlePCAWrapper::get();
+    titlePCA->pca(source, tokens, brand, model, subTokens, false);
+
+    double scoreSum = 0;
+
+    for (TokenScores::const_iterator it = tokens.begin();
+         it != tokens.end(); ++it)
+    {
+        scoreSum += it->second;
+    }
+
+    for (TokenScores::const_iterator it = tokens.begin();
+         it != tokens.end(); ++it)
+    {
+        UString ustr(it->first, UString::UTF_8);
+        double score = it->second / scoreSum;
+        minor_tokens.push_back(std::make_pair(ustr, score));
+    }
+}
+
 void ProductTokenizer::GetQuerySumScore(const std::string& pattern, double &sum_score, docid_t docid)
 {
     std::list<std::pair<UString,double> > token_results;

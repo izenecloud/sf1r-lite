@@ -612,7 +612,8 @@ bool MiningManager::open()
         {
             LOG(INFO) << "suffix match enabled.";
 
-            if (!KNlpResourceManager::getResource()->loadDictFiles())
+            if (!TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/") ||
+                !KNlpResourceManager::getResource()->loadDictFiles())
                 return false;
 
             KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
@@ -693,7 +694,6 @@ bool MiningManager::open()
 
             if (mining_schema_.suffixmatch_schema.product_forward_enable)
             {
-                TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/");
                 initProductForwardManager_();
             }
         }
@@ -2366,13 +2366,8 @@ bool MiningManager::GetSuffixMatch(
 
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
-        double rank_boundary;
+        double rank_boundary = 0;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery, rank_boundary);
-
-        double queryScore = 0;
-        suffixMatchManager_->GetQuerySumScore(pattern_orig, queryScore);
-        actionOperation.actionItem_.queryScore_ = queryScore;
-        std::cout << "The query's product score is:" << queryScore <<std::endl;
 
         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
