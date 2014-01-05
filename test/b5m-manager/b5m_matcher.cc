@@ -26,6 +26,7 @@
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/address_extract.h>
 
 
 using namespace sf1r;
@@ -262,6 +263,7 @@ int do_main(int ac, char** av)
         ("product-train", "do product training")
         ("product-train-post", "do product post training")
         ("product-discover", "do product discover")
+        ("address", "do address normalize")
         ("product-match", "do product matching test")
         ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
@@ -641,6 +643,14 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     } 
+    if (vm.count("address")) {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        AddressExtract ae;
+        ae.Process(knowledge_dir);
+    }
     if (vm.count("syn-test")) {
         if( knowledge_dir.empty() || name.empty())
         {
