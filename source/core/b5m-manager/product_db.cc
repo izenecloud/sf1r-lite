@@ -254,7 +254,8 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     }
     if(comment_count_number>0)
     {
-        pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)(comment_count/comment_count_number);
+        //pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)(comment_count/comment_count_number);
+        pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)comment_count;
     }
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
