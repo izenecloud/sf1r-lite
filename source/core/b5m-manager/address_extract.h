@@ -3,6 +3,7 @@
 #include <util/ustring/UString.h>
 #include "b5m_types.h"
 #include "scd_doc_processor.h"
+#include <am/sequence_file/ssfr.h>
 //#define ADDR_DEBUG
 NS_SF1R_B5M_BEGIN
 
@@ -80,9 +81,19 @@ public:
 
     bool Train(const std::string& knowledge)
     {
+        namespace bfs = boost::filesystem;
+        std::string resource_path = knowledge+"/resource";
+        if(Load_(resource_path))
+        {
+            LOG(INFO)<<"Load "<<resource_path<<" finish"<<std::endl;
+            return true;
+        }
         std::string dict = knowledge+"/dict";
         std::string syn_dict = knowledge+"/dict.syn";
         std::string scd = knowledge+"/T.SCD";
+        if(!bfs::exists(dict)) return false;
+        if(!bfs::exists(syn_dict)) return false;
+        if(!bfs::exists(scd)) return false;
         std::string line;
         std::ifstream sifs(syn_dict.c_str());
         while( getline(sifs, line) )
@@ -139,7 +150,6 @@ public:
             if(type==ROAD&&word.size()<=2) continue;
             dict_[word] = type;
             rdict_[rword] = type;
-            //word_text_[word] = line;
             word_t syn_word;
             SynDict::const_iterator sdit = syn_dict_.find(str);
             if(sdit!=syn_dict_.end())
@@ -194,6 +204,7 @@ public:
                 prob_[key] = p;
             }
         }
+        Save_(resource_path);
         return true;
     }
 
@@ -358,6 +369,33 @@ public:
 
 
 private:
+    bool Load_(const std::string& resource)
+    {
+        std::string file = resource+"/dict";
+        namespace bfs = boost::filesystem;
+        if(!bfs::exists(file)) return false;
+        izenelib::am::ssf::Util<>::Load(file, rdict_);
+        file = resource+"/syn";
+        if(!bfs::exists(file)) return false;
+        izenelib::am::ssf::Util<>::Load(file, syn_dict_);
+        file = resource+"/prob";
+        if(!bfs::exists(file)) return false;
+        izenelib::am::ssf::Util<>::Load(file, prob_);
+        return true;
+    }
+    void Save_(const std::string& resource)
+    {
+        namespace bfs = boost::filesystem;
+        bfs::remove_all(resource);
+        bfs::create_directories(resource);
+        std::string file = resource+"/dict";
+        izenelib::am::ssf::Util<>::Save(file, rdict_);
+        file = resource+"/syn";
+        izenelib::am::ssf::Util<>::Save(file, syn_dict_);
+        file = resource+"/prob";
+        izenelib::am::ssf::Util<>::Save(file, prob_);
+    }
+
     void PostProcessResult_(NodeList& nl, const SuffixWord& word)
     {
         for(uint32_t i=0;i<nl.size();i++)
@@ -1089,8 +1127,6 @@ private:
     idmlib::util::IDMAnalyzer* analyzer_;
     Dict dict_;
     Dict rdict_;
-    std::map<word_t, std::string> word_text_;
-    std::map<term_t, std::string> term_text_;
     SynDict syn_dict_;
     Prob prob_;
     Count count_;

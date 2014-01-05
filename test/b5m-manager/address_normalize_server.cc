@@ -125,16 +125,16 @@ int main(int ac, char** av)
     ServerHandler handler(&an);
     Server server("0.0.0.0", "18199", handler);
     std::vector<boost::thread*> threads;
-    for(uint32_t i=0;i<thread_num;i++)
+    for(int i=0;i<thread_num;i++)
     {
         boost::thread* t = new boost::thread(boost::bind(&Server::run, &server));
         threads.push_back(t);
     }
-    for(uint32_t i=0;i<thread_num;i++)
+    for(int i=0;i<thread_num;i++)
     {
         threads[i]->join();
     }
-    for(uint32_t i=0;i<thread_num;i++)
+    for(int i=0;i<thread_num;i++)
     {
         delete threads[i];
     }
