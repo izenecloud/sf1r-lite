@@ -49,7 +49,7 @@ struct QueryIdentity
 
     std::vector<std::pair<std::string , bool> > sortInfo;
 
-    boost::shared_ptr<ConditionsNode> filterTree_;
+    ConditionsNode filterTree_;
 
     /// @brief param for group filter
     faceted::GroupParam groupParam;
@@ -98,7 +98,7 @@ struct QueryIdentity
             && properties == other.properties
             && counterList == other.counterList
             && sortInfo == other.sortInfo
-            && conditonEqual(filterTree_, other.filterTree_)
+            && filterTree_ == other.filterTree_
             && groupParam == other.groupParam
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty

@@ -7,6 +7,7 @@
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <aggregator-manager/SearchMerger.h>
 #include <common/PropSharedLockSet.h>
 
 #include <util/ustring/UString.h>
@@ -480,10 +481,10 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
     {
         GroupParam::GroupPath lpath = baselabelpath;
         lpath.push_back(std::string(1, 'd' + (char)(test_num - i - 1)));
-        toplabels.push_back(std::make_pair(lpath, test_num - i - 1));
+        toplabels.push_back(std::make_pair(lpath, faceted::GroupPathScoreInfo(test_num - i - 1, 0)));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right);
+    SearchMerger::mergeScoreGroupLabel(left, right, 0);
     BOOST_CHECK( right == left );
 
     right.clear();
@@ -492,10 +493,10 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
     {
         GroupParam::GroupPath lpath = baselabelpath;
         lpath.push_back(std::string(1, 'd' + (char)test_num - i - 1));
-        toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.5));
+        toplabels.push_back(std::make_pair(lpath, faceted::GroupPathScoreInfo(test_num - i - 1 + 0.5, 0)));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right);
+    SearchMerger::mergeScoreGroupLabel(left, right, 0);
 
     stringstream ss;
     using namespace faceted;
@@ -509,10 +510,10 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
     {
         GroupParam::GroupPath lpath = baselabelpath;
         lpath.push_back(std::string(1, 'd' + (char)(test_num - i - 1 + test_num)));
-        toplabels.push_back(std::make_pair(lpath, test_num - i - 1 + 0.6));
+        toplabels.push_back(std::make_pair(lpath, faceted::GroupPathScoreInfo(test_num - i - 1 + 0.6, 0)));
     }
     right["Category"] = toplabels;
-    GroupParam::mergeScoreGroupLabel(left, right);
+    SearchMerger::mergeScoreGroupLabel(left, right, 0);
     for(GroupParam::GroupLabelScoreMap::const_iterator cit = left.begin(); cit != left.end(); ++cit)
     {
         BOOST_CHECK_GE( cit->second.size(), test_num);
@@ -520,8 +521,8 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
         int part_num = 0;
         for(size_t i = 0; i < cit->second.size(); ++i)
         {
-            BOOST_ASSERT(cit->second[i].second <= max_score);
-            max_score = cit->second[i].second;
+            BOOST_ASSERT(cit->second[i].second.score <= max_score);
+            max_score = cit->second[i].second.score;
             if (cit->second[i].first.back()[0] > (char)('d' + test_num))
             {
                 ++part_num;
@@ -533,6 +534,30 @@ void GroupManagerTestFixture::checkScoreGroupLabelMerge()
     stringstream ss2;
     ss2 << left << std::endl;
     std::cout << ss2.str() << std::endl;
+
+    right.clear();
+    toplabels.clear();
+    left.clear();
+    for (size_t i = 0; i < test_num; ++i)
+    {
+        GroupParam::GroupPath lpath = baselabelpath;
+        lpath.push_back(std::string(1, 'd'));
+        toplabels.push_back(std::make_pair(lpath, faceted::GroupPathScoreInfo(test_num - 1 + 0.5, i)));
+    }
+
+    for (size_t i = 0; i < test_num; ++i)
+    {
+        GroupParam::GroupPath lpath = baselabelpath;
+        lpath.push_back(std::string(1, 'd' + (char)(test_num - i - 1 + test_num)));
+        toplabels.push_back(std::make_pair(lpath, faceted::GroupPathScoreInfo(test_num - i - 1 + 0.5, i)));
+    }
+    right["Category"] = toplabels;
+    SearchMerger::mergeScoreGroupLabel(left, right, 0);
+    SearchMerger::mergeScoreGroupLabel(left, right, 6);
+    stringstream ss3;
+    ss3 << left << std::endl;
+    std::cout << ss3.str() << std::endl;
+
 }
 
 void GroupManagerTestFixture::checkGroupRepMerge()

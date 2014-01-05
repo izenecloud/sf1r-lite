@@ -550,15 +550,15 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
 
     std::vector<QueryFiltering::FilteringType> filteringRules;
 
-    if (actionItem_.filterTree_->pConditionsNodeList_.size() > 0)
+    if (actionItem_.filterTree_.conditionsNodeList_.size() > 0)
     {
         message = "The Suffix Match search do not support nesting filter condition";
         return false;
     }
 
-    for (unsigned int i = 0; i < actionItem_.filterTree_->conditionLeafList_.size(); ++i)
+    for (unsigned int i = 0; i < actionItem_.filterTree_.conditionLeafList_.size(); ++i)
     {
-        filteringRules.push_back(actionItem_.filterTree_->conditionLeafList_[i]);
+        filteringRules.push_back(actionItem_.filterTree_.conditionLeafList_[i]);
     }
 
     /*
@@ -983,7 +983,7 @@ void DocumentsSearchHandler::addAclFilters()
         PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
-        izenelib::util::swapBack(actionItem_.filterTree_->conditionLeafList_, filter);
+        izenelib::util::swapBack(actionItem_.filterTree_.conditionLeafList_, filter);
     }
 
     // ACL_DENY
@@ -998,7 +998,7 @@ void DocumentsSearchHandler::addAclFilters()
             filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
         }
 
-        izenelib::util::swapBack(actionItem_.filterTree_->conditionLeafList_, filter);
+        izenelib::util::swapBack(actionItem_.filterTree_.conditionLeafList_, filter);
     }
 }
 
