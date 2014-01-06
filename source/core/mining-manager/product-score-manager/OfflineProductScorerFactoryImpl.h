@@ -28,7 +28,7 @@ private:
     ProductScorer* createPopularityScorer_(
         const ProductScoreConfig& scoreConfig);
 
-    ProductScorer* createNumericPropertyScorer_(
+    ProductScorer* createNumericExponentScorer_(
         const ProductScoreConfig& scoreConfig);
 
 private:
