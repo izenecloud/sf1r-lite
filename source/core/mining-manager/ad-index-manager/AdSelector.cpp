@@ -1,5 +1,6 @@
 #include "AdSelector.h"
 #include "AdClickPredictor.h"
+#include "AdRecommender.h"
 #include <search-manager/HitQueue.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/group-manager/GroupManager.h>
@@ -646,6 +647,7 @@ bool AdSelector::selectFromRecommend(const FeatureT& user_info,
     std::vector<double>& score_list
     )
 {
+    AdRecommender::get()->recommend("", user_info, max_return, recommended_doclist, score_list);
     // select the ads from recommend system if no any search results.
     return false;
 }
