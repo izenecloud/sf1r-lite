@@ -217,8 +217,7 @@ bool ZambeziSearch::search(
 
     zambeziScoreNormalizer_->normalizeScore(topDocids,
                                             topProductScores,
-                                            topRelevanceScores,
-                                            propSharedLockSet);
+                                            topRelevanceScores);
 
     for (size_t i = 0; i < topRelevanceScores.size(); ++i)
     {

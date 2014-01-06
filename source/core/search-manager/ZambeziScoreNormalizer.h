@@ -16,8 +16,6 @@ namespace sf1r
 {
 class MiningManager;
 
-namespace faceted { class AttrTable; }
-
 class ZambeziScoreNormalizer
 {
 public:
@@ -26,15 +24,12 @@ public:
     void normalizeScore(
         const std::vector<docid_t>& docids,
         const std::vector<float>& productScores,
-        std::vector<float>& relevanceScores,
-        PropSharedLockSet& sharedLockSet);
+        std::vector<float>& relevanceScores);
 
 private:
     const NumericExponentScorer exponentScorer_;
 
     const float relevanceWeight_;
-
-    const faceted::AttrTable* attrTable_;
 };
 
 } // namespace sf1r
