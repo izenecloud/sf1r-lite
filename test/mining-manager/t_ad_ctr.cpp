@@ -1,6 +1,7 @@
 #include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <mining-manager/ad-index-manager/AdStreamSubscriber.h>
 #include <mining-manager/ad-index-manager/AdSelector.h>
+#include <mining-manager/ad-index-manager/AdRecommender.h>
 #include <node-manager/SuperNodeManager.h>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
@@ -254,10 +255,13 @@ int main()
     }
 
     std::string selector_base_path("/opt/mine/ad_ctr_test/selector/");
+    bfs::remove_all(selector_base_path);
     bfs::create_directories(selector_base_path);
-    std::ofstream ofs_selector(std::string(selector_base_path + "/all_feature_name.txt").c_str());
+    std::ofstream ofs_selector(std::string(selector_base_path + "/all_ad_feature_name.txt").c_str());
     ofs_selector << "Category" << std::endl;
     ofs_selector << "Topic" << std::endl;
+    ofs_selector.close();
+    ofs_selector.open(std::string(selector_base_path + "/all_user_feature_name.txt").c_str());
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
@@ -292,7 +296,7 @@ int main()
     new_user_segs.push_back(std::make_pair("Age", "28"));
     new_user_segs.push_back(std::make_pair("Age", "30"));
     new_user_segs.push_back(std::make_pair("Age", "38"));
-    for (size_t i = 0; i < 100; ++i)
+    for (size_t i = 0; i < 100; i += 5)
     {
         new_user_segs.push_back(std::make_pair("Age", boost::lexical_cast<std::string>(i)));
     }
@@ -301,7 +305,6 @@ int main()
     AdSelector::get()->updateSegments(new_user_segs, AdSelector::UserSeg);
     AdSelector::FeatureT userinfo;
     userinfo.push_back(std::make_pair("Age", "28"));
-    userinfo.push_back(std::make_pair("Age", "30"));
     userinfo.push_back(std::make_pair("Age", "38"));
     userinfo.push_back(std::make_pair("Gender", "male"));
     AdSelector::FeatureMapT adinfo[4];
@@ -313,6 +316,11 @@ int main()
     adinfo[3]["Topic"].push_back("iPhone");
     std::vector<docid_t> cand_docs;
     std::vector<AdSelector::FeatureMapT> cand_ad_info;
+    AdRecommender::get()->init("/opt/mine/ad_ctr_test/rec");
+    AdSelector::FeatureT userinfo_rec;
+    userinfo_rec.push_back(std::make_pair("Age", "38"));
+    userinfo_rec.push_back(std::make_pair("Gender", "female"));
+    AdRecommender::get()->setMaxAdDocId(total_ad_num);
     for (size_t i = 1; i < total_ad_num; ++i)
     {
         if (i % sponsor_searched_rate == 0)
@@ -320,10 +328,18 @@ int main()
             cand_docs.push_back(i);
             cand_ad_info.push_back(adinfo[rand()%4]);
         }
+        if (i % clicked_rate == 0)
+        {
+            AdRecommender::get()->update("", userinfo_rec, i, true);
+        }
+        else
+        {
+            AdRecommender::get()->update("", userinfo, i, false);
+        }
     }
 
     AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
-    sleep(30);
+    sleep(40);
     LOG(INFO) << "begin test ad select.";
     //boost::thread_group test_ad_selector_threads;
     //for(int i = 0; i < thread_num; ++i)
@@ -349,6 +365,16 @@ int main()
         //}
     }
     LOG(INFO) << "end test for ad select.";
+
+    std::vector<docid_t> rec_doclist;
+    AdRecommender::get()->recommend("", userinfo_rec, 10, rec_doclist, score_list);
+    LOG(INFO) << "recommended ads are :";
+    for (size_t j = 0; j < rec_doclist.size(); ++j)
+    {
+        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    }
+    std::cout << std::endl;
+    AdRecommender::get()->dumpUserLatent();
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));

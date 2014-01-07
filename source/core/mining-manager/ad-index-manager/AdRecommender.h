@@ -32,17 +32,26 @@ public:
         const FeatureT& user_info, std::size_t max_return,
         std::vector<docid_t>& recommended_doclist,
         std::vector<double>& score_list);
+    void recommendFromCand(const std::string& user_str_id,
+        const FeatureT& user_info, std::size_t max_return,
+        std::vector<docid_t>& recommended_doclist,
+        std::vector<double>& score_list);
 
     void update(const std::string& user_str_id, const FeatureT& user_info,
-        const std::string& ad_str_docid, bool is_clicked);
+        docid_t ad_docid, bool is_clicked);
 
     void load();
     void save();
+    void dumpUserLatent();
+    void deleteAdDoc(docid_t docid);
+    void updateAdDocId(docid_t old_docid, docid_t new_docid);
+    void setMaxAdDocId(docid_t max_docid);
 
 private:
     typedef izenelib::am::MatrixDB<uint32_t, double> MatrixType;
     typedef MatrixType::row_type RowType;
     typedef boost::unordered_map<std::string, LatentVecT> LatentVecContainerT;
+    typedef std::vector<LatentVecT> AdLatentVecContainerT;
 
     void getUserLatentVecKeys(const FeatureT& user_info, std::vector<std::string>& user_latentvec_keys);
     void getCombinedUserLatentVec(const std::vector<std::string>& latentvec_keys, LatentVecT& latent_vec);
@@ -51,7 +60,7 @@ private:
     MatrixType* db_;
     std::string data_path_;
     boost::unordered_map<std::string, FeatureT> user_feature_map_;
-    LatentVecContainerT ad_latent_vec_list_;
+    AdLatentVecContainerT ad_latent_vec_list_;
     LatentVecContainerT feature_latent_vec_list_;
 
     std::size_t clicked_num_;
