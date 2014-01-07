@@ -125,11 +125,7 @@ public:
             return false;
         }
 
-        char* p = new char[val_p->size];
-        memcpy(p, val_p->data, val_p->size);
-        rtype_value.assign(p, val_p->size);
-
-        delete[] p;
+        rtype_value.assign((const char*)val_p->data, val_p->size);
         data_->clean_data(val_p);
         return true;
     }

@@ -88,8 +88,7 @@ void ZambeziSearch::setMiningManager(
 void ZambeziSearch::normalizeTopDocs_(
     const boost::scoped_ptr<ProductScorer>& productScorer,
     boost::scoped_ptr<HitQueue>& scoreItemQueue,
-    std::vector<ScoreDoc>& resultList,
-    PropSharedLockSet &sharedLockSet)
+    std::vector<ScoreDoc>& resultList)
 {
     izenelib::util::ClockTimer timer;
     std::vector<docid_t> topDocids;
@@ -116,8 +115,7 @@ void ZambeziSearch::normalizeTopDocs_(
     if (zambeziManager_->isAttrTokenize())
         zambeziScoreNormalizer_->normalizeScore(topDocids,
                                             topProductScores,
-                                            topRelevanceScores,
-                                            sharedLockSet);
+                                            topRelevanceScores);
 
     // fast sort
     resultList.resize(topRelevanceScores.size());
@@ -272,8 +270,7 @@ bool ZambeziSearch::search(
         LOG(INFO) << "do normalize top docs ...";
         normalizeTopDocs_(productScorer, 
                         scoreItemQueue, 
-                        resultList,
-                        propSharedLockSet);
+                        resultList);
     }
     else
     {

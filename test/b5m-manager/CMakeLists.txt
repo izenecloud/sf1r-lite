@@ -81,6 +81,15 @@ TARGET_LINK_LIBRARIES(b5m_matcher  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs}
 SET_TARGET_PROPERTIES(b5m_matcher PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+ADD_EXECUTABLE(address_normalize_server
+address_normalize_server.cc
+)
+TARGET_LINK_LIBRARIES(address_normalize_server ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(address_normalize_server PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
+
 ADD_EXECUTABLE(categorize_test
 categorize_test.cc
 )

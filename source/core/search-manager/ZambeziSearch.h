@@ -70,8 +70,7 @@ private:
     void normalizeTopDocs_(
         const boost::scoped_ptr<ProductScorer>& productScorer, 
         boost::scoped_ptr<HitQueue>& scoreItemQueue,
-        std::vector<ScoreDoc>& resultList, 
-        PropSharedLockSet &sharedLockSet);
+        std::vector<ScoreDoc>& resultList);
 
     void getTopLabels_(
         const std::vector<unsigned int>& docIdList,

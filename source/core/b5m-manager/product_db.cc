@@ -250,11 +250,13 @@ void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& p
     if(!scountry.empty()) pdoc.property("Country") = str_to_propstr(scountry, UString::UTF_8);
     if(sales_amount_number>0)
     {
-        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)(sales_amount/sales_amount_number);
+        //pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)(sales_amount/sales_amount_number);
+        pdoc.property(B5MHelper::GetSalesAmountPropertyName()) = (int64_t)sales_amount;
     }
     if(comment_count_number>0)
     {
-        pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)(comment_count/comment_count_number);
+        //pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)(comment_count/comment_count_number);
+        pdoc.property(B5MHelper::GetCommentCountPropertyName()) = (int64_t)comment_count;
     }
     //if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
     if(itemcount==0)
