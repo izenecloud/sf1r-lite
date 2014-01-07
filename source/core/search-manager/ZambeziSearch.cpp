@@ -1,5 +1,6 @@
 #include "ZambeziSearch.h"
 #include "ZambeziFilter.h"
+#include "ZambeziScoreNormalizer.h"
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "QueryBuilder.h"
@@ -68,6 +69,7 @@ void ZambeziSearch::setMiningManager(
     zambeziManager_ = miningManager->getZambeziManager();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
     merchantValueTable_ = miningManager->GetPropValueTable(kMerchantPropName);
+    zambeziScoreNormalizer_.reset(new ZambeziScoreNormalizer(*miningManager));
 }
 
 bool ZambeziSearch::search(
@@ -212,7 +214,10 @@ bool ZambeziSearch::search(
         topProductScores.push_back(productScore);
         topRelevanceScores.push_back(scoreItem.score);
     }
-    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores, propSharedLockSet);
+
+    zambeziScoreNormalizer_->normalizeScore(topDocids,
+                                            topProductScores,
+                                            topRelevanceScores);
 
     for (size_t i = 0; i < topRelevanceScores.size(); ++i)
     {

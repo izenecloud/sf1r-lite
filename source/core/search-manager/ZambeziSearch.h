@@ -12,6 +12,7 @@
 #include <mining-manager/group-manager/GroupParam.h>
 #include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,7 @@ class SearchManagerPreProcessor;
 class QueryBuilder;
 class ZambeziManager;
 class PropSharedLockSet;
+class ZambeziScoreNormalizer;
 
 namespace faceted
 {
@@ -78,6 +80,8 @@ private:
     const faceted::PropValueTable* categoryValueTable_;
 
     const faceted::PropValueTable* merchantValueTable_;
+
+    boost::scoped_ptr<ZambeziScoreNormalizer> zambeziScoreNormalizer_;
 };
 
 } // namespace sf1r
