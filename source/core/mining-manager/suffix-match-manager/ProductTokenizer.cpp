@@ -452,11 +452,35 @@ void ProductTokenizer::GetTokenResultsByPCA_(
     titlePCA->pca(source, tokens, brand, model, subTokens, false);
 
     double scoreSum = 0;
+    double maxScore = 0;
+    std::string maxToken;
 
     for (TokenScores::const_iterator it = tokens.begin();
          it != tokens.end(); ++it)
     {
         scoreSum += it->second;
+
+        if (it->second > maxScore)
+        {
+            maxScore = it->second;
+            maxToken = it->first;
+        }
+    }
+
+    typedef std::set<std::string> TokenSet;
+    TokenSet majorSet;
+
+    if (!brand.empty())
+    {
+        majorSet.insert(brand);
+    }
+    if (!model.empty())
+    {
+        majorSet.insert(model);
+    }
+    if (!maxToken.empty())
+    {
+        majorSet.insert(maxToken);
     }
 
     for (TokenScores::const_iterator it = tokens.begin();
@@ -464,7 +488,16 @@ void ProductTokenizer::GetTokenResultsByPCA_(
     {
         UString ustr(it->first, UString::UTF_8);
         double score = it->second / scoreSum;
-        minor_tokens.push_back(std::make_pair(ustr, score));
+        std::pair<UString, double> tokenScore(ustr, score);
+
+        if (majorSet.find(it->first) != majorSet.end())
+        {
+            major_tokens.push_back(tokenScore);
+        }
+        else
+        {
+            minor_tokens.push_back(tokenScore);
+        }
     }
 }
 
