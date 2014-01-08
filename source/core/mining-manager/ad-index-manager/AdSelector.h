@@ -85,9 +85,10 @@ private:
     void loadDef(const std::string& file, FeatureMapT& def_features,
         std::map<std::string, std::size_t>& init_counter);
     void updateFunc();
+    void updatePendingHistoryCTRData();
     void selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std::vector<docid_t>& unclicked_doclist);
     void computeHistoryCTR();
-    double getHistoryCTR(const std::vector<std::string>& all_fullkey);
+    bool getHistoryCTR(const std::vector<std::string>& all_fullkey, double& max_ctr);
     void expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<SegIdT>& ad_segid_list);
     void expandSegmentStr(std::vector<std::string>& seg_str_list, const FeatureMapT& feature_list);
     void getUserSegmentStr(std::vector<std::string>& user_seg_str_list, const FeatureT& user_info);
@@ -100,7 +101,7 @@ private:
             izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, SegIdT>,
             izenelib::ir::idmanager::HashIDGenerator<std::string, SegIdT>,
             izenelib::ir::idmanager::EmptyIDStorage<std::string, SegIdT>,
-            izenelib::ir::idmanager::UniqueIDGenerator<std::string, SegIdT>,
+            izenelib::ir::idmanager::UniqueIDGenerator<std::string, SegIdT, izenelib::util::ReadWriteLock>,
             izenelib::ir::idmanager::EmptyIDStorage<std::string, SegIdT> > AdSegIDManager;
 
     faceted::GroupManager* groupManager_;
@@ -108,6 +109,9 @@ private:
     std::string segments_data_path_;
     AdClickPredictor* ad_click_predictor_;
     boost::unordered_map<std::string, double> history_ctr_data_;
+    std::vector<std::pair<FeatureT, std::vector<docid_t> > >  pending_compute_doclist_;
+    boost::mutex pending_list_lock_;
+
     std::bitset<MAX_AD_DOCID>  clicked_ads_;
     std::vector<FeatureMapT>  all_segments_;
     FeatureMapT  updated_segments_[TotalSeg];
