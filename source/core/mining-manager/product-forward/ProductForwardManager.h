@@ -6,30 +6,28 @@
 #ifndef SF1R_PRODUCT_FORWARD_MANAGER_H
 #define SF1R_PRODUCT_FORWARD_MANAGER_H
 
+#include "ProductFeatureParser.h"
 #include <common/inttypes.h>
 #include <common/type_defs.h>
-#include "../suffix-match-manager/ProductTokenizer.h"
 #include <string>
 #include <vector>
 
 namespace sf1r
 {
-using izenelib::util::KString; 
-class DocumentManager;
+
 class ProductForwardManager
 {
 public:
     ProductForwardManager(
         const std::string& dirPath,
         const std::string& propName,
-        ProductTokenizer* tokenizer,
         bool isDebug = 0);
 
     const std::string& dirPath() const { return dirPath_; }
     const std::string& propName() const { return propName_; }
 
     bool open();
-    
+
     void resize(unsigned int size);
     bool insert(std::vector<std::string>& tmp_index);
     const docid_t getLastDocId() const { return lastDocid_; }
@@ -55,7 +53,7 @@ private:
 
     bool isDebug_;
 
-    ProductTokenizer* tokenizer_;
+    ProductFeatureParser featureParser_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;
