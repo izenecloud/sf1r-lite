@@ -2950,17 +2950,19 @@ bool MiningManager::initProductForwardManager_()
     const bfs::path parentDir(collectionDataPath_);
     const bfs::path forwardDir(parentDir / "forward_index");
     bfs::create_directories(forwardDir);
-    productForwardManager_ = new ProductForwardManager(forwardDir.string(), 
-                                    std::string("Title"),
-                                    suffixMatchManager_->getProductTokenizer());
-     if (!productForwardManager_->open())
+
+    productForwardManager_ = new ProductForwardManager(
+        forwardDir.string(), "Title");
+
+    if (!productForwardManager_->open())
     {
         LOG(ERROR) << "open " << forwardDir << " failed";
     }
-    MiningTask* miningTask_forward =  new ProductForwardMiningTask(document_manager_,
-                                            suffixMatchManager_->getProductTokenizer(),
-                                            productForwardManager_);
+
+    MiningTask* miningTask_forward =  new ProductForwardMiningTask(
+        document_manager_, productForwardManager_);
     miningTaskBuilder_->addTask(miningTask_forward);
+
     LOG(INFO)<<"product forward init ok";
     return true;
 }

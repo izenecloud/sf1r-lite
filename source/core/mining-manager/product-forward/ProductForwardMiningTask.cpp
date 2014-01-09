@@ -1,5 +1,4 @@
 #include "ProductForwardMiningTask.h"
-#include "../suffix-match-manager/ProductTokenizer.h"
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -9,12 +8,11 @@
 namespace sf1r
 {
 
-ProductForwardMiningTask::ProductForwardMiningTask(boost::shared_ptr<DocumentManager>& document_manager
-                    , ProductTokenizer* tokenizer
-                    , ProductForwardManager* forward)
+ProductForwardMiningTask::ProductForwardMiningTask(
+    boost::shared_ptr<DocumentManager>& document_manager,
+    ProductForwardManager* forward)
     : document_manager_(document_manager)
     , forward_index_(forward)
-    , tokenizer_(tokenizer)
 {
 }
 
@@ -32,7 +30,7 @@ bool ProductForwardMiningTask::buildDocument(docid_t docID, const Document& doc)
         const std::string pname("Title");
         doc.getString(pname, src);
         std::string res;
-        tokenizer_->GetFeatureTerms(src, res);
+        featureParser_.getFeatureStr(src, res);
         tmp_index_.push_back(res);
     }
     else//插入空串

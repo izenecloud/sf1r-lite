@@ -113,10 +113,6 @@ public:
     bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
     bool GetSynonymId(const UString& pattern, int& setid);
 
-    void B5TTokenize(const std::string& src, uint32_t& brand, uint32_t& model, std::vector<uint32_t>& res);
-    void GetFeatureTerms(const std::string& src, std::string& res);
-    void GetFeatureTerms(const std::string& src, uint32_t& brand, uint32_t& model, std::vector<uint32_t>& res, const size_t mode = 0);
-
     void SetProductMatcher(b5m::ProductMatcher* matcher)
     {
         matcher_ = matcher;
@@ -134,8 +130,6 @@ private:
     void InitWithDict_(const std::string& dict_path);
 
     void InitDict_(const std::string& dict_name);
-
-    static bool cmp_(const std::pair<std::string, float> x, const std::pair<std::string, float> y);
 
     double GetTokenResultsByKNlp_(
             const std::string& pattern,

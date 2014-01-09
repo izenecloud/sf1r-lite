@@ -10,14 +10,12 @@ namespace sf1r
 ProductForwardManager::ProductForwardManager(
         const std::string& dirPath,
         const std::string& propName,
-        ProductTokenizer* tokenizer,
         bool isDebug)
     : dirPath_(dirPath)
     , propName_(propName)
     , lastDocid_(0)
     , isDebug_(isDebug)
 {
-    tokenizer_ = tokenizer;
 }
 
 bool ProductForwardManager::open()
@@ -173,7 +171,7 @@ void ProductForwardManager::forwardSearch(const std::string& src, const std::vec
 
     std::vector<uint32_t > q_res;
     uint32_t q_brand, q_model;
-    tokenizer_->GetFeatureTerms(src, q_brand, q_model, q_res, 1);
+    featureParser_.getFeatureIds(src, q_brand, q_model, q_res);
     double q_score = 0;
     for (size_t i = 0; i < q_res.size(); ++i)
         q_score += (i+1)*(i+1);
@@ -197,8 +195,9 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
 {
     std::string title_string(getIndex(docid));
     std::vector<uint32_t> t_res;
-    uint32_t t_brand, t_model;
-    tokenizer_->GetFeatureTerms(title_string, t_brand, t_model, t_res, 0);
+    uint32_t t_brand = 0;
+    uint32_t t_model = 0;
+    featureParser_.convertStrToIds(title_string, t_brand, t_model, t_res);
     double score = 0, t_score = 0;
     double same = 0;
     if (q_brand == t_brand && q_brand > 0)
