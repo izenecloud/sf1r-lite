@@ -110,8 +110,6 @@ public:
             std::list<std::pair<UString, double> >& minor_tokens,
             bool is_refine_result,
             UString& refined_results);
-    bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
-    bool GetSynonymId(const UString& pattern, int& setid);
 
     void SetProductMatcher(b5m::ProductMatcher* matcher)
     {

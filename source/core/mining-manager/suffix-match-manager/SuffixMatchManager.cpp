@@ -9,6 +9,7 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
+#include <b5m-manager/product_matcher.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
 
@@ -36,6 +37,7 @@ SuffixMatchManager::SuffixMatchManager(
     , tokenize_dicpath_(dicpath)
     , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
+    , matcher_(NULL)
     , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
 {
@@ -58,6 +60,8 @@ SuffixMatchManager::~SuffixMatchManager()
 
 void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
 {
+    matcher_ = matcher;
+
     if (tokenizer_)
         tokenizer_->SetProductMatcher(matcher);
 }
@@ -253,22 +257,22 @@ void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UStrin
 
 bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
 {
-    if (!tokenizer_)
+    if (!matcher_)
     {
-        LOG(INFO)<<"tokenizer_ = NULL";
+        LOG(INFO)<<"matcher_ = NULL";
         return false;
     }
-    return tokenizer_->GetSynonymSet(pattern, synonym_set, setid);
+    return matcher_->GetSynonymSet(pattern, synonym_set, setid);
 }
 
 bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
 {
-    if (!tokenizer_)
+    if (!matcher_)
     {
-        LOG(INFO)<<"tokenizer_ = NULL";
+        LOG(INFO)<<"matcher_ = NULL";
         return false;
     }
-    return tokenizer_->GetSynonymId(pattern, setid);
+    return matcher_->GetSynonymId(pattern, setid);
 }
 
 void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
