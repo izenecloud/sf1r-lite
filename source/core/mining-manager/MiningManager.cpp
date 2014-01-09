@@ -57,7 +57,7 @@
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
-#include "suffix-match-manager/ProductTokenizer.h"
+#include "product-tokenizer/ProductTokenizer.h"
 #include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
@@ -214,6 +214,7 @@ MiningManager::MiningManager(
     , summarizationManagerTask_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
+    , productTokenizer_(NULL)
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , zambeziManager_(NULL)
@@ -2363,32 +2364,36 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "clear stop word for long query: " << pattern;
 
+        ProductTokenParam tokenParam(pattern, isAnalyzeQuery);
+        productTokenizer_->tokenize(tokenParam);
+        analyzedQuery.swap(tokenParam.refinedResult);
 
-        std::list<std::pair<UString, double> > major_tokens;
-        std::list<std::pair<UString, double> > minor_tokens;
-        double rank_boundary = 0;
-        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery, rank_boundary);
+        double queryScore = productTokenizer_->sumQueryScore(pattern_orig);
+        actionOperation.actionItem_.queryScore_ = queryScore;
+        std::cout << "The query's product score is:" << queryScore << std::endl;
 
-        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+        for (ProductTokenParam::TokenScoreListIter it = tokenParam.majorTokens.begin();
+             it != tokenParam.majorTokens.end(); ++it)
         {
             std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            cout << key << " " << i->second << endl;
+            it->first.convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << it->second << endl;
         }
         std::cout << "-----" << std::endl;
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        for (ProductTokenParam::TokenScoreListIter it = tokenParam.minorTokens.begin();
+             it != tokenParam.minorTokens.end(); ++it)
         {
             std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            cout << key << " " << i->second << endl;
+            it->first.convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << it->second << endl;
         }
 
         if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == false)
         {
-            rank_boundary = 0;
+            tokenParam.rankBoundary = 0;
         }
 
-        LOG(INFO) << " Rank boundary: " << rank_boundary;
+        LOG(INFO) << " Rank boundary: " << tokenParam.rankBoundary;
 
         bool useSynonym = actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_;
         bool isAndSearch = true;
@@ -2413,11 +2418,11 @@ bool MiningManager::GetSuffixMatch(
         if (isAndSearch)
         {
             LOG(INFO) << "for short query, try AND search first";
-            std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
+            std::list<std::pair<UString, double> > short_query_major_tokens(tokenParam.majorTokens);
             std::list<std::pair<UString, double> > short_query_minor_tokens;
 
-            for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin();
-                 it != minor_tokens.end(); ++it)
+            for (std::list<std::pair<UString, double> >::iterator it = tokenParam.minorTokens.begin();
+                 it != tokenParam.minorTokens.end(); ++it)
             {
                 short_query_major_tokens.push_back(*it);
             }
@@ -2432,7 +2437,7 @@ bool MiningManager::GetSuffixMatch(
                     filter_param,
                     actionOperation.actionItem_.groupParam_,
                     res_list,
-                    rank_boundary);
+                    tokenParam.rankBoundary);
 
             isOrSearch = res_list.empty();
         }
@@ -2442,15 +2447,15 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "for long query or short AND result is empty, try OR search";
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 useSynonym,
-                major_tokens,
-                minor_tokens,
+                tokenParam.majorTokens,
+                tokenParam.minorTokens,
                 search_in_properties,
                 max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list,
-                rank_boundary);
+                tokenParam.rankBoundary);
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
@@ -2928,12 +2933,11 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
         return false;
     }
     LOG (INFO) << "USE Title Score ,....";
-    MiningTask* miningTask_score =  new TitleScoreMiningTask(document_manager_,
-                                            suffixMatchManager_->getProductTokenizer(),
-                                            titleScoreList_);
-    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
+    MiningTask* miningTask_score =  new TitleScoreMiningTask(
+        document_manager_, titleScoreList_,
+        productTokenizer_, categoryClassifyTable_);
 
-    suffixMatchManager_->getProductTokenizer()->setCategoryClassifyTable(categoryClassifyTable_);
+    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
 
     return true;
 }

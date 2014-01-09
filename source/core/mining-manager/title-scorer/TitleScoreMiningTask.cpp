@@ -1,5 +1,6 @@
 #include "TitleScoreMiningTask.h"
-#include "../suffix-match-manager/ProductTokenizer.h"
+#include "../product-tokenizer/ProductTokenizer.h"
+#include "../category-classify/CategoryClassifyTable.h"
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -10,16 +11,15 @@
 namespace sf1r
 {
 
-TitleScoreMiningTask::TitleScoreMiningTask(boost::shared_ptr<DocumentManager>& document_manager
-                    , ProductTokenizer* tokenizer
-                    , TitleScoreList* titleScoreList)
-    : document_manager_(document_manager)
-    , titleScoreList_(titleScoreList)
-    , tokenizer_(tokenizer)
-{
-}
-
-TitleScoreMiningTask::~TitleScoreMiningTask()
+TitleScoreMiningTask::TitleScoreMiningTask(
+    boost::shared_ptr<DocumentManager>& document_manager,
+    TitleScoreList* titleScoreList,
+    ProductTokenizer* tokenizer,
+    CategoryClassifyTable* categoryClassifyTable)
+        : document_manager_(document_manager)
+        , titleScoreList_(titleScoreList)
+        , tokenizer_(tokenizer)
+        , categoryClassifyTable_(categoryClassifyTable)
 {
 }
 
@@ -31,8 +31,14 @@ bool TitleScoreMiningTask::buildDocument(docid_t docID, const Document& doc)
         const std::string pname = titleScoreList_->propName();
         std::string pattern;
         doc.getString(pname, pattern);
-        double queryScore = 0;
-        tokenizer_->GetQuerySumScore(pattern, queryScore, docID);
+
+        std::string classifyCategory;
+        if (categoryClassifyTable_ != NULL)
+        {
+            classifyCategory = categoryClassifyTable_->getCategoryNoLock(docID).first;
+        }
+
+        double queryScore = tokenizer_->sumQueryScore(pattern, classifyCategory);
         titleScoreList_->insert(docID, queryScore);
     }
     else

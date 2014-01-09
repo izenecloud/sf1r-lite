@@ -121,6 +121,8 @@ class RTypeStringPropTableBuilder;
 class QueryIntentManager;
 class ZambeziManager;
 class AdIndexManager;
+class ProductTokenizer;
+
 namespace b5m
 {
 class ProductMatcher;
@@ -538,6 +540,10 @@ public:
         return adIndexManager_;
     }
 
+    ProductTokenizer* getProductTokenizer()
+    {
+        return productTokenizer_;
+    }
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -790,6 +796,7 @@ private:
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
     IncrementalFuzzyManager* incrementalManager_;
+    ProductTokenizer* productTokenizer_;
 
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;

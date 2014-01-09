@@ -9,7 +9,6 @@
 #include <util/ustring/UString.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
-#include "ProductTokenizer.h"
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 namespace sf1r

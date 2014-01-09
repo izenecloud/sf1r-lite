@@ -1,5 +1,4 @@
 #include "SuffixMatchManager.hpp"
-#include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -38,14 +37,12 @@ SuffixMatchManager::SuffixMatchManager(
     , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
     , matcher_(NULL)
-    , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
     {
         boost::filesystem::create_directories(homePath);
     }
-    buildTokenizeDic();
 
     filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
@@ -54,16 +51,12 @@ SuffixMatchManager::SuffixMatchManager(
 
 SuffixMatchManager::~SuffixMatchManager()
 {
-    if (tokenizer_) delete tokenizer_;
     //if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
 {
     matcher_ = matcher;
-
-    if (tokenizer_)
-        tokenizer_->SetProductMatcher(matcher);
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -146,16 +139,6 @@ size_t SuffixMatchManager::longestSuffixMatch(
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
     return total_match;
-}
-
-void SuffixMatchManager::GetTokenResults(const std::string& pattern,
-                                std::list<std::pair<UString, double> >& major_tokens,
-                                std::list<std::pair<UString, double> >& minor_tokens,
-                                bool isAnalyzeQuery,
-                                UString& analyzedQuery,
-                                double& rank_boundary)
-{
-    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery);
 }
 
 void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
@@ -930,11 +913,6 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
-void SuffixMatchManager::GetQuerySumScore(const std::string& pattern, double &sum_score)
-{
-    tokenizer_->GetQuerySumScore(pattern, sum_score);
-}
-
 SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
@@ -948,17 +926,6 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {
     return filter_manager_;
-}
-
-void SuffixMatchManager::buildTokenizeDic()
-{
-    boost::filesystem::path cma_fmindex_dic(system_resource_path_);
-    cma_fmindex_dic /= boost::filesystem::path("dict");
-    cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
-    LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
-        ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
-    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }
 
 void SuffixMatchManager::updateFmindex()

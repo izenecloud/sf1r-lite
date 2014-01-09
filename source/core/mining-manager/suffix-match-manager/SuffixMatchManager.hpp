@@ -18,7 +18,6 @@ using izenelib::util::UString;
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
-class ProductTokenizer;
 namespace b5m {
 class ProductMatcher;
 }
@@ -48,7 +47,6 @@ public:
     void setProductMatcher(b5m::ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
-    void buildTokenizeDic();
     bool isStartFromLocalFM() const;
 
     size_t longestSuffixMatch(
@@ -69,13 +67,6 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list,
             double rank_boundary);
 
-    void GetTokenResults(const std::string& pattern,
-                    std::list<std::pair<UString, double> >& major_tokens,
-                    std::list<std::pair<UString, double> >& manor_tokens,
-                    bool isAnalyzeQuery,
-                    UString& analyzedQuery,
-                    double& rank_boundary);
-
     SuffixMatchMiningTask* getMiningTask();
     
     bool buildMiningTask();
@@ -91,13 +82,6 @@ public:
 
     void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
                         double& rank_boundary);
-
-    void GetQuerySumScore(const std::string& pattern, double &sum_score);
-
-    ProductTokenizer* getProductTokenizer()
-    {
-        return tokenizer_;
-    }
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -126,8 +110,6 @@ private:
     size_t last_doc_id_;
 
     b5m::ProductMatcher* matcher_;
-
-    ProductTokenizer* tokenizer_;
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
