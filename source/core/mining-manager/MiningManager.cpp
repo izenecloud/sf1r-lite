@@ -95,7 +95,6 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
-#include <la-manager/KNlpDictMonitor.h>
 #include <la-manager/AttrTokenizeWrapper.h>
 #include <la-manager/TitlePCAWrapper.h>
 
@@ -625,11 +624,8 @@ bool MiningManager::open()
                 return false;
             }
 
-            if (!TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/") ||
-                !KNlpResourceManager::getResource()->loadDictFiles())
+            if (!TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/"))
                 return false;
-
-            KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(
@@ -2947,8 +2943,7 @@ bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankCon
     }
     LOG (INFO) << "USE Title Score ,....";
     MiningTask* miningTask_score =  new TitleScoreMiningTask(
-        document_manager_, titleScoreList_,
-        productTokenizer_, categoryClassifyTable_);
+        document_manager_, titleScoreList_, productTokenizer_);
 
     multiThreadMiningTaskBuilder_->addTask(miningTask_score);
 

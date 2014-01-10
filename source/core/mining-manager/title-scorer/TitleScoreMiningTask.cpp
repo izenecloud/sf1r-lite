@@ -1,6 +1,5 @@
 #include "TitleScoreMiningTask.h"
 #include "../product-tokenizer/ProductTokenizer.h"
-#include "../category-classify/CategoryClassifyTable.h"
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -14,12 +13,10 @@ namespace sf1r
 TitleScoreMiningTask::TitleScoreMiningTask(
     boost::shared_ptr<DocumentManager>& document_manager,
     TitleScoreList* titleScoreList,
-    ProductTokenizer* tokenizer,
-    CategoryClassifyTable* categoryClassifyTable)
+    ProductTokenizer* tokenizer)
         : document_manager_(document_manager)
         , titleScoreList_(titleScoreList)
         , tokenizer_(tokenizer)
-        , categoryClassifyTable_(categoryClassifyTable)
 {
 }
 
@@ -32,13 +29,7 @@ bool TitleScoreMiningTask::buildDocument(docid_t docID, const Document& doc)
         std::string pattern;
         doc.getString(pname, pattern);
 
-        std::string classifyCategory;
-        if (categoryClassifyTable_ != NULL)
-        {
-            classifyCategory = categoryClassifyTable_->getCategoryNoLock(docID).first;
-        }
-
-        double queryScore = tokenizer_->sumQueryScore(pattern, classifyCategory);
+        double queryScore = tokenizer_->sumQueryScore(pattern);
         titleScoreList_->insert(docID, queryScore);
     }
     else

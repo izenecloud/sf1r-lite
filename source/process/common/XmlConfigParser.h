@@ -366,12 +366,6 @@ public:
         return working_dir_;
     }
 
-    std::string getKNlpDictDir() const
-    {
-        boost::filesystem::path dir(resource_dir_);
-        return (dir / "dict" / "term_category").string();
-    }
-
     std::string getAttrTokenDictDir() const
     {
         boost::filesystem::path dir(resource_dir_);

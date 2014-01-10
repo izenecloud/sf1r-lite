@@ -51,13 +51,6 @@ public:
         return 0;
     }
 
-    virtual double sumQueryScore(
-        const std::string& query,
-        std::string& classifyCategory)
-    {
-        return 0;
-    }
-
 protected:
     bool isProductType_(const izenelib::util::UString& str);
 

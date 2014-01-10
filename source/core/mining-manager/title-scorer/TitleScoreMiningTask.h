@@ -13,10 +13,8 @@
 
 namespace sf1r
 {
-
 class DocumentManager;
 class ProductTokenizer;
-class CategoryClassifyTable;
 
 class TitleScoreMiningTask: public MiningTask
 {
@@ -24,8 +22,7 @@ public:
     explicit TitleScoreMiningTask(
         boost::shared_ptr<DocumentManager>& document_manager,
         TitleScoreList* titleScoreList,
-        ProductTokenizer* tokenizer,
-        CategoryClassifyTable* categoryClassifyTable);
+        ProductTokenizer* tokenizer);
 
     bool buildDocument(docid_t docID, const Document& doc);
 
@@ -41,8 +38,6 @@ private:
     TitleScoreList* titleScoreList_;
 
     ProductTokenizer* tokenizer_;
-
-    CategoryClassifyTable* categoryClassifyTable_;
 };
 }
 

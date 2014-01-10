@@ -2,6 +2,9 @@
 #include "CMAProductTokenizer.h"
 #include "TrieProductTokenizer.h"
 #include "MatcherProductTokenizer.h"
+#include "KNlpProductTokenizer.h"
+#include <common/ResourceManager.h>
+#include <la-manager/KNlpDictMonitor.h>
 #include <glog/logging.h>
 
 using namespace sf1r;
@@ -13,6 +16,7 @@ ProductTokenizerFactory::ProductTokenizerFactory(const std::string& resourcePath
     typeMap_["fmindex_dic"] = CMA_TOKENIZER;
     typeMap_["product"] = TRIE_TOKENIZER;
     typeMap_["product-matcher"] = MATCHER_TOKENIZER;
+    typeMap_["term_category"] = KNLP_TOKENIZER;
 }
 
 ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::string& dirName)
@@ -30,6 +34,9 @@ ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::str
 
     case MATCHER_TOKENIZER:
         return createMatcherTokenizer_();
+
+    case KNLP_TOKENIZER:
+        return createKNlpTokenizer_(dictPath);
 
     default:
         LOG(WARNING) << "unknown product dictionary name " << dirName;
@@ -60,4 +67,14 @@ ProductTokenizer* ProductTokenizerFactory::createTrieTokenizer_(const std::strin
 ProductTokenizer* ProductTokenizerFactory::createMatcherTokenizer_()
 {
     return new MatcherProductTokenizer;
+}
+
+ProductTokenizer* ProductTokenizerFactory::createKNlpTokenizer_(const std::string& dictPath)
+{
+    if (!KNlpResourceManager::getResource()->loadDictFiles(dictPath))
+        return NULL;
+
+    KNlpDictMonitor::get()->start(dictPath);
+
+    return new KNlpProductTokenizer;
 }
