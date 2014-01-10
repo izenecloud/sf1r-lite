@@ -54,6 +54,9 @@ public:
     {
         return 0;
     }
+
+protected:
+    static const izenelib::util::UString::CharT SPACE_UCHAR = ' ';
 };
 
 }
