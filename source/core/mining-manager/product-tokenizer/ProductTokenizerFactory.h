@@ -28,12 +28,15 @@ private:
     enum TokenizerType
     {
         CMA_TOKENIZER = 0,
+        TRIE_TOKENIZER,
         TOKENIZER_NUM
     };
 
     TokenizerType getTokenizerType_(const std::string& dirName) const;
 
     ProductTokenizer* createCMATokenizer_(const std::string& dictPath);
+
+    ProductTokenizer* createTrieTokenizer_(const std::string& dictPath);
 
 private:
     const boost::filesystem::path dirPath_;
