@@ -216,6 +216,21 @@ bool ZambeziSearch::search(
         return false;
     }
 
+    //normalize relevance scores
+    if (zambeziManager_->isAttrTokenize() && tokenList.size() > 1)
+    {
+        float normalizerScore = 0;
+        for (std::vector<std::pair<std::string, int> >::iterator i = tokenList.begin();
+            i != tokenList.end(); ++i)
+        {
+            normalizerScore += i->second;
+        }
+        for (std::vector<float>::iterator i = scores.begin(); i != scores.end(); ++i)
+        {
+            (*i) = (*i)/normalizerScore;
+        }
+    }
+
     izenelib::util::ClockTimer timer;
 
     boost::shared_ptr<Sorter> sorter;
