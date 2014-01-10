@@ -31,10 +31,10 @@ bool ProductForwardMiningTask::buildDocument(docid_t docID, const Document& doc)
         doc.getString(pname, src);
         std::string res;
         featureParser_.getFeatureStr(src, res);
-        tmp_index_.push_back(res);
+        tmp_index_[docID]=res;
     }
     else//插入空串
-        tmp_index_.push_back(src);
+        tmp_index_[docID]=src;
 
     return true;
 }
@@ -55,7 +55,7 @@ bool ProductForwardMiningTask::preProcess(int64_t timestamp)
     if (forward_index_->getLastDocId() + 1 > document_manager_->getMaxDocId())
         return false;
     forward_index_->copy(tmp_index_);
-    tmp_index_.reserve(document_manager_->getMaxDocId() + 1);
+    tmp_index_.resize(document_manager_->getMaxDocId() + 1);
     return true;
 }
 

@@ -2513,10 +2513,12 @@ LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.si
         }
 
         productScoreTime = elapsedFromLast(clock, lastSec);
-
-        getGroupAttrRep_(res_list, actionOperation.actionItem_.groupParam_,
+        if (!mining_schema_.suffixmatch_schema.product_forward_enable)
+        {
+            getGroupAttrRep_(res_list, actionOperation.actionItem_.groupParam_,
                          groupRep, attrRep,
                          kTopLabelPropName, topLabelMap);
+        }
 
         groupTime = elapsedFromLast(clock, lastSec);
     }
@@ -2546,9 +2548,11 @@ LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.si
         rankScoreList[i] = res_list[i].first;
         docIdList[i] = res_list[i].second;
     }
-
-    searchManager_->fuzzySearchRanker_.rankByPropValue(
-        actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
+    if (!mining_schema_.suffixmatch_schema.product_forward_enable)
+    {
+        searchManager_->fuzzySearchRanker_.rankByPropValue(
+            actionOperation, start, docIdList, rankScoreList, customRankScoreList, distSearchInfo);
+    }
 
     cout<<"return true"<<endl;
 
