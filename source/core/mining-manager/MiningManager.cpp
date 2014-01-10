@@ -96,7 +96,6 @@
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/AttrTokenizeWrapper.h>
-#include <la-manager/TitlePCAWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -623,9 +622,6 @@ bool MiningManager::open()
                 LOG(ERROR) << "failed to create ProductTokenizer.";
                 return false;
             }
-
-            if (!TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/"))
-                return false;
 
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(

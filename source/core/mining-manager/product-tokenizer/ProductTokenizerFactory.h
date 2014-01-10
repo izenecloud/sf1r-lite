@@ -31,6 +31,7 @@ private:
         TRIE_TOKENIZER,
         MATCHER_TOKENIZER,
         KNLP_TOKENIZER,
+        PCA_TOKENIZER,
         TOKENIZER_NUM
     };
 
@@ -43,6 +44,8 @@ private:
     ProductTokenizer* createMatcherTokenizer_();
 
     ProductTokenizer* createKNlpTokenizer_(const std::string& dictPath);
+
+    ProductTokenizer* createPcaTokenizer_(const std::string& dictPath);
 
 private:
     const boost::filesystem::path dirPath_;
