@@ -29,6 +29,7 @@ private:
     {
         CMA_TOKENIZER = 0,
         TRIE_TOKENIZER,
+        MATCHER_TOKENIZER,
         TOKENIZER_NUM
     };
 
@@ -37,6 +38,8 @@ private:
     ProductTokenizer* createCMATokenizer_(const std::string& dictPath);
 
     ProductTokenizer* createTrieTokenizer_(const std::string& dictPath);
+
+    ProductTokenizer* createMatcherTokenizer_();
 
 private:
     const boost::filesystem::path dirPath_;

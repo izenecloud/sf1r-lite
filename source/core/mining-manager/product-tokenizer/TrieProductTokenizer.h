@@ -29,16 +29,6 @@ private:
         izenelib::am::succinct::ux::Trie* dict_trie,
         double trie_score);
 
-    bool GetLeftTokens_(
-        const std::list<std::string>& input,
-        std::list<std::pair<izenelib::util::UString,double> >& tokens,
-        double score = 1.0);
-
-    void DoBigram_(
-        const izenelib::util::UString& pattern,
-        std::list<std::pair<izenelib::util::UString, double> >& tokens,
-        double score);
-
 private:
     std::vector<std::pair<std::string, double> > dict_names_;
 

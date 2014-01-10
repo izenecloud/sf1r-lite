@@ -89,7 +89,7 @@ void TrieProductTokenizerTest::tokenize_bigram( const std::string& pattern)
     tokens_type token_results;
     std::list<std::string> input;
     input.push_back(pattern);
-    tokenizer_.GetLeftTokens_(input, token_results);
+    tokenizer_.getBigramTokens_(input, token_results);
     std::cout<<"tokenization:";
     for(tokens_type::iterator tit = token_results.begin(); tit != token_results.end(); ++tit)
     {

@@ -750,6 +750,8 @@ bool MiningManager::open()
             product_categorizer_->SetProductMatcher(matcher);
             if (suffixMatchManager_)
                 suffixMatchManager_->setProductMatcher(matcher);
+            if (productTokenizer_)
+                productTokenizer_->setProductMatcher(matcher);
 
             //test
             std::ifstream ifs("./querylog.txt");

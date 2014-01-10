@@ -1,6 +1,7 @@
 #include "ProductTokenizerFactory.h"
 #include "CMAProductTokenizer.h"
 #include "TrieProductTokenizer.h"
+#include "MatcherProductTokenizer.h"
 #include <glog/logging.h>
 
 using namespace sf1r;
@@ -11,6 +12,7 @@ ProductTokenizerFactory::ProductTokenizerFactory(const std::string& resourcePath
 {
     typeMap_["fmindex_dic"] = CMA_TOKENIZER;
     typeMap_["product"] = TRIE_TOKENIZER;
+    typeMap_["product-matcher"] = MATCHER_TOKENIZER;
 }
 
 ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::string& dirName)
@@ -25,6 +27,9 @@ ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::str
 
     case TRIE_TOKENIZER:
         return createTrieTokenizer_(dictPath);
+
+    case MATCHER_TOKENIZER:
+        return createMatcherTokenizer_();
 
     default:
         LOG(WARNING) << "unknown product dictionary name " << dirName;
@@ -50,4 +55,9 @@ ProductTokenizer* ProductTokenizerFactory::createCMATokenizer_(const std::string
 ProductTokenizer* ProductTokenizerFactory::createTrieTokenizer_(const std::string& dictPath)
 {
     return new TrieProductTokenizer(dictPath);
+}
+
+ProductTokenizer* ProductTokenizerFactory::createMatcherTokenizer_()
+{
+    return new MatcherProductTokenizer;
 }
