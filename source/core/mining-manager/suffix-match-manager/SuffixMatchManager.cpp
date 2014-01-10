@@ -26,15 +26,11 @@ using namespace faceted;
 
 SuffixMatchManager::SuffixMatchManager(
         const std::string& homePath,
-        const std::string& dicpath,
-        const std::string& system_resource_path,
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
         NumericPropertyTableBuilder* numeric_tablebuilder)
     : data_root_path_(homePath)
-    , tokenize_dicpath_(dicpath)
-    , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
     , matcher_(NULL)
     , suffixMatchTask_(NULL)

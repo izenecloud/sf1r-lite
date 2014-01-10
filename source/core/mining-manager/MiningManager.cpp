@@ -57,6 +57,7 @@
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "product-tokenizer/ProductTokenizerFactory.h"
 #include "product-tokenizer/ProductTokenizer.h"
 #include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
@@ -253,6 +254,7 @@ MiningManager::~MiningManager()
     if (topicDetector_) delete topicDetector_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
+    if (productTokenizer_) delete productTokenizer_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
@@ -613,6 +615,16 @@ bool MiningManager::open()
         {
             LOG(INFO) << "suffix match enabled.";
 
+            ProductTokenizerFactory tokenizerFactory(system_resource_path_);
+            productTokenizer_ = tokenizerFactory.createProductTokenizer(
+                mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath);
+
+            if (!productTokenizer_)
+            {
+                LOG(ERROR) << "failed to create ProductTokenizer.";
+                return false;
+            }
+
             if (!TitlePCAWrapper::get()->loadDictFiles(system_resource_path_ + "/title_pca/") ||
                 !KNlpResourceManager::getResource()->loadDictFiles())
                 return false;
@@ -620,10 +632,9 @@ bool MiningManager::open()
             KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
             suffix_match_path_ = prefix_path + "/suffix_match";
-            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
-                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                    system_resource_path_,
-                    document_manager_, groupManager_, attrManager_, numericTableBuilder_);
+            suffixMatchManager_ = new SuffixMatchManager(
+                suffix_match_path_, document_manager_,
+                groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
