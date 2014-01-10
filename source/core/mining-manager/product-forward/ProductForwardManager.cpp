@@ -45,20 +45,6 @@ bool ProductForwardManager::save(unsigned int last_doc)
         fout.close();
         lastDocid_ = last_doc;
     }
-/*
-    if (isDebug_ == true)
-    {
-        fout_txt.open(documentTxt.c_str(), ios::out);
-        if(fout_txt.is_open())
-        {
-            for (unsigned int i = 1; i < last_doc + 1; ++i)
-            {
-                fout_txt << "docid:" << i << " score:" << forward_index_[i] << endl;
-            }
-            fout_txt.close();
-        }
-    }
-*/
     return true;
 }
 
@@ -136,7 +122,7 @@ bool ProductForwardManager::insert(std::vector<std::string>& index)
 {
     WriteLock lock(mutex_);
     forward_index_.swap(index);
-    LOG(INFO)<<"old index size = "<<index.size()<<"new = "<<forward_index_.size();
+    LOG(INFO)<<"old index size = "<<index.size()<<" new = "<<forward_index_.size();
     return true;
 }
 
@@ -187,7 +173,8 @@ void ProductForwardManager::forwardSearch(const std::string& src, const std::vec
             maxs=score[i].first;
             ind = i;
         }
-    res.push_back(score[ind]);
+    if (maxs > 0.7)
+        res.push_back(score[ind]);
 }
 
 
@@ -204,27 +191,20 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
     {
         if (q_model == t_model && q_model > 0)
             return 2;
-        score += 0.5;
+        score += 0.3;
     }
     if (q_res.empty() || t_res.empty())
         return score;
     for (size_t i = 0; i < t_res.size(); ++i)
         t_score += (i+1)*(i+1);
     size_t p = 0, q = 0;
-    while (p < q_res.size() && q < t_res.size())
-    {
-        if (q_res[p] < t_res[q])
-            ++p;
-        else if (q_res[p] > t_res[q])
-            ++q;
-        else 
-        {
-            same += (q_res.size() - p + 1) * (t_res.size() - q + 1);//query[p].second * query[p].second;
-            ++p;
-            ++q;
-        }
-
-    }
+    for (size_t i = 0; i < q_res.size(); ++i)
+        for (size_t j = 0; j < t_res.size(); ++j)
+            if (q_res[i] == t_res[j])
+            {   
+                same += (q_res.size() - i) * (t_res.size() - j); 
+                break;
+            } 
     if (t_score>1e-7 && q_score>1e-7)
         score += same / sqrt(t_score * q_score);
     return score;
