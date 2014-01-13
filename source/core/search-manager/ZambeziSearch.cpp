@@ -160,6 +160,7 @@ bool ZambeziSearch::search(
         {
             normalizerScore += i->second;
         }
+        normalizerScore = normalizerScore == 0 ? 1 : normalizerScore;
         for (std::vector<uint32_t>::iterator i = scores.begin(); i != scores.end(); ++i)
         {
             (*i) = (*i)/normalizerScore;
