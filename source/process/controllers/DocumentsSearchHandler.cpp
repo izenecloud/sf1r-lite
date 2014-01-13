@@ -79,6 +79,7 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
+        zambeziConfig_(collectionHandler.zambeziConfig_),
         actionItem_(),
         TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_),
         renderer_(miningSchema_, TOP_K_NUM)
@@ -366,23 +367,33 @@ bool DocumentsSearchHandler::parse()
 
     std::vector<Parser*> parsers;
     std::vector<const Value*> values;
-
-    SelectParser selectParser(indexSchema_);
-    parsers.push_back(&selectParser);
-    values.push_back(&request_[Keys::select]);
-
-    SearchParser searchParser(indexSchema_);
+    
+    SearchParser searchParser(indexSchema_, zambeziConfig_);
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 
-    FilteringParser filteringParser(indexSchema_,miningSchema_);
+     for (std::size_t i = 0; i < 1; ++i)
+    {
+        if (!parsers[i]->parse(*values[i]))
+        {
+            response_.addError(parsers[i]->errorMessage());
+            return false;
+        }
+        response_.addWarning(parsers[i]->warningMessage());
+    }
+
+    SelectParser selectParser(indexSchema_, zambeziConfig_, searchParser.searchingModeInfo().mode_);
+    parsers.push_back(&selectParser);
+    values.push_back(&request_[Keys::select]); 
+
+    FilteringParser filteringParser(indexSchema_, miningSchema_); 
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 
-    CustomRankingParser customrRankingParser(indexSchema_);
+    CustomRankingParser customrRankingParser(indexSchema_); 
     parsers.push_back(&customrRankingParser);
     values.push_back(&request_[Keys::custom_rank]);
-
+ 
     SortParser sortParser(indexSchema_);
     Value& customRankingValue = request_[Keys::custom_rank];
     if (customRankingValue.type() != Value::kNullType) {
@@ -407,7 +418,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&rangeParser);
     values.push_back(&request_[Keys::range]);
 
-    for (std::size_t i = 0; i < parsers.size(); ++i)
+    for (std::size_t i = 1; i < parsers.size(); ++i)
     {
         if (!parsers[i]->parse(*values[i]))
         {
@@ -489,8 +500,8 @@ bool DocumentsSearchHandler::parse()
     actionItem_.requireRelatedQueries_ = searchParser.isRequireRelatedQueries();
     // filteringParser
     swap(
-        actionItem_.filteringList_,
-        filteringParser.mutableFilteringRules()
+        actionItem_.filterTree_,
+        filteringParser.mutableFilteringTreeRules()
     );
 
     // CustomRankingParser
@@ -547,7 +558,38 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
     if (actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH
             || !actionItem_.searchingMode_.usefuzzy_)
         return true;
-    const std::vector<QueryFiltering::FilteringType>& filter_param = actionItem_.filteringList_;
+
+    std::vector<QueryFiltering::FilteringType> filteringRules;
+
+    if (actionItem_.filterTree_.conditionsNodeList_.size() > 0)
+    {
+        message = "The Suffix Match search do not support nesting filter condition";
+        return false;
+    }
+
+    for (unsigned int i = 0; i < actionItem_.filterTree_.conditionLeafList_.size(); ++i)
+    {
+        filteringRules.push_back(actionItem_.filterTree_.conditionLeafList_[i]);
+    }
+
+    /*
+    for (int i = size -1 ; i >= 0; --i)
+    {
+        if (actionItem_.filteringTreeList_[i].isRelationNode_ == true)
+        {
+            if (i != 0)
+            {
+                message = "The Suffix Match search do not support nesting filter condition";
+                return false;
+            }
+            else
+                break;
+        }
+        filteringRules.push_back(actionItem_.filteringTreeList_[i].fitleringType_);
+    }
+    */
+
+    const std::vector<QueryFiltering::FilteringType>& filter_param = filteringRules;
     const SuffixMatchConfig& suffixconfig = miningSchema_.suffixmatch_schema;
     for (size_t i = 0; i < filter_param.size(); ++i)
     {
@@ -952,7 +994,7 @@ void DocumentsSearchHandler::addAclFilters()
         PropertyValue value(str_to_propstr("@@ALL@@"));
         filter.values_.push_back(value);
 
-        izenelib::util::swapBack(actionItem_.filteringList_, filter);
+        izenelib::util::swapBack(actionItem_.filterTree_.conditionLeafList_, filter);
     }
 
     // ACL_DENY
@@ -967,7 +1009,7 @@ void DocumentsSearchHandler::addAclFilters()
             filter.values_.push_back(PropertyValue(str_to_propstr(tokens[i])));
         }
 
-        izenelib::util::swapBack(actionItem_.filteringList_, filter);
+        izenelib::util::swapBack(actionItem_.filterTree_.conditionLeafList_, filter);
     }
 }
 

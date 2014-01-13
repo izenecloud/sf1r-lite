@@ -60,7 +60,7 @@
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
-#include "zambezi-manager/ZambeziManager.h"
+#include <index-manager/zambezi-manager/ZambeziManager.h>
 
 #include "ad-index-manager/AdIndexManager.h"
 
@@ -758,11 +758,11 @@ bool MiningManager::open()
         }
 
         /** zambezi */
-        if (!initZambeziManager_(mining_schema_.zambezi_config))
+        /*if (!initZambeziManager_(mining_schema_.zambezi_config))
         {
             LOG(ERROR) << "init ZambeziManager fail";
             return false;
-        }
+        }*/
 
         if(!initAdIndexManager_(mining_schema_.ad_index_config))
         {
@@ -2584,7 +2584,7 @@ void MiningManager::getGroupAttrRep_(
         topScoreLabels.resize(topLabels.size());
         for(size_t i = 0; i < topLabels.size(); ++i)
         {
-            topScoreLabels[i] = std::make_pair(topLabels[i], 0);
+            topScoreLabels[i] = std::make_pair(topLabels[i], faceted::GroupPathScoreInfo());
         }
     }
 
@@ -2780,6 +2780,14 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
         return NULL;
 
     return groupManager_->getPropValueTable(propName);
+}
+
+const faceted::AttrTable* MiningManager::GetAttrTable() const
+{
+    if (! attrManager_)
+        return NULL;
+
+    return &attrManager_->getAttrTable();
 }
 
 bool MiningManager::getProductScore(
@@ -3055,6 +3063,7 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
 bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 {
+    /*
     if (!zambeziConfig.isEnable)
         return true;
 
@@ -3069,16 +3078,13 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 
     const bfs::path filePath(zambeziDir / "index.bin");
     zambeziConfig.indexFilePath = filePath.string();
-    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_, numericTableBuilder_);
+    zambeziManager_ = new ZambeziManager(zambeziConfig);
 
     if (!zambeziManager_->open())
     {
         LOG(ERROR) << "open " << filePath << " failed";
         return false;
-    }
-
-    miningTaskBuilder_->addTask(
-        zambeziManager_->createMiningTask(*document_manager_));
+    }*/
 
     return true;
 }

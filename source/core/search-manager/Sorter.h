@@ -150,7 +150,7 @@ public:
             //       : pSortProperty->pComparator_->compare(doc1, doc2);
         }
 
-        return doc1.docId > doc2.docId;
+        return doc1.docId < doc2.docId;
 //    return c < 0;
     }
 

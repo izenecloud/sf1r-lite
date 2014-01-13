@@ -20,6 +20,7 @@ class InvertedIndexManager;
 class RankingManager;
 class SearchBase;
 class SearchManagerPreProcessor;
+class ZambeziManager;
 
 class SearchFactory
 {
@@ -28,7 +29,8 @@ public:
         const IndexBundleConfiguration& config,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<InvertedIndexManager>& indexManager,
-        const boost::shared_ptr<RankingManager>& rankingManager);
+        const boost::shared_ptr<RankingManager>& rankingManager,
+        ZambeziManager* zambeziMagager = NULL);
 
     QueryBuilder* createQueryBuilder(
         const QueryBuilder::schema_map& schemaMap) const;
@@ -43,9 +45,12 @@ private:
 
     const boost::shared_ptr<DocumentManager>& documentManager_;
 
-    const boost::shared_ptr<InvertedIndexManager>& indexManager_;
+    const boost::shared_ptr<InvertedIndexManager>& indexManager_;// 
 
     const boost::shared_ptr<RankingManager>& rankingManager_;
+
+    ZambeziManager* zambeziMagager_;
+     // + zambezi_manager ..
 };
 
 } // namespace sf1r

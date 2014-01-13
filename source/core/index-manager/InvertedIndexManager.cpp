@@ -409,7 +409,7 @@ bool InvertedIndexManager::isRealTime()
     return izenelib::ir::indexmanager::Indexer::isRealTime();
 }
 
-void InvertedIndexManager::preBuildFromSCD(size_t total_filesize)
+void InvertedIndexManager::preBuildFromSCD(std::size_t total_filesize)
 {
     //here, try to set the index mode(default[batch] or realtime)
     //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
@@ -455,6 +455,7 @@ void InvertedIndexManager::finishRebuild()
     flush();
 }
 
+// inverted index always true here, that means the doc an not be out-of-order;
 void InvertedIndexManager::preProcessForAPI()
 {
     if (!isRealTime())
@@ -463,6 +464,9 @@ void InvertedIndexManager::preProcessForAPI()
 
 void InvertedIndexManager::postProcessForAPI()
 {
+    idManager_->flush();
+    flush();
+    deletebinlog();
 }
 
 bool InvertedIndexManager::prepareIndexRTypeProperties_(

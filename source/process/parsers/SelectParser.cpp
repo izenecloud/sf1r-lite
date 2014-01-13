@@ -93,7 +93,24 @@ bool SelectParser::parse(const Value& select)
     {
         // use default properties
         std::vector<std::string> defaultSelectProperties;
-        getDefaultSelectPropertyNames(indexSchema_, defaultSelectProperties);
+
+        if (searchingMode_ == SearchingMode::DefaultSearchingMode || searchingMode_ == SearchingMode::NotUseSearchingMode)
+        {
+            std::set<std::string> setProperty;
+            getDefaultZambeziSelectPropertyNames(zambeziConfig_, defaultSelectProperties);
+            setProperty.insert(defaultSelectProperties.begin(), defaultSelectProperties.end());
+            getDefaultSelectPropertyNames(indexSchema_, defaultSelectProperties);
+            setProperty.insert(defaultSelectProperties.begin(), defaultSelectProperties.end());
+            
+            defaultSelectProperties.clear();
+            defaultSelectProperties.insert(defaultSelectProperties.end(), setProperty.begin(), setProperty.end());
+        }
+        else if (searchingMode_ == SearchingMode::ZAMBEZI)
+        {
+            getDefaultZambeziSelectPropertyNames(zambeziConfig_, defaultSelectProperties);
+        }
+        else
+            getDefaultSelectPropertyNames(indexSchema_, defaultSelectProperties);
 
         properties_.resize(defaultSelectProperties.size());
         for (std::size_t i = 0; i < defaultSelectProperties.size(); ++i)
@@ -101,10 +118,19 @@ bool SelectParser::parse(const Value& select)
             properties_[i].propertyString_ = defaultSelectProperties[i];
             PropertyConfig propertyConfig;
             propertyConfig.setName(properties_[i].propertyString_);
-            if (!getPropertyConfig(indexSchema_, propertyConfig))
-                continue;
-            if (propertyConfig.getIsSubDoc())
-                properties_[i].isSubDocPropertyValue_ = true;
+
+            if (searchingMode_ == SearchingMode::ZAMBEZI)
+            {
+                if (!getPropertyConfig(zambeziConfig_, propertyConfig))
+                    continue;
+            }
+            else
+            {
+                if (!getPropertyConfig(indexSchema_, propertyConfig))
+                    continue;
+                if (propertyConfig.getIsSubDoc())
+                    properties_[i].isSubDocPropertyValue_ = true;
+            }
         }
 
         return true;
@@ -196,10 +222,30 @@ bool SelectParser::parse(const Value& select)
         // validate property
         PropertyConfig propertyConfig;
         propertyConfig.setName(properties_[i].propertyString_);
-        if (!getPropertyConfig(indexSchema_, propertyConfig))
+
+        if (searchingMode_ == SearchingMode::ZAMBEZI)
         {
-            error() = "Unknown property in select: " + propertyConfig.getName();
-            return false;
+            if (!getPropertyConfig(zambeziConfig_, propertyConfig))
+            {
+                error() = "Unknown property in select: " + propertyConfig.getName() + " , not in Zambezi Config";
+                return false;
+            }   
+        }
+        else if (searchingMode_ != SearchingMode::NotUseSearchingMode)
+        {
+            if (!getPropertyConfig(indexSchema_, propertyConfig))
+            {
+                error() = "Unknown property in select: " + propertyConfig.getName() + " , not in Schema Config";
+                return false;
+            }
+        }
+        else
+        {
+            if (!getPropertyConfig(zambeziConfig_, propertyConfig) && !getPropertyConfig(indexSchema_, propertyConfig))
+            {
+                error() = "Unknown property in select: " + propertyConfig.getName() + " , not in Config";
+                return false;
+            }
         }
 
         if (!propertyConfig.getIsSummary() && properties_[i].isSummaryOn_)

@@ -7,7 +7,7 @@ namespace sf1r
 namespace Recommend
 {
 
-static std::string uuid = ".PinyinTable";
+static std::string uuid = "PinyinTable";
 PinyinTable::PinyinTable(const std::string& workdir)
     : workdir_(workdir)
 {

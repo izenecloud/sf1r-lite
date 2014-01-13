@@ -1,5 +1,6 @@
 #include "ZambeziSearch.h"
 #include "ZambeziFilter.h"
+#include "ZambeziScoreNormalizer.h"
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "QueryBuilder.h"
@@ -12,7 +13,8 @@
 #include <common/PropSharedLockSet.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
-#include <mining-manager/zambezi-manager/ZambeziManager.h>
+#include <index-manager/zambezi-manager/ZambeziManager.h>
+#include <util/fmath/fmath.hpp>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
@@ -23,6 +25,8 @@
 #include <glog/logging.h>
 #include <iostream>
 #include <set>
+#include <math.h>
+#include <algorithm>
 #include <boost/scoped_ptr.hpp>
 
 namespace sf1r
@@ -31,7 +35,7 @@ namespace sf1r
 namespace
 {
 const std::size_t kAttrTopDocNum = 200;
-const std::size_t kZambeziTopKNum = 1e6;
+const std::size_t kZambeziTopKNum = 5e5;
 
 const std::string kTopLabelPropName = "Category";
 const size_t kRootCateNum = 10;
@@ -47,15 +51,24 @@ const izenelib::util::UString::CharT kUCharSpace = ' ';
 const MonomorphicFilter<true> kAllPassFilter;
 }
 
+bool DocLess(const ScoreDoc& o1, const ScoreDoc& o2)
+{
+    if (o1.score == o2.score)
+        return (o1.docId > o2.docId);
+
+    return (o1.score > o2.score);
+}
+
 ZambeziSearch::ZambeziSearch(
     DocumentManager& documentManager,
     SearchManagerPreProcessor& preprocessor,
-    QueryBuilder& queryBuilder)
+    QueryBuilder& queryBuilder,
+    ZambeziManager* zambeziManager)
     : documentManager_(documentManager)
     , preprocessor_(preprocessor)
     , queryBuilder_(queryBuilder)
     , groupFilterBuilder_(NULL)
-    , zambeziManager_(NULL)
+    , zambeziManager_(zambeziManager)
     , categoryValueTable_(NULL)
     , merchantValueTable_(NULL)
 {
@@ -65,9 +78,55 @@ void ZambeziSearch::setMiningManager(
     const boost::shared_ptr<MiningManager>& miningManager)
 {
     groupFilterBuilder_ = miningManager->GetGroupFilterBuilder();
-    zambeziManager_ = miningManager->getZambeziManager();
     categoryValueTable_ = miningManager->GetPropValueTable(kTopLabelPropName);
     merchantValueTable_ = miningManager->GetPropValueTable(kMerchantPropName);
+    zambeziScoreNormalizer_.reset(new ZambeziScoreNormalizer(*miningManager));
+    attrManager_= miningManager->GetAttributeManager();
+    numericTableBuilder_ = miningManager->GetNumericTableBuilder();
+}
+
+void ZambeziSearch::normalizeTopDocs_(
+    const boost::scoped_ptr<ProductScorer>& productScorer,
+    boost::scoped_ptr<HitQueue>& scoreItemQueue,
+    std::vector<ScoreDoc>& resultList)
+{
+    izenelib::util::ClockTimer timer;
+    std::vector<docid_t> topDocids;
+    std::vector<float> topRelevanceScores;
+    std::vector<float> topProductScores;
+
+    unsigned int scoreSize = scoreItemQueue->size();
+    for (int i = scoreSize - 1; i >= 0; --i)
+    {
+        const ScoreDoc& scoreItem = scoreItemQueue->pop();
+        topDocids.push_back(scoreItem.docId);
+        float productScore = 0;
+        productScore = productScorer->score(scoreItem.docId);
+        topProductScores.push_back(productScore);
+        if (!zambeziManager_->isAttrTokenize())
+            topRelevanceScores.push_back(scoreItem.score + productScore);
+        else
+            topRelevanceScores.push_back(scoreItem.score);
+    }
+
+    //Normalize for attr_tokens
+    // if (zambeziManager_->isAttrTokenize())
+    //     normalizeScore_(topDocids, topRelevanceScores, topProductScores, sharedLockSet);
+    if (zambeziManager_->isAttrTokenize())
+        zambeziScoreNormalizer_->normalizeScore(topDocids,
+                                            topProductScores,
+                                            topRelevanceScores);
+
+    // fast sort
+    resultList.resize(topRelevanceScores.size());
+    for (size_t i = 0; i < topRelevanceScores.size(); ++i)
+    {
+        ScoreDoc scoreItem(topDocids[i], topRelevanceScores[i]);
+        resultList[i] = scoreItem;
+    }
+    std::sort(resultList.begin(), resultList.end(), DocLess);  //desc
+    LOG(INFO) << " Use productScore, Normalize TOP "<< resultList.size()
+            << "Docs cost:" << timer.elapsed() << " seconds";
 }
 
 bool ZambeziSearch::search(
@@ -76,14 +135,19 @@ bool ZambeziSearch::search(
     std::size_t limit,
     std::size_t offset)
 {
+    const std::vector<std::string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
     const std::string& query = actionOperation.actionItem_.env_.queryString_;
+
+    izenelib::ir::Zambezi::Algorithm algorithm;
+    getZambeziAlgorithm(actionOperation.actionItem_.searchingMode_.algorithm_, algorithm);
+
     LOG(INFO) << "zambezi search for query: " << query;
 
     if (query.empty())
         return false;
 
     std::vector<docid_t> candidates;
-    std::vector<uint32_t> scores;
+    std::vector<float> scores;
 
     if (!zambeziManager_)
     {
@@ -106,34 +170,38 @@ bool ZambeziSearch::search(
             groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
     }
 
-    const std::vector<QueryFiltering::FilteringType>& filterList =
-        actionOperation.actionItem_.filteringList_;
+    ConditionsNode& filterTree =
+        actionOperation.actionItem_.filterTree_;
+
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     boost::shared_ptr<izenelib::ir::indexmanager::Bitset> filterBitset;
 
-    if (!filterList.empty())
+    if (!filterTree.empty())
     {
         queryBuilder_.prepare_filter(filterList, filterBitmap);
         filterBitset.reset(new izenelib::ir::indexmanager::Bitset);
         filterBitset->importFromEWAH(*filterBitmap);
     }
-
-    AttrTokenizeWrapper* attrTokenize = AttrTokenizeWrapper::get();
-    std::vector<std::pair<std::string, int> > tokenList;
-    attrTokenize->attr_tokenize(query, tokenList);
+    //Query Analyzer
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
-    zambeziManager_->search(tokenList, kAllPassFilter, kZambeziTopKNum,
-                            candidates, scores);
+    std::vector<std::pair<std::string, int> > tokenList;
 
-    if (candidates.empty())
+    if (zambeziManager_->isAttrTokenize())
+        AttrTokenizeWrapper::get()->attr_tokenize(query, tokenList); // kevin'dict
+    else
+        zambeziManager_->getTokenizer()->getTokenResults(query, tokenList);
+
+    zambeziManager_->search(algorithm, tokenList, kZambeziTopKNum,
+                            search_in_properties, candidates, scores);
+
+    if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
-        if (attrTokenize->attr_subtokenize(tokenList, subTokenList))
-        {
-            zambeziManager_->search(subTokenList, kAllPassFilter, kZambeziTopKNum,
-                                    candidates, scores);
-        }
+        AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
+
+        zambeziManager_->search(algorithm, subTokenList, kZambeziTopKNum,
+                                search_in_properties, candidates, scores);
     }
 
     if (candidates.empty())
@@ -146,6 +214,21 @@ bool ZambeziSearch::search(
     {
         LOG(WARNING) << "mismatch size of candidate docid and score";
         return false;
+    }
+
+    //normalize relevance scores
+    if (zambeziManager_->isAttrTokenize() && tokenList.size() > 1)
+    {
+        float normalizerScore = 0;
+        for (std::vector<std::pair<std::string, int> >::iterator i = tokenList.begin();
+            i != tokenList.end(); ++i)
+        {
+            normalizerScore += i->second;
+        }
+        for (std::vector<float>::iterator i = scores.begin(); i != scores.end(); ++i)
+        {
+            (*i) = (*i)/normalizerScore;
+        }
     }
 
     izenelib::util::ClockTimer timer;
@@ -195,36 +278,32 @@ bool ZambeziSearch::search(
         }
     }
 
-    /// ret score, add product score;
-    std::vector<docid_t> topDocids;
-    std::vector<float> topRelevanceScores;
-    std::vector<float> topProductScores;
-
+    std::vector<ScoreDoc> resultList;
     unsigned int scoreSize = scoreItemQueue->size();
-    for (int i = scoreSize - 1; i >= 0; --i)
+    if (!sorter && productScorer) // productScorer; //!sorter
     {
-        const ScoreDoc& scoreItem = scoreItemQueue->pop();
-        topDocids.push_back(scoreItem.docId);
-        float productScore = 0;
-        if (productScorer)
-               productScore = productScorer->score(scoreItem.docId);
-        topProductScores.push_back(productScore);
-        topRelevanceScores.push_back(scoreItem.score);
+        LOG(INFO) << "do normalize top docs ...";
+        normalizeTopDocs_(productScorer,
+                        scoreItemQueue,
+                        resultList);
     }
-    zambeziManager_->NormalizeScore(topDocids, topRelevanceScores, topProductScores, propSharedLockSet);
-
-    for (size_t i = 0; i < topRelevanceScores.size(); ++i)
+    else
     {
-        ScoreDoc scoreItem(topDocids[i], topRelevanceScores[i]);
-        scoreItemQueue->insert(scoreItem);
+        resultList.resize(scoreSize);
+        for (int i = scoreSize - 1; i >= 0; --i)
+        {
+            const ScoreDoc& scoreItem = scoreItemQueue->pop();
+            resultList[i] = scoreItem;
+        }
     }
     /// end
 
     searchResult.totalCount_ = totalCount;
     std::size_t topKCount = 0;
-    if (offset < scoreItemQueue->size())// if bigger is zero;
+
+    if (offset < scoreSize)// if bigger is zero;
     {
-        topKCount = scoreItemQueue->size() - offset;
+        topKCount = scoreSize - offset;
     }
 
     std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
@@ -239,9 +318,12 @@ bool ZambeziSearch::search(
         customScoreList.resize(topKCount);
     }
 
-    for (int i = topKCount-1; i >= 0; --i)
+    LOG(INFO) << "resultList size: " << resultList.size()
+              << ", topKCount: " << topKCount;
+
+    for (unsigned int i = 0; i < topKCount; ++i)
     {
-        const ScoreDoc& scoreItem = scoreItemQueue->pop();
+        const ScoreDoc& scoreItem =  resultList[i + offset];
         docIdList[i] = scoreItem.docId;
         rankScoreList[i] = scoreItem.score;
         if (customRanker)
@@ -249,6 +331,17 @@ bool ZambeziSearch::search(
             customScoreList[i] = scoreItem.custom_score;
         }
     }
+
+    // for (unsigned int i = resultList.size() - topKCount; i < resultList.size(); ++i)
+    // {
+    //     const ScoreDoc& scoreItem =  resultList[i];//need to ASC
+    //     docIdList[i] = scoreItem.docId;
+    //     rankScoreList[i] = scoreItem.score;
+    //     if (customRanker)
+    //     {
+    //         customScoreList[i] = scoreItem.custom_score;
+    //     }
+    // }
 
     if (groupFilter)
     {
@@ -292,7 +385,7 @@ void ZambeziSearch::getTopLabels_(
     izenelib::util::ClockTimer timer;
     propSharedLockSet.insertSharedLock(categoryValueTable_);
 
-    typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, double> > TopCatIdsT;
+    typedef std::vector<std::pair<faceted::PropValueTable::pvid_t, faceted::GroupPathScoreInfo> > TopCatIdsT;
     TopCatIdsT topCateIds;
     const std::size_t topNum = docIdList.size();
     std::set<faceted::PropValueTable::pvid_t> rootCateIds;
@@ -319,7 +412,7 @@ void ZambeziSearch::getTopLabels_(
             }
             if (!is_exist)
             {
-                topCateIds.push_back(std::make_pair(catId, rankScoreList[i]));
+                topCateIds.push_back(std::make_pair(catId, faceted::GroupPathScoreInfo(rankScoreList[i], docIdList[i])));
 
                 category_id_t rootId = categoryValueTable_->getRootValueId(catId);
                 rootCateIds.insert(rootId);
@@ -424,6 +517,125 @@ void ZambeziSearch::getAnalyzedQuery_(
         analyzedQuery.append(token);
         analyzedQuery.push_back(kUCharSpace);
     }
+}
+
+// void ZambeziSearch::normalizeScore_(
+//     std::vector<docid_t>& docids,
+//     std::vector<float>& scores,
+//     std::vector<float>& productScores,
+//     PropSharedLockSet &sharedLockSet)
+// {
+//     faceted::AttrTable* attTable = NULL;
+
+//     if (attrManager_)
+//     {
+//         attTable = &(attrManager_->getAttrTable());
+//         sharedLockSet.insertSharedLock(attTable);
+//     }
+//     float maxScore = 1;
+
+//     std::string propName = "itemcount";
+//     std::string propName_comment = "CommentCount";
+//     std::string propName_sales = "SalesAmount";
+
+//     boost::shared_ptr<NumericPropertyTableBase> numericTable =
+//         numericTableBuilder_->createPropertyTable(propName);
+
+//     boost::shared_ptr<NumericPropertyTableBase> numericTable_comment =
+//         numericTableBuilder_->createPropertyTable(propName_comment);
+
+//     boost::shared_ptr<NumericPropertyTableBase> numericTable_sales =
+//         numericTableBuilder_->createPropertyTable(propName_sales);
+
+//     if (numericTable)
+//         sharedLockSet.insertSharedLock(numericTable.get());
+
+//     if (numericTable_comment)
+//         sharedLockSet.insertSharedLock(numericTable_comment.get());
+
+//     for (uint32_t i = 0; i < docids.size(); ++i)
+//     {
+//         int32_t itemcount = 1;
+//         if (numericTable)
+//             numericTable->getInt32Value(docids[i], itemcount, false);
+
+//         uint32_t attr_size = 1;
+//          if (attTable)
+//         {
+//             faceted::AttrTable::ValueIdList attrvids;
+//             attTable->getValueIdList(docids[i], attrvids);
+//             attr_size += std::min(attrvids.size(), size_t(30))*10.;
+//         }
+
+
+//         // int32_t itemcount = 1;
+//         // if (numericTable)
+//         // {
+//         //     numericTable->getInt32Value(docids[i], itemcount, false);
+//         //     attr_size += std::min(itemcount, 50);
+//         // }
+
+//         // if (numericTable_comment)
+//         // {
+//         //     int32_t commentcount = 1;
+//         //     numericTable_comment->getInt32Value(docids[i], commentcount, false);
+//         //     if (itemcount != 0)
+//         //         attr_size += std::min(commentcount/itemcount, 100);
+//         //     else
+//         //         attr_size += std::min(commentcount, 100);
+
+//         // }
+//         // if (numericTable_sales)
+//         // {
+//         //     int32_t salescount = 0;
+//         //     numericTable_sales->getInt32Value(docids[i], salescount, false);
+//         //     attr_size += (double)salescount/itemcount;
+//         // }
+
+
+//         scores[i] = scores[i] + attr_size;
+//         if (scores[i] > maxScore)
+//             maxScore = scores[i];
+//     }
+
+//     for (unsigned int i = 0; i < scores.size(); ++i)
+//     {
+//         float x = fmath::exp((float)(scores[i]/60000.*-1));
+//         x = (1-x)/(1+x);
+//         scores[i] = int((x*100. + productScores[i])/10+0.5)*10;
+//     }
+// }
+
+bool ZambeziSearch::getZambeziAlgorithm(
+     const int &algorithm,
+     izenelib::ir::Zambezi::Algorithm& Algorithm)
+{
+    if (algorithm == 0)
+    {
+        Algorithm = izenelib::ir::Zambezi::SVS;
+        return true;
+    }
+    else if (algorithm == 1)
+    {
+        Algorithm = izenelib::ir::Zambezi::WAND;
+        return true;
+    }
+    else if (algorithm == 2)
+    {
+        Algorithm = izenelib::ir::Zambezi::MBWAND;
+        return true;
+    }
+    else if (algorithm == 3)
+    {
+        Algorithm = izenelib::ir::Zambezi::BWAND_OR;
+        return true;
+    }
+    else if (algorithm == 4)
+    {
+        Algorithm = izenelib::ir::Zambezi::BWAND_AND;
+        return true;
+    }
+    return false;
 }
 
 }

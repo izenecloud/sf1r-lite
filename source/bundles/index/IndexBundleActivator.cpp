@@ -6,6 +6,8 @@
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
 #include <index-manager/InvertedIndexManager.h>
+#include <index-manager/ZambeziIndexManager.h>
+#include <index-manager/zambezi-manager/ZambeziManager.h>
 #include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/QueryPruneFactory.h>
@@ -13,6 +15,7 @@
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
+#include <la-manager/AttrTokenizeWrapper.h>
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
@@ -47,6 +50,7 @@ IndexBundleActivator::IndexBundleActivator()
     , taskService_(0)
     , taskServiceReg_(0)
     , config_(0)
+    , zambeziManager_(NULL)
 {
 }
 
@@ -84,7 +88,16 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
-    invertedIndexManager_->flush(false);
+    if (config_->isNormalSchemaEnable_)
+    {
+        invertedIndexManager_->flush(false);
+    }
+
+    if (config_->isZambeziSchemaEnable_)
+    {
+        zambeziIndexManager_->postProcessForAPI();    
+    }
+
     if(miningSearchTracker_)
     {
         miningSearchTracker_->stopTracking();
@@ -144,6 +157,12 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
     MasterManagerBase::get()->unregisterAggregator(searchAggregator_);
     MasterManagerBase::get()->unregisterAggregator(ro_searchAggregator_, true);
     MasterManagerBase::get()->unregisterAggregator(indexAggregator_);
+
+    if (zambeziManager_)
+    {
+        delete zambeziManager_;
+    }
+    // TODO flush and delete
 }
 
 bool IndexBundleActivator::addingService( const ServiceReference& ref )
@@ -262,33 +281,72 @@ bool IndexBundleActivator::init_()
     SF1R_ENSURE_INIT(bOpenDataDir);
     LOG(INFO)<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] working directory "<<currentCollectionDataName_<<std::endl;
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open id manager.."<<std::endl;
+    
     idManager_ = createIDManager_();
     SF1R_ENSURE_INIT(idManager_);
+    
     laManager_ = createLAManager_();
     SF1R_ENSURE_INIT(laManager_);
+    
     SF1R_ENSURE_INIT(initializeQueryManager_());
+    
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open document manager.."<<std::endl;
     documentManager_ = createDocumentManager_();
     SF1R_ENSURE_INIT(documentManager_);
-    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
-    invertedIndexManager_ = createInvertedIndexManager_();
-    SF1R_ENSURE_INIT(invertedIndexManager_);
+    documentManager_->setZambeziConfig(config_->zambeziConfig_);
+
+    /*
+    Here, the NormalSchemaEnable must be true now, because the Schema must be used as a filter in documentSearch;
+    Zambezi search now not support condition(filter) 2013.10.24;
+    */
+    if(config_->isNormalSchemaEnable_)
+    {    
+        std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open normal index manager.."<<std::endl;
+        invertedIndexManager_ = createInvertedIndexManager_();
+        SF1R_ENSURE_INIT(invertedIndexManager_);
+    }
+    
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open ranking manager.."<<std::endl;
     rankingManager_ = createRankingManager_();
     SF1R_ENSURE_INIT(rankingManager_);
+
+    if (config_->isZambeziSchemaEnable_)
+    {
+        if (!config_->zambeziConfig_.isEnable)
+            return false;
+        std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open zambezi index manager.."<<std::endl;
+
+        if (!createZambeziManager_())
+            return false;
+        zambeziIndexManager_ = createZambeziIndexManager_();
+        SF1R_ENSURE_INIT(zambeziIndexManager_);
+    }
+
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open search manager.."<<std::endl;
     searchManager_ = createSearchManager_();
     SF1R_ENSURE_INIT(searchManager_);
+    
     searchWorker_ = createSearchWorker_();
     SF1R_ENSURE_INIT(searchWorker_);
+    
     searchAggregator_ = createSearchAggregator_(false);
     SF1R_ENSURE_INIT(searchAggregator_);
+    
     ro_searchAggregator_ = createSearchAggregator_(true);
     SF1R_ENSURE_INIT(ro_searchAggregator_);
+    
     indexWorker_ = createIndexWorker_();
     SF1R_ENSURE_INIT(indexWorker_);
+
+    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index worker.."<<std::endl;
     // add all kinds of index that will support increment build.
-    indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+    if (config_->isNormalSchemaEnable_)
+        indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+
+    indexWorker_->getIncSupportedIndexManager().setDocumentManager(documentManager_);
+    
+    if (config_->isZambeziSchemaEnable_)
+        indexWorker_->getIncSupportedIndexManager().addIndex(zambeziIndexManager_);
 
     indexAggregator_ = createIndexAggregator_();
     SF1R_ENSURE_INIT(indexAggregator_);
@@ -510,7 +568,39 @@ IndexBundleActivator::createRankingManager_() const
             ret->setPropertyWeight(propertyConfigOut.getPropertyId(), it->second);
         }
     }
+    return ret;
+}
 
+bool IndexBundleActivator::createZambeziManager_()
+{
+    if (config_->zambeziConfig_.hasAttrtoken && 
+        !AttrTokenizeWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/" + config_->zambeziConfig_.tokenPath))
+        return false;
+
+    std::string dir = getCurrentCollectionDataPath_()+"/zambezi/";
+    const bfs::path zambeziDir(dir);
+
+    config_->zambeziConfig_.indexFilePath = dir + "index_bin";
+    bfs::create_directories(zambeziDir);
+
+    if (zambeziManager_) delete zambeziManager_;
+    zambeziManager_ = new ZambeziManager(config_->zambeziConfig_);
+
+    if (!zambeziManager_->open())
+        return false;
+
+    return true;
+}
+
+boost::shared_ptr<IIncSupportedIndex>
+IndexBundleActivator::createZambeziIndexManager_() const
+{
+    boost::shared_ptr<IIncSupportedIndex> ret(new ZambeziIndexManager
+                                             (config_->zambeziConfig_,
+                                              zambeziManager_->getProperties(),
+                                              zambeziManager_->getIndexMap(),
+                                              zambeziManager_->getTokenizer(),
+                                              documentManager_));
     return ret;
 }
 
@@ -519,13 +609,14 @@ IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
 
-    if (documentManager_ && invertedIndexManager_ && rankingManager_)
+    if (documentManager_ && rankingManager_ && (invertedIndexManager_ || zambeziManager_))
     {
-        SearchFactory factory(*config_,
-                              documentManager_,
-                              invertedIndexManager_,
-                              rankingManager_);
 
+        SearchFactory factory(*config_,
+                          documentManager_,
+                          invertedIndexManager_,
+                          rankingManager_,
+                          zambeziManager_);
         ret.reset(new SearchManager(*config_, factory));
     }
     return ret;

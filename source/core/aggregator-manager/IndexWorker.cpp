@@ -89,6 +89,14 @@ IndexWorker::IndexWorker(
             break;
         }
     }
+
+    //DATE MUST THERE
+    PropertyConfigBase propertyConfig;
+    propertyConfig.propertyName_ = "DATE";
+    propertyConfig.propertyType_ = DATETIME_PROPERTY_TYPE;
+    hasDateInConfig = true;
+    dateProperty_ = propertyConfig;
+
     if (!hasDateInConfig)
         throw std::runtime_error("Date Property Doesn't exist in config");
 
@@ -373,6 +381,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
     inc_supported_index_manager_.preBuildFromSCD(indexProgress_.totalFileSize_);
 
+    // if any of incIndex is_real_time is true, the document will comes orderly;
     is_real_time_ = inc_supported_index_manager_.isRealTime();
 
     if (is_real_time_)
@@ -597,7 +606,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
             continue;
         }
 
-        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId);
+        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId); //
         if (!insertDoc_(0, document, timestamp, true))
             continue;
 
@@ -791,7 +800,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = insertDoc_(0, document, timestamp, true);
+    bool ret = insertDoc_(0, document, timestamp, true);//not support filter, there is no rtype property in document;
     if (ret)
     {
         doMining_(reqlog.timestamp);
@@ -854,7 +863,6 @@ IndexWorker::UpdateType IndexWorker::getUpdateType_(
 
     return RTYPE;
 }
-
 
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
@@ -1213,7 +1221,6 @@ bool IndexWorker::doBuildCollection_(
         LOG(ERROR) << "Could not Load Scd File. File " << fileName;
         return false;
     }
-
     indexProgress_.currentFileSize_ = parser.getFileSize();
     indexProgress_.currentFilePos_ = 0;
     productSourceCount_.clear();
@@ -1328,6 +1335,10 @@ bool IndexWorker::insertOrUpdateSCD_(
 {
     CREATE_SCOPED_PROFILER (insertOrUpdateSCD, "IndexWorker", "IndexWorker::insertOrUpdateSCD_");
 
+    if(!documentManager_)
+    {
+        return false;
+    }
     uint32_t n = 0;
     long lastOffset = 0;
     Document document;
@@ -1360,12 +1371,12 @@ bool IndexWorker::insertOrUpdateSCD_(
         SCDDocPtr docptr = *doc_iter;
         if (docptr->empty()) continue;
 
+        //use sharding in sharding or not in sharding ...
         if (DistributeFileSys::get()->isEnabled() && scdSharder_)
         {
             if (scdSharder_->sharding(*docptr) != 
                 MasterManagerBase::get()->getMyShardId())
             {
-                // this doc is not my sharding.
                 continue;
             }
         }
@@ -1376,10 +1387,10 @@ bool IndexWorker::insertOrUpdateSCD_(
         UpdateType updateType = INSERT;
 
         std::string source = "";
-        SCDDoc::const_iterator p = docptr->begin();
-        for (; p != docptr->end(); p++)
+        SCDDoc::const_iterator p = docptr->begin(); 
+        for (; p != docptr->end(); p++) // find DOCID;
         {
-            if (boost::iequals(p->first, DOCID))
+            if (boost::iequals(p->first, DOCID)) // DOCID
             {
                 uint128_t scdDocId = Utilities::md5ToUint128(p->second);
 
@@ -1414,7 +1425,7 @@ bool IndexWorker::insertOrUpdateSCD_(
 
             if (scdType == INSERT_SCD || oldId == 0)
             {
-                insertDoc_(0, document, new_timestamp, true);
+                insertDoc_(0, document, new_timestamp, true); 
             }
             else
             {
@@ -1423,7 +1434,7 @@ bool IndexWorker::insertOrUpdateSCD_(
                 ++numUpdatedDocs_;
             }
         }
-        else
+        else // multi-index;
         {
             asynchronousTasks_[workerid]->push(IndexDocInfo(docptr, oldId, docId,
                     scdType, updateType, timestamp));
@@ -1874,7 +1885,10 @@ bool IndexWorker::prepareDocIdAndUpdateType_(const uint128_t& scdDocId,
     }
     return true;
 }
-
+/*
+ *@brief prepareDocumenet need to support all the index schema 
+ *
+ */
 bool IndexWorker::prepareDocument_(
         const SCDDoc& doc,
         Document& document,
@@ -1900,16 +1914,14 @@ bool IndexWorker::prepareDocument_(
     bool dateExistInSCD = false;
 
     PropertyConfig tempPropertyConfig;
-
     for (; p != doc.end(); p++)
-    {
+    {    
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
-        IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
-        bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
-		
-        const ScdPropertyValueType & propertyValueU = p->second; // preventing copy
+        bool isIndexSchema = false;
+        IndexBundleSchema::const_iterator iter = bundleConfig_->findIndexProperty(tempPropertyConfig, isIndexSchema);
 
+        const ScdPropertyValueType & propertyValueU = p->second; // preventing copy
         if (boost::iequals(fieldStr, DOCID) && isIndexSchema)
         {
             document.setId(docId);
@@ -1919,7 +1931,7 @@ bool IndexWorker::prepareDocument_(
             if (oldId && oldId != docId)
                 documentManager_->moveRTypeValues(oldId, docId);
         }
-        else if (boost::iequals(fieldStr, dateProperty_.getName()))
+        else if (boost::iequals(fieldStr, dateProperty_.getName())) //DATE
         {
             /// format <DATE>20091009163011
             START_PROFILER(pid_date);
@@ -2054,8 +2066,7 @@ bool IndexWorker::prepareDocument_(
     if (dateExistInSCD)
     {
         // using the timestamp in the doc.
-        //timestamp = -1;
-        
+        //timestamp = -1; 
     }
     else
     {
@@ -2122,9 +2133,10 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
             continue;
 
         tempPropertyConfig.propertyName_ = fieldName;
-        IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+        bool isIndexSchema = false;
+        IndexBundleSchema::iterator iter = bundleConfig_->findIndexProperty(tempPropertyConfig, isIndexSchema);
 
-        if (iter == bundleConfig_->indexSchema_.end())
+        if (!isIndexSchema)
             continue;
 
         if (iter->isRTypeString())

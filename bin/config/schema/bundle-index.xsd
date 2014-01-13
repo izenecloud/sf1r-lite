@@ -35,15 +35,24 @@
                                     <xs:attribute name="name" type="xs:string" use="required"/>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="VirtualProperty" minOccurs="0" maxOccurs="unbounded" >
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="SubProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded" />
-                                    </xs:sequence>
-                                    <xs:attribute name="name" type="xs:string" use="required"/>
-                                </xs:complexType>
-                            </xs:element>
+                            <xs:element ref="VirtualProperty" minOccurs="0" maxOccurs="unbounded"/>
                         </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+
+                <xs:element name="ZambeziSchema" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element ref="TokenizeDictionary" minOccurs="0" maxOccurs="1"/>
+                            <xs:element ref="IndexProperty" minOccurs="0" maxOccurs="unbounded"/>
+                            <xs:element ref="VirtualProperty" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                        <xs:attribute name="reverse" type="YesNoType" use="optional"/>
+                        <xs:attribute name="poolSize" type="xs:string" use="optional"/>
+                        <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
+                        <xs:attribute name="vocabSize" type="xs:string" use="optional"/>
+						<xs:attribute name="indexType" type="xs:string" use="optional"/>
+                        <xs:attribute name="searchBuffer" type="YesNoType" use="optional"/>
                     </xs:complexType>
                 </xs:element>
 
@@ -58,6 +67,35 @@
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+
+    <xs:element name="IndexProperty">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tokenizer" type="YesNoType" use="required"/>
+            <xs:attribute name="filter" type="YesNoType" use="required"/>
+            <xs:attribute name="poolSize" type="xs:string" use="optional"/>
+            <xs:attribute name="weight" type="xs:float" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="VirtualProperty">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="SubProperty" type="PropertyType" minOccurs="1" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="poolSize" type="xs:string" use="optional"/>
+            <xs:attribute name="weight" type="xs:float" use="optional"/>
+            <xs:attribute name="isAttrToken" type="YesNoType" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="TokenizeDictionary">
+        <xs:complexType>
+            <xs:attribute name="path" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 

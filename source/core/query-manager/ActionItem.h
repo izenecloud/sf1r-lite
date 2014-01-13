@@ -21,6 +21,7 @@
 
 #include <common/type_defs.h>
 #include <common/sf1_msgpack_serialization_types.h>
+#include <common/parsers/ConditionsTree.h>
 #include <3rdparty/msgpack/msgpack.hpp>
 
 #include "QueryTypeDef.h"
@@ -325,7 +326,7 @@ public:
         , removeDuplicatedDocs_(obj.removeDuplicatedDocs_)
         , displayPropertyList_(obj.displayPropertyList_)
         , sortPriorityList_(obj.sortPriorityList_)
-        , filteringList_(obj.filteringList_)
+        , filterTree_(obj.filterTree_)
         , rangePropertyName_(obj.rangePropertyName_)
         , groupParam_(obj.groupParam_)
         , strExp_(obj.strExp_)
@@ -353,7 +354,7 @@ public:
         removeDuplicatedDocs_ = obj.removeDuplicatedDocs_;
         displayPropertyList_ = obj.displayPropertyList_;
         sortPriorityList_    = obj.sortPriorityList_;
-        filteringList_ = obj.filteringList_;
+        filterTree_ = obj.filterTree_;
         rangePropertyName_ = obj.rangePropertyName_;
         groupParam_ = obj.groupParam_;
         strExp_ = obj.strExp_;
@@ -381,7 +382,7 @@ public:
             && removeDuplicatedDocs_ == obj.removeDuplicatedDocs_
             && displayPropertyList_ == obj.displayPropertyList_
             && sortPriorityList_    == obj.sortPriorityList_
-            && filteringList_ == obj.filteringList_
+            && filterTree_ == obj.filterTree_
             && rangePropertyName_ == obj.rangePropertyName_
             && groupParam_ == obj.groupParam_
             && strExp_ == obj.strExp_
@@ -425,7 +426,7 @@ public:
             ss << " - " << sortPriorityList_[i].first << " " << sortPriorityList_[i].second << endl;
 
         ss << "Filtering Option : " << endl;
-        for (size_t i = 0; i < filteringList_.size(); i++)
+        /*for (size_t i = 0; i < filteringList_.size(); i++)
         {
             ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
             ss << "------------------------------------------------" << endl;
@@ -433,7 +434,7 @@ public:
                     iter != filteringList_[i].values_.end(); iter++ )
                 ss << *iter << ", type:" << iter->which() << endl;
             ss << "------------------------------------------------" << endl;
-        }
+        }*/
         ss << "------------------------------------------------" << endl;
         ss << groupParam_;
         ss << "------------------------------------------------" << endl;
@@ -531,8 +532,13 @@ public:
     ///
     /// @brief a list of filtering option.
     ///
-    std::vector<QueryFiltering::FilteringType> filteringList_;
+    //std::vector<QueryFiltering::FilteringType> filteringList_;
 
+    ///
+    /// @brief a list of new tree-like filteringType for bool combination option
+    ///
+    ///std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
+    ConditionsNode filterTree_;
     ///
     /// @brief a list of counters
     ///
@@ -580,12 +586,12 @@ public:
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & disableGetDocs_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
-             & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
+             & displayPropertyList_ & sortPriorityList_ & filterTree_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_ & isAnalyzeResult_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, disableGetDocs_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filterTree_, counterList_,
             rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_,
             isAnalyzeResult_);
 
@@ -608,7 +614,6 @@ private:
         ar & removeDuplicatedDocs_;
         ar & displayPropertyList_;
         ar & sortPriorityList_;
-        ar & filteringList_;
         ar & counterList_;
         ar & rangePropertyName_;
         ar & groupParam_;
@@ -651,8 +656,11 @@ public:
     std::vector<PropertyValue> propertyValueList_;
 
     /// @brief filtering options
-    std::vector<QueryFiltering::FilteringType> filteringList_;
+    //std::vector<QueryFiltering::FilteringType> filteringList_;
 
+	/// @brief filtering tree-likes options
+    ConditionsNode filterTree_;    
+    
     void print(std::ostream& out = std::cout) const
     {
         stringstream ss;
@@ -678,7 +686,7 @@ public:
         ss << std::endl;
         ss << "PropertyName : " << propertyName_ << std::endl;
         ss << "Filtering Option : " << endl;
-        for (size_t i = 0; i < filteringList_.size(); i++)
+        /*for (size_t i = 0; i < filteringList_.size(); i++)
         {
             ss << "FilteringType :  " << filteringList_[i].operation_ << " , property : " << filteringList_[i].property_ << endl;
             ss << "------------------------------------------------" << endl;
@@ -686,18 +694,18 @@ public:
                     iter != filteringList_[i].values_.end(); iter++ )
                 ss << *iter << ", type:" << iter->which() << endl;
             ss << "------------------------------------------------" << endl;
-        }
+        }*/
         out << ss.str();
     }
 
     DATA_IO_LOAD_SAVE(
         GetDocumentsByIdsActionItem,
         & env_ & languageAnalyzerInfo_ & collectionName_ & displayPropertyList_
-        & idList_ & docIdList_ & propertyName_ & propertyValueList_ & filteringList_
+        & idList_ & docIdList_ & propertyName_ & propertyValueList_
     )
 
     MSGPACK_DEFINE(env_, languageAnalyzerInfo_, collectionName_, displayPropertyList_,
-            idList_, docIdList_, propertyName_, propertyValueList_, filteringList_);
+            idList_, docIdList_, propertyName_, propertyValueList_);
 
 public:
     std::set<sf1r::workerid_t> getDocWorkerIdLists(
@@ -723,7 +731,7 @@ private:
     void serialize(Archive& ar, const unsigned int version)
     {
         ar & env_ & languageAnalyzerInfo_ & collectionName_ & displayPropertyList_
-            & idList_ & docIdList_ & filteringList_;
+            & idList_ & docIdList_ & filterTree_;
     }
 }; // end - class GetDocumentsByIdsActionItem
 

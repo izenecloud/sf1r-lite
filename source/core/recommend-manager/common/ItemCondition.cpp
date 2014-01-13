@@ -13,11 +13,11 @@ ItemCondition::ItemCondition()
 void ItemCondition::createBitset(QueryBuilder* queryBuilder)
 {
     // no condition
-    if (filteringList_.empty() || !queryBuilder)
+    if (filterTree_.empty() || !queryBuilder)
         return;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
-    queryBuilder->prepare_filter(filteringList_, filterBitmap);
+    queryBuilder->prepare_filter(filterTree_, filterBitmap);
 
     pBitset_.reset(new izenelib::ir::indexmanager::Bitset);
     pBitset_->importFromEWAH(*filterBitmap);

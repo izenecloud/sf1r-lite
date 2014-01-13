@@ -22,6 +22,7 @@
 #include <configuration-manager/GroupConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <core/common/TermTypeDetector.h>
+#include <core/common/ByteSizeParser.h>
 
 #include "CollectionMeta.h"
 
@@ -224,6 +225,32 @@ protected:
             const std::string & name,
             bool & val,
             bool throwIfNoAttribute = true) const;
+
+    /// @brief  Gets a integer type attribute for byte size. User can decide if
+    ///         the attribute is essential with the attribute throwIfNoAttribute.
+    /// @param ele The element that holds the attribute
+    /// @param name The name of the attribute.
+    /// @param val The return container of the attribute, when the string value
+    ///            is "1m", the @p val would be 1048576.
+    /// @param torhowIfNoAttribute  Throws exception if attribute does not exist.
+    /// @return Returns true if the attribute is found and has a value.
+    //          false if the attribute is not found or has no value.
+    template <class Type>
+    inline bool getAttribute_ByteSize(
+            const ticpp::Element * ele,
+            const std::string & name,
+            Type & val,
+            bool throwIfNoAttribute = true) const
+    {
+        std::string temp;
+
+        if (!getAttribute(ele, name, temp, throwIfNoAttribute))
+            return false;
+
+        val = ByteSizeParser::get()->parse<Type>(temp);
+
+        return true;
+    }
 
     // ----------------------------- THROW METHODS -----------------------------
 

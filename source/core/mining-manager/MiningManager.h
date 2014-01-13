@@ -136,6 +136,7 @@ class AttrManager;
 class OntologyManager;
 class CTRManager;
 class GroupFilterBuilder;
+class AttrTable;
 }
 
 
@@ -445,6 +446,8 @@ public:
 
     const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
 
+    const faceted::AttrTable* GetAttrTable() const;
+
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
     {
         return groupLabelLoggerMap_[propName];
@@ -503,6 +506,11 @@ public:
     NumericPropertyTableBuilder* GetNumericTableBuilder()
     {
         return numericTableBuilder_;
+    }
+
+    faceted::AttrManager* GetAttributeManager()
+    {
+        return attrManager_;
     }
 
     void updateMergeFuzzyIndex(int calltype);

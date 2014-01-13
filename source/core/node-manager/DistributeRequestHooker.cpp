@@ -252,8 +252,16 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     prepared_req.reqtype = type;
     type_ = type;
     LOG(INFO) << "begin prepare log ";
+
     if (chain_status_ == NoChain || chain_status_ == ChainBegin)
     {
+        if (isprimary && !NodeManagerBase::get()->setWrittingNodeData())
+        {
+            LOG(ERROR) << "set writting node data failed.";
+            processFinishedBeforePrepare(false);
+            return false;
+        }
+
         if (!is_replaying_log_ && !req_log_mgr_->prepareReqLog(prepared_req, isprimary))
         {
             LOG(ERROR) << "prepare request log failed.";
@@ -314,6 +322,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         //if (hook_type_ != Request::FromLog)
         //    NodeManagerBase::get()->setSlowWriting();
     }
+
     // set rollback flag.
     if(type != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
     {
@@ -362,6 +371,7 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
     {
         if (hook_type_ == Request::FromDistribute || hook_type_ == Request::FromOtherShard)
         {
+            NodeManagerBase::get()->clearWrittingNodeData();
             LOG(INFO) << "primary end request before prepared, request ignored.";
             clearHook(true);
             NodeManagerBase::get()->notifyMasterReadyForNew();
@@ -531,6 +541,12 @@ void DistributeRequestHooker::finish(bool success)
     clearHook(true);
     if (is_replaying_log_)
         return;
+    if (hook_type == Request::FromDistribute ||
+        hook_type == Request::FromOtherShard)
+    {
+        NodeManagerBase::get()->clearWrittingNodeData();
+    }
+
     if (success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";

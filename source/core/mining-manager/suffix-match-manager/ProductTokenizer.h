@@ -188,6 +188,7 @@ private:
 
     static const UString::CharT SPACE_UCHAR;
     friend class ProductTokenizerTest;
+    friend class ZambeziIndexManager;
 };
 
 }

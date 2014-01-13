@@ -10,9 +10,79 @@
 
 #include <algorithm> // min
 #include <vector>
+#include <limits>
 
 namespace sf1r
 {
+using faceted::GroupParam;
+using faceted::GroupPathScoreInfo;
+
+static bool IsGreaterGPScoreInfo(const GroupPathScoreInfo& left, const GroupPathScoreInfo& right)
+{
+    if (std::fabs(left.score - right.score) <= std::numeric_limits<double>::epsilon())
+    {
+        LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
+            << ", docid : " << left.wdocid << " VS " << right.wdocid;
+        return net::aggregator::Util::IsNewerDocId(left.wdocid, right.wdocid);
+    }
+    return left.score > right.score;
+}
+
+static bool IsGreaterGroup(const std::pair<GroupParam::GroupPath, GroupPathScoreInfo>& left,
+    const std::pair<GroupParam::GroupPath, GroupPathScoreInfo>& right)
+{
+    return IsGreaterGPScoreInfo(left.second, right.second);
+}
+
+void SearchMerger::mergeScoreGroupLabel(GroupParam::GroupLabelScoreMap& mergeto,
+    const GroupParam::GroupLabelScoreMap& from, workerid_t from_workerid)
+{
+    GroupParam::GroupLabelScoreMap::const_iterator groupit = from.begin();
+
+    for(; groupit != from.end(); ++groupit)
+    {
+        GroupParam::GroupLabelScoreMap::iterator merged_it = mergeto.find(groupit->first);
+        if (merged_it == mergeto.end())
+        {
+            // new property for group labels.
+            merged_it = mergeto.insert(std::make_pair(groupit->first, GroupParam::GroupPathScoreVec())).first;
+            for(size_t i = 0; i < groupit->second.size(); ++i)
+            {
+                GroupPathScoreInfo tmp = groupit->second[i].second;
+                tmp.wdocid = net::aggregator::Util::GetWDocId(from_workerid, (docid_t)tmp.wdocid);
+                merged_it->second.push_back(std::make_pair(groupit->second[i].first, tmp));
+            }
+        }
+        else
+        {
+            for(size_t i = 0; i < groupit->second.size(); ++i)
+            {
+                bool isnew_group = true;
+                GroupPathScoreInfo tmp = groupit->second[i].second;
+                tmp.wdocid = net::aggregator::Util::GetWDocId(from_workerid, (docid_t)tmp.wdocid);
+                for(size_t j = 0; j < merged_it->second.size(); ++j)
+                {
+                    if (groupit->second[i].first == merged_it->second[j].first)
+                    {
+                        // chose the higher score
+                        if (IsGreaterGPScoreInfo(tmp, merged_it->second[j].second))
+                        {
+                            merged_it->second[j].second = tmp;
+                        }
+                        isnew_group = false;
+                        break;
+                    }
+                }
+                if (isnew_group)
+                {
+                    merged_it->second.push_back(std::make_pair(groupit->second[i].first, tmp));
+                }
+            }
+        }
+        std::sort(merged_it->second.begin(), merged_it->second.end(), IsGreaterGroup);
+    }
+}
+
 
 void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKeywordSearchInfo>& workerResults, DistKeywordSearchInfo& mergeResult)
 {
@@ -141,7 +211,9 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         }
 
         mergeResult.groupRep_.merge(wResult.groupRep_);
-        faceted::GroupParam::mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_, wResult.autoSelectGroupLabels_);
+        workerid_t wid = workerResults.workerId(i);
+        mergeScoreGroupLabel(mergeResult.autoSelectGroupLabels_,
+            wResult.autoSelectGroupLabels_, wid);
 
         std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
         for(; cit != wResult.counterResults_.end(); ++cit)
@@ -207,8 +279,10 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
                 continue;
             }
 
-            const docid_t left_docid = workerResults.result(i).topKDocs_[iter[i]];
-            const docid_t right_docid = workerResults.result(maxi).topKDocs_[iter[maxi]];
+            const wdocid_t left_docid = net::aggregator::Util::GetWDocId(workerResults.workerId(i),
+                workerResults.result(i).topKDocs_[iter[i]]);
+            const wdocid_t right_docid = net::aggregator::Util::GetWDocId(workerResults.workerId(maxi),
+                workerResults.result(maxi).topKDocs_[iter[maxi]]);
             if (greaterThan(docComparators[i], iter[i], left_docid,
                     docComparators[maxi], iter[maxi], right_docid))
             {

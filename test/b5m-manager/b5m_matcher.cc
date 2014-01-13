@@ -26,6 +26,7 @@
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/address_extract.h>
 
 
 using namespace sf1r;
@@ -262,10 +263,12 @@ int do_main(int ac, char** av)
         ("product-train", "do product training")
         ("product-train-post", "do product post training")
         ("product-discover", "do product discover")
+        ("address", "do address normalize")
         ("product-match", "do product matching test")
         ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
         ("map-test", "do category mapper test")
+        ("syn-test", "do attribute syn test")
         ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
         ("b5m-match", "make b5m matching")
         ("psm-index", "psm index")
@@ -639,6 +642,31 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"discover process failed"<<std::endl;
             return EXIT_FAILURE;
         }
+    } 
+    if (vm.count("address")) {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        AddressExtract ae;
+        ae.Process(knowledge_dir);
+    }
+    if (vm.count("syn-test")) {
+        if( knowledge_dir.empty() || name.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        //ProductMatcher::Clear(knowledge_dir, mode);
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        ilplib::knlp::AttributeNormalize* attr = matcher.GetAttributeNormalize();
+        name = attr->attr_normalize(name);
+        std::cout<<"[After Normalize]"<<name<<std::endl;
     } 
     if (vm.count("map-index")) {
         if( knowledge_dir.empty()||scd_path.empty())

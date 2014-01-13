@@ -173,7 +173,6 @@
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
                             <xs:element ref="ProductMatcher" minOccurs="0"/>
                             <xs:element ref="QueryIntent" minOccurs="0"/>
-                            <xs:element ref="Zambezi" minOccurs="0"/>
                             <xs:element ref="AdIndex" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
@@ -299,20 +298,6 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="Zambezi">
-        <xs:complexType>
-            <xs:attribute name="reverse" type="YesNoType" use="optional"/>
-            <xs:attribute name="poolSize" type="xs:integer" use="optional"/>
-            <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="TokenizeDictionary">
-        <xs:complexType>
-            <xs:attribute name="path" type="xs:string" use="required"/>
-        </xs:complexType>
-    </xs:element>
-
     <xs:element name="Incremental">
         <xs:complexType>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
@@ -424,6 +409,7 @@
         <xs:attribute name="weight" type="xs:float" use="optional"/>
         <xs:attribute name="min" type="xs:float" use="optional"/>
         <xs:attribute name="max" type="xs:float" use="optional"/>
+		<xs:attribute name="zoomin" type="xs:float" use="optional"/>
         <xs:attribute name="debug" type="YesNoType" use="optional"/>
     </xs:complexType>
 

@@ -58,6 +58,22 @@ struct GroupPropParam
 bool operator==(const GroupPropParam& a, const GroupPropParam& b);
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam);
 
+struct GroupPathScoreInfo
+{
+    double score;
+    uint64_t wdocid; // the score from which docid. Using the internal id for worker and wide docid for merger.
+    GroupPathScoreInfo()
+        :score(0), wdocid(0)
+    {
+    }
+    GroupPathScoreInfo(double s, uint64_t id)
+        :score(s), wdocid(id)
+    {
+    }
+    MSGPACK_DEFINE(score, wdocid);
+};
+bool operator==(const GroupPathScoreInfo& a, const GroupPathScoreInfo& b);
+
 struct GroupParam
 {
     GroupParam();
@@ -69,7 +85,7 @@ struct GroupParam
     typedef std::vector<std::string> GroupPath;
     /** a list of group paths for one property */
     typedef std::vector<GroupPath> GroupPathVec;
-    typedef std::vector<std::pair<GroupPath, double> > GroupPathScoreVec;
+    typedef std::vector<std::pair<GroupPath, GroupPathScoreInfo> > GroupPathScoreVec;
     /** map from property name to group paths */
     typedef std::map<std::string, GroupPathVec> GroupLabelMap;
     typedef std::map<std::string, GroupPathScoreVec> GroupLabelScoreMap;
@@ -104,21 +120,22 @@ struct GroupParam
 
     int searchMode_;
 
+    bool isAttrToken_;
+
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
     bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
-    static void mergeScoreGroupLabel(GroupLabelScoreMap& mergeto, const GroupLabelScoreMap& from);
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_
                       &isAttrGroup_&attrGroupNum_&attrLabels_
-                      &searchMode_);
+                      &searchMode_&isAttrToken_);
 
     MSGPACK_DEFINE(groupProps_, groupLabels_,
                    autoSelectLimits_, boostGroupLabels_,
                    isAttrGroup_, attrGroupNum_, attrLabels_,
-                   searchMode_);
+                   searchMode_, isAttrToken_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -131,6 +148,7 @@ struct GroupParam
         ar & attrGroupNum_;
         ar & attrLabels_;
         ar & searchMode_;
+        ar & isAttrToken_;
     }
 
 private:

@@ -10,6 +10,8 @@
 #include "RecTypes.h"
 #include <query-manager/QueryTypeDef.h> // FilteringType
 #include <ir/index_manager/utility/Bitset.h>
+#include <boost/shared_ptr.hpp>
+#include <common/parsers/ConditionsTree.h>
 
 namespace sf1r
 {
@@ -20,8 +22,9 @@ struct ItemCondition
 {
     ItemManager* itemManager_;
 
-    /** a list of filtering conditions */
-    std::vector<QueryFiltering::FilteringType> filteringList_;
+    /**filtering conditions */
+    ConditionsNode filterTree_;
+
 
     /** bit 1 for meet condition, bit 0 for not meet condition */
     boost::scoped_ptr<izenelib::ir::indexmanager::Bitset> pBitset_;

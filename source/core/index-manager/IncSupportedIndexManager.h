@@ -4,7 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 #include <common/type_defs.h>
-
+#include <document-manager/DocumentManager.h>
 namespace sf1r
 {
 
@@ -13,7 +13,6 @@ namespace sf1r
 // some update/insert/delete api coming.
 class IIncSupportedIndex;
 class Document;
-
 class IncSupportedIndexManager
 {
 public:
@@ -31,6 +30,7 @@ public:
     void finishRebuild();
     void preProcessForAPI();
     void postProcessForAPI();
+    void setDocumentManager(boost::shared_ptr<DocumentManager>& documentManager);
 
     bool insertDocument(const Document& doc, time_t timestamp);
     bool updateDocument(const Document& olddoc, const Document& old_rtype_doc,
@@ -39,6 +39,7 @@ public:
 
 private:
     std::vector<boost::shared_ptr<IIncSupportedIndex> > inc_index_list_;
+    boost::shared_ptr<DocumentManager> documentManager_;
 };
 
 }

@@ -34,6 +34,11 @@ SET(libs
   sf1r_b5m_manager
   sf1r_image_manager
   sf1r_net
+  sf1r_aggregator_manager
+  sf1r_recommend_manager
+  sf1r_bundle_index
+  sf1r_bundle_mining
+  sf1r_bundle_recommend
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
