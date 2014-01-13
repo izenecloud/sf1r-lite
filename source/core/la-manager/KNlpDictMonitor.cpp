@@ -25,8 +25,8 @@ bool KNlpDictMonitor::handle(const std::string& fileName, uint32_t mask)
 {
     if (mask & kMonitorEvent && fileName == kMonitorFileName)
     {
-        boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper);
-        if (!knlpWrapper->loadDictFiles(dictDir_))
+        boost::shared_ptr<KNlpWrapper> knlpWrapper(new KNlpWrapper(dictDir_));
+        if (!knlpWrapper->loadDictFiles())
             return false;
 
         KNlpResourceManager::setResource(knlpWrapper);

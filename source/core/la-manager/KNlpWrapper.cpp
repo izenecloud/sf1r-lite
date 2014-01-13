@@ -10,8 +10,9 @@
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
-KNlpWrapper::KNlpWrapper()
-        : isDictLoaded_(false)
+KNlpWrapper::KNlpWrapper(const std::string& dictDir)
+    : dictDir_(dictDir)
+    , isDictLoaded_(false)
 {
 }
 
@@ -19,13 +20,13 @@ KNlpWrapper::~KNlpWrapper()
 {
 }
 
-bool KNlpWrapper::loadDictFiles(const std::string& dictDir)
+bool KNlpWrapper::loadDictFiles()
 {
     if (isDictLoaded_)
         return true;
 
-    LOG(INFO) << "Start loading knlp dictionaries in " << dictDir;
-    const bfs::path dirPath(dictDir);
+    LOG(INFO) << "Start loading knlp dictionaries in " << dictDir_;
+    const bfs::path dirPath(dictDir_);
 
     try
     {
@@ -61,7 +62,7 @@ bool KNlpWrapper::loadDictFiles(const std::string& dictDir)
     catch (const std::exception& e)
     {
         LOG(ERROR) << "exception: " << e.what()
-                   << ", dictDir: " << dictDir;
+                   << ", dictDir: " << dictDir_;
         return false;
     }
 

@@ -43,7 +43,7 @@ private:
 
     ProductTokenizer* createMatcherTokenizer_();
 
-    ProductTokenizer* createKNlpTokenizer_(const std::string& dictPath);
+    ProductTokenizer* createKNlpTokenizer_();
 
     ProductTokenizer* createPcaTokenizer_(const std::string& dictPath);
 

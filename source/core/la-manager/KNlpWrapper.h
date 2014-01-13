@@ -29,10 +29,10 @@ namespace sf1r
 class KNlpWrapper
 {
 public:
-    KNlpWrapper();
+    KNlpWrapper(const std::string& dictDir);
     ~KNlpWrapper();
 
-    bool loadDictFiles(const std::string& dictDir);
+    bool loadDictFiles();
 
     typedef izenelib::util::KString string_t;
     typedef std::pair<string_t, double> token_score_pair_t;
@@ -70,6 +70,7 @@ public:
     double getMin();
 
 private:
+    std::string dictDir_;
     bool isDictLoaded_;
 
     boost::scoped_ptr<ilplib::knlp::Fmm> tokenizer_;

@@ -4,8 +4,6 @@
 #include "MatcherProductTokenizer.h"
 #include "KNlpProductTokenizer.h"
 #include "PcaProductTokenizer.h"
-#include <common/ResourceManager.h>
-#include <la-manager/KNlpDictMonitor.h>
 #include <la-manager/TitlePCAWrapper.h>
 #include <glog/logging.h>
 
@@ -39,7 +37,7 @@ ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::str
         return createMatcherTokenizer_();
 
     case KNLP_TOKENIZER:
-        return createKNlpTokenizer_(dictPath);
+        return createKNlpTokenizer_();
 
     case PCA_TOKENIZER:
         return createPcaTokenizer_(dictPath);
@@ -75,13 +73,8 @@ ProductTokenizer* ProductTokenizerFactory::createMatcherTokenizer_()
     return new MatcherProductTokenizer;
 }
 
-ProductTokenizer* ProductTokenizerFactory::createKNlpTokenizer_(const std::string& dictPath)
+ProductTokenizer* ProductTokenizerFactory::createKNlpTokenizer_()
 {
-    if (!KNlpResourceManager::getResource()->loadDictFiles(dictPath))
-        return NULL;
-
-    KNlpDictMonitor::get()->start(dictPath);
-
     return new KNlpProductTokenizer;
 }
 

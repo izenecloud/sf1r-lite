@@ -95,6 +95,7 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
+#include <la-manager/KNlpDictMonitor.h>
 #include <la-manager/AttrTokenizeWrapper.h>
 
 #include <am/3rdparty/rde_hash.h>
@@ -622,6 +623,11 @@ bool MiningManager::open()
                 LOG(ERROR) << "failed to create ProductTokenizer.";
                 return false;
             }
+
+            if (!KNlpResourceManager::getResource()->loadDictFiles())
+                return false;
+
+            KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(
