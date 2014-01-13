@@ -8,7 +8,8 @@
 
 #include <common/inttypes.h>
 #include <configuration-manager/ZambeziConfig.h>
-#include <ir/Zambezi/ZambeziIndex.hpp>
+#include <ir/Zambezi/IndexBase.hpp>
+#include <ir/Zambezi/FilterBase.hpp>
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <ir/Zambezi/PositionalInvertedIndex.hpp>
 #include <common/PropSharedLockSet.h>
@@ -19,7 +20,7 @@
 
 namespace sf1r
 {
-    
+
 namespace faceted
 {
 class GroupManager;
@@ -31,7 +32,8 @@ class DocumentManager;
 
 typedef izenelib::ir::Zambezi::AttrScoreInvertedIndex AttrIndex;
 typedef izenelib::ir::Zambezi::PositionalInvertedIndex PositionalIndex;
-typedef izenelib::ir::Zambezi::ZambeziIndex ZambeziBaseIndex;
+typedef izenelib::ir::Zambezi::IndexBase ZambeziIndexBase;
+typedef izenelib::ir::Zambezi::FilterBase ZambeziFilterBase;
 
 class ZambeziManager
 {
@@ -46,12 +48,13 @@ public:
     void search(
         izenelib::ir::Zambezi::Algorithm algorithm,
         const std::vector<std::pair<std::string, int> >& tokens,
-        uint32_t limit,
         const std::vector<std::string>& propertyList,
+        const ZambeziFilterBase* filter,
+        uint32_t limit,
         std::vector<docid_t>& docids,
         std::vector<float>& scores);
 
-    inline std::map<std::string, ZambeziBaseIndex*>& getIndexMap()
+    inline std::map<std::string, ZambeziIndexBase*>& getIndexMap()
     {
         return property_index_map_;
     }
@@ -67,7 +70,7 @@ public:
     }
 
     void buildTokenizeDic();
-    
+
     ZambeziTokenizer* getTokenizer();
 
 private:
@@ -78,8 +81,7 @@ private:
         std::vector<docid_t>& docids,
         std::vector<float>& scores);
 
-    void createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex,
-                    unsigned int poolSize);
+    void createZambeziIndex_(ZambeziIndexBase* &zambeziIndex, uint32_t poolSize);
 
 private:
     const ZambeziConfig& config_;
@@ -88,7 +90,7 @@ private:
 
     std::vector<std::string> propertyList_;
 
-    std::map<std::string, ZambeziBaseIndex*> property_index_map_;
+    std::map<std::string, ZambeziIndexBase*> property_index_map_;
 };
 
 } // namespace sf1r

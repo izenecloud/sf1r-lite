@@ -47,8 +47,6 @@ const izenelib::util::UString kAttrExcludeMerchant =
     izenelib::util::UString("淘宝网", kEncodeType);
 
 const izenelib::util::UString::CharT kUCharSpace = ' ';
-
-const MonomorphicFilter<true> kAllPassFilter;
 }
 
 bool DocLess(const ScoreDoc& o1, const ScoreDoc& o2)
@@ -178,7 +176,7 @@ bool ZambeziSearch::search(
 
     if (!filterTree.empty())
     {
-        queryBuilder_.prepare_filter(filterList, filterBitmap);
+        queryBuilder_.prepare_filter(filterTree, filterBitmap);
         filterBitset.reset(new izenelib::ir::indexmanager::Bitset);
         filterBitset->importFromEWAH(*filterBitmap);
     }
@@ -192,16 +190,18 @@ bool ZambeziSearch::search(
     else
         zambeziManager_->getTokenizer()->getTokenResults(query, tokenList);
 
-    zambeziManager_->search(algorithm, tokenList, kZambeziTopKNum,
-                            search_in_properties, candidates, scores);
+    ZambeziFilter filter(documentManager_, groupFilter, filterBitset);
+
+    zambeziManager_->search(algorithm, tokenList, search_in_properties,
+                            &filter, kZambeziTopKNum, candidates, scores);
 
     if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
         AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
 
-        zambeziManager_->search(algorithm, subTokenList, kZambeziTopKNum,
-                                search_in_properties, candidates, scores);
+        zambeziManager_->search(algorithm, subTokenList, search_in_properties,
+                                &filter, kZambeziTopKNum, candidates, scores);
     }
 
     if (candidates.empty())
@@ -258,14 +258,9 @@ bool ZambeziSearch::search(
     std::size_t totalCount = 0;
 
     {
-        ZambeziFilter filter(documentManager_, groupFilter, filterBitset);
-
         for (size_t i = 0; i < candNum; ++i)
         {
             docid_t docId = candidates[i];
-
-            if (!filter.test(docId))
-                continue;
 
             ScoreDoc scoreItem(docId, scores[i]);
             if (customRanker)

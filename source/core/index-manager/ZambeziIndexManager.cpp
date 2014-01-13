@@ -12,7 +12,7 @@ using namespace sf1r;
 ZambeziIndexManager::ZambeziIndexManager(
     const ZambeziConfig& config,
     const std::vector<std::string>& properties,
-    std::map<std::string, ZambeziBaseIndex*>& property_index_map,
+    std::map<std::string, ZambeziIndexBase*>& property_index_map,
     ZambeziTokenizer* zambeziTokenizer,
     boost::shared_ptr<DocumentManager> documentManager)
     : config_(config)
@@ -25,12 +25,12 @@ ZambeziIndexManager::ZambeziIndexManager(
 
 ZambeziIndexManager::~ZambeziIndexManager()
 {
-    
+
 }
 
 // build scd and creatdocument comes sequentially
-// it is controlled in zookeeper; all the index data comes in single thread in distribute env; 
-// and index_binlog for realtime index is not needed. 
+// it is controlled in zookeeper; all the index data comes in single thread in distribute env;
+// and index_binlog for realtime index is not needed.
 // If the index is down, the index rebuild from last backup;
 
 // WARNING: if the index is not used in distribute env;
@@ -42,10 +42,10 @@ void ZambeziIndexManager::postProcessForAPI()
 
 void ZambeziIndexManager::postBuildFromSCD(time_t timestamp)
 {
-    for (std::map<std::string, ZambeziBaseIndex*>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
+    for (std::map<std::string, ZambeziIndexBase*>::iterator i = property_index_map_.begin(); i != property_index_map_.end(); ++i)
     {
         i->second->flush();
-        
+
         std::string indexPath = config_.indexFilePath + "_" + i->first;
         std::ofstream ofs(indexPath.c_str(), std::ios_base::binary);
         if (!ofs)
@@ -84,10 +84,10 @@ bool ZambeziIndexManager::updateDocument(
 }
 
 bool ZambeziIndexManager::insertDocIndex_(
-    const docid_t docId, 
+    const docid_t docId,
     const std::string property,
     const std::vector<std::pair<std::string, int> >& tokenScoreList)
-{       
+{
     std::vector<std::string> tokenList;
     std::vector<uint32_t> scoreList;
     for (std::vector<std::pair<std::string, int> >::const_iterator it =
@@ -98,7 +98,7 @@ bool ZambeziIndexManager::insertDocIndex_(
     }
     property_index_map_[property]->insertDoc(docId, tokenList, scoreList);
 
-    return true; 
+    return true;
 }
 
 bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::string& property)
@@ -118,7 +118,7 @@ bool ZambeziIndexManager::buildDocument_Normal_(const Document& doc, const std::
 }
 
 bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std::string& property)
-{   
+{
     std::set<string> subProperties;
     for (unsigned int i = 0; i < config_.virtualPropeties.size(); ++i)
     {
@@ -144,7 +144,7 @@ bool ZambeziIndexManager::buildDocument_Combined_(const Document& doc, const std
         std::vector<std::pair<std::string, int> > tokenScoreList;
         zambeziTokenizer_->getTokenResults(combined_proValue, tokenScoreList);
         docid_t docId = doc.getId();
-        insertDocIndex_(docId, property, tokenScoreList);        
+        insertDocIndex_(docId, property, tokenScoreList);
     }
 
     return true;
@@ -154,7 +154,7 @@ bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::st
 {
     std::vector<std::string> propNameList;
     std::vector<std::string> propValueList;
-    
+
 
     propNameList.push_back("Title");
     propNameList.push_back("Attribute");
@@ -166,7 +166,7 @@ bool ZambeziIndexManager::buildDocument_Attr_(const Document& doc, const std::st
          i != propNameList.end(); ++i)
     {
         std::string propValue;
-        if (config_.virtualPropeties[0].subProperties.find(*i) != 
+        if (config_.virtualPropeties[0].subProperties.find(*i) !=
             config_.virtualPropeties[0].subProperties.end())
             doc.getProperty(*i, propValue);
 

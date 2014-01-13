@@ -16,7 +16,7 @@ ZambeziManager::ZambeziManager(
     , zambeziTokenizer_(NULL)
 {
     init();
-    
+
     if (!config_.hasAttrtoken)
         buildTokenizeDic();
 }
@@ -40,7 +40,7 @@ void ZambeziManager::init()
         if (i->isTokenizer)
         {
             propertyList_.push_back(i->name);
-            ZambeziBaseIndex* zambeziIndex = NULL;
+            ZambeziIndexBase* zambeziIndex = NULL;
             createZambeziIndex_(zambeziIndex, i->poolSize);
             property_index_map_.insert(std::make_pair(i->name, zambeziIndex));
         }
@@ -49,13 +49,13 @@ void ZambeziManager::init()
     for (std::vector<ZambeziVirtualProperty>::const_iterator i = config_.virtualPropeties.begin(); i != config_.virtualPropeties.end(); ++i)
     {
         propertyList_.push_back(i->name);
-        ZambeziBaseIndex* zambeziIndex = NULL;
+        ZambeziIndexBase* zambeziIndex = NULL;
         createZambeziIndex_(zambeziIndex, i->poolSize);
         property_index_map_.insert(std::make_pair(i->name, zambeziIndex));
     }
 }
 
-void ZambeziManager::createZambeziIndex_(ZambeziBaseIndex* &zambeziIndex, unsigned int poolSize)
+void ZambeziManager::createZambeziIndex_(ZambeziIndexBase* &zambeziIndex, unsigned int poolSize)
 {
     if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
     {
@@ -85,7 +85,7 @@ ZambeziTokenizer* ZambeziManager::getTokenizer()
     return zambeziTokenizer_;
 }
 
-bool ZambeziManager::open() 
+bool ZambeziManager::open()
 {
     const std::string& basePath = config_.indexFilePath; //not init
 
@@ -124,12 +124,12 @@ bool ZambeziManager::open()
 void ZambeziManager::search(
         izenelib::ir::Zambezi::Algorithm algorithm,
         const std::vector<std::pair<std::string, int> >& tokens,
-        uint32_t limit,
         const std::vector<std::string>& propertyList,
+        const ZambeziFilterBase* filter,
+        uint32_t limit,
         std::vector<docid_t>& docids,
         std::vector<float>& scores)
 {
-
     if (config_.indexType_ == ZambeziIndexType::DefultIndexType)
     {
         if (algorithm != izenelib::ir::Zambezi::SVS)
@@ -149,9 +149,9 @@ void ZambeziManager::search(
     izenelib::util::ClockTimer timer;
     // in one property
     if (propertyList.size() == 1)
-    {    
-        property_index_map_[propertyList[0]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docids, scores);
-        LOG(INFO) << "Search property:" << propertyList[0] 
+    {
+        property_index_map_[propertyList[0]]->retrieve(algorithm, tokens, filter, limit, docids, scores);
+        LOG(INFO) << "Search property:" << propertyList[0]
                   << " ,zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -159,8 +159,8 @@ void ZambeziManager::search(
 
     // only one property
     if (propertyList_.size() == 1)
-    {    
-        property_index_map_[propertyList_[0]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docids, scores);
+    {
+        property_index_map_[propertyList_[0]]->retrieve(algorithm, tokens, filter, limit, docids, scores);
         LOG(INFO) << "zambezi returns docid num: " << docids.size()
                   << ", costs :" << timer.elapsed() << " seconds";
         return;
@@ -175,11 +175,10 @@ void ZambeziManager::search(
     std::vector<std::vector<float> > scoresList;
     scoresList.resize(searchPropertyList.size());
 
-
     std::vector<float> weightList;
     for (unsigned int i = 0; i < searchPropertyList.size(); ++i)
     {
-        property_index_map_[searchPropertyList[i]]->retrievalWithBuffer(algorithm, tokens, limit, config_.searchBuffer, docidsList[i], scoresList[i]);
+        property_index_map_[searchPropertyList[i]]->retrieve(algorithm, tokens, filter, limit, docidsList[i], scoresList[i]);
         weightList.push_back(config_.getWeight(searchPropertyList[i]));
     }
 
@@ -231,7 +230,7 @@ void ZambeziManager::merge_(
     }
     docids.resize(totalCount);
     scores.resize(totalCount);
-    
+
     // count
     std::vector<std::list<pair<int, unsigned int> >::iterator> minDocList;
 
@@ -245,7 +244,7 @@ void ZambeziManager::merge_(
 
         for (std::list<pair<int, unsigned int> >::iterator i = existingList.begin(); i != existingList.end(); ++i)
         {
-            if ((config_.reverse && min < docidsList[i->first][i->second]) || 
+            if ((config_.reverse && min < docidsList[i->first][i->second]) ||
                 (!config_.reverse && min > docidsList[i->first][i->second]))
             {
                 min = docidsList[i->first][i->second];
