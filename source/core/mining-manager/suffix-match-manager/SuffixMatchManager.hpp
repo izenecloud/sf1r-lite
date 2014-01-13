@@ -73,14 +73,6 @@ public:
 
     void updateFmindex();
 
-    double getSuffixSearchRankThreshold(
-            const std::list<std::pair<UString, double> >& major_tokens,
-            const std::list<std::pair<UString, double> >& minor_tokens,
-            std::list<std::pair<UString, double> >& boundary_minor_tokens);
-
-    void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
-                        double& rank_boundary);
-
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;

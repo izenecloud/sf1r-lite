@@ -109,9 +109,109 @@ double KNlpProductTokenizer::tokenizeImpl_(ProductTokenParam& param)
         token_results.push_back(std::make_pair(ustr, score));
     }
 
+    getRankBoundary_(param);
     getRefinedResult_(param);
 
     return scoreSum;
+}
+
+void KNlpProductTokenizer::getRankBoundary_(ProductTokenParam& param)
+{
+    ProductTokenParam::TokenScoreList& minor_tokens(param.minorTokens);
+    double& rank_boundary(param.rankBoundary);
+
+    double minor_score_sum = 0;
+    double major_score_sum = 0;
+    unsigned int minor_size = 0;
+    unsigned int major_size = 0;
+    unsigned int total_size = 0;
+    bool needSmooth = false;
+    for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+    {
+        if (i->second > 0.1)
+        {
+            major_score_sum += i->second;
+            major_size++;
+            if (i->second > 0.5)
+            {
+                needSmooth = true;
+            }
+        }
+        else
+        {
+            minor_score_sum += i->second;
+            minor_size++;
+        }
+    }
+    total_size = minor_size + major_size;
+
+    if (needSmooth == true || (major_size <= 2 && major_score_sum > 0.6))
+    {
+        std::vector<double> minor_tokens_point;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+            minor_tokens_point.push_back(i->second);
+
+        KNlpResourceManager::getResource()->gauss_smooth(minor_tokens_point);
+
+        unsigned int k = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                                        i != minor_tokens.end(); ++i, k++)
+            i->second = minor_tokens_point[k];
+
+        minor_score_sum = 0;
+        major_score_sum = 0;
+        minor_size = 0;
+        major_size = 0;
+        total_size = 0;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            if (i->second > 0.1)
+            {
+                major_score_sum += i->second;
+                major_size++;
+            }
+            else
+            {
+                minor_score_sum += i->second;
+                minor_size++;
+            }
+        }
+        total_size = minor_size + major_size;
+    }
+
+    if (major_size <= 3)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.85 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.9 + minor_score_sum * 0.6;
+        }
+    }
+    else if (major_size <= 5)
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.75 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.7;
+        }
+    }
+    else
+    {
+        if (total_size > 8)
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.5;
+        }
+        else
+        {
+            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.7;
+        }
+    }
 }
 
 void KNlpProductTokenizer::getRefinedResult_(ProductTokenParam& param)

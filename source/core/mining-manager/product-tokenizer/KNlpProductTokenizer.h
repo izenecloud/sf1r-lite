@@ -27,6 +27,8 @@ public:
 private:
     double tokenizeImpl_(ProductTokenParam& param);
 
+    void getRankBoundary_(ProductTokenParam& param);
+
     void getRefinedResult_(ProductTokenParam& param);
 
 private:
