@@ -33,12 +33,26 @@ public:
 
     uint32_t find_first(bool reverse) const
     {
-        return reverse ? filterBitset_->find_last() : filterBitset_->find_first();
+        if (filterBitset_)
+        {
+            return reverse ? (uint32_t)filterBitset_->find_last() : (uint32_t)filterBitset_->find_first();
+        }
+        else
+        {
+            return reverse ? documentManager_.getMaxDocId() : 1;
+        }
     }
 
     uint32_t find_next(uint32_t id, bool reverse) const
     {
-        return reverse ? filterBitset_->find_prev(id) : filterBitset_->find_next(id);
+        if (filterBitset_)
+        {
+            return reverse ? (uint32_t)filterBitset_->find_prev(id) : (uint32_t)filterBitset_->find_next(id);
+        }
+        else
+        {
+            return reverse ? id - 1 : id + 1;
+        }
     }
 
 private:
