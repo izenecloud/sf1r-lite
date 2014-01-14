@@ -431,6 +431,7 @@
         <xs:attribute name="weight" type="xs:float" use="optional"/>
         <xs:attribute name="min" type="xs:float" use="optional"/>
         <xs:attribute name="max" type="xs:float" use="optional"/>
+		<xs:attribute name="zoomin" type="xs:float" use="optional"/>
         <xs:attribute name="debug" type="YesNoType" use="optional"/>
     </xs:complexType>
 

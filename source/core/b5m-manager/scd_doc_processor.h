@@ -9,15 +9,18 @@
 #include <boost/threadpool.hpp>
 #include <glog/logging.h>
 #include "b5m_types.h"
+#include "b5m_helper.h"
 #include "b5m_threadpool.h"
 
 NS_SF1R_B5M_BEGIN
 class ScdDocProcessor {
 public:
     typedef boost::function<void (ScdDocument&) > ProcessorType;
-    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), self_writer_(false), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0)
+    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), self_writer_(false), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0), debug_count_(100000)
     {
     }
+
+    void SetDebugCount(std::size_t c) {debug_count_ = c;}
 
     void AddInput(const std::string& scd_path)
     {
@@ -56,7 +59,7 @@ public:
                 for( ScdParser::iterator doc_iter = parser.begin();
                   doc_iter!= parser.end(); ++doc_iter, ++n)
                 {
-                    if(n%100000==0)
+                    if(n%debug_count_==0)
                     {
                         LOG(INFO)<<"Find Documents "<<n<<std::endl;
                     }
@@ -120,6 +123,7 @@ private:
     B5mThreadPool<ScdDocument> pool_;
     boost::mutex mutex_;
     std::size_t count_;
+    std::size_t debug_count_;
     //std::string output_;
 };
 

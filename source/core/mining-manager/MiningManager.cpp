@@ -2823,6 +2823,14 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
     return groupManager_->getPropValueTable(propName);
 }
 
+const faceted::AttrTable* MiningManager::GetAttrTable() const
+{
+    if (! attrManager_)
+        return NULL;
+
+    return &attrManager_->getAttrTable();
+}
+
 bool MiningManager::getProductScore(
         const std::string& docIdStr,
         const std::string& scoreTypeName,
@@ -3133,7 +3141,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 
     const bfs::path filePath(zambeziDir / "index.bin");
     zambeziConfig.indexFilePath = filePath.string();
-    zambeziManager_ = new ZambeziManager(zambeziConfig, attrManager_, numericTableBuilder_);
+    zambeziManager_ = new ZambeziManager(zambeziConfig);
 
     if (!zambeziManager_->open())
     {
