@@ -225,9 +225,9 @@ bool ZambeziSearch::search(
         {
             normalizerScore += i->second;
         }
-        for (std::vector<float>::iterator i = scores.begin(); i != scores.end(); ++i)
+        for (std::vector<float>::iterator it = scores.begin(); it != scores.end(); ++it)
         {
-            (*i) = (*i)/normalizerScore;
+            *it /= normalizerScore;
         }
     }
 
