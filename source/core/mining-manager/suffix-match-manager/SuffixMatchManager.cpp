@@ -11,6 +11,7 @@
 #include <b5m-manager/product_matcher.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
+#include "../product-tokenizer/FuzzyAlphaNumNormalizer.h"
 
 #include <3rdparty/am/btree/btree_map.h>
 #include <util/ustring/algo.hpp>
@@ -34,6 +35,7 @@ SuffixMatchManager::SuffixMatchManager(
     , document_manager_(document_manager)
     , matcher_(NULL)
     , suffixMatchTask_(NULL)
+    , fuzzyNormalizer_(new FuzzyAlphaNumNormalizer)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -42,12 +44,14 @@ SuffixMatchManager::SuffixMatchManager(
 
     filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
-    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
+    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_,
+                                          filter_manager_, fuzzyNormalizer_));
 }
 
 SuffixMatchManager::~SuffixMatchManager()
 {
     //if (knowledge_) delete knowledge_;
+    delete fuzzyNormalizer_;
 }
 
 void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
@@ -311,7 +315,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     std::vector<boost::tuple<size_t, size_t, double> > synonym_match_range;
                     for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
                     {    
-                        synonym_tokens[i][j].first = Algorithm<UString>::padForAlphaNum(synonym_tokens[i][j].first);
+                        fuzzyNormalizer_->normalizeToken(synonym_tokens[i][j].first);
                         if (fmi_manager_->backwardSearch(search_property, synonym_tokens[i][j].first, sub_match_range) == synonym_tokens[i][j].first.length())
                         {
                             tmp_tuple.get<0>() = sub_match_range.first;
@@ -335,7 +339,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 {
                     if (pit->first.empty()) continue;
                     Algorithm<UString>::to_lower(pit->first);
-                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    fuzzyNormalizer_->normalizeToken(pit->first);
                     if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                     {
                         range_list.push_back(sub_match_range);
@@ -350,7 +354,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 {
                     if (pit->first.empty()) continue;
                     Algorithm<UString>::to_lower(pit->first);
-                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    fuzzyNormalizer_->normalizeToken(pit->first);
                     if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                     {
                         range_list.push_back(sub_match_range);

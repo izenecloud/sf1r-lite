@@ -22,6 +22,7 @@ namespace b5m {
 class ProductMatcher;
 }
 class CategoryClassifyTable;
+class FuzzyNormalizer;
 
 namespace faceted
 {
@@ -110,6 +111,8 @@ private:
     typedef boost::unique_lock<MutexType> WriteLock;
 
     mutable MutexType mutex_;
+
+    FuzzyNormalizer* fuzzyNormalizer_;
 };
 
 }

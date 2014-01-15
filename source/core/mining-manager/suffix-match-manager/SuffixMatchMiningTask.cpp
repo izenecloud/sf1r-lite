@@ -44,7 +44,10 @@ bool SuffixMatchMiningTask::preProcess(int64_t timestamp)
         new_filter_manager->copyPropertyInfo(filter_manager_);
         new_filter_manager->generatePropertyId();
 
-        new_fmi_manager.reset(new FMIndexManager(data_root_path_, document_manager_, new_filter_manager));
+        new_fmi_manager.reset(new FMIndexManager(data_root_path_,
+                                                 document_manager_,
+                                                 new_filter_manager,
+                                                 fmi_manager_->getFuzzyNormalizer()));
 
         std::vector<std::string> properties;
         for (int i = 0; i < FMIndexManager::FM_TYPE_COUNT; ++i)

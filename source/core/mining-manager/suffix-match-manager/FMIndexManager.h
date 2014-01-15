@@ -13,6 +13,8 @@ namespace sf1r
 class DocumentManager;
 class FilterManager;
 class Document;
+class FuzzyNormalizer;
+
 class FMIndexManager
 {
 public:
@@ -33,7 +35,8 @@ public:
     FMIndexManager(
             const std::string& homePath,
             boost::shared_ptr<DocumentManager>& document_manager,
-            boost::shared_ptr<FilterManager>& filter_manager);
+            boost::shared_ptr<FilterManager>& filter_manager,
+            FuzzyNormalizer* fuzzyNormalizer);
 
     ~FMIndexManager();
 
@@ -105,6 +108,8 @@ public:
 
     bool initAndLoadOldDocs(const FMIndexManager* old_fmi_manager);
 
+    FuzzyNormalizer* getFuzzyNormalizer() { return fuzzyNormalizer_; }
+
 private:
     void appendDocs(size_t last_docid);
 
@@ -136,6 +141,8 @@ private:
     typedef std::map<std::string, PropertyFMIndex>::iterator FMIndexIter;
     typedef std::map<std::string, PropertyFMIndex>::const_iterator FMIndexConstIter;
     FMDocArrayMgrType docarray_mgr_;
+
+    FuzzyNormalizer* fuzzyNormalizer_;
 };
 
 }
