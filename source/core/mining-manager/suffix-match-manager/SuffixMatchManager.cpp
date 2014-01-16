@@ -30,12 +30,13 @@ SuffixMatchManager::SuffixMatchManager(
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
-        NumericPropertyTableBuilder* numeric_tablebuilder)
+        NumericPropertyTableBuilder* numeric_tablebuilder,
+        FuzzyNormalizer* fuzzyNormalizer)
     : data_root_path_(homePath)
     , document_manager_(document_manager)
     , matcher_(NULL)
     , suffixMatchTask_(NULL)
-    , fuzzyNormalizer_(new FuzzyAlphaNumNormalizer)
+    , fuzzyNormalizer_(fuzzyNormalizer)
 {
     if (!boost::filesystem::exists(homePath))
     {

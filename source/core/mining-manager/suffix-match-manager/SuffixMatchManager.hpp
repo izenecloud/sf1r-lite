@@ -39,7 +39,8 @@ public:
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
-            NumericPropertyTableBuilder* numeric_tablebuilder);
+            NumericPropertyTableBuilder* numeric_tablebuilder,
+            FuzzyNormalizer* fuzzyNormalizer);
 
     ~SuffixMatchManager();
 

@@ -1,6 +1,7 @@
 #ifndef SF1V5_MINING_SUFFIXMATCH_CONFIG_H_
 #define SF1V5_MINING_SUFFIXMATCH_CONFIG_H_
 
+#include "FuzzyNormalizerConfig.h"
 #include <stdint.h>
 #include <string>
 #include <boost/serialization/access.hpp>
@@ -79,6 +80,7 @@ public:
     std::vector<std::string> date_filter_properties;
     std::vector<NumericFilterConfig> num_filter_properties;
     std::vector<std::string> searchable_properties;
+    FuzzyNormalizerConfig normalizer_config;
 
 private:
     friend class boost::serialization::access;
@@ -97,6 +99,7 @@ private:
         ar & date_filter_properties;
         ar & num_filter_properties;
         ar & searchable_properties;
+        ar & normalizer_config;
     }
 };
 

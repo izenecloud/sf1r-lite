@@ -26,6 +26,8 @@
 #include <boost/asio.hpp>
 #include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
+#include <configuration-manager/FuzzyNormalizerConfig.h>
+
 using namespace std;
 using namespace izenelib::util::ticpp;
 
@@ -2123,6 +2125,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeNorm = getUniqChildElement(task_node, "Normalizer", false);
+        parseFuzzyNormalizerNode(
+            subNodeNorm, mining_schema.suffixmatch_schema.normalizer_config);
+
         ticpp::Element* subNodeInc = getUniqChildElement(task_node, "Incremental", true);
         if (subNodeInc)
         {
@@ -2334,6 +2340,27 @@ NEXT:
 
     task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
     parseAdIndexNode(task_node, collectionMeta);
+}
+
+void CollectionConfig::parseFuzzyNormalizerNode(
+    const ticpp::Element* normNode,
+    FuzzyNormalizerConfig& normalizerConfig) const
+{
+    if (!normNode)
+        return;
+
+    std::string typeName;
+    getAttribute(normNode, "padding", typeName);
+
+    FuzzyNormalizerType typeId = normalizerConfig.getNormalizerType(typeName);
+    if (typeId == FUZZY_NORMALIZER_NUM)
+    {
+        std::string error("unknown <Normalizer> padding value \"" +
+                          typeName + "\"");
+        throw XmlConfigParserException(error);
+    }
+
+    normalizerConfig.type = typeId;
 }
 
 void CollectionConfig::parseAdIndexNode(

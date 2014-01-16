@@ -275,6 +275,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="Normalizer" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="Incremental" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="ProductForward" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="GroupCounterTopK" minOccurs="0" maxOccurs="1"/>
@@ -311,6 +312,12 @@
     <xs:element name="TokenizeDictionary">
         <xs:complexType>
             <xs:attribute name="path" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="Normalizer">
+        <xs:complexType>
+            <xs:attribute name="padding" type="xs:string" use="required"/>
         </xs:complexType>
     </xs:element>
 

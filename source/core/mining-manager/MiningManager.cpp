@@ -59,6 +59,8 @@
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "product-tokenizer/ProductTokenizerFactory.h"
 #include "product-tokenizer/ProductTokenizer.h"
+#include "product-tokenizer/FuzzyNormalizerFactory.h"
+#include "product-tokenizer/FuzzyNormalizer.h"
 #include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
@@ -629,10 +631,16 @@ bool MiningManager::open()
 
             KNlpDictMonitor::get()->start(system_resource_path_ + "/dict/term_category");
 
+            FuzzyNormalizerFactory normalizerFactory(productTokenizer_);
+            FuzzyNormalizer* fuzzyNormalizer =
+                    normalizerFactory.createFuzzyNormalizer(
+                        mining_schema_.suffixmatch_schema.normalizer_config);
+
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(
                 suffix_match_path_, document_manager_,
-                groupManager_, attrManager_, numericTableBuilder_);
+                groupManager_, attrManager_, numericTableBuilder_,
+                fuzzyNormalizer);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
