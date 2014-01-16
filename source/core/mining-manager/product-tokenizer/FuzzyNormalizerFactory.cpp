@@ -20,7 +20,8 @@ FuzzyNormalizer* FuzzyNormalizerFactory::createFuzzyNormalizer(const FuzzyNormal
         return new FuzzyAlphaNumNormalizer;
 
     case TOKEN_NORMALIZER:
-        return new FuzzyTokenNormalizer(productTokenizer_);
+        return new FuzzyTokenNormalizer(productTokenizer_,
+                                        config.maxIndexToken);
 
     default:
         LOG(WARNING) << "unknown fuzzy normalizer type " << config.type;

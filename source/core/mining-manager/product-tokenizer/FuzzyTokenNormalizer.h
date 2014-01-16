@@ -15,7 +15,9 @@ class ProductTokenizer;
 class FuzzyTokenNormalizer : public FuzzyNormalizer
 {
 public:
-    FuzzyTokenNormalizer(ProductTokenizer* productTokenizer);
+    FuzzyTokenNormalizer(
+        ProductTokenizer* productTokenizer,
+        int maxIndexToken);
 
     virtual void normalizeToken(izenelib::util::UString& token);
 
@@ -23,6 +25,8 @@ public:
 
 private:
     ProductTokenizer* productTokenizer_;
+
+    const int maxIndexToken_;
 };
 
 }

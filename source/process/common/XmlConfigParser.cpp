@@ -2361,6 +2361,9 @@ void CollectionConfig::parseFuzzyNormalizerNode(
     }
 
     normalizerConfig.type = typeId;
+
+    getAttribute_IntType(normNode, "max_index_token",
+                         normalizerConfig.maxIndexToken, false);
 }
 
 void CollectionConfig::parseAdIndexNode(

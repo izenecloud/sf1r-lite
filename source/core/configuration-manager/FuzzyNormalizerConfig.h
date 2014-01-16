@@ -23,6 +23,8 @@ class FuzzyNormalizerConfig
 public:
     FuzzyNormalizerType type;
 
+    int maxIndexToken;
+
     FuzzyNormalizerConfig();
 
     FuzzyNormalizerType getNormalizerType(const std::string& typeName) const;

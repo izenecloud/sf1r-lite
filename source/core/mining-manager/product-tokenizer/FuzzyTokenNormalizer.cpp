@@ -10,8 +10,11 @@ namespace
 const UString::CharT kUCharSpace = ' ';
 }
 
-FuzzyTokenNormalizer::FuzzyTokenNormalizer(ProductTokenizer* productTokenizer)
+FuzzyTokenNormalizer::FuzzyTokenNormalizer(
+    ProductTokenizer* productTokenizer,
+    int maxIndexToken)
         : productTokenizer_(productTokenizer)
+        , maxIndexToken_(maxIndexToken)
 {
 }
 
@@ -42,18 +45,28 @@ void FuzzyTokenNormalizer::normalizeText(izenelib::util::UString& text)
     ProductTokenParam tokenParam(textUtf8, false);
     productTokenizer_->tokenize(tokenParam);
 
+    int tokenCount = 0;
+
     for (ProductTokenParam::TokenScoreListIter it = tokenParam.majorTokens.begin();
          it != tokenParam.majorTokens.end(); ++it)
     {
+        if (maxIndexToken_ > 0 && tokenCount >= maxIndexToken_)
+            break;
+
         result += it->first;
         result += kUCharSpace;
+        ++tokenCount;
     }
 
     for (ProductTokenParam::TokenScoreListIter it = tokenParam.minorTokens.begin();
          it != tokenParam.minorTokens.end(); ++it)
     {
+        if (maxIndexToken_ > 0 && tokenCount >= maxIndexToken_)
+            break;
+
         result += it->first;
         result += kUCharSpace;
+        ++tokenCount;
     }
 
     text.swap(result);

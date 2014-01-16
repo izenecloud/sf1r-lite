@@ -318,6 +318,7 @@
     <xs:element name="Normalizer">
         <xs:complexType>
             <xs:attribute name="padding" type="xs:string" use="required"/>
+            <xs:attribute name="max_index_token" type="xs:positiveInteger" use="optional"/>
         </xs:complexType>
     </xs:element>
 

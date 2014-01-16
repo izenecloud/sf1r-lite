@@ -4,6 +4,7 @@ using namespace sf1r;
 
 FuzzyNormalizerConfig::FuzzyNormalizerConfig()
         : type(ALPHA_NUM_NORMALIZER)
+        , maxIndexToken(0)
 {
     typeMap["alphanum"] = ALPHA_NUM_NORMALIZER;
     typeMap["token"] = TOKEN_NORMALIZER;
