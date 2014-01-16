@@ -38,7 +38,7 @@ static inline void getValueStrFromPropId(faceted::PropValueTable* pvt,
 
 
 AdSelector::AdSelector()
-    :history_ctr_data_(MAX_HISTORY_CTR_NUM)
+    :history_ctr_data_(MAX_HISTORY_CTR_NUM/1024)
      , random_eng_(std::time(NULL))
      , random_gen_(random_eng_, DistributionT())
      , need_refresh_(true)
@@ -478,16 +478,20 @@ void AdSelector::computeHistoryCTR()
         {
             for (size_t j = 0; j < all_fullkey[AdSeg].size(); ++j)
             {
-                std::string ad_seg_str;
+                //std::string ad_seg_str;
+                SegIdT segid = 0;
                 if (!all_fullkey[AdSeg][j].first.empty())
                 {
-                    SegIdT segid = 0;
                     ad_segid_mgr_->getDocIdByDocName(all_fullkey[AdSeg][j].first, segid, true);
-                    ad_seg_str = boost::lexical_cast<std::string>(segid);
+                    //ad_seg_str = boost::lexical_cast<std::string>(segid);
                 }
                 double ctr_res = ad_click_predictor_->predict(all_fullkey[UserSeg][i].second, all_fullkey[AdSeg][j].second);
-                std::string key = all_fullkey[UserSeg][i].first + ad_seg_str;
-                history_ctr_data_[key] = ctr_res;
+                const std::string& key = all_fullkey[UserSeg][i].first;
+                if (segid >= history_ctr_data_[key].size())
+                {
+                    history_ctr_data_[key].resize(segid + 1);
+                }
+                history_ctr_data_[key][segid] = ctr_res;
                 ofs_history << key << " : " << ctr_res << std::endl;
             }
         }
@@ -533,8 +537,8 @@ void AdSelector::updatePendingHistoryCTRData()
         for (size_t j = 0; j < docid_list.size(); ++j)
         {
             docid_t docid = docid_list[j];
-            std::vector<std::string> all_fullkey = user_seg_str;
-            expandSegmentStr(all_fullkey, ad_segid_data_[docid]);
+            //std::vector<std::string> all_fullkey = user_seg_str;
+            //expandSegmentStr(all_fullkey, ad_segid_data_[docid]);
 
             ad_features.clear();
             faceted::PropValueTable::PropIdList propids;
@@ -553,9 +557,17 @@ void AdSelector::updatePendingHistoryCTRData()
                 ++feature_index;
             }
             double result = ad_click_predictor_->predict(user_info, ad_features);
-            for (size_t k = 0; k < all_fullkey.size(); ++k)
+            for (size_t l = 0; l < user_seg_str.size(); ++l)
             {
-                history_ctr_data_[all_fullkey[k]] = result;
+                for (size_t k = 0; k < ad_segid_data_[docid].size(); ++k)
+                {
+                    SegIdT segid = ad_segid_data_[docid][k];
+                    if (segid >= history_ctr_data_[user_seg_str[l]].size())
+                    {
+                        history_ctr_data_[user_seg_str[l]].resize(segid + 1);
+                    }
+                    history_ctr_data_[user_seg_str[l]][segid] = result;
+                }
             }
         }
     }
@@ -663,44 +675,73 @@ void AdSelector::getUserSegmentStr(std::vector<std::string>& user_seg_str_list, 
     expandSegmentStr(user_seg_str_list, user_feature_list);
 }
 
-bool AdSelector::getHistoryCTR(const std::vector<std::string>& all_fullkey, double& max_ctr)
+bool AdSelector::getHistoryCTR(const std::vector<std::string>& user_seg_key, 
+    const std::vector<SegIdT>& ad_segid_list, double& max_ctr)
 {
-    if (all_fullkey.empty())
-        return true;
-
-    bool ret = true;
     max_ctr = 0;
-    boost::unordered_map<std::string, double>::const_iterator it = history_ctr_data_.find(all_fullkey[0]);
-
-    if (it != history_ctr_data_.end())
-        max_ctr = it->second;
+    bool ret = false;
+    if (ad_segid_list.empty())
+    {
+        ret = true;
+    }
     else
     {
-        ret = false;
-        LOG(INFO) << "history ctr key not found: " << all_fullkey[0];
-    }
-
-    if (all_fullkey.size() > 1)
-    {
-        //LOG(INFO) << "multi values : " << all_fullkey.size(); 
-        for (size_t i = 1; i < all_fullkey.size(); ++i)
+        // for multi feature values we just get the highest ctr.
+        for(size_t i = 0; i < user_seg_key.size(); ++i)
         {
-            it = history_ctr_data_.find(all_fullkey[i]);
-            if (it != history_ctr_data_.end())
+            HistoryCTRDataT::const_iterator it = history_ctr_data_.find(user_seg_key[i]);
+            if (it == history_ctr_data_.end())
+                continue;
+            for(size_t j = 0; j < ad_segid_list.size(); ++j)
             {
-                max_ctr = std::max(it->second, max_ctr);
-                //LOG(INFO) << "values : " << all_fullkey[i]; 
-            }
-            else
-            {
-                ret = false;
-                LOG(INFO) << "multi value not found: " << all_fullkey[i];
+                if (ad_segid_list[j] >= it->second.size())
+                    continue;
+                max_ctr = std::max(it->second[ad_segid_list[j]], max_ctr);
+                ret = true;
             }
         }
     }
-    //LOG(INFO) << "history ctr key: " << all_fullkey[0] << ", ctr: " << max_ctr;
     return ret;
 }
+
+//bool AdSelector::getHistoryCTR(const std::vector<std::string>& all_fullkey, double& max_ctr)
+//{
+//    if (all_fullkey.empty())
+//        return true;
+//
+//    bool ret = true;
+//    max_ctr = 0;
+//    boost::unordered_map<std::string, double>::const_iterator it = history_ctr_data_.find(all_fullkey[0]);
+//
+//    if (it != history_ctr_data_.end())
+//        max_ctr = it->second;
+//    else
+//    {
+//        ret = false;
+//        LOG(INFO) << "history ctr key not found: " << all_fullkey[0];
+//    }
+//
+//    if (all_fullkey.size() > 1)
+//    {
+//        //LOG(INFO) << "multi values : " << all_fullkey.size(); 
+//        for (size_t i = 1; i < all_fullkey.size(); ++i)
+//        {
+//            it = history_ctr_data_.find(all_fullkey[i]);
+//            if (it != history_ctr_data_.end())
+//            {
+//                max_ctr = std::max(it->second, max_ctr);
+//                //LOG(INFO) << "values : " << all_fullkey[i]; 
+//            }
+//            else
+//            {
+//                ret = false;
+//                LOG(INFO) << "multi value not found: " << all_fullkey[i];
+//            }
+//        }
+//    }
+//    //LOG(INFO) << "history ctr key: " << all_fullkey[0] << ", ctr: " << max_ctr;
+//    return ret;
+//}
 
 void AdSelector::selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std::vector<docid_t>& unclicked_doclist)
 {
@@ -752,7 +793,7 @@ bool AdSelector::select(const FeatureT& user_info,
     getUserSegmentStr(user_seg_str, user_info);
 
     std::size_t max_clicked_retnum = max_select/3 + 1;
-    std::size_t max_unclicked_retnum = max_select- max_clicked_retnum;
+    std::size_t max_unclicked_retnum = max_select - max_clicked_retnum;
 
     //std::map<docid_t, const FeatureMapT*> clicked_docfeature_list;
     std::vector<docid_t> unclicked_doclist;
@@ -760,22 +801,25 @@ bool AdSelector::select(const FeatureT& user_info,
 
     std::size_t max_tmp_clicked_num = max_clicked_retnum * 2;
     ScoreSortedHitQueue tmp_clicked_scorelist(max_tmp_clicked_num);
+    ScoreSortedHitQueue tmp_unclicked_scorelist(max_unclicked_retnum);
 
     std::vector<docid_t> pending_compute_doclist;
 
+    bool random_select = true;
     for(size_t i = 0; i < ad_doclist.size(); ++i)
     {
         const docid_t& docid = ad_doclist[i];
+        double score = 0;
         if (clicked_ads_.test(docid))
         {
             // for clicked item, we filter the result first by the history ctr.
-            //clicked_docfeature_list[ad_doclist[i]] = &(ad_feature_list[i]);
-            double score = 0;
+            // we can also select by random from clicked ads in a little possible.
+            // It may avoid the possible noisy due to small sample size.
             if (ad_doclist.size() > max_tmp_clicked_num)
             {
-                std::vector<std::string> all_fullkey = user_seg_str;
-                expandSegmentStr(all_fullkey, ad_segid_data_[docid]);
-                if(!getHistoryCTR(all_fullkey, score))
+                //all_fullkey = user_seg_str;
+                //expandSegmentStr(all_fullkey, ad_segid_data_[docid]);
+                if(!getHistoryCTR(user_seg_str, ad_segid_data_[docid], score))
                 {
                     // history not found. pending to compute
                     // put it to unclicked this time to select by random.
@@ -789,13 +833,20 @@ bool AdSelector::select(const FeatureT& user_info,
         }
         else
         {
-            unclicked_doclist.push_back(docid);
+            if(!random_select && getHistoryCTR(user_seg_str, ad_segid_data_[docid], score))
+            {
+                ScoreDoc item(docid, score);
+                tmp_unclicked_scorelist.insert(item);
+            }
+            else
+                unclicked_doclist.push_back(docid);
         }
     }
 
     if (!pending_compute_doclist.empty())
     {
         boost::unique_lock<boost::mutex> guard(pending_list_lock_);
+        LOG(INFO) << "pending compute doclist : " << pending_compute_doclist.size();
         pending_compute_doclist_.push_back(std::make_pair(user_info, std::vector<docid_t>()));
         pending_compute_doclist_.back().second.swap(pending_compute_doclist);
         need_refresh_ = true;
@@ -803,7 +854,7 @@ bool AdSelector::select(const FeatureT& user_info,
 
     std::size_t scoresize = tmp_clicked_scorelist.size();
     // rank the finally filtered clicked item by realtime CTR. 
-    ScoreSortedHitQueue clicked_scorelist(max_clicked_retnum);
+    ScoreSortedHitQueue total_scorelist(max_clicked_retnum + tmp_unclicked_scorelist.size());
     FeatureT ad_features;
 
     std::vector<faceted::PropValueTable*> pvt_list;
@@ -843,20 +894,28 @@ bool AdSelector::select(const FeatureT& user_info,
             ++feature_index;
         }
         item.score = ad_click_predictor_->predict(user_info, ad_features);
-        clicked_scorelist.insert(item);
+        total_scorelist.insert(item);
     }
-    // random select some un-clicked ads.
+
+    max_unclicked_retnum -= tmp_unclicked_scorelist.size();
+    scoresize = tmp_unclicked_scorelist.size();
+    for(int i = scoresize - 1; i >=0; --i)
+    {
+        total_scorelist.insert(tmp_unclicked_scorelist.pop());
+    }
+
+    // random select some un-scored ads.
     if (max_unclicked_retnum < unclicked_doclist.size())
     {
         selectByRandSelectPolicy(max_unclicked_retnum, unclicked_doclist);
     }
-    scoresize = clicked_scorelist.size();
+    scoresize = total_scorelist.size();
     score_list.resize(ad_doclist.size());
     std::size_t ret_i = 0;
     double min_score = 0;
     for(int i = scoresize - 1; i >= 0; --i)
     {
-        const ScoreDoc& item = clicked_scorelist.pop();
+        const ScoreDoc& item = total_scorelist.pop();
         ad_doclist[i] = item.docId;
         score_list[i] = item.score;
         if (item.score < min_score)
@@ -869,7 +928,7 @@ bool AdSelector::select(const FeatureT& user_info,
         score_list[ret_i] = min_score - 1;
         ++ret_i;
     }
-    ad_doclist.resize(max_select);
+    ad_doclist.resize(ret_i);
     score_list.resize(ad_doclist.size());
     return !ad_doclist.empty();
 }

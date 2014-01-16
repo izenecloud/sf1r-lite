@@ -3,10 +3,13 @@
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <boost/numeric/ublas/vector_sparse.hpp>
+#include <3rdparty/am/google/sparsetable.h>
 
 #define LATENT_VEC_DIM  10
 
 namespace bfs = boost::filesystem;
+using namespace boost::numeric::ublas;
 
 namespace sf1r
 {

@@ -88,7 +88,10 @@ private:
     void updatePendingHistoryCTRData();
     void selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std::vector<docid_t>& unclicked_doclist);
     void computeHistoryCTR();
-    bool getHistoryCTR(const std::vector<std::string>& all_fullkey, double& max_ctr);
+    //bool getHistoryCTR(const std::vector<std::string>& all_fullkey, double& max_ctr);
+    bool getHistoryCTR(const std::vector<std::string>& user_seg_key, 
+        const std::vector<SegIdT>& ad_segid_list, double& max_ctr);
+
     void expandSegmentStr(std::vector<std::string>& seg_str_list, const std::vector<SegIdT>& ad_segid_list);
     void expandSegmentStr(std::vector<std::string>& seg_str_list, const FeatureMapT& feature_list);
     void getUserSegmentStr(std::vector<std::string>& user_seg_str_list, const FeatureT& user_info);
@@ -104,11 +107,12 @@ private:
             izenelib::ir::idmanager::UniqueIDGenerator<std::string, SegIdT, izenelib::util::ReadWriteLock>,
             izenelib::ir::idmanager::EmptyIDStorage<std::string, SegIdT> > AdSegIDManager;
 
+    typedef boost::unordered_map<std::string, std::vector<double> > HistoryCTRDataT;
     faceted::GroupManager* groupManager_;
     std::string res_path_;
     std::string segments_data_path_;
     AdClickPredictor* ad_click_predictor_;
-    boost::unordered_map<std::string, double> history_ctr_data_;
+    HistoryCTRDataT history_ctr_data_;
     std::vector<std::pair<FeatureT, std::vector<docid_t> > >  pending_compute_doclist_;
     boost::mutex pending_list_lock_;
 
