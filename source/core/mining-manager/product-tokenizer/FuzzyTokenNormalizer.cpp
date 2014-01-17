@@ -1,6 +1,5 @@
 #include "FuzzyTokenNormalizer.h"
 #include "ProductTokenizer.h"
-#include <util/ustring/algo.hpp>
 
 using namespace sf1r;
 using izenelib::util::UString;
@@ -8,6 +7,9 @@ using izenelib::util::UString;
 namespace
 {
 const UString::CharT kUCharSpace = ' ';
+
+/** padding at head and tail */
+const int kByteNumForTokenPad = 2 * sizeof(UString::CharT);
 }
 
 FuzzyTokenNormalizer::FuzzyTokenNormalizer(
@@ -20,11 +22,14 @@ FuzzyTokenNormalizer::FuzzyTokenNormalizer(
 
 void FuzzyTokenNormalizer::normalizeToken(izenelib::util::UString& token)
 {
+    if (token.empty())
+        return;
+
     UString result;
-    result.reserve(token.size()); // byte number
+    result.reserve(token.size() + kByteNumForTokenPad); // byte number
 
     result += kUCharSpace;
-    izenelib::util::Algorithm<UString>::padForAlphaNumCompact(token, result);
+    result += token;
     result += kUCharSpace;
 
     token.swap(result);
@@ -35,17 +40,17 @@ void FuzzyTokenNormalizer::normalizeText(izenelib::util::UString& text)
     if (text.empty())
         return;
 
-    UString result;
-    result.reserve(text.size()); // byte number
-    result += kUCharSpace;
-
     std::string textUtf8;
     text.convertString(textUtf8, UString::UTF_8);
 
     ProductTokenParam tokenParam(textUtf8, false);
     productTokenizer_->tokenize(tokenParam);
 
+    UString result;
     int tokenCount = 0;
+
+    result.reserve(text.size()); // byte number
+    result += kUCharSpace;
 
     for (ProductTokenParam::TokenScoreListIter it = tokenParam.majorTokens.begin();
          it != tokenParam.majorTokens.end(); ++it)

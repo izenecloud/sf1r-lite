@@ -6,9 +6,7 @@ using izenelib::util::UString;
 
 void FuzzyAlphaNumNormalizer::normalizeToken(izenelib::util::UString& token)
 {
-    UString result;
-    izenelib::util::Algorithm<UString>::padForAlphaNum(token, result);
-    token.swap(result);
+    token = izenelib::util::Algorithm<UString>::padForAlphaNum(token);
 }
 
 void FuzzyAlphaNumNormalizer::normalizeText(izenelib::util::UString& text)
