@@ -238,7 +238,7 @@ void AdSelector::stop()
     ad_segid_str_data_.close();
 }
 
-// one ad may have belong to multi segments.
+// one ad may belong to multi segments.
 void AdSelector::getAdSegmentStrList(docid_t ad_id, std::vector<std::string>& retstr_list)
 {
     if (ad_id > ad_segid_data_.size())
@@ -271,7 +271,7 @@ void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feat
         SegIdT segid;
         ad_segid_mgr_->getDocIdByDocName(seg_str_list[j], segid, true);
         segids.push_back(segid);
-        ad_segid_str_data_.put(segid, seg_str_list[j].data(), seg_str_list.size(), Lux::IO::OVERWRITE);
+        ad_segid_str_data_.put(segid, seg_str_list[j].data(), seg_str_list[j].size(), Lux::IO::OVERWRITE);
     }
     if (ad_docid >= ad_segid_data_.size())
     {
@@ -378,7 +378,7 @@ void AdSelector::updateFunc()
 
 void AdSelector::getAllPossibleSegStr(const FeatureMapT& segments,
     std::map<std::string, std::size_t> segments_counter,
-    std::vector<std::pair<std::string, FeatureT> >& all_keys)
+    std::map<std::string, FeatureT>& all_keys)
 {
     assert(segments_counter.size() == segments.size());
 
@@ -400,7 +400,7 @@ void AdSelector::getAllPossibleSegStr(const FeatureMapT& segments,
                 segment_data.push_back(std::make_pair(segit->first, value));
             }
         }
-        all_keys.push_back(std::make_pair(key, segment_data));
+        all_keys[key] = segment_data;
         FeatureMapT::const_iterator finded_it = segments.find(counter_it->first);
         while (counter_it->second >= finded_it->second.size() - 1)
         {
@@ -459,10 +459,8 @@ void AdSelector::computeHistoryCTR()
     // update the history ctr every few hours.
     // Compute the CTR for each user segment and each ad segment.
     //
-    std::string history_ctr_file = segments_data_path_ + "/history_ctr.txt";
-    std::ofstream ofs_history(history_ctr_file.c_str());
-
-    std::vector<std::pair<std::string, FeatureT> > all_fullkey[TotalSeg];
+    typedef std::map<std::string, FeatureT> AllSegKeyListT;
+    AllSegKeyListT all_fullkey[TotalSeg];
     getAllPossibleSegStr(all_segments_[UserSeg], init_counter_[UserSeg], all_fullkey[UserSeg]);
     getAllPossibleSegStr(all_segments_[AdSeg], init_counter_[AdSeg], all_fullkey[AdSeg]);
 
@@ -474,29 +472,34 @@ void AdSelector::computeHistoryCTR()
     }
     else
     {
-        for (size_t i = 0; i < all_fullkey[UserSeg].size(); ++i)
+        std::string history_ctr_file = segments_data_path_ + "/history_ctr.txt";
+        std::ofstream ofs_history(history_ctr_file.c_str());
+
+        for (AllSegKeyListT::const_iterator user_it = all_fullkey[UserSeg].begin();
+            user_it != all_fullkey[UserSeg].end(); ++user_it)
         {
-            for (size_t j = 0; j < all_fullkey[AdSeg].size(); ++j)
+            for (AllSegKeyListT::const_iterator ad_it = all_fullkey[AdSeg].begin();
+                ad_it != all_fullkey[AdSeg].end(); ++ad_it)
             {
                 //std::string ad_seg_str;
                 SegIdT segid = 0;
-                if (!all_fullkey[AdSeg][j].first.empty())
+                if (!ad_it->first.empty())
                 {
-                    ad_segid_mgr_->getDocIdByDocName(all_fullkey[AdSeg][j].first, segid, true);
+                    ad_segid_mgr_->getDocIdByDocName(ad_it->first, segid, true);
                     //ad_seg_str = boost::lexical_cast<std::string>(segid);
                 }
-                double ctr_res = ad_click_predictor_->predict(all_fullkey[UserSeg][i].second, all_fullkey[AdSeg][j].second);
-                const std::string& key = all_fullkey[UserSeg][i].first;
+                double ctr_res = ad_click_predictor_->predict(user_it->second, ad_it->second);
+                const std::string& key = user_it->first;
                 if (segid >= history_ctr_data_[key].size())
                 {
                     history_ctr_data_[key].resize(segid + 1);
                 }
                 history_ctr_data_[key][segid] = ctr_res;
-                ofs_history << key << " : " << ctr_res << std::endl;
+                ofs_history << key << "-" << segid << " : " << ctr_res << std::endl;
             }
         }
+        ofs_history.flush();
     }
-    ofs_history.flush();
     LOG(INFO) << "update history ctr finished. total : " << history_ctr_data_.size();
 }
 
@@ -508,25 +511,18 @@ void AdSelector::updatePendingHistoryCTRData()
         boost::unique_lock<boost::mutex> guard(pending_list_lock_);
         tmp_pending_list.swap(pending_compute_doclist_);
     }
+    if (tmp_pending_list.empty())
+        return;
+    LOG(INFO) << "begin compute pending history ctr. " << tmp_pending_list.size();
 
-    PropSharedLockSet propSharedLockSet;
-    FeatureT ad_features;
+    std::map<std::string, FeatureT> ad_features;
+    getAllPossibleSegStr(all_segments_[AdSeg], init_counter_[AdSeg], ad_features);
 
-    std::vector<faceted::PropValueTable*> pvt_list;
-    const FeatureMapT& ad_full_features = default_full_features_[AdSeg];
-    for (FeatureMapT::const_iterator feature_it = ad_full_features.begin();
-        feature_it != ad_full_features.end(); ++feature_it)
-    {
-        faceted::PropValueTable* pvt = NULL;
-        if (groupManager_)
-            groupManager_->getPropValueTable(feature_it->first);
-
-        if (pvt)
-            propSharedLockSet.insertSharedLock(pvt);
-        pvt_list.push_back(pvt);
-    }
+    std::string history_ctr_file = segments_data_path_ + "/history_ctr.txt";
+    std::ofstream ofs_history(history_ctr_file.c_str(), ios::app);
 
     std::vector<std::string> value_list;
+    std::vector<std::string> ad_segstr_list;
     for(size_t i = 0; i < tmp_pending_list.size(); ++i)
     {
         const FeatureT& user_info = tmp_pending_list[i].first;
@@ -537,40 +533,36 @@ void AdSelector::updatePendingHistoryCTRData()
         for (size_t j = 0; j < docid_list.size(); ++j)
         {
             docid_t docid = docid_list[j];
-            //std::vector<std::string> all_fullkey = user_seg_str;
-            //expandSegmentStr(all_fullkey, ad_segid_data_[docid]);
+            
+            ad_segstr_list.clear();
+            getAdSegmentStrList(docid, ad_segstr_list);
 
-            ad_features.clear();
-            faceted::PropValueTable::PropIdList propids;
-            std::size_t feature_index = 0;
-            for(FeatureMapT::const_iterator ad_it = ad_full_features.begin(); ad_it != ad_full_features.end(); ++ad_it)
-            {
-                if (pvt_list[feature_index])
-                {
-                    pvt_list[feature_index]->getPropIdList(docid, propids);
-                    getValueStrFromPropId(pvt_list[feature_index], propids, value_list);
-                    for(std::size_t j = 0; j < value_list.size(); ++j)
-                    {
-                        ad_features.push_back(std::make_pair(ad_it->first, value_list[j]));
-                    }
-                }
-                ++feature_index;
-            }
-            double result = ad_click_predictor_->predict(user_info, ad_features);
             for (size_t l = 0; l < user_seg_str.size(); ++l)
             {
-                for (size_t k = 0; k < ad_segid_data_[docid].size(); ++k)
+                for (size_t k = 0; k < ad_segstr_list.size(); ++k)
                 {
-                    SegIdT segid = ad_segid_data_[docid][k];
-                    if (segid >= history_ctr_data_[user_seg_str[l]].size())
+                    const std::string& ad_segstr = ad_segstr_list[k];
+                    const std::string& key = user_seg_str[l];
+                    SegIdT segid = 0;
+                    if(!ad_segid_mgr_->getDocIdByDocName(ad_segstr, segid, false))
                     {
-                        history_ctr_data_[user_seg_str[l]].resize(segid + 1);
+                        LOG(INFO) << "ad segstr not found: " << ad_segstr;
+                        continue;
                     }
-                    history_ctr_data_[user_seg_str[l]][segid] = result;
+
+                    double result = ad_click_predictor_->predict(user_info, ad_features[ad_segstr]);
+                    if (segid >= history_ctr_data_[key].size())
+                    {
+                        history_ctr_data_[key].resize(segid + 1);
+                    }
+                    history_ctr_data_[key][segid] = result;
+                    ofs_history << key << "-" << segid << " : " << result << std::endl;
                 }
             }
         }
     }
+    ofs_history.flush();
+    LOG(INFO) << "pending history ctr compute finished. " << history_ctr_data_.size();
 }
 
 void AdSelector::updateSegments(const std::string& segment_name, const std::set<std::string>& segments, SegType type)

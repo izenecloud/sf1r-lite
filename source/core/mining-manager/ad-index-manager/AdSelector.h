@@ -97,7 +97,7 @@ private:
     void getUserSegmentStr(std::vector<std::string>& user_seg_str_list, const FeatureT& user_info);
     void getAllPossibleSegStr(const FeatureMapT& segments,
         std::map<std::string, std::size_t> segments_counter,
-        std::vector<std::pair<std::string, FeatureT> >& all_keys);
+        std::map<std::string, FeatureT>& all_keys);
 
     typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, SegIdT,
             izenelib::util::ReadWriteLock,
