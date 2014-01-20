@@ -85,7 +85,7 @@ DocumentManager::DocumentManager(
 void DocumentManager::setZambeziConfig(const ZambeziConfig& zambeziConfig)
 {
     zambeziConfig_ = zambeziConfig;
-    
+
     for (IndexBundleSchema::const_iterator it = zambeziConfig_.zambeziIndexSchema.begin();
          it != zambeziConfig_.zambeziIndexSchema.end(); ++it)
     {
@@ -96,7 +96,7 @@ void DocumentManager::setZambeziConfig(const ZambeziConfig& zambeziConfig)
         else if (it->isRTypeNumeric())
         {
             initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
-        } 
+        }
     }
 
     buildPropertyIdMapper_();
@@ -244,7 +244,7 @@ bool DocumentManager::removeDocument(docid_t docId)
 
     size_t segment = docId / DELFILTER_SEGMENT_SIZE;
     size_t offset = docId % DELFILTER_SEGMENT_SIZE;
-    for (int i = segment; i > 0; --i)
+    for (int i = segment; i >= 0; --i)
     {
         if (delfilter_[i].empty())
         {
@@ -470,7 +470,7 @@ void DocumentManager::buildPropertyIdMapper_()
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap;
     config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap); // for the second map ...
 
-    for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end(); // 
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end(); //
             it != itEnd; ++it)
     {
         propertyid_t originalPropertyId(0), originalBlockId(0);
@@ -914,7 +914,7 @@ void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
         rtype_it->second->copyValue(oldId, newId);
     }
 }
- 
+
 // this is used for Rebuild collection ...
 
 void DocumentManager::copyRTypeValues(
