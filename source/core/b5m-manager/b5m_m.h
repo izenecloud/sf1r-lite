@@ -64,6 +64,14 @@ struct B5mM
                 b5mp_path = hdfs_dir+"/"+cname+"p";
                 b5mc_path = hdfs_dir+"/"+cname+"c";
             }
+            if(indexer["o_collection_name"].Type()!=YAML::NodeType::Undefined)
+            {
+                b5mo_path = hdfs_dir+"/"+indexer["o_collection_name"].as<std::string>();
+            }
+            if(indexer["p_collection_name"].Type()!=YAML::NodeType::Undefined)
+            {
+                b5mp_path = hdfs_dir+"/"+indexer["p_collection_name"].as<std::string>();
+            }
         }
         SetValue_(config["mode"], mode);
         SetValue_(config["cmode"], cmode);
