@@ -124,7 +124,7 @@ private:
     template <typename T>
     bool SetValue_(const YAML::Node& node, T& value)
     {
-        if(node.Type()==YAML::NodeType::Undefined) return false;
+        if(node.Type()==YAML::NodeType::Undefined||node.Type()==YAML::NodeType::Null) return false;
         value = node.as<T>();
         return true;
     }
