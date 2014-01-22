@@ -46,21 +46,21 @@ struct ZambeziProperty
     sf1r::PropertyDataType type;
 
     ZambeziProperty()
-    : poolSize(268435456) //256M
-    , weight(1.0)
-    , isFilter(false)
-    , isTokenizer(false)
+        : poolSize(268435456) //256M
+        , weight(1.0)
+        , isFilter(false)
+        , isTokenizer(false)
     {
     }
 
     void display()
     {
-        std::cout << "name:" << name 
-            << " ,poolSize:" << poolSize 
-            << " ,weight:" << weight 
-            << " ,isFilter:" << isFilter 
-            << ",isTokenizer:" << isTokenizer 
-            <<std::endl;   
+        std::cout << "name: " << name
+            << ", poolSize: " << poolSize
+            << ", weight: " << weight
+            << ", isFilter: " << isFilter
+            << ", isTokenizer: " << isTokenizer
+            << std::endl;
     }
 };
 
@@ -72,7 +72,7 @@ class ZambeziVirtualProperty : public ZambeziProperty
 {
 public:
     /*
-    * @brief: all the property used to build virtual property 
+    * @brief: all the property used to build virtual property
     *         must be put in subProperties;
     */
     std::set<std::string> subProperties;
@@ -87,16 +87,16 @@ public:
 
     void display()
     {
-        std::cout << "name:" << name
-            << " ,poolSize:" << poolSize 
-            << " ,weight:" << weight
-            << " ,isFilter:" << isFilter
-            << " ,isAttrToken" << isAttrToken
+        std::cout << "name: " << name
+            << ", poolSize: " << poolSize
+            << ", weight: " << weight
+            << ", isFilter: " << isFilter
+            << ", isAttrToken: " << isAttrToken
             << std::endl;
-        std::cout << "subProperties: size:" << subProperties.size() << std::endl;
+        std::cout << "subProperties size: " << subProperties.size() << std::endl;
         // for (unsigned int i = 0; i < subProperties.size(); ++i)
         // {
-        //     std::cout << subProperties[i] << '\t';   
+        //     std::cout << subProperties[i] << '\t';
         // }
     }
 };
@@ -108,23 +108,24 @@ struct PropertyStatus
     bool isFilter;
     bool isTokenizer;
     float weight;
+
     PropertyStatus()
-    : isCombined(false)
-    , isAttr(false)
-    , isFilter(false)
-    , isTokenizer(false)
-    , weight(0)
+        : isCombined(false)
+        , isAttr(false)
+        , isFilter(false)
+        , isTokenizer(false)
+        , weight(0)
     {
     }
 
     void display()
     {
-        std::cout << " :isCombined:" << isCombined 
-        << " ,isAttr:" << isAttr
-        << " ,isFilter:" << isFilter
-        << " ,isTokenizer:" << isTokenizer
-        << " ,weight:" << weight
-        << std::endl;
+        std::cout << "isCombined: " << isCombined
+            << ", isAttr: " << isAttr
+            << ", isFilter: " << isFilter
+            << ", isTokenizer: " << isTokenizer
+            << ", weight: " << weight
+            << std::endl;
     }
 };
 
@@ -154,7 +155,6 @@ public:
     ZambeziIndexType::IndexType indexType_;
 
     bool hasAttrtoken;
-    bool searchBuffer;
 
     /**
      * @brief: @properties, and @virtualPropeties
@@ -178,45 +178,43 @@ public:
                     , vocabSize(1U << 25) // 32M terms in default
                     , indexType_(ZambeziIndexType::DefultIndexType)
                     , hasAttrtoken(false)
-                    , searchBuffer(false)
     {}
 
 
     void display()
     {
         std::cout << "ZAMBEZI SEARCH CONFIG..." << std::endl;
-        std::cout << "isEnable:" << isEnable << std::endl;
-        std::cout << "reverse:" << reverse << std::endl;
+        std::cout << "isEnable: " << isEnable << std::endl;
+        std::cout << "reverse: " << reverse << std::endl;
         std::cout << "poolSize: "<< poolSize << std::endl;
         std::cout << "poolCount: "<< poolCount << std::endl;
         std::cout << "vocabSize: "<< vocabSize << std::endl;
         std::cout << "indexFilePath: "<< indexFilePath << std::endl;
         std::cout << "tokenPath: "<< tokenPath << std::endl;
-        std::cout << "indexType_" << indexType_ << std::endl;
+        std::cout << "indexType: " << indexType_ << std::endl;
         std::cout << "hasAttrtoken: "<< hasAttrtoken << std::endl;
-        std::cout << "searchBuffer: "<< searchBuffer << std::endl;
         std::cout << "system_resource_path_: "<< system_resource_path_ << std::endl;
 
         /*for (std::vector<ZambeziProperty>::iterator i = properties.begin();
              i != properties.end(); ++i)
             i->display();
 
-        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin(); 
+        for (std::vector<ZambeziVirtualProperty>::iterator i = virtualPropeties.begin();
             i != virtualPropeties.end(); ++i)
             i->display();*/
 
         for (ZambeziStatusMap::iterator i = property_status_map.begin();
-             i != property_status_map.end(); ++i)
+                i != property_status_map.end(); ++i)
         {
-            std::cout << "Property:" << i->first; 
+            std::cout << "Property:" << i->first;
             i->second.display();
         }
     }
 
     /**
-     * @breif set ZambeziIndexSchema, 
+     * @breif set ZambeziIndexSchema,
      * and make sure if used attr_token, properties must be empty;
-     * 
+     *
      **/
     bool checkConfig()
     {
@@ -288,7 +286,7 @@ public:
         {
             /**
              * @to support only Virtual Search;
-             * only when the subProperty has not exsit in properties, 
+             * only when the subProperty has not exsit in properties,
              * add this subProperty to zambezIndexSchema;
              **/
             for (std::set<std::string>::const_iterator j = i->subProperties.begin(); j != i->subProperties.end(); ++j)

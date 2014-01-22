@@ -220,10 +220,10 @@ bool ZambeziSearch::search(
     if (zambeziManager_->isAttrTokenize() && tokenList.size() > 1)
     {
         float normalizerScore = 0;
-        for (std::vector<std::pair<std::string, int> >::iterator i = tokenList.begin();
-            i != tokenList.end(); ++i)
+        for (std::vector<std::pair<std::string, int> >::const_iterator it = tokenList.begin();
+                it != tokenList.end(); ++it)
         {
-            normalizerScore += i->second;
+            normalizerScore += it->second;
         }
         for (std::vector<float>::iterator it = scores.begin(); it != scores.end(); ++it)
         {

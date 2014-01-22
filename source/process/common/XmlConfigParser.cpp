@@ -2374,7 +2374,6 @@ void CollectionConfig::parseZambeziNode(
         throw XmlConfigParserException(message.str());
     }
 	getAttribute_ByteSize(zambeziNode, "vocabSize", zambeziConfig.vocabSize, false);
-    getAttribute(zambeziNode, "searchBuffer", zambeziConfig.searchBuffer, false);
 
     zambeziConfig.isEnable = true;
     //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
@@ -2398,7 +2397,7 @@ void CollectionConfig::parseZambeziNode(
             tmpConfig.propertyName_ = propertyName;
             PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
             dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
-            
+
             zProperty.type = dataType;
             std::string pName = propertyName;
             boost::to_lower(pName);
@@ -2513,7 +2512,7 @@ void CollectionConfig::parseZambeziNode(
             /// add default config
             sProperty.isFilter = false;
             sProperty.isTokenizer = true;
-            
+
             zambeziConfig.virtualPropeties.push_back(vProperty);
             zambeziConfig.property_status_map.insert(std::make_pair(vProperty.name, sProperty));
         }

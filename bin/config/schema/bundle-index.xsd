@@ -51,8 +51,7 @@
                         <xs:attribute name="poolSize" type="xs:string" use="optional"/>
                         <xs:attribute name="poolCount" type="xs:integer" use="optional"/>
                         <xs:attribute name="vocabSize" type="xs:string" use="optional"/>
-						<xs:attribute name="indexType" type="xs:string" use="optional"/>
-                        <xs:attribute name="searchBuffer" type="YesNoType" use="optional"/>
+                        <xs:attribute name="indexType" type="xs:string" use="optional"/>
                     </xs:complexType>
                 </xs:element>
 
@@ -126,13 +125,13 @@
             <xs:attribute name="shardids" type="xs:string" use="optional"/>
         </xs:complexType>
     </xs:element>
- 
+
     <xs:element name="IndexStrategy">
         <xs:complexType>
             <xs:attribute name="logcreateddoc" type="YesNoType" use="optional"/>
             <xs:attribute name="indexlevel" type="xs:string" use="optional"/>
             <xs:attribute name="indexpolicy" type="xs:string" use="optional"/>
-	    <xs:attribute name="samplepolicy" type="xs:string" use="optional"/>
+            <xs:attribute name="samplepolicy" type="xs:string" use="optional"/>
             <xs:attribute name="mergepolicy" type="xs:string" use="optional"/>
             <xs:attribute name="memorypoolsize" use="optional">
                 <xs:simpleType>
