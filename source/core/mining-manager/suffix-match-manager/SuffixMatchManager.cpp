@@ -1,5 +1,4 @@
 #include "SuffixMatchManager.hpp"
-#include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -9,8 +8,10 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
+#include <b5m-manager/product_matcher.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
+#include "../product-tokenizer/FuzzyAlphaNumNormalizer.h"
 
 #include <3rdparty/am/btree/btree_map.h>
 #include <util/ustring/algo.hpp>
@@ -26,40 +27,37 @@ using namespace faceted;
 
 SuffixMatchManager::SuffixMatchManager(
         const std::string& homePath,
-        const std::string& dicpath,
-        const std::string& system_resource_path,
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
-        NumericPropertyTableBuilder* numeric_tablebuilder)
+        NumericPropertyTableBuilder* numeric_tablebuilder,
+        FuzzyNormalizer* fuzzyNormalizer)
     : data_root_path_(homePath)
-    , tokenize_dicpath_(dicpath)
-    , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
-    , tokenizer_(NULL)
+    , matcher_(NULL)
     , suffixMatchTask_(NULL)
+    , fuzzyNormalizer_(fuzzyNormalizer)
 {
     if (!boost::filesystem::exists(homePath))
     {
         boost::filesystem::create_directories(homePath);
     }
-    buildTokenizeDic();
 
     filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
-    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
+    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_,
+                                          filter_manager_, fuzzyNormalizer_));
 }
 
 SuffixMatchManager::~SuffixMatchManager()
 {
-    if (tokenizer_) delete tokenizer_;
     //if (knowledge_) delete knowledge_;
+    delete fuzzyNormalizer_;
 }
 
 void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
 {
-    if (tokenizer_)
-        tokenizer_->SetProductMatcher(matcher);
+    matcher_ = matcher;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -144,133 +142,24 @@ size_t SuffixMatchManager::longestSuffixMatch(
     return total_match;
 }
 
-void SuffixMatchManager::GetTokenResults(const std::string& pattern,
-                                std::list<std::pair<UString, double> >& major_tokens,
-                                std::list<std::pair<UString, double> >& minor_tokens,
-                                bool isAnalyzeQuery,
-                                UString& analyzedQuery,
-                                double& rank_boundary)
-{
-    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, isAnalyzeQuery, analyzedQuery);
-    getSuffixSearchRankThreshold(minor_tokens, rank_boundary);
-}
-
-//getSuffixSearchRankThreshold
-void SuffixMatchManager::getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, double& rank_boundary)
-{
-    double minor_score_sum = 0;
-    double major_score_sum = 0;
-    unsigned int minor_size = 0;
-    unsigned int major_size = 0;
-    unsigned int total_size = 0;
-    bool needSmooth = false;
-    for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-    {
-        if (i->second > 0.1)
-        {
-            major_score_sum += i->second;
-            major_size++;
-            if (i->second > 0.5)
-            {
-                needSmooth = true;
-            }
-        }
-        else
-        {
-            minor_score_sum += i->second;
-            minor_size++;
-        }
-    }
-    total_size = minor_size + major_size;
-
-    if (needSmooth == true || (major_size <= 2 && major_score_sum > 0.6))
-    {
-        std::vector<double> minor_tokens_point; 
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-            minor_tokens_point.push_back(i->second);
-
-        KNlpResourceManager::getResource()->gauss_smooth(minor_tokens_point);
-
-        unsigned int k = 0;
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
-                                        i != minor_tokens.end(); ++i, k++)
-            i->second = minor_tokens_point[k];
-
-        minor_score_sum = 0;
-        major_score_sum = 0;
-        minor_size = 0;
-        major_size = 0;
-        total_size = 0;
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-        {
-            if (i->second > 0.1)
-            {
-                major_score_sum += i->second;
-                major_size++;
-            }
-            else
-            {
-                minor_score_sum += i->second;
-                minor_size++;
-            }
-        }
-        total_size = minor_size + major_size;
-    }
-
-    if (major_size <= 3)
-    {
-        if (total_size > 8)
-        {
-            rank_boundary = major_score_sum * 0.85 + minor_score_sum * 0.5;
-        }
-        else
-        {
-            rank_boundary = major_score_sum * 0.9 + minor_score_sum * 0.6;
-        }
-        
-    }
-    else if (major_size <= 5)
-    {
-        if (total_size > 8)
-        {
-            rank_boundary = major_score_sum * 0.75 + minor_score_sum * 0.5;
-        }
-        else
-        {
-            rank_boundary = major_score_sum * 0.8 + minor_score_sum * 0.7;
-        }
-    }
-    else 
-    {
-        if (total_size > 8)
-        {
-            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.5;
-        }
-        else
-        {
-            rank_boundary = major_score_sum * 0.7 + minor_score_sum * 0.7;
-        }
-    }
-}
-
 bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
 {
-    if (!tokenizer_)
+    if (!matcher_)
     {
-        LOG(INFO)<<"tokenizer_ = NULL";
+        LOG(INFO)<<"matcher_ = NULL";
         return false;
     }
-    return tokenizer_->GetSynonymSet(pattern, synonym_set, setid);
+    return matcher_->GetSynonymSet(pattern, synonym_set, setid);
 }
 
 bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
 {
-    if (!tokenizer_)
+    if (!matcher_)
     {
-        LOG(INFO)<<"tokenizer_ = NULL";
+        LOG(INFO)<<"matcher_ = NULL";
         return false;
     }
-    return tokenizer_->GetSynonymId(pattern, setid);
+    return matcher_->GetSynonymId(pattern, setid);
 }
 
 void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
@@ -427,7 +316,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     std::vector<boost::tuple<size_t, size_t, double> > synonym_match_range;
                     for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
                     {    
-                        synonym_tokens[i][j].first = Algorithm<UString>::padForAlphaNum(synonym_tokens[i][j].first);
+                        fuzzyNormalizer_->normalizeToken(synonym_tokens[i][j].first);
                         if (fmi_manager_->backwardSearch(search_property, synonym_tokens[i][j].first, sub_match_range) == synonym_tokens[i][j].first.length())
                         {
                             tmp_tuple.get<0>() = sub_match_range.first;
@@ -451,7 +340,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 {
                     if (pit->first.empty()) continue;
                     Algorithm<UString>::to_lower(pit->first);
-                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    fuzzyNormalizer_->normalizeToken(pit->first);
                     if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                     {
                         range_list.push_back(sub_match_range);
@@ -466,7 +355,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 {
                     if (pit->first.empty()) continue;
                     Algorithm<UString>::to_lower(pit->first);
-                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    fuzzyNormalizer_->normalizeToken(pit->first);
                     if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                     {
                         range_list.push_back(sub_match_range);
@@ -928,11 +817,6 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
-void SuffixMatchManager::GetQuerySumScore(const std::string& pattern, double &sum_score)
-{
-    tokenizer_->GetQuerySumScore(pattern, sum_score);
-}
-
 SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
@@ -946,17 +830,6 @@ SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 {
     return filter_manager_;
-}
-
-void SuffixMatchManager::buildTokenizeDic()
-{
-    boost::filesystem::path cma_fmindex_dic(system_resource_path_);
-    cma_fmindex_dic /= boost::filesystem::path("dict");
-    cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
-    LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
-        ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
-    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }
 
 void SuffixMatchManager::updateFmindex()
@@ -976,111 +849,5 @@ void SuffixMatchManager::updateFmindex()
     suffixMatchTask_->postProcess();
     last_doc_id_ = document_manager_->getMaxDocId();
 }
-
-
-double SuffixMatchManager::getSuffixSearchRankThreshold(
-            const std::list<std::pair<UString, double> >& major_tokens,
-            const std::list<std::pair<UString, double> >& minor_tokens,
-            std::list<std::pair<UString, double> >& boundary_minor_tokens)
-{
-    double rank_boundary = 0;
-    double total_score = 0;
-    double major_score = 0;
-    double minor_score = 0;
-    unsigned int major_highscore_size = 0;
-    unsigned int major_size = major_tokens.size();
-
-    for (std::list<std::pair<UString, double> >::const_iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-    {
-        if (i->second >= 3)
-        {
-            major_highscore_size++;
-        }
-
-        double tmp_score = 0;
-
-        if (i->second < 1)
-        {
-            major_score += 0.12;
-            boundary_minor_tokens.push_back(std::make_pair(i->first, 0.12));
-        }
-        else if (major_size >= 5)
-        {
-            tmp_score = (i->second)/5;
-            major_score += tmp_score;
-            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-        }
-        else if (major_size >= 3)
-        {
-            tmp_score = (i->second)/6;
-            major_score += tmp_score;
-            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-        }
-        else if(major_size > 0)
-        {
-            tmp_score = (i->second)/7;
-            major_score += tmp_score;
-            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-        }
-    }
-    for (std::list<std::pair<UString, double> >::const_iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-    {
-        if (i->second < 1)
-        {
-            minor_score += i->second;
-            boundary_minor_tokens.push_back(*i);
-        }
-        else
-        {
-            double tmp_score = (i->second)/8;
-            minor_score += tmp_score;
-            boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
-        }
-    }
-
-    total_score = minor_score + major_score;
-
-    cout << "total_score :" <<total_score <<endl;
-    cout << "major_score :" <<major_score <<endl;
-    cout << "minor_score :" <<minor_score <<endl;
-
-    if (major_size >= 7) // 7 8 9 10 ...
-    {
-        ///0.54 + 0.3 // 0.54 + 0.4
-        if (major_highscore_size >= 5)
-            rank_boundary = major_score * 0.5 + minor_score * 0.3;
-        else
-            rank_boundary = major_score * 0.5 + minor_score * 0.4;
-    }
-    else if (major_size >= 5) // 5 6
-    {
-        ///0.53 + 0.4  // 0.53 + 0.55
-        if (major_highscore_size > 3)
-            rank_boundary = major_score * 0.5 + minor_score * 0.4;
-        else
-            rank_boundary = major_size * 0.5 + minor_score * 0.55;
-    }
-    else if (major_size >= 3) // 3 4
-    {
-        ///0.6 + 0.4 // 0.6 + 0.6
-        if (major_highscore_size > 2)
-            rank_boundary = major_score * 0.55 + minor_score * 0.4;
-        else
-            rank_boundary = major_score * 0.55 + minor_score * 0.6;
-    }
-    else if (major_size > 0) // 1 2
-    {
-        ///0.75 + 0.65
-        rank_boundary = major_score * 0.75 + minor_score * 0.65;
-    }
-    else
-    {
-        ///0.7
-        rank_boundary = total_score * 0.7;
-    }
-
-    return rank_boundary;
-}
-
 
 }
