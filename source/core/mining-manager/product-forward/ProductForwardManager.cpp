@@ -195,7 +195,6 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
         return score;
     for (size_t i = 0; i < t_res.size(); ++i)
         t_score += (i+1)*(i+1);
-    size_t p = 0, q = 0;
     for (size_t i = 0; i < q_res.size(); ++i)
         for (size_t j = 0; j < t_res.size(); ++j)
             if (q_res[i] == t_res[j])

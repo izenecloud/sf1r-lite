@@ -2512,21 +2512,17 @@ bool MiningManager::GetSuffixMatch(
         }
 
         suffixMatchTime = elapsedFromLast(clock, lastSec);
-        
+
+        searchManager_->fuzzySearchRanker_.rankByProductScore(
+            actionOperation.actionItem_, res_list, isCompare);
+
         if (mining_schema_.suffixmatch_schema.product_forward_enable)
         {
-            searchManager_->fuzzySearchRanker_.rankByProductScore(
-                actionOperation.actionItem_, res_list, isCompare);
             std::vector<std::pair<double, uint32_t> > final_res;
             productForwardManager_->forwardSearch(pattern_orig, res_list, final_res);
-LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.size();
+            LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.size();
             final_res.swap(res_list);
             totalCount = res_list.size();
-        }
-        else
-        {
-            searchManager_->fuzzySearchRanker_.rankByProductScore(
-                actionOperation.actionItem_, res_list, isCompare);
         }
 
         productScoreTime = elapsedFromLast(clock, lastSec);
