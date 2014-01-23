@@ -148,8 +148,11 @@ bool ProductForwardManager::cmp_(const std::pair<double, docid_t>& x, const std:
     return x.first > y.first;
 }
 
-void ProductForwardManager::forwardSearch(const std::string& src, const std::vector<std::pair<double, docid_t> >& docs, std::vector<std::pair<double, docid_t> >& res)
+void ProductForwardManager::forwardSearch(const std::string& src, 
+  const std::vector<std::pair<double, docid_t> >& docs, 
+  std::vector<std::pair<double, docid_t> >& res)
 {
+    //res = docs;return;
     if (docs.empty() || src.empty())
         return ;
     std::vector<std::pair<double, docid_t> > score;
@@ -166,15 +169,10 @@ void ProductForwardManager::forwardSearch(const std::string& src, const std::vec
         double sc = ProductForwardManager::compare_(q_brand, q_model, q_res, q_score, docs[i].second);
         score.push_back(std::make_pair(sc, docs[i].second));
     }
-    double maxs = 0, ind = 0;
     for (size_t i = 0; i < score.size(); ++i)
-        if (score[i].first > maxs)
-        {
-            maxs=score[i].first;
-            ind = i;
-        }
-    if (maxs > 0.7)
-        res.push_back(score[ind]);
+        if (score[i].first > 0.75)
+            res.push_back(make_pair(docs[i].first+1000, docs[i].second));
+    if (res.size() == 0)res = docs;
 }
 
 

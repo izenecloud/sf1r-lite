@@ -2515,12 +2515,10 @@ bool MiningManager::GetSuffixMatch(
         
         if (mining_schema_.suffixmatch_schema.product_forward_enable)
         {
-            //limit res_list to at most 100
-            std::vector<std::pair<double, uint32_t> > tmp_res;
-            for (size_t i = 0; i < std::min((size_t)100, res_list.size()); ++i)
-                tmp_res.push_back(res_list[i]);
+            searchManager_->fuzzySearchRanker_.rankByProductScore(
+                actionOperation.actionItem_, res_list, isCompare);
             std::vector<std::pair<double, uint32_t> > final_res;
-            productForwardManager_->forwardSearch(pattern_orig, tmp_res, final_res);
+            productForwardManager_->forwardSearch(pattern_orig, res_list, final_res);
 LOG(INFO)<<"suffix res num = "<<res_list.size()<<" forward res = "<<final_res.size();
             final_res.swap(res_list);
             totalCount = res_list.size();
