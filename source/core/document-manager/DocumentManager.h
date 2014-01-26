@@ -386,7 +386,7 @@ private:
     RTypeStringPropTableMap rtype_string_proptable_;
 
     /// @brief The delete flag filter
-    static const size_t DELFILTER_SEGMENT_SIZE = 1 << 24;
+    static const size_t DELFILTER_SEGMENT_SIZE = 1 << 27;
     size_t delfilter_count_;
     DelFilterType delfilter_[32];
 

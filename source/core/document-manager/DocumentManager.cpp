@@ -244,13 +244,9 @@ bool DocumentManager::removeDocument(docid_t docId)
 
     size_t segment = docId / DELFILTER_SEGMENT_SIZE;
     size_t offset = docId % DELFILTER_SEGMENT_SIZE;
-    for (int i = segment; i >= 0; --i)
+    for (int i = segment; i >= 0 && !delfilter_[i].empty(); --i)
     {
-        if (delfilter_[i].empty())
-        {
-            delfilter_[i].resize(DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
-        }
-        else break;
+        delfilter_[i].resize(DELFILTER_SEGMENT_SIZE);
     }
 
     if (delfilter_[segment].test(offset))
@@ -431,11 +427,13 @@ bool DocumentManager::loadDelFilter_()
     if (!izenelib::am::ssf::Util<>::Load(filter_file, filter_data))
         return false;
 
-    size_t segment = filter_data.size() / (DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
-    for (size_t i = 0; i < segment; ++i)
+    size_t segsize = DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType) / 8;
+    size_t segment = filter_data.size() / segsize;
+    std::vector<DelFilterBlockType>::const_iterator it = filter_data.begin();
+    for (size_t i = 0; i < segment; ++i, it += segsize)
     {
         delfilter_[i].clear();
-        delfilter_[i].append(filter_data.begin(), filter_data.end());
+        delfilter_[i].append(it, it + segsize);
     }
 
     return true;
@@ -446,13 +444,13 @@ bool DocumentManager::saveDelFilter_() const
     size_t segment = 0;
     while (segment < 32 && !delfilter_[segment].empty()) ++segment;
 
-    std::vector<DelFilterBlockType> filter_data(segment * DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType));
+    size_t segsize = DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType) / 8;
+    std::vector<DelFilterBlockType> filter_data(segment * segsize);
 
     std::vector<DelFilterBlockType>::iterator it = filter_data.begin();
-    for (size_t i = 0; i < segment; ++i)
+    for (size_t i = 0; i < segment; ++i, it += segsize)
     {
         boost::to_block_range(delfilter_[i], it);
-        it += DELFILTER_SEGMENT_SIZE / sizeof(DelFilterBlockType);
     }
 
     const std::string filter_file = (boost::filesystem::path(path_) / "del_filter").string();

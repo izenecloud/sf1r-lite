@@ -256,16 +256,14 @@ void InvertedIndexManager::getDocsByPropertyValue(const std::string& property, c
     else
     {
         Bitset& tmp = boost::get<Bitset>(data);
-        for(size_t i = 0; i < tmp.size(); ++i)
+        size_t id = tmp.find_first();
+        while (id != Bitset::npos)
         {
-            if (idlist.size() >= max_return)
-            {
-                actual_size = tmp.count();
-                break;
-            }
-            if (tmp.test(i))
-                idlist.push_back(i);
+            idlist.push_back(id);
+            if (idlist.size() >= max_return) break;
+            id = tmp.find_next(id);
         }
+        actual_size = tmp.count();
     }
     if (idlist.size() >= max_return)
         LOG(WARNING) << "the returned doclist num is restricted. " << idlist.size() << " VS " << actual_size;
@@ -277,7 +275,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
     collectionid_t colId = 1;
     std::string propertyL = boost::to_upper_copy(property);
     boost::scoped_ptr<Bitset> pBitset;
-    if(QueryFiltering::EQUAL != filterOperation) pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
+    if (QueryFiltering::EQUAL != filterOperation) pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
 
     switch (filterOperation)
     {
