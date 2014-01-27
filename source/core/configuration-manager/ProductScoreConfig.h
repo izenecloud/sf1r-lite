@@ -39,8 +39,11 @@ struct ProductScoreConfig
 
     score_t minLimit;
     score_t maxLimit;
-
     score_t zoomin;
+
+    score_t logBase;
+    score_t mean;
+    score_t deviation;
 
     bool isDebug; /// whether print debug message
 
@@ -75,6 +78,9 @@ private:
         ar & minLimit;
         ar & maxLimit;
         ar & zoomin;
+        ar & logBase;
+        ar & mean;
+        ar & deviation;
         ar & isDebug;
         ar & factors;
     }

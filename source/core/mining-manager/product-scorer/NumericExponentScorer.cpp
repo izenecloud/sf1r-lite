@@ -12,10 +12,12 @@ NumericExponentScorer::NumericExponentScorer(const ProductScoreConfig& config)
 
 NumericExponentScorer::NumericExponentScorer(
     const ProductScoreConfig& config,
-    boost::shared_ptr<NumericPropertyTableBase> numericTable)
+    boost::shared_ptr<NumericPropertyTableBase> numericTable,
+    NumericPropertyNormalizer* normalizer)
         : ProductScorer(config)
         , config_(config)
         , numericTable_(numericTable)
+        , normalizer_(normalizer)
 {
 }
 
@@ -24,7 +26,14 @@ score_t NumericExponentScorer::score(docid_t docId)
     score_t value = 0;
 
     if (numericTable_ && numericTable_->getFloatValue(docId, value))
+    {
+        if (normalizer_)
+        {
+            value = normalizer_->normalize(value);
+        }
+
         return calculate(value);
+    }
 
     return 0;
 }

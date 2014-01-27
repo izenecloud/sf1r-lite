@@ -11,7 +11,9 @@
 #define SF1R_NUMERIC_EXPONENT_SCORER_H
 
 #include "ProductScorer.h"
+#include "NumericPropertyNormalizer.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
@@ -24,7 +26,8 @@ public:
 
     NumericExponentScorer(
         const ProductScoreConfig& config,
-        boost::shared_ptr<NumericPropertyTableBase> numericTable);
+        boost::shared_ptr<NumericPropertyTableBase> numericTable,
+        NumericPropertyNormalizer* normalizer);
 
     virtual score_t score(docid_t docId);
 
@@ -33,6 +36,7 @@ public:
 private:
     const ProductScoreConfig& config_;
     boost::shared_ptr<NumericPropertyTableBase> numericTable_;
+    boost::scoped_ptr<NumericPropertyNormalizer> normalizer_;
 };
 
 } // namespace sf1r

@@ -2467,9 +2467,19 @@ void CollectionConfig::parseScoreAttr(
     getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
 
     getAttribute_FloatType(scoreNode, "zoomin", scoreConfig.zoomin, false);
+
     if (scoreConfig.zoomin == 0)
     {
         throw XmlConfigParserException("Require non-zero value for <Score zoomin>");
+    }
+
+    getAttribute_FloatType(scoreNode, "logbase", scoreConfig.logBase, false);
+    getAttribute_FloatType(scoreNode, "mean", scoreConfig.mean, false);
+    getAttribute_FloatType(scoreNode, "deviation", scoreConfig.deviation, false);
+
+    if (scoreConfig.logBase < 0 || scoreConfig.logBase == 1)
+    {
+        throw XmlConfigParserException("Require positive value for <Score logbase>");
     }
 }
 

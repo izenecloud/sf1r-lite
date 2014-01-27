@@ -10,6 +10,9 @@ ProductScoreConfig::ProductScoreConfig()
     , minLimit(0)
     , maxLimit(0)
     , zoomin(1)
+    , logBase(0)
+    , mean(0)
+    , deviation(0)
     , isDebug(false)
 {}
 
@@ -52,6 +55,9 @@ std::string ProductScoreConfig::toStr() const
         << ", min: " << minLimit
         << ", max: " << maxLimit
         << ", zoomin: " << zoomin
+        << ", logBase: " << logBase
+        << ", mean: " << mean
+        << ", deviation: " << deviation
         << std::endl;
 
     for (std::size_t i = 0; i < factors.size(); ++i)

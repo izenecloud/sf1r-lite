@@ -1,6 +1,7 @@
 #include "OfflineProductScorerFactoryImpl.h"
 #include "../product-scorer/ProductScoreSum.h"
 #include "../product-scorer/NumericExponentScorer.h"
+#include "../product-scorer/NumericPropertyNormalizer.h"
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <configuration-manager/ProductScoreConfig.h>
 #include <memory> // auto_ptr
@@ -65,6 +66,12 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericExponentScorer_(
         return NULL;
     }
 
+    NumericPropertyNormalizer* normalizer = NULL;
+    if (scoreConfig.deviation != 0)
+    {
+        normalizer = new NumericPropertyNormalizer(scoreConfig);
+    }
+
     LOG(INFO) << "createNumericExponentScorer_(), propName: " << propName;
-    return new NumericExponentScorer(scoreConfig, numericTable);
+    return new NumericExponentScorer(scoreConfig, numericTable, normalizer);
 }
