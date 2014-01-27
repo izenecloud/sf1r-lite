@@ -244,7 +244,7 @@ bool DocumentManager::removeDocument(docid_t docId)
 
     size_t segment = docId / DELFILTER_SEGMENT_SIZE;
     size_t offset = docId % DELFILTER_SEGMENT_SIZE;
-    for (int i = segment; i >= 0 && !delfilter_[i].empty(); --i)
+    for (int i = segment; i >= 0 && delfilter_[i].empty(); --i)
     {
         delfilter_[i].resize(DELFILTER_SEGMENT_SIZE);
     }
