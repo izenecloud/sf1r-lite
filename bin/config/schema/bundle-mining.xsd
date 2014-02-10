@@ -440,6 +440,9 @@
         <xs:attribute name="min" type="xs:float" use="optional"/>
         <xs:attribute name="max" type="xs:float" use="optional"/>
 		<xs:attribute name="zoomin" type="xs:float" use="optional"/>
+        <xs:attribute name="logbase" type="xs:float" use="optional"/>
+        <xs:attribute name="mean" type="xs:float" use="optional"/>
+        <xs:attribute name="deviation" type="xs:float" use="optional"/>
         <xs:attribute name="debug" type="YesNoType" use="optional"/>
     </xs:complexType>
 
