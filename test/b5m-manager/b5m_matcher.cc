@@ -26,7 +26,6 @@
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
-#include <b5m-manager/address_extract.h>
 
 
 using namespace sf1r;
@@ -643,14 +642,6 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     } 
-    if (vm.count("address")) {
-        if( knowledge_dir.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        AddressExtract ae;
-        ae.Process(knowledge_dir);
-    }
     if (vm.count("syn-test")) {
         if( knowledge_dir.empty() || name.empty())
         {

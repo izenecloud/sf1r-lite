@@ -13,21 +13,19 @@
 
 namespace sf1r
 {
-
 class DocumentManager;
 class ProductTokenizer;
 
 class TitleScoreMiningTask: public MiningTask
 {
 public:
-    explicit TitleScoreMiningTask(boost::shared_ptr<DocumentManager>& document_manager
-                    , ProductTokenizer* tokenizer
-                    , TitleScoreList* titleScoreList);
-
-    ~TitleScoreMiningTask();
+    explicit TitleScoreMiningTask(
+        boost::shared_ptr<DocumentManager>& document_manager,
+        TitleScoreList* titleScoreList,
+        ProductTokenizer* tokenizer);
 
     bool buildDocument(docid_t docID, const Document& doc);
-    
+
     bool preProcess(int64_t timestamp);
 
     bool postProcess();
@@ -36,7 +34,7 @@ public:
 
 private:
     boost::shared_ptr<DocumentManager> document_manager_;
-    
+
     TitleScoreList* titleScoreList_;
 
     ProductTokenizer* tokenizer_;

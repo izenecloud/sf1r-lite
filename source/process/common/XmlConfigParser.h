@@ -42,6 +42,8 @@ namespace sf1r
 {
 namespace ticpp = izenelib::util::ticpp;
 
+class FuzzyNormalizerConfig;
+
 // ------------------------- HELPER FUNCTIONS --------------------------
 
 /// @brief  Converts the given string to lower-case letters (only for ascii)
@@ -894,6 +896,14 @@ private:
     void parseProperty_Indexing(const ticpp::Element * indexing, PropertyConfig & propertyConfig);
 
     void parseServiceMaster(const ticpp::Element * service, CollectionMeta& collectionMeta);
+
+    /// @brief Parse <MiningBundle> <Schema> <SuffixMatch> <Normalizer>
+    /// @param normNode Pointer to the Element <Normalizer>
+    /// @param normalizerConfig the config instance to update
+    void parseFuzzyNormalizerNode(
+        const ticpp::Element* normNode,
+        FuzzyNormalizerConfig& normalizerConfig) const;
+
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------
     // STATIC VALUES -----------------
