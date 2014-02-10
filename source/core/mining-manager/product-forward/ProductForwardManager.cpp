@@ -172,7 +172,7 @@ void ProductForwardManager::forwardSearch(const std::string& src,
     for (size_t i = 0; i < score.size(); ++i)
         if (score[i].first > 0.8)
             res.push_back(make_pair(docs[i].first+100000*score[i].first, docs[i].second));
-    if (res.size() == 0)res = docs;
+    //if (res.size() == 0)res = docs;
 }
 
 
