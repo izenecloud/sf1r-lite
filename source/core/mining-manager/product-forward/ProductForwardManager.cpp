@@ -170,41 +170,48 @@ void ProductForwardManager::forwardSearch(const std::string& src,
         score.push_back(std::make_pair(sc, docs[i].second));
     }
     for (size_t i = 0; i < score.size(); ++i)
-        if (score[i].first > 0.75)
-            res.push_back(make_pair(docs[i].first+1000, docs[i].second));
+        if (score[i].first > 0.8)
+            res.push_back(make_pair(docs[i].first+100000*score[i].first, docs[i].second));
     if (res.size() == 0)res = docs;
 }
 
 
-double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_model, const std::vector<uint32_t>& q_res, const double q_score, const docid_t docid)
+double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_model, 
+  const std::vector<uint32_t>& q_res, const double q_score, const docid_t docid)
 {
+    const uint32_t MAX_LEN = 5;
+    const uint32_t BRAND = 7;
     std::string title_string(getIndex(docid));
     std::vector<uint32_t> t_res;
     uint32_t t_brand = 0;
     uint32_t t_model = 0;
     featureParser_.convertStrToIds(title_string, t_brand, t_model, t_res);
-    double score = 0, t_score = 0;
+
     double same = 0;
     if (q_brand == t_brand && q_brand > 0)
-    {
-        if (q_model == t_model && q_model > 0)
-            return 2;
-        score += 0.3;
-    }
+        same  = BRAND*BRAND;
+    if (q_model == t_model && q_model > 0)
+        same += (BRAND-1)*(BRAND-1);
+
     if (q_res.empty() || t_res.empty())
-        return score;
+        return 0.;
+
+    double q_deno = BRAND*BRAND + (BRAND-1)*(BRAND-1);
+    for (size_t i = 0; i < q_res.size(); ++i)
+        q_deno += (MAX_LEN-i)*(MAX_LEN-i);
+    double t_deno = q_deno;
     for (size_t i = 0; i < t_res.size(); ++i)
-        t_score += (i+1)*(i+1);
+        t_deno += (MAX_LEN-i)*(MAX_LEN-i);
+
     for (size_t i = 0; i < q_res.size(); ++i)
         for (size_t j = 0; j < t_res.size(); ++j)
             if (q_res[i] == t_res[j])
             {   
-                same += (q_res.size() - i) * (t_res.size() - j); 
+                same += (MAX_LEN - i) * (MAX_LEN - j); 
                 break;
             } 
-    if (t_score>1e-7 && q_score>1e-7)
-        score += same / sqrt(t_score * q_score);
-    return score;
+
+    return same/sqrt(q_deno*t_deno);
 }
 
 }

@@ -44,22 +44,23 @@ void ProductFeatureParser::getFeatureIds(
         return;
 
     std::sort(r.begin(), r.end(), compareTokenScore);
-    std::vector<uint32_t> tmp_res;
-    for (size_t i = 0; i < r.size(); ++i)
+
+    std::vector<std::pair<std::string, float> > dup_r;
+    std::set<std::string> tmpset;
+    double sum = 0;
+    for (size_t i = 0; i < r.size(); ++i)if(r[i].first != b && r[i].first != m && tmpset.find(r[i].first)==tmpset.end())
     {
-        uint32_t tmp = izenelib::util::HashFunction<std::string>::generateHash32(r[i].first);
-        tmp_res.push_back(tmp);
+        sum += r[i].second;
+        dup_r.push_back(r[i]);
+        tmpset.insert(r[i].first);
     }
+    for (size_t i = 0; i < dup_r.size(); ++i)dup_r[i].second /= sum;
     featureIds.reserve(5);
-    featureIds.push_back(tmp_res[0]);
-    for (size_t i = 1; i < tmp_res.size(); ++i)
+    for (size_t i = 0; i < dup_r.size(); ++i)if(dup_r[i].second >= 0.1)
     {
-        if (tmp_res[i] != tmp_res[i-1])
-        {
-            featureIds.push_back(tmp_res[i]);
-            if (featureIds.size() == 5)
-                break;
-        }
+        uint32_t tmp = izenelib::util::HashFunction<std::string>::generateHash32(dup_r[i].first);
+        featureIds.push_back(tmp);
+        std::cout<<dup_r[i].first<<":"<<dup_r[i].second<<std::endl;
     }
 }
 
