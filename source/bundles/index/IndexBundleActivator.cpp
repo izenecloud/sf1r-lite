@@ -355,14 +355,14 @@ bool IndexBundleActivator::init_()
     searchService_ = new IndexSearchService(config_);
 
     searchService_->searchAggregator_ = searchAggregator_;
-    if (MasterManagerBase::get()->isOnlyMaster())
+    //if (MasterManagerBase::get()->isOnlyMaster())
     {
         searchService_->ro_searchAggregator_ = ro_searchAggregator_;
     }
-    else
-    {
-        searchService_->ro_searchAggregator_ = searchAggregator_;
-    }
+    //else
+    //{
+    //    searchService_->ro_searchAggregator_ = searchAggregator_;
+    //}
     searchService_->searchMerger_ = searchMerger_.get();
     searchService_->searchWorker_ = searchWorker_;
     searchService_->searchWorker_->laManager_ = laManager_;
