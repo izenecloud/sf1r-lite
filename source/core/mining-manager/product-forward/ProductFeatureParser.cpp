@@ -56,11 +56,13 @@ void ProductFeatureParser::getFeatureIds(
     }
     for (size_t i = 0; i < dup_r.size(); ++i)dup_r[i].second /= sum;
     featureIds.reserve(5);
+    std::cout<<"Brand: "<<b<<"; Model:"<<m<<std::endl;
     for (size_t i = 0; i < dup_r.size(); ++i)if(dup_r[i].second >= 0.06)
     {
         uint32_t tmp = izenelib::util::HashFunction<std::string>::generateHash32(dup_r[i].first);
         featureIds.push_back(tmp);
-        //std::cout<<dup_r[i].first<<":"<<dup_r[i].second<<std::endl;
+        std::cout<<dup_r[i].first<<":"<<dup_r[i].second<<std::endl;
+        if (featureIds.size() >= 5)break;
     }
 }
 
