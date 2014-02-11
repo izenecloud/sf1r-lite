@@ -196,15 +196,15 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
     if (q_res.empty() || t_res.empty())
         return 0.;
 
-    double q_deno = BRAND*BRAND + (BRAND-1)*(BRAND-1);
-    for (size_t i = 0; i < q_res.size(); ++i)
+    double q_deno = (q_brand > 0 ?BRAND*BRAND:0) + (q_model > 0?(BRAND-1)*(BRAND-1):0);
+    for (size_t i = 0; i < q_res.size() && i < MAX_LEN; ++i)
         q_deno += (MAX_LEN-i)*(MAX_LEN-i);
-    double t_deno = q_deno;
-    for (size_t i = 0; i < t_res.size(); ++i)
+    double t_deno = (t_brand > 0 ?BRAND*BRAND:0) + (t_model > 0?(BRAND-1)*(BRAND-1):0);
+    for (size_t i = 0; i < t_res.size() && i < MAX_LEN; ++i)
         t_deno += (MAX_LEN-i)*(MAX_LEN-i);
 
-    for (size_t i = 0; i < q_res.size(); ++i)
-        for (size_t j = 0; j < t_res.size(); ++j)
+    for (size_t i = 0; i < q_res.size() && i<MAX_LEN; ++i)
+        for (size_t j = 0; j < t_res.size()&& j< MAX_LEN; ++j)
             if (q_res[i] == t_res[j])
             {   
                 same += (MAX_LEN - i) * (MAX_LEN - j); 
