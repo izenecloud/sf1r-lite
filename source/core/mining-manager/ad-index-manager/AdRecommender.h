@@ -70,6 +70,8 @@ private:
     LatentVecT default_latent_;
     // total clicked number and last clicked time to evaluate the popularity of ad.
     boost::unordered_map<std::string, std::pair<uint32_t, uint64_t> >  ad_clicked_data_;
+    // the last activity time for user. remove dead user period.
+    boost::unordered_map<std::string, uint64_t>  user_activity_list_;
 };
 
 } //namespace sf1r

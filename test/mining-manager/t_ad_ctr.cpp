@@ -337,9 +337,11 @@ int main()
             AdRecommender::get()->update("", userinfo, i, false);
         }
     }
-
+    LOG(INFO) << "begin update ad segment string.";
     AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
-    sleep(40);
+    LOG(INFO) << "end update ad segment string.";
+
+    sleep(30);
     LOG(INFO) << "begin test ad select.";
     //boost::thread_group test_ad_selector_threads;
     //for(int i = 0; i < thread_num; ++i)
@@ -349,11 +351,10 @@ int main()
     //test_ad_selector_threads.join_all();
 
     std::vector<double> score_list;
-    for (size_t i = 0; i < 10000; ++i)
+    for (size_t i = 0; i < 100; ++i)
     {
         std::vector<docid_t> results = cand_docs;
         AdSelector::get()->selectForTest(userinfo, 10, results, score_list);
-
         //if (i % 1000 == 0)
         //{
         //    LOG(INFO) << "selected ads are :";
@@ -365,16 +366,17 @@ int main()
         //}
     }
     LOG(INFO) << "end test for ad select.";
+    sleep(3);
 
-    std::vector<docid_t> rec_doclist;
-    AdRecommender::get()->recommend("", userinfo_rec, 10, rec_doclist, score_list);
-    LOG(INFO) << "recommended ads are :";
-    for (size_t j = 0; j < rec_doclist.size(); ++j)
-    {
-        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
-    }
-    std::cout << std::endl;
-    AdRecommender::get()->dumpUserLatent();
+    //std::vector<docid_t> rec_doclist;
+    //AdRecommender::get()->recommend("", userinfo_rec, 10, rec_doclist, score_list);
+    //LOG(INFO) << "recommended ads are :";
+    //for (size_t j = 0; j < rec_doclist.size(); ++j)
+    //{
+    //    std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    //}
+    //std::cout << std::endl;
+    //AdRecommender::get()->dumpUserLatent();
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));
