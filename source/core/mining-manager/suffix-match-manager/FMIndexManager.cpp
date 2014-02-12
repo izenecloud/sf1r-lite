@@ -7,6 +7,7 @@
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
+#include "../product-tokenizer/FuzzyNormalizer.h"
 
 using namespace cma;
 using namespace izenelib::util;
@@ -18,11 +19,13 @@ using namespace faceted;
 FMIndexManager::FMIndexManager(
         const std::string& homePath,
         boost::shared_ptr<DocumentManager>& document_manager,
-        boost::shared_ptr<FilterManager>& filter_manager)
+        boost::shared_ptr<FilterManager>& filter_manager,
+        FuzzyNormalizer* fuzzyNormalizer)
     : data_root_path_(homePath)
     , document_manager_(document_manager)
     , filter_manager_(filter_manager)
     , doc_count_(0)
+    , fuzzyNormalizer_(fuzzyNormalizer)
 {
 }
 
@@ -294,7 +297,7 @@ void FMIndexManager::buildLessDVProperties()
         {
             UString text = filter_manager_->getPropFilterString(prop_id, i);
             Algorithm<UString>::to_lower(text);
-            text = Algorithm<UString>::padForAlphaNum(text);
+            fuzzyNormalizer_->normalizeText(text);
             for(size_t c_i = 0; c_i < text.length(); ++c_i)
             {
                 if(text[c_i] == succinct::fm_index::DOC_DELIM)
@@ -389,7 +392,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                 {
                     UString text = propstr_to_ustr(dit->second.getPropertyStrValue());
                     Algorithm<UString>::to_lower(text);
-                    text = Algorithm<UString>::padForAlphaNum(text);
+                    fuzzyNormalizer_->normalizeText(text);
                     for(size_t c_i = 0; c_i < text.length(); ++c_i)
                     {
                         if(text[c_i] == succinct::fm_index::DOC_DELIM)

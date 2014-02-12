@@ -22,6 +22,7 @@ enum ProductScoreType
     DIVERSITY_SCORE,
     RANDOM_SCORE,
     TITLE_RELEVANCE_SCORE,
+    ZAMBEZI_RELEVANCE_SCORE,
     PRODUCT_SCORE_NUM
 };
 
@@ -38,6 +39,11 @@ struct ProductScoreConfig
 
     score_t minLimit;
     score_t maxLimit;
+    score_t zoomin;
+
+    score_t logBase;
+    score_t mean;
+    score_t deviation;
 
     bool isDebug; /// whether print debug message
 
@@ -71,6 +77,10 @@ private:
         ar & weight;
         ar & minLimit;
         ar & maxLimit;
+        ar & zoomin;
+        ar & logBase;
+        ar & mean;
+        ar & deviation;
         ar & isDebug;
         ar & factors;
     }

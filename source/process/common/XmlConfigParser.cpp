@@ -26,6 +26,8 @@
 #include <boost/asio.hpp>
 #include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
+#include <configuration-manager/FuzzyNormalizerConfig.h>
+
 using namespace std;
 using namespace izenelib::util::ticpp;
 
@@ -2123,6 +2125,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeNorm = getUniqChildElement(task_node, "Normalizer", false);
+        parseFuzzyNormalizerNode(
+            subNodeNorm, mining_schema.suffixmatch_schema.normalizer_config);
+
         ticpp::Element* subNodeInc = getUniqChildElement(task_node, "Incremental", true);
         if (subNodeInc)
         {
@@ -2133,6 +2139,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         else
         {
             throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
+        }
+
+        ticpp::Element* subNodeForward = getUniqChildElement(task_node, "ProductForward", false);
+        if (subNodeForward)
+        {
+            bool bForward = false;
+            getAttribute(subNodeForward, "enable", bForward, false);
+            mining_schema.suffixmatch_schema.product_forward_enable = bForward;
         }
 
         ticpp::Element* subNodeTopK = getUniqChildElement(task_node, "GroupCounterTopK", false);
@@ -2328,6 +2342,30 @@ NEXT:
     parseAdIndexNode(task_node, collectionMeta);
 }
 
+void CollectionConfig::parseFuzzyNormalizerNode(
+    const ticpp::Element* normNode,
+    FuzzyNormalizerConfig& normalizerConfig) const
+{
+    if (!normNode)
+        return;
+
+    std::string typeName;
+    getAttribute(normNode, "padding", typeName);
+
+    FuzzyNormalizerType typeId = normalizerConfig.getNormalizerType(typeName);
+    if (typeId == FUZZY_NORMALIZER_NUM)
+    {
+        std::string error("unknown <Normalizer> padding value \"" +
+                          typeName + "\"");
+        throw XmlConfigParserException(error);
+    }
+
+    normalizerConfig.type = typeId;
+
+    getAttribute_IntType(normNode, "max_index_token",
+                         normalizerConfig.maxIndexToken, false);
+}
+
 void CollectionConfig::parseAdIndexNode(
         const ticpp::Element* adIndexNode,
         CollectionMeta& collectionMeta) const
@@ -2427,6 +2465,22 @@ void CollectionConfig::parseScoreAttr(
     getAttribute_FloatType(scoreNode, "min", scoreConfig.minLimit, false);
     getAttribute_FloatType(scoreNode, "max", scoreConfig.maxLimit, false);
     getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
+
+    getAttribute_FloatType(scoreNode, "zoomin", scoreConfig.zoomin, false);
+
+    if (scoreConfig.zoomin == 0)
+    {
+        throw XmlConfigParserException("Require non-zero value for <Score zoomin>");
+    }
+
+    getAttribute_FloatType(scoreNode, "logbase", scoreConfig.logBase, false);
+    getAttribute_FloatType(scoreNode, "mean", scoreConfig.mean, false);
+    getAttribute_FloatType(scoreNode, "deviation", scoreConfig.deviation, false);
+
+    if (scoreConfig.logBase < 0 || scoreConfig.logBase == 1)
+    {
+        throw XmlConfigParserException("Require positive value for <Score logbase>");
+    }
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

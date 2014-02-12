@@ -27,7 +27,6 @@ namespace sf1r
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
-class ProductTokenizer;
 namespace faceted
 {
     class GroupManager;

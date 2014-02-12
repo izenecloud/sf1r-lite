@@ -243,14 +243,6 @@
                 <xs:element ref="CurrentSf1rNode" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
-            <!--<xs:attribute name="nodenum" use="required">
-                <xs:simpleType>
-                    <xs:restriction base="xs:integer">
-                        <xs:minInclusive value="1"/>
-                        <xs:maxInclusive value="100"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>-->
         </xs:complexType>
     </xs:element>
     <xs:element name="CurrentSf1rNode">
@@ -291,7 +283,6 @@
                         <xs:enumeration value="www"/>
                         <xs:enumeration value="stage"/>
                         <xs:enumeration value="beta"/>
-                        <xs:enumeration value="dev"/>
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>

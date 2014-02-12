@@ -107,6 +107,7 @@ class ProductScoreManager;
 class OfflineProductScorerFactory;
 class CategoryClassifyTable;
 class TitleScoreList;
+class ProductForwardManager;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
@@ -120,6 +121,8 @@ class RTypeStringPropTableBuilder;
 class QueryIntentManager;
 class ZambeziManager;
 class AdIndexManager;
+class ProductTokenizer;
+
 namespace b5m
 {
 class ProductMatcher;
@@ -136,6 +139,7 @@ class AttrManager;
 class OntologyManager;
 class CTRManager;
 class GroupFilterBuilder;
+class AttrTable;
 }
 
 
@@ -445,6 +449,8 @@ public:
 
     const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
 
+    const faceted::AttrTable* GetAttrTable() const;
+
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
     {
         return groupLabelLoggerMap_[propName];
@@ -483,6 +489,11 @@ public:
     TitleScoreList* GetTitleScoreList()
     {
         return titleScoreList_;
+    }
+
+    ProductForwardManager* GetProductForwardManger()
+    {
+        return productForwardManager_;
     }
 
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
@@ -532,6 +543,10 @@ public:
         return adIndexManager_;
     }
 
+    ProductTokenizer* getProductTokenizer()
+    {
+        return productTokenizer_;
+    }
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -638,6 +653,7 @@ private:
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
     bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
+    bool initProductForwardManager_();
 
     bool initZambeziManager_(ZambeziConfig& zambeziConfig);
 
@@ -755,6 +771,9 @@ private:
     /** list stores all the documents' productTokenizer score*/
     TitleScoreList* titleScoreList_;
 
+    /** The forward index, for B5MA only*/
+    ProductForwardManager* productForwardManager_;
+
     /** the knowledge of top labels for category boosting */
     GroupLabelKnowledge* groupLabelKnowledge_;
 
@@ -780,6 +799,7 @@ private:
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
     IncrementalFuzzyManager* incrementalManager_;
+    ProductTokenizer* productTokenizer_;
 
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;

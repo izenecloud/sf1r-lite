@@ -1,6 +1,7 @@
 #include "OfflineProductScorerFactoryImpl.h"
-#include "../product-scorer/ProductScoreAverage.h"
-#include "../product-scorer/NumericPropertyScorer.h"
+#include "../product-scorer/ProductScoreSum.h"
+#include "../product-scorer/NumericExponentScorer.h"
+#include "../product-scorer/NumericPropertyNormalizer.h"
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <configuration-manager/ProductScoreConfig.h>
 #include <memory> // auto_ptr
@@ -30,24 +31,24 @@ ProductScorer* OfflineProductScorerFactoryImpl::createScorer(
 ProductScorer* OfflineProductScorerFactoryImpl::createPopularityScorer_(
     const ProductScoreConfig& scoreConfig)
 {
-    std::auto_ptr<ProductScoreAverage> averageScorer(
-        new ProductScoreAverage(scoreConfig));
+    std::auto_ptr<ProductScoreSum> scoreSum(
+        new ProductScoreSum(scoreConfig));
 
     for (std::size_t i = 0; i < scoreConfig.factors.size(); ++i)
     {
         const ProductScoreConfig& factorConfig = scoreConfig.factors[i];
-        ProductScorer* scorer = createNumericPropertyScorer_(factorConfig);
+        ProductScorer* scorer = createNumericExponentScorer_(factorConfig);
 
         if (scorer)
         {
-            averageScorer->addScorer(scorer);
+            scoreSum->addScorer(scorer);
         }
     }
 
-    return averageScorer.release();
+    return scoreSum.release();
 }
 
-ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
+ProductScorer* OfflineProductScorerFactoryImpl::createNumericExponentScorer_(
     const ProductScoreConfig& scoreConfig)
 {
     const std::string& propName = scoreConfig.propName;
@@ -65,6 +66,12 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
         return NULL;
     }
 
-    LOG(INFO) << "createNumericPropertyScorer_(), propName: " << propName;
-    return new NumericPropertyScorer(scoreConfig, numericTable);
+    NumericPropertyNormalizer* normalizer = NULL;
+    if (scoreConfig.deviation != 0)
+    {
+        normalizer = new NumericPropertyNormalizer(scoreConfig);
+    }
+
+    LOG(INFO) << "createNumericExponentScorer_(), propName: " << propName;
+    return new NumericExponentScorer(scoreConfig, numericTable, normalizer);
 }

@@ -275,7 +275,9 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="Normalizer" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="Incremental" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="ProductForward" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="GroupCounterTopK" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="FilterProperty" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
@@ -313,7 +315,20 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="Normalizer">
+        <xs:complexType>
+            <xs:attribute name="padding" type="xs:string" use="required"/>
+            <xs:attribute name="max_index_token" type="xs:positiveInteger" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="Incremental">
+        <xs:complexType>
+            <xs:attribute name="enable" type="YesNoType" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="ProductForward">
         <xs:complexType>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
         </xs:complexType>
@@ -424,6 +439,10 @@
         <xs:attribute name="weight" type="xs:float" use="optional"/>
         <xs:attribute name="min" type="xs:float" use="optional"/>
         <xs:attribute name="max" type="xs:float" use="optional"/>
+		<xs:attribute name="zoomin" type="xs:float" use="optional"/>
+        <xs:attribute name="logbase" type="xs:float" use="optional"/>
+        <xs:attribute name="mean" type="xs:float" use="optional"/>
+        <xs:attribute name="deviation" type="xs:float" use="optional"/>
         <xs:attribute name="debug" type="YesNoType" use="optional"/>
     </xs:complexType>
 

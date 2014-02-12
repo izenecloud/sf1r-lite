@@ -64,6 +64,14 @@ struct B5mM
                 b5mp_path = hdfs_dir+"/"+cname+"p";
                 b5mc_path = hdfs_dir+"/"+cname+"c";
             }
+            if(indexer["o_collection_name"].Type()!=YAML::NodeType::Undefined)
+            {
+                b5mo_path = hdfs_dir+"/"+indexer["o_collection_name"].as<std::string>();
+            }
+            if(indexer["p_collection_name"].Type()!=YAML::NodeType::Undefined)
+            {
+                b5mp_path = hdfs_dir+"/"+indexer["p_collection_name"].as<std::string>();
+            }
         }
         SetValue_(config["mode"], mode);
         SetValue_(config["cmode"], cmode);
@@ -116,7 +124,7 @@ private:
     template <typename T>
     bool SetValue_(const YAML::Node& node, T& value)
     {
-        if(node.Type()==YAML::NodeType::Undefined) return false;
+        if(node.Type()==YAML::NodeType::Undefined||node.Type()==YAML::NodeType::Null) return false;
         value = node.as<T>();
         return true;
     }

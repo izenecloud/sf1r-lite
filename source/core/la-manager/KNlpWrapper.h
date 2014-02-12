@@ -63,6 +63,12 @@ public:
 
     void fmmBigram_with_space(std::vector<std::pair<KString,double> >& r);
 
+    size_t termid(const KString& kstr);
+
+    double score(const size_t ind);
+
+    double getMin();
+
 private:
     std::string dictDir_;
     bool isDictLoaded_;
