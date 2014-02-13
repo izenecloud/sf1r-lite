@@ -132,8 +132,8 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         {
             buildWANDQueryTree(action.rawQueryTree_, tmpQueryTree);
         }
-        
-        //tmpQueryTree->print();
+        //debug lelewang
+        tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;
         tmpQueryTree->getPropertyTermInfo(ptInfo);

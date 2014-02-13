@@ -13,6 +13,9 @@ const std::size_t kPrintDocLimit = 24;
 
 using namespace sf1r;
 
+//debug wang,lele
+const size_t ProductRankParam::kMaxDocNum = 4000;
+
 ProductRanker::ProductRanker(
     ProductRankParam& param,
     bool isDebug)
