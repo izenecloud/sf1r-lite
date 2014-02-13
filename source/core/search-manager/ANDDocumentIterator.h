@@ -168,9 +168,13 @@ inline bool ANDDocumentIterator::move_together_with_not()
 inline bool ANDDocumentIterator::do_next()
 {
     if (!nIteratorNum_ ||(docIterList_.front()->next()==false))
-        return false;
+	{
+	   std::cout << "1---->nIterator=0" << std::endl;
+	   return false;
+	}
     if (nIteratorNum_ == 1)
     {
+		std::cout << "1---->nIteratorNum_ = 1" << std::endl;
         currDoc_ = docIterList_.front()->doc();
         return true;
     }

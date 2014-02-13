@@ -116,12 +116,14 @@ bool LAManager::getExpandedQuery(
 
     for (TermList::iterator it = termList.begin(); it!=termList.end(); it++)
     {
-        //cout << "^^^^" << la::to_utf8(it->text_) << endl;
+		//debug wang,lele
+        cout << "^^^^" << la::to_utf8(it->text_) << endl;
     }
 
     expQuery = toExpandedString(termList);
 
-    //cout << "##########################" << la::to_utf8(expQuery) << endl;
+	//debug wang,lele
+    cout << "##########################" << la::to_utf8(expQuery) << endl;
 
 
     if (isMultiThreadEnv_)

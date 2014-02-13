@@ -6,7 +6,6 @@
 
 namespace sf1r
 {
-
 class ScdDocument : public Document
 {
 public:
@@ -36,8 +35,6 @@ public:
 public:
   SCD_TYPE type;
 };
-
 }
 
 #endif
-
