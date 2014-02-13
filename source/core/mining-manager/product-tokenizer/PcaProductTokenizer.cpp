@@ -2,6 +2,7 @@
 #include <la-manager/TitlePCAWrapper.h>
 #include <string>
 #include <vector>
+#include <map>
 #include <set>
 
 using namespace sf1r;
@@ -21,9 +22,16 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     double maxScore = 0;
     std::string maxToken;
 
+    typedef std::map<std::string, float> TokenScoreMap;
+    TokenScoreMap tokenScoreMap;
+
     for (TokenScoreVec::const_iterator it = tokens.begin();
          it != tokens.end(); ++it)
     {
+        if (tokenScoreMap.find(it->first) != tokenScoreMap.end())
+            continue;
+
+        tokenScoreMap[it->first] = it->second;
         scoreSum += it->second;
 
         if (it->second > maxScore)
@@ -49,8 +57,8 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
         majorSet.insert(maxToken);
     }
 
-    for (TokenScoreVec::const_iterator it = tokens.begin();
-         it != tokens.end(); ++it)
+    for (TokenScoreMap::const_iterator it = tokenScoreMap.begin();
+         it != tokenScoreMap.end(); ++it)
     {
         UString ustr(it->first, UString::UTF_8);
         double score = it->second / scoreSum;
