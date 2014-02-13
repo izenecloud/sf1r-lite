@@ -41,20 +41,27 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
         }
     }
 
-    typedef std::set<std::string> TokenSet;
-    TokenSet majorSet;
+    std::vector<std::string> majorTokens;
+    if (!maxToken.empty()) majorTokens.push_back(maxToken);
+    if (!brand.empty()) majorTokens.push_back(brand);
+    if (!model.empty()) majorTokens.push_back(model);
 
-    if (!brand.empty())
+    for (std::vector<std::string>::const_iterator it = majorTokens.begin();
+         it != majorTokens.end(); ++it)
     {
-        majorSet.insert(brand);
-    }
-    if (!model.empty())
-    {
-        majorSet.insert(model);
-    }
-    if (!maxToken.empty())
-    {
-        majorSet.insert(maxToken);
+        TokenScoreMap::iterator mapIter = tokenScoreMap.find(*it);
+        UString ustr(mapIter->first, UString::UTF_8);
+        double score = mapIter->second / scoreSum;
+        std::pair<UString, double> tokenScore(ustr, score);
+
+        tokenScoreMap.erase(mapIter);
+        param.majorTokens.push_back(tokenScore);
+
+        if (param.isRefineResult)
+        {
+            param.refinedResult.append(ustr);
+            param.refinedResult.push_back(SPACE_UCHAR);
+        }
     }
 
     for (TokenScoreMap::const_iterator it = tokenScoreMap.begin();
@@ -64,18 +71,6 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
         double score = it->second / scoreSum;
         std::pair<UString, double> tokenScore(ustr, score);
 
-        if (majorSet.find(it->first) != majorSet.end())
-        {
-            param.majorTokens.push_back(tokenScore);
-            if (param.isRefineResult)
-            {
-                param.refinedResult.append(ustr);
-                param.refinedResult.push_back(SPACE_UCHAR);
-            }
-        }
-        else
-        {
-            param.minorTokens.push_back(tokenScore);
-        }
+        param.minorTokens.push_back(tokenScore);
     }
 }
