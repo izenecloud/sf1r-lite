@@ -216,13 +216,15 @@ void TourProcessor::LogGroup(const Group&group)
                 std::string from;
 				std::string to;
 				std::string time_plan;
+				std::string price;
                 doc.getString(SCD_DOC_ID,doc_id);
                 doc.getString(SCD_FROM_CITY,from);
                 doc.getString(SCD_TO_CITY,to);
 				doc.getString(SCD_TIME_PLAN,time_plan);
+				doc.getString(SCD_PRICE,price);
 				std::cout << "\t" << doc_id << ":" << 
 							from << "," << to << " Time Plan:" << 
-								time_plan <<std::endl;
+								time_plan << " Price:" << price << std::endl;
         }
 		std::cout << "\n";
 }

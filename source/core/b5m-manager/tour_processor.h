@@ -32,7 +32,7 @@ class TourProcessor{
 		bool bcluster;
 		bool operator<(const BufferValueItem& another) const
 		{
-			return days < another.days ? true:false;
+			return price < another.price ? true:false;
 		}
 	};
 
