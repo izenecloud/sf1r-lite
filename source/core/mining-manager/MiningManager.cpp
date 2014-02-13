@@ -2475,6 +2475,25 @@ bool MiningManager::GetSuffixMatch(
                 actionOperation.actionItem_.groupParam_,
                 res_list,
                 tokenParam.rankBoundary);
+
+            if (res_list.empty() && !tokenParam.majorTokens.empty())
+            {
+                LOG(INFO) << "try OR search again after removing one major token";
+                tokenParam.minorTokens.push_back(tokenParam.majorTokens.back());
+                tokenParam.majorTokens.pop_back();
+
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    useSynonym,
+                    tokenParam.majorTokens,
+                    tokenParam.minorTokens,
+                    search_in_properties,
+                    max_docs,
+                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                    filter_param,
+                    actionOperation.actionItem_.groupParam_,
+                    res_list,
+                    tokenParam.rankBoundary);
+            }
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
