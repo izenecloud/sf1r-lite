@@ -144,23 +144,6 @@ double elapsedFromLast(izenelib::util::ClockTimer& clock, double& lastSec)
     return result;
 }
 
-typedef std::pair<double, uint32_t> ScoreDocId;
-const size_t kTopAverageNum = 10;
-
-double topAverageScore(const std::vector<ScoreDocId>& resultList)
-{
-    size_t num = std::min(kTopAverageNum, resultList.size());
-    if (num == 0)
-        return 0;
-
-    double sum = 0;
-    for (size_t i = 0; i < num; ++i)
-    {
-        sum += resultList[i].first;
-    }
-    return sum / num;
-}
-
 }
 
 namespace sf1r
@@ -2529,12 +2512,6 @@ bool MiningManager::GetSuffixMatch(
         }
 
         suffixMatchTime = elapsedFromLast(clock, lastSec);
-
-        if (!res_list.empty())
-        {
-            LOG(INFO) << "average score of fuzzy search top results: "
-                      << topAverageScore(res_list);
-        }
 
         searchManager_->fuzzySearchRanker_.rankByProductScore(
             actionOperation.actionItem_, res_list, isCompare);
