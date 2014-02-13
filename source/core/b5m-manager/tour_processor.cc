@@ -8,6 +8,7 @@
 #include <document-manager/ScdDocument.h>
 #include <assert.h>
 
+//#define TOUR_DEBUG
 
 using namespace sf1r;
 using namespace sf1r::b5m;
@@ -18,20 +19,6 @@ TourProcessor::TourProcessor(const B5mM& b5mm): b5mm_(b5mm)
 
 TourProcessor::~TourProcessor()
 {
-	Destroy();
-}
-
-void TourProcessor::Destroy()
-{
-	for(Buffer::iterator iter = buffer_.begin(); iter != buffer_.end(); ++iter)
-	{
-		BufferValue &buffer_value = iter->second;
-		for(size_t i = 0; i < buffer_value.size();i++)
-		{
-			assert(buffer_value[i].doc);
-			delete buffer_value[i].doc;
-		}
-	}
 }
 
 bool TourProcessor::Generate(const std::string& mdb_instance)
@@ -46,6 +33,39 @@ bool TourProcessor::Generate(const std::string& mdb_instance)
     sd_processor.Process();
     Finish_();
 	return true;
+}
+
+void TourProcessor::Insert_(ScdDocument& doc)
+{
+	std::string sdays;
+	std::string price;
+	BufferValueItem value;
+    doc.getString(SCD_FROM_CITY, value.from);
+    doc.getString(SCD_TO_CITY, value.to);
+	doc.getString(SCD_PRICE,price);
+    doc.getString(SCD_TIME_PLAN, sdays);
+    value.days = ParseDays_(sdays);
+    value.doc = doc;
+    value.price = 0.0;
+    try {
+        value.price = boost::lexical_cast<double>(price);
+    }
+    catch(std::exception& ex)
+    {
+		std::cerr << ex.what() << std::endl;
+    }
+    value.bcluster = true;
+    if(value.days.second==0||value.price==0.0||
+			value.from.empty()||value.to.empty()) 
+	{
+		value.bcluster = false;
+	}
+
+	//generate union key by to_city
+	UnionBufferKey union_key;
+	GenerateUnionKey(union_key,value.from,value.to);
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    buffer_[union_key].push_back(value);
 }
 
 std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays) const
@@ -66,7 +86,6 @@ std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays
 		r.first = atoi(tmp_days.c_str());
 		r.second = r.first;
 	}
-	
 	else
 	{
 		int min_days = atoi(tmp_days.substr(0,pos).c_str());
@@ -77,201 +96,44 @@ std::pair<uint32_t, uint32_t> TourProcessor::ParseDays_(const std::string& sdays
 	return r;
 }
 
-void TourProcessor::Insert_(ScdDocument& doc)
+void TourProcessor::GenerateUnionKey(UnionBufferKey& union_key,
+									 const std::string& from_city,
+									 const std::string& to_city)const
 {
-	std::string name;
-	std::string from_city;
-	std::string to_city;
-	ScdDocument *duplicate_doc = new ScdDocument(doc);
-	duplicate_doc->getString(SCD_NAME,name);
-	duplicate_doc->getString(SCD_FROM_CITY,from_city);
-	duplicate_doc->getString(SCD_TO_CITY,to_city);
-	GenerateAuxiliaryHash(duplicate_doc,from_city,to_city,name);
-}
+	std::vector<std::string> union_to_city;
+	boost::split(union_to_city,to_city,boost::is_any_of(","));
 
-void TourProcessor::GenerateGroup(DocSet& docs)
-{
-	assert(docs.size()>=1);
-	std::string sdays;
-	std::string price;
-	std::string from_city;
-	std::string to_city;
-	//use first document <from,to> as group key
-	(*docs.begin())->getString(SCD_FROM_CITY,from_city);
-	(*docs.begin())->getString(SCD_TO_CITY,to_city);
-	BufferKey key(from_city,to_city);
-
-	for(DocSet::const_iterator iter = docs.begin(); iter != docs.end(); ++iter)
+	if(union_to_city.size() == 0)
 	{
-		BufferValueItem value;
-		(*iter)->getString(SCD_FROM_CITY, value.from);
-		(*iter)->getString(SCD_TO_CITY, value.to);
-		(*iter)->getString(SCD_PRICE,price);
-		(*iter)->getString(SCD_TIME_PLAN, sdays);
-		value.days = ParseDays_(sdays);
-		value.doc = static_cast<ScdDocument*>(*iter);
-		assert(value.doc);
-		value.price = 0.0;
-		try {
-			value.price = boost::lexical_cast<double>(price);
-		}
-		catch(std::exception& e)
-		{
-			LOG(INFO) << e.what();
-		}
-		value.bcluster = true;
-		if(value.days.second==0||value.price==0.0||
-					value.from.empty()||value.to.empty())
-		{
-			value.bcluster = false;
-		}
-		buffer_[key].push_back(value);
-	}
-}
-
-void TourProcessor::GenerateAuxiliaryHash(Document*doc,
-										  const std::string&from_city,
-										  const std::string&to_city,
-										  const std::string&name)
-{
-	assert(doc);
-	bool is_match_city = false;
-	Set to_city_split_result;
-	to_city_split_result.clear();
-
-	boost::split(to_city_split_result,to_city,boost::is_any_of(","));
-
-	//match to_city with name property
-	for(Set::const_iterator iter = to_city_split_result.begin();
-				iter != to_city_split_result.end(); ++iter)
-	{
-		if(to_city_split_result.size() >= 2)
-		{
-			if(from_city == *iter) continue;
-		}
-		
-		if(name.find(*iter) == std::string::npos)
-		{
-			continue;
-		}
-
-		is_match_city = true;
-		BufferKey from_to_city(from_city,*iter);
-		doc_hash_[doc].push_back(from_to_city);
-		from_to_hash_[from_to_city].push_back(doc);
+		union_key.push_back(std::make_pair(from_city,""));
+		return;
 	}
 
-	if(is_match_city == false)
+	for(size_t i = 0;i<union_to_city.size();i++)
 	{
-		//if no match to name, use all the possible to city split result
-		for(Set::const_iterator iter = to_city_split_result.begin();
-					iter != to_city_split_result.end(); ++iter)
+		//ps:from city:上海  to city：上海，马累，马尔代夫 
+		//so we should remove key pair(上海，上海)
+		if(union_to_city[i].empty()) continue;
+		if(union_to_city.size() >= 2)
 		{
-			if(to_city_split_result.size() >= 2)
-			{
-				if(from_city == *iter) continue;
-			}
-
-			BufferKey from_to_city(from_city,*iter);
-			doc_hash_[doc].push_back(from_to_city);
-			from_to_hash_[from_to_city].push_back(doc);
+			if(from_city == union_to_city[i]) continue;
 		}
+		union_key.push_back(std::make_pair(from_city,union_to_city[i]));
 	}
-}
 
-void TourProcessor::SearchGroupDocuments(DocSet& already_used_docs,
-										 FromToCitySet& already_used_from_to,
-										 Document *doc
-										 )
-{	
-	if(doc == NULL) return;
-	FromToCityVector &from_to_citys = doc_hash_[doc];
-	assert(from_to_citys.size() >= 1);
-	FromToHash::iterator iter = from_to_hash_.end();
-
-	for(size_t idx = 0; idx < from_to_citys.size(); idx++)
+	if(union_key.size()==0)
 	{
-		if(already_used_from_to.find(from_to_citys[idx]) == already_used_from_to.end())
-		{
-			//insert different <from,to>
-			already_used_from_to.insert(from_to_citys[idx]);
-			iter = from_to_hash_.find(from_to_citys[idx]);
-			assert(iter != from_to_hash_.end());
-			DocVector &docs = iter->second;
-			assert(docs.size()>=1);
-			
-			for(size_t doc_idx = 0; doc_idx < docs.size();doc_idx++)
-			{
-				if(already_used_docs.find(docs[doc_idx]) == already_used_docs.end())
-				{
-					already_used_docs.insert(docs[doc_idx]);
-					//recursive search process 
-					SearchGroupDocuments(already_used_docs,already_used_from_to,docs[doc_idx]);
-				}
-			}
-		}
+		union_key.push_back(std::make_pair(from_city,from_city));
 	}
-}
 
-void TourProcessor::LogGroup(const DocSet& already_used_docs)
-{
-	static int group_index = 1;
-	LOG(INFO) << "1--->group " << group_index++ << " count:" << already_used_docs.size(); 
-	
-	for(DocSet::const_iterator doc_iter= already_used_docs.begin(); 
-			doc_iter != already_used_docs.end(); doc_iter++)
-	{
-		ScdDocument *p = (ScdDocument*)(*doc_iter);
-		std::string doc_id;
-		p->getString(SCD_DOC_ID,doc_id);
-		std::string from,to;
-		p->getString(SCD_FROM_CITY,from);
-		p->getString(SCD_TO_CITY,to);
-		LOG(INFO) << "\t" << doc_id << ":" << from <<","<<to;
-	}
-	LOG(INFO) << "\n";
-}
-
-void TourProcessor::AggregateSimilarFromTo()
-{
-	DocSet			 already_used_docs;
-	FromToCitySet	 already_used_from_to;
-
-	FromToHash::const_iterator iter = from_to_hash_.begin();
-	while(iter != from_to_hash_.end())
-	{
-		if(already_used_from_to.find(iter->first) != already_used_from_to.end())
-		{
-			++iter;
-			continue;
-		}
-		
-		already_used_from_to.insert(iter->first);
-		const DocVector &docs = iter->second;
-		for(size_t doc_idx = 0; doc_idx < docs.size(); doc_idx++)
-		{
-			if(already_used_docs.find(docs[doc_idx]) == already_used_docs.end())
-			{
-				already_used_docs.insert(docs[doc_idx]);
-			}
-			//find similar <from-to> documents
-			SearchGroupDocuments(already_used_docs,already_used_from_to,docs[doc_idx]);		
-		}
-
-		LogGroup(already_used_docs);
-		GenerateGroup(already_used_docs);
-		//Notice:clear previous group documents
-		already_used_docs.clear();
-		++iter;
-	}
+	//sort key vector
+	std::sort(union_key.union_key_.begin(),union_key.union_key_.end());
 }
 
 void TourProcessor::Finish_()
 {
-	AggregateSimilarFromTo();
-    //std::string odir = m_+"/b5mo";
-    //std::string pdir = m_+"/b5mp";
-    std::string odir = b5mm_.b5mo_path;
+	static size_t group_index = 0;
+	std::string odir = b5mm_.b5mo_path;
     std::string pdir = b5mm_.b5mp_path;
     B5MHelper::PrepareEmptyDir(odir);
     B5MHelper::PrepareEmptyDir(pdir);
@@ -280,41 +142,25 @@ void TourProcessor::Finish_()
     for(Buffer::iterator it = buffer_.begin();it!=buffer_.end();++it)
     {
         BufferValue& value = it->second;
-#ifdef TOUR_DEBUG
-        const BufferKey& key = it->first;
-		LOG(INFO) << "1---->aggregate <" << key.first << "," 
-					<< key.second << "> count:"<< value.size();  
-#endif
         std::sort(value.begin(), value.end());
         std::vector<Group> groups;
-        for(uint32_t i=0;i<value.size();i++)
+        for(uint32_t i = 0;i < value.size(); i++)
         {
             const BufferValueItem& vi = value[i];
-#ifdef TOUR_DEBUG
-            LOG(INFO)<<"1---->find value item "<<vi.from<<","<<vi.to<<",["<<vi.days.first<<","
-						<<vi.days.second<<"],"<<vi.price<<","<<vi.bcluster<<std::endl;
-#endif
             Group* find_group = NULL;
-            for(uint32_t j=0;j<groups.size();j++)
+            for(uint32_t j = 0; j < groups.size(); j++)
             {
                 Group& g = groups[j];
-                if(!g.front().bcluster) continue;
-                //compare vi with g;
-                std::pair<uint32_t, uint32_t> g_mindays = g.front().days;
-                if(vi.days.first > g_mindays.second && 
-						vi.days.first - g_mindays.second > 1)
+                if(!g.front().bcluster) 
 				{
 					continue;
 				}
-                //if(vi.days-g_mindays>1) continue;
-                //double avg_price = 0.0;
-                //for(uint32_t k=0;k<g.size();k++)
-                //{
-                //    avg_price += g[k].price;
-                //}
-                //avg_price/=g.size();
-                //double p_ratio = std::max(vi.price, avg_price)/std::min(vi.price, avg_price);
-                //if(p_ratio>1.5) continue;
+				
+				//TimePlan must be equal in aggregation result
+				if(g.front().days != vi.days)
+				{
+					continue;
+				}
                 find_group = &g;
             }
 
@@ -323,8 +169,8 @@ void TourProcessor::Finish_()
                 Group g;
                 g.push_back(vi);
                 groups.push_back(g);
-#ifdef TOUR_DEBUG
-                LOG(INFO)<<"1---->create new group"<<std::endl;
+#ifdef _TOUR_DEBUG
+                LOG(INFO) << "Create new group" << ++group_index << std::endl;
 #endif
             }
             else
@@ -332,16 +178,20 @@ void TourProcessor::Finish_()
                 find_group->push_back(vi);
             }
         }
-        for(uint32_t i=0;i<groups.size();i++)
+        for(uint32_t i = 0; i < groups.size(); i++)
         {
             Group& g = groups[i];
+
+#ifdef _TOUR_DEBUG
+			LogGroup(g);
+#endif
             std::string pid;
-            g.front().doc->getString(SCD_DOC_ID, pid);
+            g.front().doc.getString(SCD_DOC_ID, pid);
             for(uint32_t j=0;j<g.size();j++)
             {
                 BufferValueItem& vi = g[j];
-                vi.doc->property(SCD_UUID) = str_to_propstr(pid);
-                owriter.Append(*vi.doc);
+                vi.doc.property(SCD_UUID) = str_to_propstr(pid);
+                owriter.Append(vi.doc);
             }
             Document pdoc;
             GenP_(g, pdoc);
@@ -352,23 +202,48 @@ void TourProcessor::Finish_()
     pwriter.Close();
 }
 
+void TourProcessor::LogGroup(const Group&group)
+{
+        static int group_index = 1;
+		std::cout << "1--->group " << group_index++ << 
+						" count:" << group.size() << std::endl; 
+        
+        for(Group::const_iterator doc_iter= group.begin(); 
+                        doc_iter != group.end(); doc_iter++)
+        {
+                const ScdDocument &doc = doc_iter->doc;
+                std::string doc_id;
+                std::string from;
+				std::string to;
+				std::string time_plan;
+                doc.getString(SCD_DOC_ID,doc_id);
+                doc.getString(SCD_FROM_CITY,from);
+                doc.getString(SCD_TO_CITY,to);
+				doc.getString(SCD_TIME_PLAN,time_plan);
+				std::cout << "\t" << doc_id << ":" << 
+							from << "," << to << " Time Plan:" << 
+								time_plan <<std::endl;
+        }
+		std::cout << "\n";
+}
+
 void TourProcessor::GenP_(Group& g, Document& doc) const
 {
 	assert(g.size() >= 1);
-	doc =*g[0].doc;
-	doc.eraseProperty(SCD_UUID);
+	doc = g[0].doc;
+	doc.eraseProperty("uuid");
 	std::string price;
 	std::string p_docid;
     Set source_set;
 	double min_price = g[0].price;
 	double max_price = g[0].price;
 	//get first doc uuid as pid
-	g[0].doc->getString(SCD_UUID,p_docid);
+	g[0].doc.getString(SCD_UUID,p_docid);
 	//set docid default use first docid
 	doc.property(SCD_DOC_ID) = str_to_propstr(p_docid);
 	for(std::size_t i=0;i<g.size();i++)
 	{
-		ScdDocument& doc_ref = *g[i].doc;
+		ScdDocument& doc_ref = g[i].doc;
 		//get source list
         std::string source;
 		doc_ref.getString(SCD_SOURCE,source);
