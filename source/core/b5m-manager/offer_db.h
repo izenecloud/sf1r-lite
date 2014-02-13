@@ -155,7 +155,7 @@ public:
     bool insert(const KeyType& key, const ValueType& value)
     {
         boost::unique_lock<boost::shared_mutex> lock(mutex_);
-        return insert_(key, value, true);
+        return insert_(key, value, false);
     }
 
     bool insert(const std::string& soid, const std::string& spid)

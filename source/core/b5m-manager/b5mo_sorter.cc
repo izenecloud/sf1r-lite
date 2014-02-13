@@ -8,16 +8,15 @@ using namespace sf1r::b5m;
 B5moSorter::B5moSorter(const std::string& m, uint32_t mcount)
 :m_(m), mcount_(mcount), index_(0), sort_thread_(NULL)
 {
-}
-
-void B5moSorter::Append(const ScdDocument& doc, const std::string& ts, int flag)
-{
-    boost::unique_lock<MutexType> lock(mutex_);
     if(!ofs_.is_open())
     {
         std::string file = m_+"/block";
         ofs_.open(file.c_str());
     }
+}
+
+void B5moSorter::Append(const ScdDocument& doc, const std::string& ts, int flag)
+{
     Value v(doc, ts, flag);
     WriteValue_(ofs_, v);
     //if(buffer_.size()==mcount_)
@@ -236,11 +235,13 @@ void B5moSorter::WriteValue_(std::ofstream& ofs, const Value& value)
     std::string spid;
     doc.getString("uuid", spid);
     if(spid.empty()) return;
+    //std::string str_value;
     Json::Value json_value;
     JsonDocument::ToJson(doc, json_value);
     Json::FastWriter writer;
     std::string str_value = writer.write(json_value);
     boost::algorithm::trim(str_value);
+    boost::unique_lock<MutexType> lock(mutex_);
     ofs<<spid<<"\t"<<doc.type<<"\t"<<value.ts<<"\t"<<value.flag<<"\t"<<str_value<<std::endl;
 }
 void B5moSorter::Sort_(std::vector<Value>& docs)
@@ -256,7 +257,6 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
     std::ofstream ofs(file.c_str());
     for(uint32_t i=0;i<docs.size();i++)
     {
-        //const ScdDocument& doc = docs[i].doc;
         WriteValue_(ofs, docs[i]);
     }
     ofs.close();

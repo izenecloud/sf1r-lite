@@ -167,9 +167,165 @@ void B5moProcessor::Process(ScdDocument& doc)
         changed_match_.erase(oid);
     }
 }
-void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
+void B5moProcessor::PendingProcess_(ScdDocument& doc)
+{
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(spid.empty())
+    {
+        Product p;//empty p
+        ProcessIUProduct_(doc, p);
+    }
+    else
+    {
+        Product p;
+        p.type = Product::FASHION;
+        p.spid = spid;
+        ProcessIUProduct_(doc, p);
+    }
+    std::string doctext;
+    ScdWriter::DocToString(doc, doctext);
+    boost::unique_lock<boost::shared_mutex> lock(mutex_);
+    writer_->Append(doctext, doc.type);
+}
+void B5moProcessor::ProcessIUProduct_(ScdDocument& doc, Product& product, const std::string& old_spid)
 {
     SCD_TYPE type = UPDATE_SCD;
+    std::string sdocid;
+    doc.getString("DOCID", sdocid);
+    std::string title;
+    doc.getString("Title", title);
+    std::string spid;
+    if(product.type==Product::BOOK)
+    {
+        doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("BOOK");
+    }
+    else if(product.type==Product::SPU)
+    {
+        doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("SPU");
+    }
+    else if(product.type==Product::FASHION)
+    {
+        doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("FASHION");
+    }
+    else if(product.type==Product::ATTRIB)
+    {
+        doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("ATTRIB");
+    }
+    else if(product.type==Product::PENDING)
+    {
+        doc.type = NOT_SCD;
+        return;
+    }
+    else
+    {
+        doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("NOTP");
+    }
+    std::string original_attribute;
+    doc.getString("Attribute", original_attribute);
+    if(!product.spid.empty())
+    {
+        spid = product.spid;
+        if(!title.empty()) 
+        {
+            if(product.type==Product::SPU)
+            {
+                std::vector<Attribute> eattributes;
+                std::string sattrib;
+                doc.getString("Attribute", sattrib);
+                boost::algorithm::trim(sattrib);
+                if(!sattrib.empty())
+                {
+                    UString uattrib(sattrib, UString::UTF_8);
+                    ProductMatcher::ParseAttributes(uattrib, eattributes);
+                }
+                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
+                {
+                    std::vector<Attribute> v;
+                    ProductMatcher::ParseAttributes(product.filter_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                    v.clear();
+                    ProductMatcher::ParseAttributes(product.display_attributes, v);
+                    ProductMatcher::MergeAttributes(eattributes, v);
+                }
+                else
+                {
+                    ProductMatcher::MergeAttributes(eattributes, product.attributes);
+                    ProductMatcher::MergeAttributes(eattributes, product.dattributes);
+                }
+                UString new_uattrib = ProductMatcher::AttributesText(eattributes);
+                std::string new_sattrib;
+                new_uattrib.convertString(new_sattrib, UString::UTF_8);
+                try {
+                    new_sattrib = attr_->attr_normalize(new_sattrib);
+                }
+                catch(std::exception& ex)
+                {
+                    //TODO do nothing, keep new_sattrib not change
+                }
+                doc.property("Attribute") = str_to_propstr(new_sattrib);
+            }
+        }
+        //match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
+    }
+    else
+    {
+        spid = sdocid;
+    }
+    if(!product.stitle.empty() && !title.empty())
+    {
+        doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
+    }
+    std::string scategory;
+    doc.getString("Category", scategory);
+    if(!scategory.empty()) 
+    {
+        scategory+=">";
+        doc.property("Category") = str_to_propstr(scategory);
+    }
+    if(!product.spic.empty() && !title.empty())
+    {
+        //TODO remove this restrict
+        std::vector<std::string> spic_vec;
+        boost::algorithm::split(spic_vec, product.spic, boost::algorithm::is_any_of(","));
+        if(spic_vec.size()>1)
+        {
+            product.spic = spic_vec[0];
+        }
+        doc.property(B5MHelper::GetSPPicPropertyName()) = str_to_propstr(product.spic);
+    }
+    if(!product.surl.empty() && !title.empty())
+    {
+        doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
+    }
+    if(!product.smarket_time.empty() && !title.empty())
+    {
+        doc.property("MarketTime") = str_to_propstr(product.smarket_time);
+    }
+    if(!product.sbrand.empty() && !title.empty())
+    {
+        doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
+    }
+    doc.property("uuid") = str_to_propstr(spid);
+    if(old_spid!=spid)
+    {
+        odb_->insert(sdocid, spid);
+    }
+    if(old_spid!=spid&&!old_spid.empty())
+    {
+        ScdDocument old_doc;
+        old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
+        old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
+        old_doc.type=DELETE_SCD;
+        sorter_->Append(old_doc, ts_, 1);
+    }
+    ScdDocument sdoc(doc, type);
+    sorter_->Append(sdoc, ts_);
+}
+
+void B5moProcessor::ProcessIU_(ScdDocument& doc, bool force_match)
+{
+    //SCD_TYPE type = UPDATE_SCD;
     doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     doc.eraseProperty(B5MHelper::GetSPUrlPropertyName());
     doc.eraseProperty(B5MHelper::GetSPPicPropertyName());
@@ -224,17 +380,12 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
     {
         need_do_match = true;
     }
-    Product product;
     if(attr_!=NULL)
     {
         std::string sattr;
         doc.getString("Attribute", sattr);
         if(!sattr.empty())
         {
-            //{
-            //    boost::unique_lock<boost::shared_mutex> lock(mutex_);
-            //    std::cerr<<"normalizing "<<sattr<<std::endl;
-            //}
             try {
                 sattr = attr_->attr_normalize(sattr);
             }
@@ -244,247 +395,23 @@ void B5moProcessor::ProcessIU_(Document& doc, bool force_match)
             }
             doc.property("Attribute") = str_to_propstr(sattr);
         }
-        //if(!sattr.empty())
-        //{
-        //    doc.property("Attribute") = str_to_propstr(sattr);
-        //}
     }
+    Product product;
     if(need_do_match)
     {
         matcher_->Process(doc, product, true);
         status_.Insert(doc, product);
-        if(product.type==Product::BOOK)
-        {
-            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("BOOK");
-        }
-        else if(product.type==Product::SPU)
-        {
-            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("SPU");
-        }
-        else if(product.type==Product::FASHION)
-        {
-            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("FASHION");
-        }
-        else if(product.type==Product::ATTRIB)
-        {
-            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("ATTRIB");
-        }
-        else
-        {
-            doc.property(B5MHelper::GetProductTypePropertyName()) = str_to_propstr("NOTP");
-        }
     }
     else
     {
-        if(!spid.empty()&&spid!=sdocid)//maybe a book
-        {
-            product.spid = spid;
-        }
+        product.spid = spid;
+        //if(!spid.empty()&&spid!=sdocid)//maybe a book
+        //{
+        //    product.spid = spid;
+        //}
         matcher_->GetProduct(spid, product);
     }
-    std::string original_attribute;
-    doc.getString("Attribute", original_attribute);
-    if(attr_!=NULL)
-    {
-    }
-    else
-    {
-        doc.eraseProperty("Attribute");
-    }
-    if(!product.spid.empty())
-    {
-        //if(product.type==1) stat1_+=1;
-        //else if(product.type==2) stat2_+=1;
-        //else if(product.type==3) stat3_+=1;
-        //has SPU matched
-        spid = product.spid;
-        if(!title.empty()) 
-        {
-            //if(category.empty())
-            //{
-                //category = str_to_propstr(product.scategory);
-                //doc.property("Category") = category;
-                //if(!product.fcategory.empty())
-                //{
-                    //Document::doc_prop_value_strtype front(str_to_propstr(product.fcategory));
-                    //doc.property(tcp) = front;
-                //}
-            //}
-            if(attr_==NULL)
-            {
-                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
-                {
-                    if(!product.display_attributes.empty())
-                    {
-                        doc.property("DisplayAttribute") = ustr_to_propstr(product.display_attributes);
-                    }
-                    if(!product.filter_attributes.empty())
-                    {
-                        doc.property("Attribute") = ustr_to_propstr(product.filter_attributes);
-                        doc.property("FilterAttribute") = ustr_to_propstr(product.filter_attributes);
-                    }
-                }
-                else
-                {
-                    const std::vector<Attribute>& attributes = product.attributes;
-                    const std::vector<Attribute>& dattributes = product.dattributes;
-                    if(!attributes.empty()||!dattributes.empty())
-                    {
-                        if(!dattributes.empty())
-                        {
-                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
-                        }
-                        else if(!attributes.empty())
-                        {
-                            doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                            doc.property("FilterAttribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
-                        }
-                        //else
-                        //{
-                            //std::vector<ProductMatcher::Attribute> eattributes;
-                            //UString attrib_ustr;
-                            //doc.getProperty("Attribute", attrib_ustr);
-                            //std::string attrib_str;
-                            //attrib_ustr.convertString(attrib_str, UString::UTF_8);
-                            //boost::algorithm::trim(attrib_str);
-                            //if(!attrib_str.empty())
-                            //{
-                                //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
-                            //}
-                            //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
-                            ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
-                            //ProductMatcher::MergeAttributes(new_attributes, eattributes);
-                            //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
-                        //}
-                    }
-                }
-            }
-            else
-            {
-                std::vector<Attribute> eattributes;
-                std::string sattrib;
-                doc.getString("Attribute", sattrib);
-                boost::algorithm::trim(sattrib);
-                if(!sattrib.empty())
-                {
-                    UString uattrib(sattrib, UString::UTF_8);
-                    ProductMatcher::ParseAttributes(uattrib, eattributes);
-                }
-                if(!product.display_attributes.empty()||!product.filter_attributes.empty())
-                {
-                    std::vector<Attribute> v;
-                    ProductMatcher::ParseAttributes(product.filter_attributes, v);
-                    ProductMatcher::MergeAttributes(eattributes, v);
-                    v.clear();
-                    ProductMatcher::ParseAttributes(product.display_attributes, v);
-                    ProductMatcher::MergeAttributes(eattributes, v);
-                }
-                else
-                {
-                    ProductMatcher::MergeAttributes(eattributes, product.attributes);
-                    ProductMatcher::MergeAttributes(eattributes, product.dattributes);
-                }
-                UString new_uattrib = ProductMatcher::AttributesText(eattributes);
-                std::string new_sattrib;
-                new_uattrib.convertString(new_sattrib, UString::UTF_8);
-                try {
-                    new_sattrib = attr_->attr_normalize(new_sattrib);
-                }
-                catch(std::exception& ex)
-                {
-                    //TODO do nothing, keep new_sattrib not change
-                }
-                doc.property("Attribute") = str_to_propstr(new_sattrib);
-            }
-
-        }
-        //match_ofs_<<sdocid<<","<<spid<<","<<title<<"\t["<<product.stitle<<"]"<<std::endl;
-    }
-    else
-    {
-        if(attr_==NULL&&!original_attribute.empty())
-        {
-            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
-        }
-        spid = sdocid;
-    }
-    if(!product.stitle.empty() && !title.empty())
-    {
-        doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
-    }
-    std::string scategory;
-    doc.getString("Category", scategory);
-    if(!scategory.empty()) 
-    {
-        scategory+=">";
-        doc.property("Category") = str_to_propstr(scategory);
-    }
-    if(!product.spic.empty() && !title.empty())
-    {
-        //TODO remove this restrict
-        std::vector<std::string> spic_vec;
-        boost::algorithm::split(spic_vec, product.spic, boost::algorithm::is_any_of(","));
-        if(spic_vec.size()>1)
-        {
-            product.spic = spic_vec[0];
-        }
-        doc.property(B5MHelper::GetSPPicPropertyName()) = str_to_propstr(product.spic);
-    }
-    if(!product.surl.empty() && !title.empty())
-    {
-        doc.property(B5MHelper::GetSPUrlPropertyName()) = str_to_propstr(product.surl);
-    }
-    if(!product.smarket_time.empty() && !title.empty())
-    {
-        doc.property("MarketTime") = str_to_propstr(product.smarket_time);
-    }
-    if(!product.sbrand.empty() && !title.empty())
-    {
-        doc.property(B5MHelper::GetBrandPropertyName()) = str_to_propstr(product.sbrand);
-    }
-    if(old_spid!=spid)
-    {
-        //boost::unique_lock<boost::shared_mutex> lock(mutex_);
-        odb_->insert(sdocid, spid);
-        //cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
-    }
-    doc.property("uuid") = str_to_propstr(spid);
-    if(!original_attribute.empty()&&attr_==NULL)
-    {
-        std::string nda;
-        doc.getString("DisplayAttribute", nda);
-        if(nda.empty())
-        {
-            doc.property("DisplayAttribute") = str_to_propstr(original_attribute);
-        }
-    }
-    if(sorter_!=NULL)
-    {
-        if(old_spid!=spid&&!old_spid.empty())
-        {
-            ScdDocument old_doc;
-            old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
-            old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
-            old_doc.type=DELETE_SCD;
-            //last_ts_?
-            sorter_->Append(old_doc, ts_, 1);
-        }
-        ScdDocument sdoc(doc, type);
-        //if(!original_attribute.empty())
-        //{
-            //sdoc.property("Attribute") = str_to_propstr(original_attribute);
-        //}
-        sorter_->Append(sdoc, ts_);
-    }
-    //delete Attribute after write block
-    //if(!product.spid.empty()&&product.stitle.empty())
-    //{
-        ////book matched
-    //}
-    //else
-    //{
-    //}
+    ProcessIUProduct_(doc, product, old_spid);
 }
 
 void B5moProcessor::OMapperChange_(LastOMapperItem& item)
@@ -529,6 +456,7 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
     {
         bfs::remove_all(odb_path);
     }
+    std::string psm_path = B5MHelper::GetPsmPath(mdb_instance);
     if(!last_mdb_instance.empty())
     {
         std::string last_odb_path = B5MHelper::GetOdbPath(last_mdb_instance);
@@ -537,8 +465,17 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
             LOG(ERROR)<<"last odb does not exist "<<last_odb_path<<std::endl;
             return false;
         }
+        std::string last_psm_path = B5MHelper::GetPsmPath(last_mdb_instance);
+        if(!bfs::exists(last_psm_path))
+        {
+            LOG(ERROR)<<"last psm does not exist "<<last_psm_path<<std::endl;
+            return false;
+        }
         LOG(INFO)<<"copying "<<last_odb_path<<" to "<<odb_path<<std::endl;
         izenelib::util::filesystem::copy_directory(last_odb_path, odb_path);
+        LOG(INFO)<<"copy finished"<<std::endl;
+        LOG(INFO)<<"copying "<<last_psm_path<<" to "<<psm_path<<std::endl;
+        izenelib::util::filesystem::copy_directory(last_psm_path, psm_path);
         LOG(INFO)<<"copy finished"<<std::endl;
     }
     odb_ = new OfferDb(odb_path);
@@ -552,6 +489,11 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
         }
         LOG(INFO)<<"odb open successfully"<<std::endl;
     }
+    if(!bfs::exists(psm_path))
+    {
+        boost::filesystem::create_directories(psm_path);
+    }
+    matcher_->OpenPsm(psm_path);
     //std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
     std::string output_dir = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(output_dir);
@@ -566,7 +508,7 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
         omapper_->Open(omapper_path);
         LOG(INFO)<<"Omapper opened"<<std::endl;
     }
-    boost::shared_ptr<ScdTypeWriter> writer(new ScdTypeWriter(output_dir));
+    writer_.reset(new ScdTypeWriter(output_dir));
     ts_ = bfs::path(mdb_instance).filename().string();
     last_ts_="";
     if(!last_mdb_instance.empty())
@@ -599,7 +541,7 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
                         }
                         LastOMapperItem* item = new LastOMapperItem;
                         item->last_omapper = &last_omapper;
-                        item->writer = writer.get();
+                        item->writer = writer_.get();
                         item->text = line;
                         pool.schedule(item);
                         //boost::algorithm::trim(line);
@@ -706,28 +648,32 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
             u_scd_list.push_back(scd);
         }
     }
-    if(!r_scd_list.empty()||!d_scd_list.empty())
-    {
-        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-        ScdDocProcessor sd_processor(p, 1);
-        sd_processor.AddInput(r_scd_list);
-        sd_processor.AddInput(d_scd_list);
-        sd_processor.SetOutput(writer);
-        sd_processor.Process();
-    }
-    if(!u_scd_list.empty())
-    {
-        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-        ScdDocProcessor sd_processor(p, thread_num);
-        sd_processor.AddInput(u_scd_list);
-        sd_processor.SetOutput(writer);
-        sd_processor.Process();
-    }
-    writer->Close();
+    //if(!r_scd_list.empty()||!d_scd_list.empty())
+    //{
+    //    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+    //    ScdDocProcessor sd_processor(p, 1);
+    //    sd_processor.AddInput(r_scd_list);
+    //    sd_processor.AddInput(d_scd_list);
+    //    sd_processor.SetOutput(writer_);
+    //    sd_processor.Process();
+    //}
+    //if(!u_scd_list.empty())
+    //{
+    //    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+    //    ScdDocProcessor sd_processor(p, thread_num);
+    //    sd_processor.AddInput(u_scd_list);
+    //    sd_processor.SetOutput(writer_);
+    //    sd_processor.Process();
+    //}
+    matcher_->PendingFinish(boost::bind(&B5moProcessor::PendingProcess_, this, _1), thread_num);
+    LOG(INFO)<<"start to close scd writer"<<std::endl;
+    writer_->Close();
+    LOG(INFO)<<"finished"<<std::endl;
     match_ofs_.close();
     cmatch_ofs_.close();
+    LOG(INFO)<<"start to flush odb"<<std::endl;
     odb_->flush();
-    //bdb_->flush();
+    LOG(INFO)<<"finished"<<std::endl;
     if(sorter_!=NULL)
     {
         sorter_->StageOne();
@@ -741,65 +687,6 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
     }
     std::string status_path = mdb_instance+"/status";
     status_.Flush(status_path);
-    //LOG(INFO)<<"STAT "<<stat1_<<","<<stat2_<<","<<stat3_<<std::endl;
-    //if(!changed_match_.empty())
-    //{
-        //if(last_mdb_instance.empty())
-        //{
-            //LOG(ERROR)<<"pid changed oid not empty but last mdb instance not specify"<<std::endl;
-        //}
-        //else
-        //{
-            //std::vector<std::string> last_b5mo_scd_list;
-            //std::string last_b5mo_mirror_scd_path = B5MHelper::GetB5moMirrorPath(last_mdb_instance);
-            //B5MHelper::GetScdList(last_b5mo_mirror_scd_path, last_b5mo_scd_list);
-            //if(last_b5mo_scd_list.size()!=1)
-            //{
-                //LOG(ERROR)<<"last b5mo scd size should be 1"<<std::endl;
-            //}
-            //else
-            //{
-                //ScdWriter edit_u(B5MHelper::GetB5moPath(mdb_instance), UPDATE_SCD);
-                //std::string scd_file = last_b5mo_scd_list[0];
-                //ScdParser parser(izenelib::util::UString::UTF_8);
-                //parser.load(scd_file);
-                //uint32_t n=0;
-                //for( ScdParser::iterator doc_iter = parser.begin();
-                  //doc_iter!= parser.end(); ++doc_iter, ++n)
-                //{
-                    //if(changed_match_.empty()) break;
-                    //if(n%10000==0)
-                    //{
-                        //LOG(INFO)<<"Last b5mo mirror find Documents "<<n<<std::endl;
-                    //}
-                    //std::string soldpid;
-                    //Document doc;
-                    //SCDDoc& scddoc = *(*doc_iter);
-                    //SCDDoc::iterator p = scddoc.begin();
-                    //for(; p!=scddoc.end(); ++p)
-                    //{
-                        //const std::string& property_name = p->first;
-                        //doc.property(property_name) = p->second;
-                    //}
-                    //std::string sdocid;
-                    //doc.getString("DOCID", sdocid);
-                    //uint128_t oid = B5MHelper::StringToUint128(sdocid);
-                    //if(changed_match_.find(oid)!=changed_match_.end())
-                    //{
-                        //std::string spid;
-                        //if(odb_->get(sdocid, spid))
-                        //{
-                            //doc.property("uuid") = spid;
-                            //edit_u.Append(doc);
-                        //}
-                        //changed_match_.erase(oid);
-                    //}
-                //}
-                //edit_u.Close();
-
-            //}
-        //}
-    //}
     return true;
 }
 

@@ -39,7 +39,9 @@ private:
 
     void OMapperChange_(LastOMapperItem& item);
 
-    void ProcessIU_(Document& doc, bool force_match = false);
+    void ProcessIU_(ScdDocument& doc, bool force_match = false);
+    void ProcessIUProduct_(ScdDocument& doc, Product& p, const std::string& old_spid="");
+    void PendingProcess_(ScdDocument& doc);
 
     bool OMap_(const OriginalMapper& omapper, Document& doc) const;
 
@@ -55,6 +57,7 @@ private:
     std::string human_match_file_;
     boost::unordered_set<std::string> mobile_source_;
     sf1r::RpcServerConnectionConfig* img_server_cfg_;
+    boost::shared_ptr<ScdTypeWriter> writer_;
     std::ofstream match_ofs_;
     std::ofstream cmatch_ofs_;
     boost::unordered_set<uint128_t> changed_match_;

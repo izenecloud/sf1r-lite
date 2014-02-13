@@ -236,6 +236,10 @@ bool ProductMatcher::KeywordTag::IsModel() const
     }
     return false;
 }
+bool ProductMatcher::KeywordTag::IsCategoryKeyword() const
+{
+    return !category_name_apps.empty();
+}
 
 ProductMatcher::ProductMatcher()
 :is_open_(false),
@@ -363,21 +367,6 @@ bool ProductMatcher::Open(const std::string& kpath)
 
             LOG(INFO)<<"synonym map size "<<synonym_pairs.size();
             LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
-            path = path_+"/psm_result";
-            {
-                if(boost::filesystem::exists(path))
-                {
-                    psm_ = new CategoryPsm(path_);
-                    psm_->Open(path);
-                }
-                //std::map<std::string, std::string> pmap;
-                //izenelib::am::ssf::Util<>::Load(path, pmap);
-                //for(std::map<std::string, std::string>::const_iterator it = pmap.begin();it!=pmap.end();++it)
-                //{
-                //    psm_result_.insert(std::make_pair(B5MHelper::StringToUint128(it->first), B5MHelper::StringToUint128(it->second)));
-                //}
-                //LOG(INFO)<<"psm result load size "<<psm_result_.size()<<std::endl;
-            }
             path = path_+"/spu_price";
             if(boost::filesystem::exists(path))
             {
@@ -415,6 +404,7 @@ bool ProductMatcher::Open(const std::string& kpath)
             {
                 if(brand_manager_!=NULL) brand_manager_->Load(path);
             }
+            psm_ = new CategoryPsm(path_);
         }
         catch(std::exception& ex)
         {
@@ -423,6 +413,11 @@ bool ProductMatcher::Open(const std::string& kpath)
         }
         is_open_ = true;
     }
+    return true;
+}
+bool ProductMatcher::OpenPsm(const std::string& path)
+{
+    psm_->Open(path);
     return true;
 }
 
@@ -1327,7 +1322,6 @@ bool ProductMatcher::IndexPost(const std::string& path, const std::string& scd_p
         LOG(ERROR)<<"index post open knowledge failed."<<std::endl;
         return false;
     }
-    psm_ = new CategoryPsm(path_);
     ScdDocProcessor processor(boost::bind(&ProductMatcher::PostProcess_, this, _1), thread_num);
     processor.AddInput(offer_scd);
     processor.Process();
@@ -1350,12 +1344,6 @@ bool ProductMatcher::IndexPost(const std::string& path, const std::string& scd_p
         ofs1.close();
         ofs2.close();
         offer_prices_finish_ = true;
-    }
-    if(psm_!=NULL) 
-    {
-        psm_->Flush(psm_path);
-        delete psm_;
-        psm_ = NULL;
     }
     return true;
 }
@@ -1615,16 +1603,16 @@ bool ProductMatcher::NeedFuzzy_(const std::string& value)
     if(tl.size()<3) return false;
     return true;
 }
-void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, const std::string& scategory, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const
+void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, const std::string& scategory, std::vector<std::string>& brands, std::vector<std::string>& ckeywords) const
 {
     for(uint32_t i=0;i<keywords.size();i++)
     {
         const KeywordTag& k = keywords[i];
         std::string str;
         k.text.convertString(str, UString::UTF_8);
-        if(k.kweight>=0.8&&!k.category_name_apps.empty())
+        if(k.kweight>=0.8&&k.IsCategoryKeyword())
         {
-            psm_keywords.push_back(std::make_pair(str, 2.0));
+            ckeywords.push_back(str);
         }
         else
         {
@@ -1634,6 +1622,7 @@ void ProductMatcher::GetPsmKeywords_(const KeywordVector& keywords, const std::s
             }
         }
     }
+    std::sort(ckeywords.begin(), ckeywords.end());
 }
 void ProductMatcher::PostProcess_(ScdDocument& doc)
 {
@@ -1649,11 +1638,9 @@ void ProductMatcher::PostProcess_(ScdDocument& doc)
     Analyze_(title, term_list);
     KeywordVector keywords;
     GetKeywords(term_list, keywords, false);
-    std::vector<std::string> brands;
-    std::vector<std::pair<std::string, double> > psm_keywords;
-    GetPsmKeywords_(keywords, scategory, brands, psm_keywords);
-    Product p;
-    if(psm_!=NULL) psm_->Insert(doc, brands, psm_keywords, p.spid);
+    //std::vector<std::string> brands;
+    //std::vector<std::pair<std::string, double> > psm_keywords;
+    //GetPsmKeywords_(keywords, scategory, brands, psm_keywords);
     if(!offer_prices_finish_)
     {
         ProductPrice oprice;
@@ -2373,6 +2360,13 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
     }
     return false;
 }
+void ProductMatcher::PendingFinish(const boost::function<void (ScdDocument&)>& func, int thread_num)
+{
+    if(psm_!=NULL)
+    {
+        psm_->BmnFinish(func, thread_num);
+    }
+}
 
 bool ProductMatcher::ProcessBookStatic(const Document& doc, Product& result_product)
 {
@@ -2436,10 +2430,11 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
         std::string spid;
         std::string stitle;
         std::vector<std::string> brands;
-        std::vector<std::pair<std::string, double> > psm_keywords;
-        GetPsmKeywords_(keyword_vector, scategory, brands, psm_keywords);
+        std::vector<std::string> keywords;
+        GetPsmKeywords_(keyword_vector, scategory, brands, keywords);
         Product p;
-        if(psm_->Search(doc, brands, psm_keywords, p))
+        CategoryPsm::FLAG cf = psm_->Search(doc, brands, keywords, p);
+        if(cf!=CategoryPsm::NO)
         {
             p.why = why;
             result_products.clear();
