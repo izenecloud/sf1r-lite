@@ -18,11 +18,11 @@ using izenelib::util::UString;
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
-class ProductTokenizer;
 namespace b5m {
 class ProductMatcher;
 }
 class CategoryClassifyTable;
+class FuzzyNormalizer;
 
 namespace faceted
 {
@@ -36,19 +36,17 @@ class SuffixMatchManager
 public:
     SuffixMatchManager(
             const std::string& homePath,
-            const std::string& dicpath,
-            const std::string& system_resource_path,
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
-            NumericPropertyTableBuilder* numeric_tablebuilder);
+            NumericPropertyTableBuilder* numeric_tablebuilder,
+            FuzzyNormalizer* fuzzyNormalizer);
 
     ~SuffixMatchManager();
 
     void setProductMatcher(b5m::ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
-    void buildTokenizeDic();
     bool isStartFromLocalFM() const;
 
     size_t longestSuffixMatch(
@@ -69,13 +67,6 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list,
             double rank_boundary);
 
-    void GetTokenResults(const std::string& pattern,
-                    std::list<std::pair<UString, double> >& major_tokens,
-                    std::list<std::pair<UString, double> >& manor_tokens,
-                    bool isAnalyzeQuery,
-                    UString& analyzedQuery,
-                    double& rank_boundary);
-
     SuffixMatchMiningTask* getMiningTask();
     
     bool buildMiningTask();
@@ -83,21 +74,6 @@ public:
     boost::shared_ptr<FilterManager>& getFilterManager();
 
     void updateFmindex();
-
-    double getSuffixSearchRankThreshold(
-            const std::list<std::pair<UString, double> >& major_tokens,
-            const std::list<std::pair<UString, double> >& minor_tokens,
-            std::list<std::pair<UString, double> >& boundary_minor_tokens);
-
-    void getSuffixSearchRankThreshold(std::list<std::pair<UString, double> >& minor_tokens, 
-                        double& rank_boundary);
-
-    void GetQuerySumScore(const std::string& pattern, double &sum_score);
-
-    ProductTokenizer* getProductTokenizer()
-    {
-        return tokenizer_;
-    }
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -119,13 +95,11 @@ private:
             std::vector<RangeListT>& filter_range_list) const;
 
     std::string data_root_path_;
-    std::string tokenize_dicpath_;
-    std::string system_resource_path_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
 
-    ProductTokenizer* tokenizer_;
+    b5m::ProductMatcher* matcher_;
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
@@ -138,6 +112,8 @@ private:
     typedef boost::unique_lock<MutexType> WriteLock;
 
     mutable MutexType mutex_;
+
+    FuzzyNormalizer* fuzzyNormalizer_;
 };
 
 }

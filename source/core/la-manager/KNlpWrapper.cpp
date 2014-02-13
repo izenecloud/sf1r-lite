@@ -149,3 +149,18 @@ void KNlpWrapper::gauss_smooth(std::vector<double>& r)
 {
     tokenizer_->gauss_smooth(r);
 }
+
+size_t KNlpWrapper::termid(const KString& kstr)
+{
+    return tokenizer_->termid(kstr);
+}
+
+double KNlpWrapper::score(const size_t ind)
+{
+    return tokenizer_->score(ind);
+}
+
+double KNlpWrapper::getMin() 
+{ 
+    return tokenizer_->min(); 
+}

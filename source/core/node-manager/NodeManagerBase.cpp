@@ -967,11 +967,15 @@ bool NodeManagerBase::handlePrimaryTmpLostWhileWritting()
         }
         return false;
     }
-    if (!cb_alive_checker_(ip))
+    int check_times = 0;
+    while (!cb_alive_checker_(ip))
     {
-        LOG(WARNING) << "the writting node is not alive, the node is really dead.";
-        zookeeper_->deleteZNode(writting_flag_node_);
-        return false;
+        LOG(WARNING) << "the writting node is not alive, the node is really dead." << check_times;
+        if (++check_times > 5)
+        {
+            zookeeper_->deleteZNode(writting_flag_node_);
+            return false;
+        }
     }
 
     LOG(WARNING) << "this node is still alive, maybe temporally unavailable. just wait. my state: " << nodeState_;

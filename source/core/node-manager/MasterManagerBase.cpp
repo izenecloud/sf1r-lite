@@ -1134,8 +1134,8 @@ void MasterManagerBase::detectReadOnlyWorkersInReplica(replicaid_t replicaId)
 
 void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool is_created_node)
 {
-    if (!isOnlyMaster())
-        return;
+    //if (!isOnlyMaster())
+    //    return;
     if (!nodepath.empty())
     {
         shardid_t nodeid = 0;

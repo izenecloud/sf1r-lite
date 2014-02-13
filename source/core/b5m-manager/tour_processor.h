@@ -11,107 +11,101 @@
 
 NS_SF1R_B5M_BEGIN
 
-const static std::string SCD_SOURCE		 = "Source";
-const static std::string SCD_PRICE		 = "SalesPrice";
-const static std::string SCD_FROM_CITY	 = "FromCity";
-const static std::string SCD_TO_CITY	 = "ToCity";
-const static std::string SCD_DOC_ID		 = "DOCID";
-const static std::string SCD_TIME_PLAN	 = "TimePlan";
-const static std::string SCD_UUID		 = "uuid";
-const static std::string SCD_NAME		 = "Name";
-
+const static std::string SCD_SOURCE		= "Source";
+const static std::string SCD_PRICE		= "SalesPrice";
+const static std::string SCD_FROM_CITY	= "FromCity";
+const static std::string SCD_TO_CITY	= "ToCity";
+const static std::string SCD_DOC_ID		= "DOCID";
+const static std::string SCD_TIME_PLAN	= "TimePlan";
+const static std::string SCD_UUID		= "uuid";
+const static std::string SCD_START_DATE	= "StartDate";
 class TourProcessor{
-    typedef izenelib::util::UString UString;
-    typedef std::pair<std::string, std::string> BufferKey;
-    struct BufferValueItem
-    {
-        std::string from;
-        std::string to;
-        std::pair<uint32_t, uint32_t> days;
-        double price;
-        ScdDocument *doc;
-        bool bcluster;
-        bool operator<(const BufferValueItem& another) const
-        {
-            return days<another.days;
-        }
-    };
+	typedef izenelib::util::UString UString;
 
-    typedef std::vector<BufferValueItem> BufferValue;
-    typedef boost::unordered_map<BufferKey, BufferValue> Buffer;
-    typedef boost::unordered_set<std::string> Set;
-    typedef BufferValue Group;
+	typedef std::pair<std::string, std::string> BufferKey;
 
-    typedef std::vector<Document*>	DocVector;
-    typedef std::vector<BufferKey>  FromToCityVector;
-    //key:FromCity,ToCity  value:collection of documents
-    typedef boost::unordered_map<BufferKey,DocVector> FromToHash;
-    //key:documents  value:collection of <FromCicy,ToCity>
-    typedef boost::unordered_map<Document*,FromToCityVector> DocHash;
-    typedef boost::unordered_set<BufferKey> FromToCitySet;
-    typedef boost::unordered_set<Document*> DocSet;
-    
+	struct UnionBufferKey
+	{
+		std::vector<BufferKey> union_key_;
+
+		bool operator<(const UnionBufferKey&key)const 
+		{
+			boost::unordered_set<BufferKey> key_set;
+			for(std::vector<BufferKey>::const_iterator iter = union_key_.begin();
+						iter != union_key_.end(); ++iter)
+			{
+				key_set.insert(*iter);
+			}
+
+			for(std::vector<BufferKey>::const_iterator iter = key.union_key_.begin();
+						iter != key.union_key_.end(); ++iter)
+			{
+				if(key_set.find(*iter) != key_set.end())
+				{
+					//notice:equal key return false
+					return false;
+				}
+			}
+			return union_key_[0] < key.union_key_[0] ? true:false;
+		}
+
+		void push_back(const BufferKey&key)
+		{
+			union_key_.push_back(key);
+		}
+
+		size_t size()const
+		{
+			return union_key_.size();
+		}
+	};
+
+	struct BufferValueItem
+	{
+		std::string from;
+		std::string to;
+		std::pair<uint32_t, uint32_t> days;
+		std::string start_date;
+		double price;
+		ScdDocument doc;
+		bool bcluster;
+		bool operator<(const BufferValueItem& another) const
+		{
+			return days < another.days ? true:false;
+		}
+	};
+
+	typedef std::vector<BufferValueItem> BufferValue;
+	typedef std::map<UnionBufferKey, BufferValue> Buffer;
+	typedef boost::unordered_set<std::string> Set;
+	typedef BufferValue Group;
+
 public:
-    TourProcessor(const B5mM& b5mm);
-    
-    ~TourProcessor();
-   
-    bool Generate(const std::string& mdb_instance);
+	TourProcessor(const B5mM&b5mm);
+	~TourProcessor();
+	bool Generate(const std::string& mdb_instance);
 
 private:
-    void Insert_(ScdDocument& doc);
-    
-    std::pair<uint32_t, uint32_t> ParseDays_(const std::string& sdays) const;
-    
-    void Finish_();
-    
-    void FindGroups_(BufferValue& value);
-    
-    void GenP_(Group& g, Document& doc) const;
 
-    /**
-     *@brief:log group infomation
-     */
-    void LogGroup(const DocSet& already_used_docs);
-    
-    /**
-     *@brief:destroy all the duplicate documents
-     */
-    void Destroy();
+	void Insert_(ScdDocument& doc);
+	std::pair<uint32_t, uint32_t> ParseDays_(const std::string& sdays) const;
+	void Finish_();
+	
+	void FindGroups_(BufferValue& value);
+	void GenP_(Group& g, Document& doc) const;
 
-    /**
-     *@brief:generate tourp group
-     */
-    void GenerateGroup(DocSet& docs);
-    
-    /**
-     *@brief:search each similar <from,to> collection of documents
-     */
-    void SearchGroupDocuments(DocSet& already_used_docs,
-                              FromToCitySet& already_used_from_to,
-                              Document *doc);
-    
-    /**
-     *@brief:aggregate all the similar <from,to> collection of documents
-     */
-    void AggregateSimilarFromTo();
+	void GenerateUnionKey(UnionBufferKey&union_key,
+						  const std::string&from_city,
+						  const std::string& to_city)const;
+	void LogGroup(const Group&group);
 
-    /**
-     *brief:Generate <from,to>---->{<document>,...}
-     * and <document>---->{<from,to>,..}
-     */
-    void GenerateAuxiliaryHash(Document*doc,
-                               const std::string&from_city,
-                               const std::string&to_city,
-                               const std::string&name);
 private:
-    B5mM            b5mm_;
-    std::string		m_;
-    FromToHash		from_to_hash_;
-    DocHash		    doc_hash_;
-    Buffer		    buffer_;
-    boost::mutex    mutex_;
+	B5mM  b5mm_;
+	std::string m_;
+	Buffer buffer_;
+	boost::mutex mutex_;
 };
+
 NS_SF1R_B5M_END
 
 #endif

@@ -11,7 +11,8 @@
 #include "QueryPruneBase.h"
 #include "QueryHelper.h"
 #include <mining-manager/MiningManager.h>
-#include "mining-manager/suffix-match-manager/SuffixMatchManager.hpp"
+#include <mining-manager/suffix-match-manager/SuffixMatchManager.hpp>
+#include <mining-manager/product-tokenizer/ProductTokenizer.h>
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -49,28 +50,25 @@ public:
             std::string& newQuery)
     {
         cout<<"====================Query Prune begin========================"<<endl;
-        std::string pattern = query_orig;
-
-        std::list<std::pair<UString, double> > major_tokens;
-        std::list<std::pair<UString, double> > minor_tokens;
-        izenelib::util::UString analyzedQuery;
-        double rank_boundary = 0;
-        miningManager_->getSuffixManager()->GetTokenResults(pattern, major_tokens, minor_tokens, false, analyzedQuery, rank_boundary);
+        ProductTokenParam tokenParam(query_orig, false);
+        miningManager_->getProductTokenizer()->tokenize(tokenParam);
 
         std::vector<std::pair<std::string, double> > v_major;
         std::vector<std::pair<std::string, double> > v_minor;
-        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+        for (ProductTokenParam::TokenScoreListIter it = tokenParam.majorTokens.begin();
+             it != tokenParam.majorTokens.end(); ++it)
         {
             std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            v_major.push_back(make_pair(key, i->second));
-            cout << key << " " << i->second << endl;
+            it->first.convertString(key, izenelib::util::UString::UTF_8);
+            v_major.push_back(make_pair(key, it->second));
+            cout << key << " " << it->second << endl;
         }
-        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        for (ProductTokenParam::TokenScoreListIter it = tokenParam.minorTokens.begin();
+             it != tokenParam.minorTokens.end(); ++it)
         {
             std::string key;
-            (i->first).convertString(key, izenelib::util::UString::UTF_8);
-            v_minor.push_back(make_pair(key, i->second));
+            it->first.convertString(key, izenelib::util::UString::UTF_8);
+            v_minor.push_back(make_pair(key, it->second));
         }
         std::sort(v_major.begin(), v_major.end(), greater_pair);
         std::sort(v_minor.begin(), v_minor.end(), greater_pair);
@@ -83,7 +81,7 @@ public:
         unsigned int maxTokenCount = 4;
 
         cout<<"maxTokenCount"<<maxTokenCount<<endl;
-        if (major_tokens.size() > maxTokenCount)
+        if (tokenParam.majorTokens.size() > maxTokenCount)
         {
             unsigned int count = 0;
             for (std::vector<std::pair<std::string, double> >::iterator i = v_major.begin(); i != v_major.end(); ++i)
@@ -100,10 +98,10 @@ public:
             return true;
         }
 
-        if (major_tokens.size() > 0 && minor_tokens.size() > 0)
+        if (tokenParam.majorTokens.size() > 0 && tokenParam.minorTokens.size() > 0)
         {
-            cout<<minor_tokens.size()<<endl;
-            if (major_tokens.size() + minor_tokens.size() > maxTokenCount)
+            cout<<tokenParam.minorTokens.size()<<endl;
+            if (tokenParam.majorTokens.size() + tokenParam.minorTokens.size() > maxTokenCount)
             {
                 unsigned int tmpCount = v_major.size();
                 for (unsigned int i = 0; i < v_major.size(); ++i)
@@ -127,7 +125,7 @@ public:
             }
             return true;
         }
-        else if (minor_tokens.size() == 0) /// only major <= 4
+        else if (tokenParam.minorTokens.size() == 0) /// only major <= 4
         {
             for (unsigned int i = 0; i < v_major.size() - 1; ++i)
             {
