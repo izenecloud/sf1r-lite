@@ -57,9 +57,9 @@ public:
 
     size_t AllPossibleSuffixMatch(
             bool use_synonym,            
-            std::list<std::pair<UString, double> >& major_tokens,
-            std::list<std::pair<UString, double> >& minor_tokens,
-            std::vector<std::string> search_in_properties,
+            const std::list<std::pair<UString, double> >& major_tokens,
+            const std::list<std::pair<UString, double> >& minor_tokens,
+            const std::vector<std::string>& search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,

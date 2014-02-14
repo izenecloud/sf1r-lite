@@ -237,9 +237,9 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
         bool use_synonym,
-        std::list<std::pair<UString, double> >& major_tokens,
-        std::list<std::pair<UString, double> >& minor_tokens,
-        std::vector<std::string> search_in_properties,
+        const std::list<std::pair<UString, double> >& major_tokens,
+        const std::list<std::pair<UString, double> >& minor_tokens,
+        const std::vector<std::string>& search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
@@ -260,9 +260,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     {
         std::vector<std::pair<UString, double> > tmp_tokens;
 
-        for (std::list<std::pair<UString, double> >::iterator it = major_tokens.begin(); it != major_tokens.end(); ++it, ++major_size)
+        for (std::list<std::pair<UString, double> >::const_iterator it = major_tokens.begin(); it != major_tokens.end(); ++it, ++major_size)
             tmp_tokens.push_back((*it));
-        for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
+        for (std::list<std::pair<UString, double> >::const_iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
             tmp_tokens.push_back((*it));       
         ExpandSynonym_(tmp_tokens, synonym_tokens, major_size);
 /*        
@@ -335,13 +335,15 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             else
             {
-                for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
+                for (std::list<std::pair<UString, double> >::const_iterator pit = major_tokens.begin();
                         pit != major_tokens.end(); ++pit)
                 {
                     if (pit->first.empty()) continue;
-                    Algorithm<UString>::to_lower(pit->first);
-                    fuzzyNormalizer_->normalizeToken(pit->first);
-                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+
+                    UString token(pit->first);
+                    Algorithm<UString>::to_lower(token);
+                    fuzzyNormalizer_->normalizeToken(token);
+                    if (fmi_manager_->backwardSearch(search_property, token, sub_match_range) == token.length())
                     {
                         range_list.push_back(sub_match_range);
                         score_list.push_back(pit->second);
@@ -350,13 +352,15 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 
                 thres = range_list.size();
     
-                for (std::list<std::pair<UString, double> >::iterator pit = minor_tokens.begin();
+                for (std::list<std::pair<UString, double> >::const_iterator pit = minor_tokens.begin();
                         pit != minor_tokens.end(); ++pit)
                 {
                     if (pit->first.empty()) continue;
-                    Algorithm<UString>::to_lower(pit->first);
-                    fuzzyNormalizer_->normalizeToken(pit->first);
-                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+
+                    UString token(pit->first);
+                    Algorithm<UString>::to_lower(token);
+                    fuzzyNormalizer_->normalizeToken(token);
+                    if (fmi_manager_->backwardSearch(search_property, token, sub_match_range) == token.length())
                     {
                         range_list.push_back(sub_match_range);
                         score_list.push_back(pit->second);
