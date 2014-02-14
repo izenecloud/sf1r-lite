@@ -132,6 +132,9 @@
 
 namespace
 {
+const izenelib::util::UString::EncodingType kEncodeType =
+    izenelib::util::UString::UTF_8;
+
 const std::string kTopLabelPropName = "Category";
 const size_t kTopLabelDocNum = 1000;
 const size_t kTopLabelCateNum = 4;
@@ -2478,8 +2481,15 @@ bool MiningManager::GetSuffixMatch(
 
             if (res_list.empty() && !tokenParam.majorTokens.empty())
             {
-                LOG(INFO) << "try OR search again after removing one major token";
-                tokenParam.minorTokens.push_back(tokenParam.majorTokens.back());
+                const ProductTokenParam::TokenScore& tokenScore(
+                    tokenParam.majorTokens.back());
+                std::string token;
+                tokenScore.first.convertString(token, kEncodeType);
+
+                LOG(INFO) << "try OR search again after removing one major token: "
+                          << token;
+
+                tokenParam.minorTokens.push_back(tokenScore);
                 tokenParam.majorTokens.pop_back();
 
                 totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
