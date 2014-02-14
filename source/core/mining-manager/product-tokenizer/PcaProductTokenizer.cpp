@@ -42,14 +42,28 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     }
 
     std::vector<std::string> majorTokens;
-    if (!maxToken.empty()) majorTokens.push_back(maxToken);
-    if (!brand.empty()) majorTokens.push_back(brand);
-    if (!model.empty()) majorTokens.push_back(model);
+    if (!maxToken.empty() &&
+        maxToken != brand && maxToken != model)
+    {
+        majorTokens.push_back(maxToken);
+    }
+    if (!brand.empty())
+    {
+        majorTokens.push_back(brand);
+    }
+    if (!model.empty())
+    {
+        majorTokens.push_back(model);
+    }
 
     for (std::vector<std::string>::const_iterator it = majorTokens.begin();
          it != majorTokens.end(); ++it)
     {
         TokenScoreMap::iterator mapIter = tokenScoreMap.find(*it);
+
+        if (mapIter == tokenScoreMap.end())
+            continue;
+
         UString ustr(mapIter->first, UString::UTF_8);
         double score = mapIter->second / scoreSum;
         std::pair<UString, double> tokenScore(ustr, score);
