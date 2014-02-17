@@ -40,6 +40,7 @@ public:
         , propName_(propValueTable.propName())
         , swapper_(propValueTable)
         , dateStrParser_(*DateStrParser::get())
+        , startDocId_(0)
     {}
 
     ~GroupMiningTask() {}
@@ -54,23 +55,23 @@ public:
 
     bool preProcess(int64_t timestamp)
     {
-        docid_t startDocId = swapper_.reader.docIdNum();
+        startDocId_ = swapper_.reader.docIdNum();
         bool isRebuild = isRebuildProp_(propName_);
 
         if (isRebuild)
         {
-            startDocId = 1;
+            startDocId_ = 1;
         }
 
         const docid_t endDocId = documentManager_.getMaxDocId();
-        if (startDocId > endDocId)
+        if (startDocId_ > endDocId)
             return false;
 
         const docid_t newSize = endDocId + 1;
         if (isRebuild)
         {
-            LOG(INFO) << "**clear old group data to rebuild property: "
-                      << propName_ << endl;
+            LOG(INFO) << "** clear old group data to rebuild property: "
+                      << propName_;
 
             swapper_.writer = TableType(swapper_.reader.dirPath(),
                                         propName_);
@@ -99,9 +100,10 @@ public:
 
     docid_t getLastDocId()
     {
-        return swapper_.reader.docIdNum();
+        return startDocId_;
     }
 
+private:
     bool isRebuildProp_(const std::string& propName) const
     {
         GroupConfigMap::const_iterator it = groupConfigMap_.find(propName);
@@ -121,6 +123,7 @@ private:
     const std::string propName_;
     TableSwapper<TableType> swapper_;
     DateStrParser& dateStrParser_;
+    docid_t startDocId_;
 };
 
 template<>
