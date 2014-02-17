@@ -46,6 +46,9 @@ public:
 
     AttrTable();
 
+    AttrTable& operator=(const AttrTable& other);
+    void swap(AttrTable& other);
+
     bool open(
         const std::string& dirPath,
         const std::string& propName
@@ -53,7 +56,7 @@ public:
 
     bool flush();
 
-    const char* propName() const { return propName_.c_str(); }
+    const std::string& propName() const { return propName_; }
 
     std::size_t nameNum() const { return nameStrVec_.size(); }
 
