@@ -26,10 +26,17 @@ struct PropIdTable
 
     class PropIdList;
 
+    std::size_t size() const;
+
+    void resize(std::size_t num);
+
     void getIdList(docid_t docId, PropIdList& propIdList) const;
 
     template <class IdContainer>
-    void appendIdList(const IdContainer& idContainer);
+    void appendIdList(const IdContainer& idContainer) {}
+
+    template <class IdContainer>
+    void setIdList(docid_t docId, const IdContainer& idContainer);
 
     /// key: doc id
     /// value: if the most significant bit is 0, it's just the single value id
@@ -103,6 +110,18 @@ void PropIdTable<valueid_t, index_t>::clear()
 }
 
 template <typename valueid_t, typename index_t>
+std::size_t PropIdTable<valueid_t, index_t>::size() const
+{
+    return indexTable_.size();
+}
+
+template <typename valueid_t, typename index_t>
+void PropIdTable<valueid_t, index_t>::resize(std::size_t num)
+{
+    indexTable_.resize(num);
+}
+
+template <typename valueid_t, typename index_t>
 void PropIdTable<valueid_t, index_t>::getIdList(docid_t docId, PropIdList& propIdList) const
 {
     propIdList.clear();
@@ -130,15 +149,23 @@ void PropIdTable<valueid_t, index_t>::getIdList(docid_t docId, PropIdList& propI
 
 template <typename valueid_t, typename index_t>
 template <class IdContainer>
-void PropIdTable<valueid_t, index_t>::appendIdList(const IdContainer& idContainer)
+void PropIdTable<valueid_t, index_t>::setIdList(docid_t docId, const IdContainer& idContainer)
 {
+    if (docId >= indexTable_.size())
+    {
+        indexTable_.resize(docId + 1);
+    }
+
+    index_t& index = indexTable_[docId];
     const std::size_t inputNum = idContainer.size();
-    indexTable_.push_back(0);
-    index_t& index = indexTable_.back();
 
     switch (inputNum)
     {
-        case 0: break;
+        case 0:
+        {
+            index = 0;
+            break;
+        }
 
         case 1:
         {
@@ -148,7 +175,7 @@ void PropIdTable<valueid_t, index_t>::appendIdList(const IdContainer& idContaine
             {
                 throw MiningException("property value id is out of range",
                     boost::lexical_cast<std::string>(inputId),
-                    "PropIdTable::appendIdList");
+                    "PropIdTable::setIdList");
             }
 
             index = inputId;
@@ -163,7 +190,7 @@ void PropIdTable<valueid_t, index_t>::appendIdList(const IdContainer& idContaine
             {
                 throw MiningException("property value count is out of range",
                     boost::lexical_cast<std::string>(valueTableSize),
-                    "PropIdTable::appendIdList");
+                    "PropIdTable::setIdList");
             }
 
             index = INDEX_MSB | valueTableSize;

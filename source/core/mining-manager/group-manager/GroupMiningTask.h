@@ -46,7 +46,7 @@ public:
     {
         Document::doc_prop_value_strtype propValue;
         doc.getProperty(propValueTable_.propName(), propValue);
-        buildDoc_(docID, propstr_to_ustr(propValue), propValueTable_);//return
+        buildDoc_(docID, propstr_to_ustr(propValue));
         return true;
     }
 
@@ -62,7 +62,7 @@ public:
         if (startDocId > endDocId)
             return false;
         cout<<propValueTable_.propName()<<", ";
-        propValueTable_.reserveDocIdNum(endDocId + 1);
+        propValueTable_.resize(endDocId + 1);
         return true;
     }
 
@@ -92,8 +92,7 @@ public:
 
     void buildDoc_(
         docid_t docId,
-        const izenelib::util::UString& propValue,
-        PropVauleType& propValueTable);
+        const izenelib::util::UString& propValue);
 
 private:
     DocumentManager& documentManager_;
@@ -105,8 +104,7 @@ private:
 template<>
 void GroupMiningTask<DateGroupTable>::buildDoc_(
     docid_t docId,
-    const izenelib::util::UString& propValue,
-    DateGroupTable& propValueTable)
+    const izenelib::util::UString& propValue)
 {
     DateGroupTable::DateSet dateSet;
 
@@ -138,7 +136,7 @@ void GroupMiningTask<DateGroupTable>::buildDoc_(
 
     try
     {
-        propValueTable.appendDateSet(dateSet);
+        propValueTable_.setDateSet(docId, dateSet);
     }
     catch(MiningException& e)
     {
@@ -150,8 +148,7 @@ void GroupMiningTask<DateGroupTable>::buildDoc_(
 template<>
 void GroupMiningTask<PropValueTable>::buildDoc_(
     docid_t docId,
-    const izenelib::util::UString& propValue,
-    PropValueTable& propValueTable)
+    const izenelib::util::UString& propValue)
 {
     std::vector<PropValueTable::pvid_t> propIdList;
 
@@ -164,7 +161,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
                 pathIt != groupPaths.end(); ++pathIt)
         {
 
-            PropValueTable::pvid_t pvId = propValueTable.insertPropValueId(*pathIt);
+            PropValueTable::pvid_t pvId = propValueTable_.insertPropValueId(*pathIt);
             propIdList.push_back(pvId);
         }
     }
@@ -175,7 +172,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
     }
     try
     {
-        propValueTable.appendPropIdList(propIdList);
+        propValueTable_.setPropIdList(docId, propIdList);
     }
     catch (MiningException& e)
     {

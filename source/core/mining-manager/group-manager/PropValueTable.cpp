@@ -91,18 +91,18 @@ PropValueTable::PropValueTable(const PropValueTable& table)
 {
 }
 
-void PropValueTable::reserveDocIdNum(std::size_t num)
+void PropValueTable::resize(std::size_t num)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.indexTable_.reserve(num);
+    valueIdTable_.resize(num);
 }
 
-void PropValueTable::appendPropIdList(const std::vector<pvid_t>& inputIdList)
+void PropValueTable::setPropIdList(docid_t docId, const std::vector<pvid_t>& inputIdList)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.appendIdList(inputIdList);
+    valueIdTable_.setIdList(docId, inputIdList);
 }
 
 void PropValueTable::propValueStr(

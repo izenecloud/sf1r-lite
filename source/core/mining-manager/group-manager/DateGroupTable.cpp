@@ -54,18 +54,18 @@ void DateGroupTable::clear()
     saveValueNum_ = 0;
 }
 
-void DateGroupTable::reserveDocIdNum(std::size_t num)
+void DateGroupTable::resize(std::size_t num)
 {
     ScopedWriteLock lock(mutex_);
 
-    dateValueTable_.indexTable_.reserve(num);
+    dateValueTable_.resize(num);
 }
 
-void DateGroupTable::appendDateSet(const DateSet& dateSet)
+void DateGroupTable::setDateSet(docid_t docId, const DateSet& dateSet)
 {
     ScopedWriteLock lock(mutex_);
 
-    dateValueTable_.appendIdList(dateSet);
+    dateValueTable_.setIdList(docId, dateSet);
 }
 
 void DateGroupTable::getDateSet(docid_t docId, DATE_MASK_TYPE mask, DateSet& dateSet) const

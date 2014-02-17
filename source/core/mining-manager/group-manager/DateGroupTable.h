@@ -55,11 +55,11 @@ public:
 
     const std::string& propName() const { return propName_; }
 
-    std::size_t docIdNum() const { return dateValueTable_.indexTable_.size(); }
+    std::size_t docIdNum() const { return dateValueTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendDateSet(const DateSet& dateSet);
+    void setDateSet(docid_t docId, const DateSet& dateSet);
 
     /**
      * @attention before calling below public functions,
