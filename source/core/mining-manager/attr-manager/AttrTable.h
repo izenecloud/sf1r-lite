@@ -61,9 +61,9 @@ public:
 
     std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendValueIdList(const std::vector<vid_t>& inputIdList);
+    void setValueIdList(docid_t docId, const std::vector<vid_t>& inputIdList);
 
     /**
      * Insert attribute name id.

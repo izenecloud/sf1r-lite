@@ -25,7 +25,7 @@ bool AttrMiningTask::preProcess(int64_t timestamp)
     if (startDocId > endDocId)
         return false;
 
-    attrTable_.reserveDocIdNum(endDocId + 1);
+    attrTable_.resize(endDocId + 1);
     return true;
 }
 
@@ -88,7 +88,7 @@ bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
 
     try
     {
-        attrTable_.appendValueIdList(valueIdList);
+        attrTable_.setValueIdList(docID, valueIdList);
     }
     catch(MiningException& e)
     {
