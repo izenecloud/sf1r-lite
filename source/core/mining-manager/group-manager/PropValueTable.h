@@ -63,11 +63,11 @@ public:
 
     const std::string& propName() const { return propName_; }
 
-    std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
+    std::size_t docIdNum() const { return valueIdTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendPropIdList(const std::vector<pvid_t>& inputIdList);
+    void setPropIdList(docid_t docId, const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
 

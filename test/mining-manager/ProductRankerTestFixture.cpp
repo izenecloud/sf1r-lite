@@ -75,7 +75,8 @@ void ProductRankerTestFixture::setMultiDocMerchantId(const std::string& merchant
     {
         PropValueIdList singleIdList;
         singleIdList.push_back(*it);
-        merchantValueTable_.appendPropIdList(singleIdList);
+        merchantValueTable_.setPropIdList(merchantValueTable_.docIdNum(),
+                                          singleIdList);
     }
 }
 
@@ -84,7 +85,8 @@ void ProductRankerTestFixture::setSingleDocMerchantId(const std::string& merchan
     PropValueIdList merchantIds;
     convertMerchantId_(merchantList, merchantIds);
 
-    merchantValueTable_.appendPropIdList(merchantIds);
+    merchantValueTable_.setPropIdList(merchantValueTable_.docIdNum(),
+                                      merchantIds);
 }
 
 void ProductRankerTestFixture::convertMerchantId_(
