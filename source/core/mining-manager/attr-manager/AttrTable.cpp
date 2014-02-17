@@ -6,6 +6,7 @@
 #include <fstream>
 #include <cassert>
 #include <set>
+#include <algorithm> // swap
 
 #include <boost/lexical_cast.hpp>
 
@@ -38,6 +39,54 @@ AttrTable::AttrTable()
     , saveIndexNum_(0)
     , saveValueNum_(0)
 {
+}
+
+AttrTable& AttrTable::operator=(const AttrTable& other)
+{
+    if (this != &other)
+    {
+        ScopedWriteLock lock(mutex_);
+        ScopedReadLock otherLock(other.mutex_);
+
+        dirPath_ = other.dirPath_;
+        propName_ = other.propName_;
+        nameStrVec_ = other.nameStrVec_;
+        saveNameStrNum_ = other.saveNameStrNum_;
+        nameStrMap_ = other.nameStrMap_;
+        valueStrVec_ = other.valueStrVec_;
+        saveValueStrNum_ = other.saveValueStrNum_;
+        nameIdVec_ = other.nameIdVec_;
+        saveNameIdNum_ = other.saveNameIdNum_;
+        valueStrTable_ = other.valueStrTable_;
+        valueIdTable_ = other.valueIdTable_;
+        saveIndexNum_ = other.saveIndexNum_;
+        saveValueNum_ = other.saveValueNum_;
+    }
+
+    return *this;
+}
+
+void AttrTable::swap(AttrTable& other)
+{
+    if (this == &other)
+        return;
+
+    ScopedWriteLock lock(mutex_);
+    ScopedWriteLock otherLock(other.mutex_);
+
+    dirPath_.swap(other.dirPath_);
+    propName_.swap(other.propName_);
+    nameStrVec_.swap(other.nameStrVec_);
+    std::swap(saveNameStrNum_, other.saveNameStrNum_);
+    nameStrMap_.swap(other.nameStrMap_);
+    valueStrVec_.swap(other.valueStrVec_);
+    std::swap(saveValueStrNum_, other.saveValueStrNum_);
+    nameIdVec_.swap(other.nameIdVec_);
+    std::swap(saveNameIdNum_, other.saveNameIdNum_);
+    valueStrTable_.swap(other.valueStrTable_);
+    valueIdTable_.swap(other.valueIdTable_);
+    std::swap(saveIndexNum_, other.saveIndexNum_);
+    std::swap(saveValueNum_, other.saveValueNum_);
 }
 
 bool AttrTable::open(

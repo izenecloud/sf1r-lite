@@ -9,6 +9,7 @@
 #include "../MiningTask.h"
 #include "AttrTable.h"
 #include <configuration-manager/AttrConfig.h>
+#include <common/TableSwapper.h>
 #include <string>
 
 namespace sf1r
@@ -33,7 +34,8 @@ public:
 
 private:
     sf1r::DocumentManager& documentManager_;
-    AttrTable& attrTable_;
+    const std::string propName_;
+    TableSwapper<AttrTable> swapper_;
     std::string dirPath_;
     const AttrConfig& attrConfig_;
 };
