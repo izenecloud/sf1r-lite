@@ -7,19 +7,16 @@
 #ifndef ATTR_MINING_TASK_H
 #define ATTR_MINING_TASK_H
 #include "../MiningTask.h"
-#include "../faceted-submanager/ontology_rep.h"
 #include "AttrTable.h"
-
 #include <configuration-manager/AttrConfig.h>
-
 #include <string>
+
 namespace sf1r
 {
 class DocumentManager;
 }
 
 NS_FACETED_BEGIN
-class AttrManager;
 
 class AttrMiningTask: public MiningTask
 {
@@ -33,7 +30,6 @@ public:
     bool postProcess();
     bool buildDocument(docid_t docID, const Document& doc);
     docid_t getLastDocId();
-    //bool processCollection_forTest();
 
 private:
     sf1r::DocumentManager& documentManager_;

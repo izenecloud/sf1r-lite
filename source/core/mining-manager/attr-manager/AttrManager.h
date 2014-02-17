@@ -36,12 +36,6 @@ public:
      */
     bool open();
 
-    /**
-     * @brief Build group index data for the whole collection.
-     * @return true for success, false for failure
-     */
-    bool processCollection();
-
     MiningTask* getAttrMiningTask()
     {
         if (attrMiningTask_)
@@ -60,14 +54,6 @@ public:
     {
         return attrTable_;
     }
-
-    void buildDocp_(docid_t docId, const std::string& propName)
-    {
-        buildDoc_(docId, propName);
-    }
-
-private:
-    void buildDoc_(docid_t docId, const std::string& propName);
 
 private:
     const AttrConfig& attrConfig_;
