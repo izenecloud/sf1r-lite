@@ -26,6 +26,8 @@ struct PropIdTable
 
     class PropIdList;
 
+    void swap(PropIdTable& other);
+
     std::size_t size() const;
 
     void resize(std::size_t num);
@@ -108,6 +110,13 @@ void PropIdTable<valueid_t, index_t>::clear()
 {
     indexTable_.resize(1);
     multiValueTable_.clear();
+}
+
+template <typename valueid_t, typename index_t>
+void PropIdTable<valueid_t, index_t>::swap(PropIdTable& other)
+{
+    indexTable_.swap(other.indexTable_);
+    multiValueTable_.swap(other.multiValueTable_);
 }
 
 template <typename valueid_t, typename index_t>

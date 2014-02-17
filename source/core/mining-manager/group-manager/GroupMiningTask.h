@@ -15,6 +15,7 @@
 #include <document-manager/DocumentManager.h>
 #include <configuration-manager/GroupConfig.h>
 #include <mining-manager/util/split_ustr.h>
+#include <common/TableSwapper.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -26,17 +27,18 @@ NS_FACETED_BEGIN
 class DateStrParser;
 using izenelib::util::UString;
 
-template<class PropVauleType>
+template<class TableType>
 class GroupMiningTask: public MiningTask
 {
 public:
     GroupMiningTask(
         DocumentManager& documentManager
         , const GroupConfigMap& groupConfigMap
-        , PropVauleType& propValueTable)
-        :documentManager_(documentManager)
+        , TableType& propValueTable)
+        : documentManager_(documentManager)
         , groupConfigMap_(groupConfigMap)
-        , propValueTable_(propValueTable)
+        , propName_(propValueTable.propName())
+        , swapper_(propValueTable)
         , dateStrParser_(*DateStrParser::get())
     {}
 
@@ -45,40 +47,59 @@ public:
     bool buildDocument(docid_t docID, const Document& doc)
     {
         Document::doc_prop_value_strtype propValue;
-        doc.getProperty(propValueTable_.propName(), propValue);
+        doc.getProperty(propName_, propValue);
         buildDoc_(docID, propstr_to_ustr(propValue));
         return true;
     }
 
     bool preProcess(int64_t timestamp)
     {
-        if (isRebuildProp_(propValueTable_.propName()))
+        docid_t startDocId = swapper_.reader.docIdNum();
+        bool isRebuild = isRebuildProp_(propName_);
+
+        if (isRebuild)
         {
-            LOG(INFO) << "**clear old group data to rebuild property: " << propValueTable_.propName() <<endl;
-            propValueTable_.clear();
+            startDocId = 1;
         }
+
         const docid_t endDocId = documentManager_.getMaxDocId();
-        docid_t startDocId = propValueTable_.docIdNum();
         if (startDocId > endDocId)
             return false;
-        cout<<propValueTable_.propName()<<", ";
-        propValueTable_.resize(endDocId + 1);
+
+        const docid_t newSize = endDocId + 1;
+        if (isRebuild)
+        {
+            LOG(INFO) << "**clear old group data to rebuild property: "
+                      << propName_ << endl;
+
+            swapper_.writer = TableType(swapper_.reader.dirPath(),
+                                        propName_);
+            swapper_.writer.resize(newSize);
+        }
+        else
+        {
+            swapper_.copy(newSize);
+        }
+
+        cout << propName_ << ", ";
         return true;
     }
 
     bool postProcess()
     {
-        if (!propValueTable_.flush())
+        if (!swapper_.writer.flush())
         {
-            LOG(ERROR) << "propTable.flush() failed, property name: " << propValueTable_.propName();
+            LOG(ERROR) << "propTable.flush() failed, property name: " << propName_;
             return false;
         }
+
+        swapper_.swap();
         return true;
     }
 
     docid_t getLastDocId()
     {
-        return propValueTable_.docIdNum();
+        return swapper_.reader.docIdNum();
     }
 
     bool isRebuildProp_(const std::string& propName) const
@@ -97,7 +118,8 @@ public:
 private:
     DocumentManager& documentManager_;
     const GroupConfigMap& groupConfigMap_;
-    PropVauleType& propValueTable_;
+    const std::string propName_;
+    TableSwapper<TableType> swapper_;
     DateStrParser& dateStrParser_;
 };
 
@@ -136,7 +158,7 @@ void GroupMiningTask<DateGroupTable>::buildDoc_(
 
     try
     {
-        propValueTable_.setDateSet(docId, dateSet);
+        swapper_.writer.setDateSet(docId, dateSet);
     }
     catch(MiningException& e)
     {
@@ -161,7 +183,8 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
                 pathIt != groupPaths.end(); ++pathIt)
         {
 
-            PropValueTable::pvid_t pvId = propValueTable_.insertPropValueId(*pathIt);
+            PropValueTable::pvid_t pvId =
+                    swapper_.writer.insertPropValueId(*pathIt);
             propIdList.push_back(pvId);
         }
     }
@@ -172,7 +195,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
     }
     try
     {
-        propValueTable_.setPropIdList(docId, propIdList);
+        swapper_.writer.setPropIdList(docId, propIdList);
     }
     catch (MiningException& e)
     {

@@ -3,6 +3,7 @@
 #include <mining-manager/MiningException.hpp>
 
 #include <glog/logging.h>
+#include <algorithm> // swap
 
 namespace
 {
@@ -11,6 +12,12 @@ const char* SUFFIX_VALUE_ID = ".value_id.bin";
 }
 
 NS_FACETED_BEGIN
+
+DateGroupTable::DateGroupTable()
+    : saveIndexNum_(0)
+    , saveValueNum_(0)
+{
+}
 
 DateGroupTable::DateGroupTable(const std::string& dirPath, const std::string& propName)
     : dirPath_(dirPath)
@@ -27,6 +34,38 @@ DateGroupTable::DateGroupTable(const DateGroupTable& table)
     , saveIndexNum_(table.saveIndexNum_)
     , saveValueNum_(table.saveValueNum_)
 {
+}
+
+DateGroupTable& DateGroupTable::operator=(const DateGroupTable& other)
+{
+    if (this != &other)
+    {
+        ScopedWriteLock lock(mutex_);
+        ScopedReadLock otherLock(other.mutex_);
+
+        dirPath_ = other.dirPath_;
+        propName_ = other.propName_;
+        dateValueTable_ = other.dateValueTable_;
+        saveIndexNum_ = other.saveIndexNum_;
+        saveValueNum_ = other.saveValueNum_;
+    }
+
+    return *this;
+}
+
+void DateGroupTable::swap(DateGroupTable& other)
+{
+    if (this == &other)
+        return;
+
+    ScopedWriteLock lock(mutex_);
+    ScopedWriteLock otherLock(other.mutex_);
+
+    dirPath_.swap(other.dirPath_);
+    propName_.swap(other.propName_);
+    dateValueTable_.swap(other.dateValueTable_);
+    std::swap(saveIndexNum_, other.saveIndexNum_);
+    std::swap(saveValueNum_, other.saveValueNum_);
 }
 
 bool DateGroupTable::open()

@@ -62,6 +62,17 @@ inline unsigned int getDistance(
 
 NS_FACETED_BEGIN
 
+PropValueTable::PropValueTable()
+    : propStrVec_(1)
+    , savePropStrNum_(0)
+    , parentIdVec_(1)
+    , saveParentIdNum_(0)
+    , childMapTable_(1)
+    , saveIndexNum_(0)
+    , saveValueNum_(0)
+{
+}
+
 // as id 0 is reserved for empty value,
 // members are initialized to size 1
 PropValueTable::PropValueTable(const std::string& dirPath, const std::string& propName)
@@ -89,6 +100,48 @@ PropValueTable::PropValueTable(const PropValueTable& table)
     , saveIndexNum_(table.saveIndexNum_)
     , saveValueNum_(table.saveValueNum_)
 {
+}
+
+PropValueTable& PropValueTable::operator=(const PropValueTable& other)
+{
+    if (this != &other)
+    {
+        ScopedWriteLock lock(mutex_);
+        ScopedReadLock otherLock(other.mutex_);
+
+        dirPath_ = other.dirPath_;
+        propName_ = other.propName_;
+        propStrVec_ = other.propStrVec_;
+        savePropStrNum_ = other.savePropStrNum_;
+        parentIdVec_ = other.parentIdVec_;
+        saveParentIdNum_ = other.saveParentIdNum_;
+        childMapTable_ = other.childMapTable_;
+        valueIdTable_ = other.valueIdTable_;
+        saveIndexNum_ = other.saveIndexNum_;
+        saveValueNum_ = other.saveValueNum_;
+    }
+
+    return *this;
+}
+
+void PropValueTable::swap(PropValueTable& other)
+{
+    if (this == &other)
+        return;
+
+    ScopedWriteLock lock(mutex_);
+    ScopedWriteLock otherLock(other.mutex_);
+
+    dirPath_.swap(other.dirPath_);
+    propName_.swap(other.propName_);
+    propStrVec_.swap(other.propStrVec_);
+    std::swap(savePropStrNum_, other.savePropStrNum_);
+    parentIdVec_.swap(other.parentIdVec_);
+    std::swap(saveParentIdNum_, other.saveParentIdNum_);
+    childMapTable_.swap(other.childMapTable_);
+    valueIdTable_.swap(other.valueIdTable_);
+    std::swap(saveIndexNum_, other.saveIndexNum_);
+    std::swap(saveValueNum_, other.saveValueNum_);
 }
 
 void PropValueTable::resize(std::size_t num)
