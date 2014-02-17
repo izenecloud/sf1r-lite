@@ -49,9 +49,12 @@ public:
     typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-
+    PropValueTable();
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
+
+    PropValueTable& operator=(const PropValueTable& other);
+    void swap(PropValueTable& other);
 
     bool open();
     bool flush();
@@ -60,6 +63,8 @@ public:
      * Clear the table to empty.
      */
     void clear();
+
+    const std::string& dirPath() const { return dirPath_; }
 
     const std::string& propName() const { return propName_; }
 
@@ -177,10 +182,10 @@ private:
 
 private:
     /** directory path */
-    const std::string dirPath_;
+    std::string dirPath_;
 
     /** property name */
-    const std::string propName_;
+    std::string propName_;
 
     /** mapping from value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;

@@ -54,8 +54,6 @@ private:
 
     TableSwapper<CategoryClassifyTable> swapper_;
 
-    CategoryClassifyTable classifyTableWriter_;
-
     const std::string targetCategoryPropName_;
 
     const boost::shared_ptr<const NumericPropertyTableBase> priceTable_;
