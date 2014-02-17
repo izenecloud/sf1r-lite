@@ -3,42 +3,19 @@
 #include "../util/FSUtil.hpp"
 #include "../MiningException.hpp"
 #include <document-manager/DocumentManager.h>
-#include "AttrManager.h"
 #include <glog/logging.h>
-#include <iostream>
 
 NS_FACETED_BEGIN
 AttrMiningTask::AttrMiningTask(DocumentManager& documentManager
         , AttrTable& attrTable
         , std::string dirPath
         , const AttrConfig& attrConfig)
-    :documentManager_(documentManager)
+    : documentManager_(documentManager)
     , attrTable_(attrTable)
     , dirPath_(dirPath)
     , attrConfig_(attrConfig)
 {
-
 }
-
-//bool AttrMiningTask::processCollection_forTest()
-//{
-//    preProcess(0);
-//    docid_t MaxDocid = documentManager_.getMaxDocId();
-//    const docid_t startDocId = attrTable_.docIdNum();
-//    Document doc;
-//
-//    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
-//    {
-//        if (docid % 10000 == 0)
-//        {
-//            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
-//        }
-//        documentManager_.getDocument(docid, doc);
-//        buildDocument(docid, doc);
-//    }
-//    postProcess();
-//    return true;
-//}
 
 bool AttrMiningTask::preProcess(int64_t timestamp)
 {
