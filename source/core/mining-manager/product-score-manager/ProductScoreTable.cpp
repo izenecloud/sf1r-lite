@@ -8,12 +8,44 @@ namespace
 const char* FILE_NAME_SUFFIX = ".bin";
 }
 
+ProductScoreTable::ProductScoreTable()
+{
+}
+
 ProductScoreTable::ProductScoreTable(
     const std::string& dirPath,
     const std::string& scoreTypeName)
     : dirPath_(dirPath)
     , scoreTypeName_(scoreTypeName)
 {
+}
+
+ProductScoreTable& ProductScoreTable::operator=(const ProductScoreTable& other)
+{
+    if (this != &other)
+    {
+        ScopedWriteLock lock(mutex_);
+        ScopedReadLock otherLock(other.mutex_);
+
+        dirPath_ = other.dirPath_;
+        scoreTypeName_ = other.scoreTypeName_;
+        scores_ = other.scores_;
+    }
+
+    return *this;
+}
+
+void ProductScoreTable::swap(ProductScoreTable& other)
+{
+    if (this == &other)
+        return;
+
+    ScopedWriteLock lock(mutex_);
+    ScopedWriteLock otherLock(other.mutex_);
+
+    dirPath_.swap(other.dirPath_);
+    scoreTypeName_.swap(other.scoreTypeName_);
+    scores_.swap(other.scores_);
 }
 
 bool ProductScoreTable::open()
