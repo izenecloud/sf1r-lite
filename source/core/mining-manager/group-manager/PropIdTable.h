@@ -35,9 +35,6 @@ struct PropIdTable
     void getIdList(docid_t docId, PropIdList& propIdList) const;
 
     template <class IdContainer>
-    void appendIdList(const IdContainer& idContainer) {}
-
-    template <class IdContainer>
     void setIdList(docid_t docId, const IdContainer& idContainer);
 
     /// key: doc id

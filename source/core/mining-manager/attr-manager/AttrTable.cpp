@@ -98,18 +98,18 @@ bool AttrTable::flush()
     return true;
 }
 
-void AttrTable::reserveDocIdNum(std::size_t num)
+void AttrTable::resize(std::size_t num)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.indexTable_.reserve(num);
+    valueIdTable_.resize(num);
 }
 
-void AttrTable::appendValueIdList(const std::vector<vid_t>& inputIdList)
+void AttrTable::setValueIdList(docid_t docId, const std::vector<vid_t>& inputIdList)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.appendIdList(inputIdList);
+    valueIdTable_.setIdList(docId, inputIdList);
 }
 
 AttrTable::nid_t AttrTable::insertNameId(const izenelib::util::UString& name)
