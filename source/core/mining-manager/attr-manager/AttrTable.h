@@ -46,6 +46,9 @@ public:
 
     AttrTable();
 
+    AttrTable& operator=(const AttrTable& other);
+    void swap(AttrTable& other);
+
     bool open(
         const std::string& dirPath,
         const std::string& propName
@@ -53,7 +56,7 @@ public:
 
     bool flush();
 
-    const char* propName() const { return propName_.c_str(); }
+    const std::string& propName() const { return propName_; }
 
     std::size_t nameNum() const { return nameStrVec_.size(); }
 
@@ -61,9 +64,9 @@ public:
 
     std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendValueIdList(const std::vector<vid_t>& inputIdList);
+    void setValueIdList(docid_t docId, const std::vector<vid_t>& inputIdList);
 
     /**
      * Insert attribute name id.

@@ -46,7 +46,9 @@ bool MiningTaskBuilder::buildCollection(int64_t timestamp)
         min_last_docid = std::min(min_last_docid, taskList_[i]->getLastDocId());
     }
 
-    LOG(INFO) << "begin build Collection....";
+    LOG(INFO) << "begin build Collection, from docid " << min_last_docid
+              << " to " << MaxDocid;
+
     for (uint32_t docid = min_last_docid; docid <= MaxDocid; ++docid)
     {
         Document doc;

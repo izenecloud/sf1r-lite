@@ -8,6 +8,7 @@
 
 #include "../MiningTask.h"
 #include "CategoryClassifyTable.h"
+#include <common/TableSwapper.h>
 #include <string>
 #include <boost/shared_ptr.hpp>
 
@@ -51,9 +52,7 @@ private:
 private:
     DocumentManager& documentManager_;
 
-    CategoryClassifyTable& classifyTableReader_;
-
-    CategoryClassifyTable classifyTableWriter_;
+    TableSwapper<CategoryClassifyTable> swapper_;
 
     const std::string targetCategoryPropName_;
 
