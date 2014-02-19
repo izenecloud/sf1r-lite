@@ -39,6 +39,7 @@ namespace faceted
 {
 class GroupFilterBuilder;
 class PropValueTable;
+class GroupRep;
 class OntologyRep;
 }
 
@@ -77,6 +78,12 @@ private:
         const std::vector<float>& rankScoreList,
         PropSharedLockSet& propSharedLockSet,
         faceted::GroupParam::GroupLabelScoreMap& topLabelMap);
+
+    void getGroupCount_(
+        const std::vector<unsigned int>& docIdList,
+        const std::vector<faceted::GroupPropParam>& groupCountProps,
+        PropSharedLockSet& propSharedLockSet,
+        faceted::GroupRep& groupRep);
 
     void getTopAttrs_(
         const std::vector<unsigned int>& docIdList,
