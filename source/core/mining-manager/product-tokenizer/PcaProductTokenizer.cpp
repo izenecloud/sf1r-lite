@@ -4,13 +4,18 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 using namespace sf1r;
 using izenelib::util::UString;
 
+namespace
+{
+const std::size_t kAnalyzerNum = 3;
+}
+
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 {
-    typedef std::vector<std::pair<std::string, float> > TokenScoreVec;
     TokenScoreVec tokens, subTokens;
     std::string brand;
     std::string model;
@@ -18,12 +23,12 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     TitlePCAWrapper* titlePCA = TitlePCAWrapper::get();
     titlePCA->pca(param.query, tokens, brand, model, subTokens, false);
 
-    double scoreSum = 0;
-    double maxScore = 0;
-    std::string maxToken;
+    if (tokens.empty())
+        return;
 
-    typedef std::map<std::string, float> TokenScoreMap;
     TokenScoreMap tokenScoreMap;
+    TokenScoreVec sortTokens;
+    double scoreSum = 0;
 
     for (TokenScoreVec::const_iterator it = tokens.begin();
          it != tokens.end(); ++it)
@@ -33,29 +38,62 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 
         tokenScoreMap[it->first] = it->second;
         scoreSum += it->second;
-
-        if (it->second > maxScore)
-        {
-            maxScore = it->second;
-            maxToken = it->first;
-        }
+        sortTokens.push_back(*it);
     }
 
+    for (TokenScoreMap::iterator it = tokenScoreMap.begin();
+         it != tokenScoreMap.end(); ++it)
+    {
+        it->second /= scoreSum;
+    }
+
+    std::sort(sortTokens.begin(), sortTokens.end(), compareTokenScore_);
+
     std::vector<std::string> majorTokens;
+    extractMajorTokens_(sortTokens[0].first, brand, model, majorTokens);
+
+    getMajorTokens_(majorTokens, tokenScoreMap, param.majorTokens);
+    getMinorTokens_(tokenScoreMap, param.minorTokens);
+
+    if (param.isRefineResult)
+    {
+        getRefinedResult_(majorTokens, sortTokens, param.refinedResult);
+    }
+}
+
+bool PcaProductTokenizer::compareTokenScore_(const TokenScore& x, const TokenScore& y)
+{
+    return x.second > y.second;
+}
+
+void PcaProductTokenizer::extractMajorTokens_(
+    const std::string& maxToken,
+    const std::string& brand,
+    const std::string& model,
+    std::vector<std::string>& majorTokens)
+{
     if (!maxToken.empty() &&
         maxToken != brand && maxToken != model)
     {
         majorTokens.push_back(maxToken);
     }
+
     if (!brand.empty())
     {
         majorTokens.push_back(brand);
     }
+
     if (!model.empty())
     {
         majorTokens.push_back(model);
     }
+}
 
+void PcaProductTokenizer::getMajorTokens_(
+    const std::vector<std::string>& majorTokens,
+    TokenScoreMap& tokenScoreMap,
+    ProductTokenParam::TokenScoreList& tokenScoreList)
+{
     for (std::vector<std::string>::const_iterator it = majorTokens.begin();
          it != majorTokens.end(); ++it)
     {
@@ -65,26 +103,45 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
             continue;
 
         UString ustr(mapIter->first, UString::UTF_8);
-        double score = mapIter->second / scoreSum;
-        std::pair<UString, double> tokenScore(ustr, score);
+        std::pair<UString, double> tokenScore(ustr, mapIter->second);
 
         tokenScoreMap.erase(mapIter);
-        param.majorTokens.push_back(tokenScore);
-
-        if (param.isRefineResult)
-        {
-            param.refinedResult.append(ustr);
-            param.refinedResult.push_back(SPACE_UCHAR);
-        }
+        tokenScoreList.push_back(tokenScore);
     }
+}
 
+void PcaProductTokenizer::getMinorTokens_(
+    const TokenScoreMap& tokenScoreMap,
+    ProductTokenParam::TokenScoreList& tokenScoreList)
+{
     for (TokenScoreMap::const_iterator it = tokenScoreMap.begin();
          it != tokenScoreMap.end(); ++it)
     {
         UString ustr(it->first, UString::UTF_8);
-        double score = it->second / scoreSum;
-        std::pair<UString, double> tokenScore(ustr, score);
+        std::pair<UString, double> tokenScore(ustr, it->second);
 
-        param.minorTokens.push_back(tokenScore);
+        tokenScoreList.push_back(tokenScore);
+    }
+}
+
+void PcaProductTokenizer::getRefinedResult_(
+    const std::vector<std::string>& majorTokens,
+    const TokenScoreVec& sortTokens,
+    izenelib::util::UString& refinedResult)
+{
+    size_t analyzerNum = 0;
+    for (; analyzerNum < majorTokens.size(); ++analyzerNum)
+    {
+        UString ustr(majorTokens[analyzerNum], UString::UTF_8);
+        refinedResult.append(ustr);
+        refinedResult.push_back(SPACE_UCHAR);
+    }
+
+    for (size_t i = 1; i < sortTokens.size() && analyzerNum < kAnalyzerNum;
+         ++i, ++analyzerNum)
+    {
+        UString ustr(sortTokens[i].first, UString::UTF_8);
+        refinedResult.append(ustr);
+        refinedResult.push_back(SPACE_UCHAR);
     }
 }

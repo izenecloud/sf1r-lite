@@ -15,6 +15,33 @@ class PcaProductTokenizer : public ProductTokenizer
 {
 public:
     virtual void tokenize(ProductTokenParam& param);
+
+private:
+    typedef std::pair<std::string, float> TokenScore;
+    typedef std::vector<TokenScore> TokenScoreVec;
+    typedef std::map<std::string, float> TokenScoreMap;
+
+    static bool compareTokenScore_(const TokenScore& x, const TokenScore& y);
+
+    void extractMajorTokens_(
+        const std::string& maxToken,
+        const std::string& brand,
+        const std::string& model,
+        std::vector<std::string>& majorTokens);
+
+    void getMajorTokens_(
+        const std::vector<std::string>& majorTokens,
+        TokenScoreMap& tokenScoreMap,
+        ProductTokenParam::TokenScoreList& tokenScoreList);
+
+    void getMinorTokens_(
+        const TokenScoreMap& tokenScoreMap,
+        ProductTokenParam::TokenScoreList& tokenScoreList);
+
+    void getRefinedResult_(
+        const std::vector<std::string>& majorTokens,
+        const TokenScoreVec& sortTokens,
+        izenelib::util::UString& refinedResult);
 };
 
 }
