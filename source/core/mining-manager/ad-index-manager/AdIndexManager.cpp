@@ -9,6 +9,7 @@
 #include <common/ResultType.h>
 #include <mining-manager/group-manager/GroupManager.h>
 #include <query-manager/ActionItem.h>
+#include <query-manager/SearchKeywordOperation.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/HitQueue.h>
 #include <util/ustring/UString.h>
@@ -20,6 +21,7 @@ namespace sf1r
 
 static const int MAX_SEARCH_AD_COUNT = 20000;
 static const int MAX_SELECT_AD_COUNT = 20;
+static const int MAX_RECOMMEND_ITEM_NUM = 10;
 static const std::string adlog_topic = "b5manlog";
 
 
@@ -62,7 +64,8 @@ bool AdIndexManager::buildMiningTask()
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
-    AdSelector::get()->init(ad_selector_res_path_, ad_selector_data_path_, ad_click_predictor_, groupManager_);
+    AdSelector::get()->init(ad_selector_res_path_, ad_selector_data_path_,
+        ad_selector_data_path_ + "/rec", ad_click_predictor_, groupManager_);
     bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
     if (!ret)
     {
@@ -109,7 +112,7 @@ void AdIndexManager::postMining(docid_t startid, docid_t endid)
     AdSelector::get()->miningAdSegmentStr(startid, endid);
 }
 
-void AdIndexManager::rankAndSelect(const AdSelector::FeatureT& userinfo,
+void AdIndexManager::rankAndSelect(const FeatureT& userinfo,
     std::vector<docid_t>& docids,
     std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)
@@ -218,7 +221,7 @@ bool AdIndexManager::searchByQuery(const SearchKeywordOperation& actionOperation
     return ret;
 }
 
-bool AdIndexManager::searchByDNF(const AdSelector::FeatureT& info,
+bool AdIndexManager::searchByDNF(const FeatureT& info,
     std::vector<docid_t>& docids,
     std::vector<float>& topKRankScoreList,
     std::size_t& totalCount)
@@ -238,6 +241,32 @@ bool AdIndexManager::searchByDNF(const AdSelector::FeatureT& info,
 
     rankAndSelect(info, docids, topKRankScoreList, totalCount);
     return true;
+}
+
+bool AdIndexManager::searchByRecommend(const SearchKeywordOperation& actionOperation,
+    KeywordSearchResult& searchResult)
+{
+    const std::vector<std::pair<std::string, std::string> > userinfo;
+    std::vector<double> score_list;
+    std::vector<std::string> rec_items;
+    AdSelector::get()->selectFromRecommend(userinfo, MAX_RECOMMEND_ITEM_NUM,
+        rec_items, score_list);
+    std::string rec_query_str;
+    for (size_t i = 0; i < rec_items.size(); ++i)
+    {
+        rec_query_str += rec_items[i] + " ";
+    }
+    LOG(INFO) << "recommend feature items are: ";
+    boost::shared_ptr<LAManager> laManager;
+    boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager;
+    SearchKeywordOperation rec_search_query(actionOperation.actionItem_, false, laManager, idManager);
+    rec_search_query.actionItem_.env_.queryString_ = rec_query_str;
+    bool ret = ad_searcher_->search(rec_search_query, searchResult, MAX_SEARCH_AD_COUNT, 0);
+    if (ret)
+    {
+        rankAndSelect(userinfo, searchResult.topKDocs_, searchResult.topKRankScoreList_, searchResult.totalCount_);
+    }
+    return ret;
 }
 
 } //namespace sf1r

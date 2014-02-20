@@ -18,6 +18,7 @@ namespace sf1r
 
 class AdClickPredictor;
 class DocumentManager;
+class AdRecommender;
 namespace faceted
 {
     class GroupManager;
@@ -48,12 +49,13 @@ public:
 
     void init(const std::string& res_path,
         const std::string& segments_data_path,
+        const std::string& rec_data_path,
         AdClickPredictor* pad_predictor,
         faceted::GroupManager* grp_mgr);
     void stop();
 
     bool selectFromRecommend(const FeatureT& user_info, std::size_t max_return,
-        std::vector<docid_t>& recommended_doclist,
+        std::vector<std::string>& recommended_items,
         std::vector<double>& score_list);
 
     bool select(const FeatureT& user_info,
@@ -77,6 +79,7 @@ public:
     void updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feature, std::vector<SegIdT>& segids);
     void updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, const std::vector<FeatureMapT>& ad_feature_list);
     void miningAdSegmentStr(docid_t startid, docid_t endid);
+    void updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& features_map);
 
 private:
 
@@ -99,6 +102,8 @@ private:
         std::map<std::string, std::size_t> segments_counter,
         std::map<std::string, FeatureT>& all_keys);
 
+    void getAdTopic(docid_t id, std::vector<std::string>& topics);
+
     typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, SegIdT,
             izenelib::util::ReadWriteLock,
             izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, SegIdT>,
@@ -111,6 +116,7 @@ private:
     faceted::GroupManager* groupManager_;
     std::string res_path_;
     std::string segments_data_path_;
+    std::string rec_data_path_;
     AdClickPredictor* ad_click_predictor_;
     HistoryCTRDataT history_ctr_data_;
     std::vector<std::pair<FeatureT, std::vector<docid_t> > >  pending_compute_doclist_;
@@ -135,6 +141,7 @@ private:
     // the segment id --> segment string relationship.
     Lux::IO::Array  ad_segid_str_data_;
     boost::shared_mutex ad_segid_mutex_;
+    boost::shared_ptr<AdRecommender>  ad_feature_item_rec_;
 };
 
 } //namespace sf1r

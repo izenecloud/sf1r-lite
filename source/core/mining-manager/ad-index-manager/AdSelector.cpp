@@ -74,11 +74,13 @@ void AdSelector::loadDef(const std::string& file, FeatureMapT& def_features,
 
 void AdSelector::init(const std::string& res_path,
     const std::string& segments_data_path,
+    const std::string& rec_data_path,
     AdClickPredictor* pad_predictor,
     faceted::GroupManager* grp_mgr)
 {
     res_path_ = res_path;
     segments_data_path_ = segments_data_path;
+    rec_data_path_ = rec_data_path;
     ad_click_predictor_ = pad_predictor;
     groupManager_ = grp_mgr;
     //
@@ -142,6 +144,9 @@ void AdSelector::init(const std::string& res_path,
         }
     }
     ctr_update_thread_ = boost::thread(boost::bind(&AdSelector::updateFunc, this));
+
+    ad_feature_item_rec_.reset(new AdRecommender());
+    ad_feature_item_rec_->init(rec_data_path_, true);
 }
 
 void AdSelector::getDefaultFeatures(FeatureMapT& feature_name_list, SegType type)
@@ -293,6 +298,27 @@ void AdSelector::updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, cons
     }
 }
 
+void AdSelector::getAdTopic(docid_t id, std::vector<std::string>& topics)
+{
+}
+
+void AdSelector::updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& features_map)
+{
+    std::vector<std::string> features;
+    for (FeatureMapT::const_iterator it = features_map.begin();
+        it != features_map.end(); ++it)
+    {
+        for (std::size_t i = 0; i < it->second.size(); ++i)
+        {
+            features.push_back(it->second[i]);
+        }
+    }
+    std::vector<std::string> topics;
+    getAdTopic(id, topics);
+    features.insert(features.end(), topics.begin(), topics.end());
+    ad_feature_item_rec_->updateAdFeatures(boost::lexical_cast<std::string>(id), features);
+}
+
 void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
 {
     PropSharedLockSet propSharedLockSet;
@@ -328,6 +354,7 @@ void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
             }
         }
         updateAdSegmentStr(i, ad_feature, segids);
+        updateAdFeatureItemsForRec(i, ad_feature);
         if (i % 100000 == 0)
         {
             LOG(INFO) << "ad segment mining :" << i;
@@ -754,11 +781,11 @@ void AdSelector::selectByRandSelectPolicy(std::size_t max_unclicked_retnum, std:
 
 bool AdSelector::selectFromRecommend(const FeatureT& user_info,
     std::size_t max_return,
-    std::vector<docid_t>& recommended_doclist,
+    std::vector<std::string>& recommended_items,
     std::vector<double>& score_list
     )
 {
-    AdRecommender::get()->recommend("", user_info, max_return, recommended_doclist, score_list);
+    ad_feature_item_rec_->recommend("", user_info, max_return, recommended_items, score_list);
     // select the ads from recommend system if no any search results.
     return false;
 }
@@ -778,7 +805,7 @@ bool AdSelector::select(const FeatureT& user_info,
     //}
     if (ad_doclist.empty())
     {
-        return selectFromRecommend(user_info, max_select, ad_doclist, score_list);
+        return false;
     }
 
     std::vector<std::string> user_seg_str;

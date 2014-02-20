@@ -265,11 +265,12 @@ int main()
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
-    AdSelector::get()->init(selector_base_path, selector_base_path, &ad, NULL);
+    AdSelector::get()->init(selector_base_path, selector_base_path, selector_base_path + "/rec", &ad, NULL);
     bfs::remove(selector_base_path + "/clicked_ad.data");
 
     static const int total_ad_num = 7000000;
     static const int clicked_rate = 901;
+    static const int view_rate = 91;
     static const int sponsor_searched_rate = 99;
     for (size_t i = 0; i < total_ad_num; ++i)
     {
@@ -316,11 +317,23 @@ int main()
     adinfo[3]["Topic"].push_back("iPhone");
     std::vector<docid_t> cand_docs;
     std::vector<AdSelector::FeatureMapT> cand_ad_info;
-    AdRecommender::get()->init("/opt/mine/ad_ctr_test/rec");
-    AdSelector::FeatureT userinfo_rec;
-    userinfo_rec.push_back(std::make_pair("Age", "38"));
-    userinfo_rec.push_back(std::make_pair("Gender", "female"));
-    AdRecommender::get()->setMaxAdDocId(total_ad_num);
+    AdRecommender test_ad_rec;
+    test_ad_rec.init("/opt/mine/ad_ctr_test/rec", true);
+    AdSelector::FeatureT old_male_userinfo;
+    old_male_userinfo.push_back(std::make_pair("Age", "38"));
+    old_male_userinfo.push_back(std::make_pair("Gender", "male"));
+    AdSelector::FeatureT young_female_userinfo;
+    young_female_userinfo.push_back(std::make_pair("Age", "28"));
+    young_female_userinfo.push_back(std::make_pair("Gender", "female"));
+    //AdRecommender::get()->setMaxAdDocId(total_ad_num);
+    std::vector<std::string>  female_liked_feature;
+    female_liked_feature.push_back("iPhone");
+    female_liked_feature.push_back("Cloth");
+    std::vector<std::string>  male_liked_feature;
+    male_liked_feature.push_back("Android");
+    male_liked_feature.push_back("Computer");
+    std::vector<std::string>  unliked_feature;
+    unliked_feature.push_back("Android");
     for (size_t i = 1; i < total_ad_num; ++i)
     {
         if (i % sponsor_searched_rate == 0)
@@ -330,11 +343,21 @@ int main()
         }
         if (i % clicked_rate == 0)
         {
-            AdRecommender::get()->update("", userinfo_rec, i, true);
+            if (rand() % 2 == 0)
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), female_liked_feature);
+                test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+            else
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), male_liked_feature);
+                test_ad_rec.update("", old_male_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
         }
-        else
+        else if (i % view_rate == 0)
         {
-            AdRecommender::get()->update("", userinfo, i, false);
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), unliked_feature);
+            test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
         }
     }
     LOG(INFO) << "begin update ad segment string.";
@@ -368,15 +391,26 @@ int main()
     LOG(INFO) << "end test for ad select.";
     sleep(3);
 
-    //std::vector<docid_t> rec_doclist;
-    //AdRecommender::get()->recommend("", userinfo_rec, 10, rec_doclist, score_list);
-    //LOG(INFO) << "recommended ads are :";
-    //for (size_t j = 0; j < rec_doclist.size(); ++j)
-    //{
-    //    std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
-    //}
-    //std::cout << std::endl;
-    //AdRecommender::get()->dumpUserLatent();
+    std::vector<std::string> rec_doclist;
+    test_ad_rec.recommend("", old_male_userinfo, 10, rec_doclist, score_list);
+    LOG(INFO) << "recommended ads for old male are :";
+    for (size_t j = 0; j < rec_doclist.size(); ++j)
+    {
+        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    }
+    std::cout << std::endl;
+
+    rec_doclist.clear();
+    score_list.clear();
+    test_ad_rec.recommend("", young_female_userinfo, 10, rec_doclist, score_list);
+    LOG(INFO) << "recommended ads for young female are :";
+    for (size_t j = 0; j < rec_doclist.size(); ++j)
+    {
+        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    }
+    std::cout << std::endl;
+
+    test_ad_rec.dumpUserLatent();
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));

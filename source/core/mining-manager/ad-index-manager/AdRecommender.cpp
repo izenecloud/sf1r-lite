@@ -1,5 +1,4 @@
 #include "AdRecommender.h"
-#include <search-manager/HitQueue.h>
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
 #include <fstream>
@@ -14,6 +13,7 @@ using namespace boost::numeric::ublas;
 namespace sf1r
 {
 static const double SMOOTH = 0.02;
+static const double MAX_NORM = 100;
 
 static double affinity(const AdRecommender::LatentVecT& left, const AdRecommender::LatentVecT& right)
 {
@@ -26,8 +26,26 @@ static double affinity(const AdRecommender::LatentVecT& left, const AdRecommende
     return sum;
 }
 
+static int getunviewed(const std::bitset<AdRecommender::MAX_AD_ITEMS>& bits, std::size_t index)
+{
+    if (index >= bits.count())
+        return -1;
+    for(std::size_t i = 0; i < bits.size(); ++i)
+    {
+        if (bits.test(i))
+        {
+            if (index == 0)
+            {
+                return i;
+            }
+            --index;
+        }
+    }
+    return -1;
+}
+
 AdRecommender::AdRecommender()
-    :db_(NULL)
+    :db_(NULL), use_ad_feature_(true)
 {
 }
 
@@ -37,11 +55,12 @@ AdRecommender::~AdRecommender()
         delete db_;
 }
 
-void AdRecommender::init(const std::string& data_path)
+void AdRecommender::init(const std::string& data_path, bool use_ad_feature)
 {
     clicked_num_ = 1;
     impression_num_ = 1000;
     data_path_ = data_path;
+    use_ad_feature_ = use_ad_feature;
     bfs::create_directories(data_path_);
     load();
     if (clicked_num_ < 1)
@@ -64,10 +83,10 @@ void AdRecommender::save()
 {
 }
 
-void AdRecommender::setMaxAdDocId(docid_t max_docid)
-{
-    ad_latent_vec_list_.resize(max_docid);
-}
+//void AdRecommender::setMaxAdDocId(docid_t max_docid)
+//{
+//    ad_latent_vec_list_.resize(max_docid);
+//}
 
 void AdRecommender::getUserLatentVecKeys(const FeatureT& user_info, std::vector<std::string>& user_latentvec_keys)
 {
@@ -79,14 +98,58 @@ void AdRecommender::getUserLatentVecKeys(const FeatureT& user_info, std::vector<
     }
 }
 
+void AdRecommender::updateAdFeatures(const std::string& ad_docid, const std::vector<std::string>& features)
+{
+    std::set<uint32_t>& ad_feature_id_list = ad_features_map_[ad_docid];
+    ad_feature_id_list.clear();
+    for (std::size_t i = 0; i < features.size(); ++i)
+    {
+        uint32_t id = 0;
+        boost::unordered_map<std::string, uint32_t>::iterator it = ad_feature_value_id_list_.find(features[i]);
+        if (it == ad_feature_value_id_list_.end())
+        {
+            id = ad_feature_value_list_.size();
+            ad_feature_value_list_.push_back(features[i]);
+            ad_feature_value_id_list_[features[i]] = id;
+            unviewed_items_.set(id);
+        }
+        else
+        {
+            id = it->second;
+        }
+        ad_feature_id_list.insert(id);
+    }
+}
+
+void AdRecommender::getAdLatentVecKeys(const std::string& ad_docid, std::vector<std::string>& ad_latentvec_keys)
+{
+    if (!use_ad_feature_)
+    {
+        ad_latentvec_keys.resize(1);
+        ad_latentvec_keys[0] = ad_docid;
+        return;
+    }
+    AdFeatureContainerT::const_iterator it = ad_features_map_.find(ad_docid);
+    if (it != ad_features_map_.end())
+    {
+        ad_latentvec_keys.resize(it->second.size());
+        std::size_t i = 0;
+        std::set<uint32_t>::const_iterator value_it = it->second.begin();
+        for(; value_it != it->second.end(); ++value_it)
+        {
+            ad_latentvec_keys[i++] = ad_feature_value_list_[*value_it];
+        }
+    }
+}
+
 void AdRecommender::getCombinedUserLatentVec(const std::vector<std::string>& latentvec_keys, LatentVecT& latent_vec)
 {
     latent_vec.clear();
     latent_vec.resize(default_latent_.size(), 0);
     for (std::size_t i = 0; i < latentvec_keys.size(); ++i)
     {
-        LatentVecContainerT::const_iterator it = feature_latent_vec_list_.find(latentvec_keys[i]);
-        if (it == feature_latent_vec_list_.end())
+        LatentVecContainerT::const_iterator it = user_feature_latent_vec_list_.find(latentvec_keys[i]);
+        if (it == user_feature_latent_vec_list_.end())
             continue;
         for(std::size_t j = 0; j < latent_vec.size(); ++j)
         {
@@ -102,6 +165,8 @@ void AdRecommender::getCombinedUserLatentVec(const std::vector<std::string>& lat
     }
 }
 
+// get the user latent by combined the features of the user.
+// Linear combined or non-linear combined both work. Some weighted can be considered.
 void AdRecommender::getCombinedUserLatentVec(const std::vector<LatentVecT*>& latentvec_list, LatentVecT& latent_vec)
 {
     latent_vec.clear();
@@ -124,53 +189,71 @@ void AdRecommender::getCombinedUserLatentVec(const std::vector<LatentVecT*>& lat
 
 void AdRecommender::recommendFromCand(const std::string& user_str_id,
     const FeatureT& user_info, std::size_t max_return,
-    std::vector<docid_t>& recommended_doclist,
+    std::vector<std::string>& recommended_doclist,
     std::vector<double>& score_list)
 {
 }
 
 void AdRecommender::recommend(const std::string& user_str_id,
     const FeatureT& user_info, std::size_t max_return,
-    std::vector<docid_t>& recommended_doclist,
+    std::vector<std::string>& recommended_items,
     std::vector<double>& score_list)
 {
-    LOG(INFO) << "begin do the recommend.";
-    boost::shared_ptr<const RowType> row = db_->row(0);
+    LOG(INFO) << "begin do the recommend for user : " << user_str_id;
     std::vector<std::string> user_keys;
     getUserLatentVecKeys(user_info, user_keys);
     LatentVecT user_latent_vec;
     getCombinedUserLatentVec(user_keys, user_latent_vec);
     
-    ScoreSortedHitQueue hit_list(max_return);
-    AdLatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
-    docid_t i = 0;
+    bool has_unviewed_item = unviewed_items_.any();
+
+    ScoreSortedAdQueue hit_list(max_return);
+    LatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
     while (it != ad_latent_vec_list_.end())
     {
-        if (!(*it).empty())
+        if (!(it->second.empty()))
         {
-            ScoreDoc item;
-            item.score = affinity(user_latent_vec, *it);
-            item.docId = i;
+            ScoredAdItem item;
+            item.score = affinity(user_latent_vec, it->second);
+            item.key = it->first;
             hit_list.insert(item);
         }
         ++it;
-        ++i;
     }
+    double default_score = 0;
+    if (has_unviewed_item)
+        default_score = affinity(user_latent_vec, default_latent_);
+
     size_t scoresize = hit_list.size();
-    recommended_doclist.resize(hit_list.size());
+    recommended_items.resize(hit_list.size());
     score_list.resize(hit_list.size());
     for(int i = scoresize - 1; i >= 0; --i)
     {
-        const ScoreDoc& item = hit_list.pop();
-        recommended_doclist[i] = item.docId;
+        const ScoredAdItem& item = hit_list.pop();
+        if (has_unviewed_item)
+        {
+            if (item.score < default_score)
+            {
+                // chose from unviewed items.
+                int unview_index = getunviewed(unviewed_items_, scoresize - 1 - i);
+                if (unview_index != -1 && unview_index < (int)ad_feature_value_list_.size())
+                {
+                    recommended_items[i] = ad_feature_value_list_[unview_index];
+                    score_list[i] = default_score;
+                    LOG(INFO) << "recommend from unviewed items : " << recommended_items[i];
+                    continue;
+                }
+            }
+        }
+        recommended_items[i] = item.key;
         score_list[i] = item.score;
     }
 
-    LOG(INFO) << "finished the ad recommend, size: " << recommended_doclist.size();
+    LOG(INFO) << "finished the ad recommend, size: " << recommended_items.size();
 }
 
 void AdRecommender::update(const std::string& user_str_id,
-    const FeatureT& user_info, docid_t ad_docid, bool is_clicked)
+    const FeatureT& user_info, const std::string& ad_docid, bool is_clicked)
 {
     impression_num_++;
     if (is_clicked)
@@ -184,10 +267,15 @@ void AdRecommender::update(const std::string& user_str_id,
         //LOG(INFO) << " impression_num_ : " << impression_num_ << ", clicked_num_: " << clicked_num_
         //    << ", ratio_ : " << ratio_;
     }
-    LatentVecT& ad_latent = ad_latent_vec_list_[ad_docid];
-    if (ad_latent.empty())
+
+    std::vector<std::string> ad_keys;
+    std::vector<LatentVecT*> ad_feature_latent_list;
+    getAdLatentVecKeys(ad_docid, ad_keys);
+    for(size_t i = 0; i < ad_keys.size(); ++i)
     {
-        ad_latent = default_latent_;
+        std::pair<LatentVecContainerT::iterator, bool> it_pair = ad_latent_vec_list_.insert(std::make_pair(ad_keys[i], default_latent_));
+        ad_feature_latent_list.push_back(&(it_pair.first->second));
+        unviewed_items_.reset(ad_feature_value_id_list_[ad_keys[i]]);
     }
 
     std::vector<std::string> user_keys;
@@ -195,7 +283,7 @@ void AdRecommender::update(const std::string& user_str_id,
     std::vector<LatentVecT*> user_feature_latent_list;
     for (size_t i = 0; i < user_keys.size(); ++i)
     {
-        std::pair<LatentVecContainerT::iterator, bool> it_pair = feature_latent_vec_list_.insert(std::make_pair(user_keys[i], default_latent_));
+        std::pair<LatentVecContainerT::iterator, bool> it_pair = user_feature_latent_vec_list_.insert(std::make_pair(user_keys[i], default_latent_));
         if (it_pair.second && !is_clicked)
         {
             // a new feature value
@@ -204,18 +292,47 @@ void AdRecommender::update(const std::string& user_str_id,
         LatentVecT& feature_latent = it_pair.first->second;
         user_feature_latent_list.push_back(&feature_latent);
     }
-    LatentVecT combined_latent;
-    getCombinedUserLatentVec(user_feature_latent_list, combined_latent);
+
     double gradient = learning_rate_;
+    double new_max_norm = 0;
     if (!is_clicked)
         gradient = ratio_ * learning_rate_;
-    for (size_t i = 0; i < ad_latent.size(); ++i)
+    for (size_t k = 0; k < ad_feature_latent_list.size(); ++k)
     {
-        ad_latent[i] += gradient * combined_latent[i];
-        for (size_t j = 0; j < user_feature_latent_list.size(); ++j)
+        LatentVecT& ad_latent = *(ad_feature_latent_list[k]);
+        LatentVecT combined_user_latent;
+        getCombinedUserLatentVec(user_feature_latent_list, combined_user_latent);
+        for (size_t i = 0; i < ad_latent.size(); ++i)
         {
-            //(*(user_feature_latent_list[j]))[i] += gradient*ad_latent[i]*combined_latent[i]/(*(user_feature_latent_list[j]))[i];
-            (*(user_feature_latent_list[j]))[i] += gradient*ad_latent[i];
+            ad_latent[i] += gradient * combined_user_latent[i];
+            new_max_norm = std::max(new_max_norm, std::fabs(ad_latent[i]));
+            for (size_t j = 0; j < user_feature_latent_list.size(); ++j)
+            {
+                //(*(user_feature_latent_list[j]))[i] += gradient*ad_latent[i]*combined_latent[i]/(*(user_feature_latent_list[j]))[i];
+                (*(user_feature_latent_list[j]))[i] += gradient*ad_latent[i];
+                new_max_norm = std::max(new_max_norm, std::fabs((*(user_feature_latent_list[j]))[i]));
+            }
+        }
+    }
+    if (new_max_norm > MAX_NORM)
+    {
+        // scale the vectors to obey the norm constrain.
+        double scale = MAX_NORM/new_max_norm;
+        for (LatentVecContainerT::iterator it = ad_latent_vec_list_.begin();
+            it != ad_latent_vec_list_.end(); ++it)
+        {
+            for(size_t j = 0; j < it->second.size(); ++j)
+            {
+                it->second[j] *= scale;
+            }
+        }
+        for (LatentVecContainerT::iterator it = user_feature_latent_vec_list_.begin();
+            it != user_feature_latent_vec_list_.end(); ++it)
+        {
+            for (size_t j = 0; j < it->second.size(); ++j)
+            {
+                it->second[j] *= scale; 
+            }
         }
     }
     if (is_clicked)
@@ -226,9 +343,12 @@ void AdRecommender::update(const std::string& user_str_id,
 
 void AdRecommender::dumpUserLatent()
 {
+    LOG(INFO) << "ad feature value size: " << ad_feature_value_list_.size()
+        << ", " << ad_feature_value_id_list_.size() << ", " << ad_latent_vec_list_.size();
+    LOG(INFO) << "currently unviewed_items : " << unviewed_items_.count();
     std::ofstream ofs(std::string(data_path_ + "/dumped_userlatent.txt").c_str());
-    for (LatentVecContainerT::const_iterator it = feature_latent_vec_list_.begin();
-        it != feature_latent_vec_list_.end(); ++it)
+    for (LatentVecContainerT::const_iterator it = user_feature_latent_vec_list_.begin();
+        it != user_feature_latent_vec_list_.end(); ++it)
     {
         ofs << "key: " << it->first << ", latent vector: ";
         for (size_t i = 0; i < it->second.size(); ++i)

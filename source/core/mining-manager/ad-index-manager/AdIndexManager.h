@@ -6,7 +6,6 @@
 #define SF1_AD_INDEX_MANAGER_H_
 
 #include "AdMiningTask.h"
-#include "AdSelector.h"
 #include <boost/lexical_cast.hpp>
 #include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -25,6 +24,7 @@ class AdClickPredictor;
 class SearchKeywordOperation;
 class KeywordSearchResult;
 class SearchBase;
+class AdSelector;
 namespace faceted
 {
     class GroupManager;
@@ -33,6 +33,7 @@ namespace faceted
 class AdIndexManager
 {
 public:
+    typedef std::vector<std::pair<std::string, std::string> > FeatureT;
     AdIndexManager(
             const std::string& ad_resource_path,
             const std::string& ad_data_path,
@@ -53,17 +54,21 @@ public:
     void onAdStreamMessage(const std::vector<AdMessage>& msg_list);
 
     void rankAndSelect(
-        const AdSelector::FeatureT& userinfo,
+        const FeatureT& userinfo,
         std::vector<docid_t>& docids,
         std::vector<float>& topKRankScoreList,
         std::size_t& totalCount);
     bool searchByQuery(const SearchKeywordOperation& actionOperation,
         KeywordSearchResult& searchResult);
-    bool searchByDNF(const AdSelector::FeatureT& info,
+    bool searchByDNF(const FeatureT& info,
             std::vector<docid_t>& docids,
             std::vector<float>& topKRankScoreList,
             std::size_t& totalCount
             );
+
+    bool searchByRecommend(const SearchKeywordOperation& actionOperation,
+        KeywordSearchResult& searchResult);
+
     void postMining(docid_t startid, docid_t endid);
 
 private:
