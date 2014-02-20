@@ -11,7 +11,7 @@ using izenelib::util::UString;
 
 namespace
 {
-const std::size_t kAnalyzerNum = 3;
+const std::size_t kMajorTermNum = 3;
 }
 
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
@@ -50,14 +50,14 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     std::sort(sortTokens.begin(), sortTokens.end(), compareTokenScore_);
 
     std::vector<std::string> majorTokens;
-    extractMajorTokens_(sortTokens[0].first, brand, model, majorTokens);
+    extractMajorTokens_(sortTokens, majorTokens);
 
     getMajorTokens_(majorTokens, tokenScoreMap, param.majorTokens);
     getMinorTokens_(tokenScoreMap, param.minorTokens);
 
     if (param.isRefineResult)
     {
-        getRefinedResult_(majorTokens, sortTokens, param.refinedResult);
+        getRefinedResult_(majorTokens, param.refinedResult);
     }
 }
 
@@ -67,25 +67,14 @@ bool PcaProductTokenizer::compareTokenScore_(const TokenScore& x, const TokenSco
 }
 
 void PcaProductTokenizer::extractMajorTokens_(
-    const std::string& maxToken,
-    const std::string& brand,
-    const std::string& model,
+    const TokenScoreVec& sortTokens,
     std::vector<std::string>& majorTokens)
 {
-    if (!maxToken.empty() &&
-        maxToken != brand && maxToken != model)
-    {
-        majorTokens.push_back(maxToken);
-    }
+    const std::size_t num = std::min(sortTokens.size(), kMajorTermNum);
 
-    if (!brand.empty())
+    for (size_t i = 0; i < num; ++i)
     {
-        majorTokens.push_back(brand);
-    }
-
-    if (!model.empty())
-    {
-        majorTokens.push_back(model);
+        majorTokens.push_back(sortTokens[i].first);
     }
 }
 
@@ -126,21 +115,12 @@ void PcaProductTokenizer::getMinorTokens_(
 
 void PcaProductTokenizer::getRefinedResult_(
     const std::vector<std::string>& majorTokens,
-    const TokenScoreVec& sortTokens,
     izenelib::util::UString& refinedResult)
 {
-    size_t analyzerNum = 0;
-    for (; analyzerNum < majorTokens.size(); ++analyzerNum)
+    for (std::vector<std::string>::const_iterator it = majorTokens.begin();
+         it != majorTokens.end(); ++it)
     {
-        UString ustr(majorTokens[analyzerNum], UString::UTF_8);
-        refinedResult.append(ustr);
-        refinedResult.push_back(SPACE_UCHAR);
-    }
-
-    for (size_t i = 1; i < sortTokens.size() && analyzerNum < kAnalyzerNum;
-         ++i, ++analyzerNum)
-    {
-        UString ustr(sortTokens[i].first, UString::UTF_8);
+        UString ustr(*it, UString::UTF_8);
         refinedResult.append(ustr);
         refinedResult.push_back(SPACE_UCHAR);
     }

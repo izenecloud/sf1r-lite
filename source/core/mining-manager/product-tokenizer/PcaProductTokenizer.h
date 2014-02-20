@@ -24,9 +24,7 @@ private:
     static bool compareTokenScore_(const TokenScore& x, const TokenScore& y);
 
     void extractMajorTokens_(
-        const std::string& maxToken,
-        const std::string& brand,
-        const std::string& model,
+        const TokenScoreVec& sortTokens,
         std::vector<std::string>& majorTokens);
 
     void getMajorTokens_(
@@ -40,7 +38,6 @@ private:
 
     void getRefinedResult_(
         const std::vector<std::string>& majorTokens,
-        const TokenScoreVec& sortTokens,
         izenelib::util::UString& refinedResult);
 };
 
