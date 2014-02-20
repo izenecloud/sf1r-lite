@@ -154,8 +154,6 @@ bool ZambeziSearch::search(
     }
 
     faceted::GroupParam& groupParam = actionOperation.actionItem_.groupParam_;
-    std::vector<faceted::GroupPropParam> groupCountProps;
-    groupCountProps.swap(groupParam.groupProps_);
     const bool originIsAttrGroup = groupParam.isAttrGroup_;
     groupParam.isAttrGroup_ = false;
 
@@ -332,15 +330,14 @@ bool ZambeziSearch::search(
         }
     }
 
-    if (!groupCountProps.empty())
+    if (groupFilter)
     {
         getTopLabels_(docIdList, rankScoreList,
                       propSharedLockSet,
                       searchResult.autoSelectGroupLabels_);
 
-        getGroupCount_(docIdList, groupCountProps, propSharedLockSet,
-                       searchResult.groupRep_);
-        groupParam.groupProps_.swap(groupCountProps);
+        sf1r::faceted::OntologyRep tempAttrRep;
+        groupFilter->getGroupRep(searchResult.groupRep_, tempAttrRep);
     }
 
     if (originIsAttrGroup)
@@ -425,38 +422,6 @@ void ZambeziSearch::getTopLabels_(
 
     LOG(INFO) << "get top label num: "<< topLabels.size()
               << ", costs: " << timer.elapsed() << " seconds";
-}
-
-void ZambeziSearch::getGroupCount_(
-    const std::vector<unsigned int>& docIdList,
-    const std::vector<faceted::GroupPropParam>& groupCountProps,
-    PropSharedLockSet& propSharedLockSet,
-    faceted::GroupRep& groupRep)
-{
-    if (!groupFilterBuilder_)
-        return;
-
-    izenelib::util::ClockTimer timer;
-
-    faceted::GroupParam groupParam;
-    groupParam.groupProps_ = groupCountProps;
-
-    boost::scoped_ptr<faceted::GroupFilter> groupFilter(
-        groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
-
-    if (!groupFilter)
-        return;
-
-    for (std::vector<unsigned int>::const_iterator it = docIdList.begin();
-         it != docIdList.end(); ++it)
-    {
-        groupFilter->test(*it);
-    }
-
-    faceted::OntologyRep tempAttrRep;
-    groupFilter->getGroupRep(groupRep, tempAttrRep);
-
-    LOG(INFO) << "group counter costs :" << timer.elapsed() << " seconds";
 }
 
 void ZambeziSearch::getTopAttrs_(
