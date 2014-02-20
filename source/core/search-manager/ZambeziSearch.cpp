@@ -162,11 +162,6 @@ bool ZambeziSearch::search(
         preprocessor_.createProductScorer(actionOperation.actionItem_, propSharedLockSet, NULL));
 
     boost::shared_ptr<faceted::GroupFilter> groupFilter;
-    if (groupFilterBuilder_)
-    {
-        groupFilter.reset(
-            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
-    }
 
     ConditionsNode& filterTree =
         actionOperation.actionItem_.filterTree_;
@@ -256,6 +251,12 @@ bool ZambeziSearch::search(
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
     }
 
+    if (groupFilterBuilder_)
+    {
+        groupFilter.reset(
+            groupFilterBuilder_->createFilter(groupParam, propSharedLockSet));
+    }
+
     // reset relevance score
     const std::size_t candNum = candidates.size();
     std::size_t totalCount = 0;
@@ -264,6 +265,9 @@ bool ZambeziSearch::search(
         for (size_t i = 0; i < candNum; ++i)
         {
             docid_t docId = candidates[i];
+
+            if (groupFilter && !groupFilter->test(docId))
+                continue;
 
             ScoreDoc scoreItem(docId, scores[i]);
             if (customRanker)
