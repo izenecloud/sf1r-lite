@@ -100,6 +100,7 @@ void AdRecommender::getUserLatentVecKeys(const FeatureT& user_info, std::vector<
 
 void AdRecommender::updateAdFeatures(const std::string& ad_docid, const std::vector<std::string>& features)
 {
+    boost::unique_lock<boost::shared_mutex> lock(ad_feature_lock_);
     std::set<uint32_t>& ad_feature_id_list = ad_features_map_[ad_docid];
     ad_feature_id_list.clear();
     for (std::size_t i = 0; i < features.size(); ++i)
@@ -203,22 +204,29 @@ void AdRecommender::recommend(const std::string& user_str_id,
     std::vector<std::string> user_keys;
     getUserLatentVecKeys(user_info, user_keys);
     LatentVecT user_latent_vec;
-    getCombinedUserLatentVec(user_keys, user_latent_vec);
+
+    {
+        boost::shared_lock<boost::shared_mutex> lock(user_latent_lock_);
+        getCombinedUserLatentVec(user_keys, user_latent_vec);
+    }
     
     bool has_unviewed_item = unviewed_items_.any();
 
     ScoreSortedAdQueue hit_list(max_return);
-    LatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
-    while (it != ad_latent_vec_list_.end())
     {
-        if (!(it->second.empty()))
+        boost::shared_lock<boost::shared_mutex> lock(ad_latent_lock_);
+        LatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
+        while (it != ad_latent_vec_list_.end())
         {
-            ScoredAdItem item;
-            item.score = affinity(user_latent_vec, it->second);
-            item.key = it->first;
-            hit_list.insert(item);
+            if (!(it->second.empty()))
+            {
+                ScoredAdItem item;
+                item.score = affinity(user_latent_vec, it->second);
+                item.key = it->first;
+                hit_list.insert(item);
+            }
+            ++it;
         }
-        ++it;
     }
     double default_score = 0;
     if (has_unviewed_item)
@@ -234,6 +242,7 @@ void AdRecommender::recommend(const std::string& user_str_id,
         {
             if (item.score < default_score)
             {
+                boost::shared_lock<boost::shared_mutex> lock(ad_feature_lock_);
                 // chose from unviewed items.
                 int unview_index = getunviewed(unviewed_items_, scoresize - 1 - i);
                 if (unview_index != -1 && unview_index < (int)ad_feature_value_list_.size())
@@ -268,19 +277,11 @@ void AdRecommender::update(const std::string& user_str_id,
         //    << ", ratio_ : " << ratio_;
     }
 
-    std::vector<std::string> ad_keys;
-    std::vector<LatentVecT*> ad_feature_latent_list;
-    getAdLatentVecKeys(ad_docid, ad_keys);
-    for(size_t i = 0; i < ad_keys.size(); ++i)
-    {
-        std::pair<LatentVecContainerT::iterator, bool> it_pair = ad_latent_vec_list_.insert(std::make_pair(ad_keys[i], default_latent_));
-        ad_feature_latent_list.push_back(&(it_pair.first->second));
-        unviewed_items_.reset(ad_feature_value_id_list_[ad_keys[i]]);
-    }
-
     std::vector<std::string> user_keys;
     getUserLatentVecKeys(user_info, user_keys);
     std::vector<LatentVecT*> user_feature_latent_list;
+
+    boost::unique_lock<boost::shared_mutex> lock_user(user_latent_lock_);
     for (size_t i = 0; i < user_keys.size(); ++i)
     {
         std::pair<LatentVecContainerT::iterator, bool> it_pair = user_feature_latent_vec_list_.insert(std::make_pair(user_keys[i], default_latent_));
@@ -291,6 +292,21 @@ void AdRecommender::update(const std::string& user_str_id,
         }
         LatentVecT& feature_latent = it_pair.first->second;
         user_feature_latent_list.push_back(&feature_latent);
+    }
+
+    std::vector<std::string> ad_keys;
+    std::vector<LatentVecT*> ad_feature_latent_list;
+
+    boost::unique_lock<boost::shared_mutex> lock_ad(ad_latent_lock_);
+    {
+        boost::shared_lock<boost::shared_mutex> lock_feature(ad_feature_lock_);
+        getAdLatentVecKeys(ad_docid, ad_keys);
+        for(size_t i = 0; i < ad_keys.size(); ++i)
+        {
+            std::pair<LatentVecContainerT::iterator, bool> it_pair = ad_latent_vec_list_.insert(std::make_pair(ad_keys[i], default_latent_));
+            ad_feature_latent_list.push_back(&(it_pair.first->second));
+            unviewed_items_.reset(ad_feature_value_id_list_[ad_keys[i]]);
+        }
     }
 
     double gradient = learning_rate_;

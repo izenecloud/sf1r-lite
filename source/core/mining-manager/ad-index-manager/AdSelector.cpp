@@ -284,7 +284,7 @@ void AdSelector::updateAdSegmentStr(docid_t ad_docid, const FeatureMapT& ad_feat
         if (ad_docid >= ad_segid_data_.size())
             ad_segid_data_.resize(ad_docid + 1);
     }
-    boost::shared_lock<boost::shared_mutex> lock(ad_segid_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(ad_segid_mutex_);
     ad_segid_data_[ad_docid].swap(segids);
 }
 

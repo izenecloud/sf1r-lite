@@ -142,6 +142,9 @@ private:
     boost::unordered_map<std::string, uint32_t> ad_feature_value_id_list_;
     AdFeatureContainerT ad_features_map_;
     std::bitset<MAX_AD_ITEMS> unviewed_items_;
+    boost::shared_mutex user_latent_lock_;
+    boost::shared_mutex ad_latent_lock_;
+    boost::shared_mutex ad_feature_lock_;
 };
 
 } //namespace sf1r
