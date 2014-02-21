@@ -11,7 +11,9 @@ using izenelib::util::UString;
 
 namespace
 {
-const std::size_t kMajorTermNum = 3;
+const float kMajorTermScore = 0.2;
+
+const std::size_t kRefineTokenNum = 3;
 }
 
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
@@ -57,7 +59,7 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 
     if (param.isRefineResult)
     {
-        getRefinedResult_(majorTokens, param.refinedResult);
+        getRefinedResult_(sortTokens, param.refinedResult);
     }
 }
 
@@ -70,11 +72,13 @@ void PcaProductTokenizer::extractMajorTokens_(
     const TokenScoreVec& sortTokens,
     std::vector<std::string>& majorTokens)
 {
-    const std::size_t num = std::min(sortTokens.size(), kMajorTermNum);
-
-    for (size_t i = 0; i < num; ++i)
+    for (TokenScoreVec::const_iterator it = sortTokens.begin();
+         it != sortTokens.end(); ++it)
     {
-        majorTokens.push_back(sortTokens[i].first);
+        if (it->second < kMajorTermScore)
+            break;
+
+        majorTokens.push_back(it->first);
     }
 }
 
@@ -114,13 +118,14 @@ void PcaProductTokenizer::getMinorTokens_(
 }
 
 void PcaProductTokenizer::getRefinedResult_(
-    const std::vector<std::string>& majorTokens,
+    const TokenScoreVec& sortTokens,
     izenelib::util::UString& refinedResult)
 {
-    for (std::vector<std::string>::const_iterator it = majorTokens.begin();
-         it != majorTokens.end(); ++it)
+    const std::size_t num = std::min(sortTokens.size(), kRefineTokenNum);
+
+    for (size_t i = 0; i < num; ++i)
     {
-        UString ustr(*it, UString::UTF_8);
+        UString ustr(sortTokens[i].first, UString::UTF_8);
         refinedResult.append(ustr);
         refinedResult.push_back(SPACE_UCHAR);
     }
