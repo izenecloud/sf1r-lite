@@ -13,7 +13,7 @@ namespace
 {
 const float kMajorTermScore = 0.2;
 
-const std::size_t kRefineTokenNum = 3;
+const std::size_t kRefineTokenNum = 2;
 }
 
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
@@ -57,6 +57,8 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     getMajorTokens_(majorTokens, tokenScoreMap, param.majorTokens);
     getMinorTokens_(tokenScoreMap, param.minorTokens);
 
+    param.rankBoundary = 0.5;
+
     if (param.isRefineResult)
     {
         getRefinedResult_(sortTokens, param.refinedResult);
@@ -75,11 +77,15 @@ void PcaProductTokenizer::extractMajorTokens_(
     for (TokenScoreVec::const_iterator it = sortTokens.begin();
          it != sortTokens.end(); ++it)
     {
-        if (it->second < kMajorTermScore)
+        if (majorTokens.size()>=3 || it->second < kMajorTermScore)
             break;
 
         majorTokens.push_back(it->first);
     }
+
+    if (majorTokens.size() == 0)
+        for (uint32_t i=0;i<sortTokens.size()&&i<kRefineTokenNum;i++)
+            majorTokens.push_back(sortTokens[i].first);
 }
 
 void PcaProductTokenizer::getMajorTokens_(
