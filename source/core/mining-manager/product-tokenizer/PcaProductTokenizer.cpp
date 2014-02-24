@@ -4,13 +4,20 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 using namespace sf1r;
 using izenelib::util::UString;
 
+namespace
+{
+const float kMajorTermScore = 0.2;
+
+const std::size_t kRefineTokenNum = 2;
+}
+
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 {
-    typedef std::vector<std::pair<std::string, float> > TokenScoreVec;
     TokenScoreVec tokens, subTokens;
     std::string brand;
     std::string model;
@@ -18,12 +25,11 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
     TitlePCAWrapper* titlePCA = TitlePCAWrapper::get();
     titlePCA->pca(param.query, tokens, brand, model, subTokens, false);
 
-    double scoreSum = 0;
-    double maxScore = 0;
-    std::string maxToken;
+    if (tokens.empty())
+        return;
 
-    typedef std::map<std::string, float> TokenScoreMap;
     TokenScoreMap tokenScoreMap;
+    double scoreSum = 0;
 
     for (TokenScoreVec::const_iterator it = tokens.begin();
          it != tokens.end(); ++it)
@@ -33,44 +39,100 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 
         tokenScoreMap[it->first] = it->second;
         scoreSum += it->second;
-
-        if (it->second > maxScore)
-        {
-            maxScore = it->second;
-            maxToken = it->first;
-        }
     }
 
-    std::vector<std::string> majorTokens;
-    if (!maxToken.empty()) majorTokens.push_back(maxToken);
-    if (!brand.empty()) majorTokens.push_back(brand);
-    if (!model.empty()) majorTokens.push_back(model);
+    TokenScoreVec sortTokens;
+    for (TokenScoreMap::iterator it = tokenScoreMap.begin();
+         it != tokenScoreMap.end(); ++it)
+    {
+        it->second /= scoreSum;
+        sortTokens.push_back(*it);
+    }
 
+    std::sort(sortTokens.begin(), sortTokens.end(), compareTokenScore_);
+
+    std::vector<std::string> majorTokens;
+    extractMajorTokens_(sortTokens, majorTokens);
+
+    getMajorTokens_(majorTokens, tokenScoreMap, param.majorTokens);
+    getMinorTokens_(tokenScoreMap, param.minorTokens);
+
+    param.rankBoundary = 0.5;
+
+    if (param.isRefineResult)
+    {
+        getRefinedResult_(sortTokens, param.refinedResult);
+    }
+}
+
+bool PcaProductTokenizer::compareTokenScore_(const TokenScore& x, const TokenScore& y)
+{
+    return x.second > y.second;
+}
+
+void PcaProductTokenizer::extractMajorTokens_(
+    const TokenScoreVec& sortTokens,
+    std::vector<std::string>& majorTokens)
+{
+    for (TokenScoreVec::const_iterator it = sortTokens.begin();
+         it != sortTokens.end(); ++it)
+    {
+        if (majorTokens.size()>=3 || it->second < kMajorTermScore)
+            break;
+
+        majorTokens.push_back(it->first);
+    }
+
+    if (majorTokens.size() == 0)
+        for (uint32_t i=0;i<sortTokens.size()&&i<kRefineTokenNum;i++)
+            majorTokens.push_back(sortTokens[i].first);
+}
+
+void PcaProductTokenizer::getMajorTokens_(
+    const std::vector<std::string>& majorTokens,
+    TokenScoreMap& tokenScoreMap,
+    ProductTokenParam::TokenScoreList& tokenScoreList)
+{
     for (std::vector<std::string>::const_iterator it = majorTokens.begin();
          it != majorTokens.end(); ++it)
     {
         TokenScoreMap::iterator mapIter = tokenScoreMap.find(*it);
+
+        if (mapIter == tokenScoreMap.end())
+            continue;
+
         UString ustr(mapIter->first, UString::UTF_8);
-        double score = mapIter->second / scoreSum;
-        std::pair<UString, double> tokenScore(ustr, score);
+        std::pair<UString, double> tokenScore(ustr, mapIter->second);
 
         tokenScoreMap.erase(mapIter);
-        param.majorTokens.push_back(tokenScore);
-
-        if (param.isRefineResult)
-        {
-            param.refinedResult.append(ustr);
-            param.refinedResult.push_back(SPACE_UCHAR);
-        }
+        tokenScoreList.push_back(tokenScore);
     }
+}
 
+void PcaProductTokenizer::getMinorTokens_(
+    const TokenScoreMap& tokenScoreMap,
+    ProductTokenParam::TokenScoreList& tokenScoreList)
+{
     for (TokenScoreMap::const_iterator it = tokenScoreMap.begin();
          it != tokenScoreMap.end(); ++it)
     {
         UString ustr(it->first, UString::UTF_8);
-        double score = it->second / scoreSum;
-        std::pair<UString, double> tokenScore(ustr, score);
+        std::pair<UString, double> tokenScore(ustr, it->second);
 
-        param.minorTokens.push_back(tokenScore);
+        tokenScoreList.push_back(tokenScore);
+    }
+}
+
+void PcaProductTokenizer::getRefinedResult_(
+    const TokenScoreVec& sortTokens,
+    izenelib::util::UString& refinedResult)
+{
+    const std::size_t num = std::min(sortTokens.size(), kRefineTokenNum);
+
+    for (size_t i = 0; i < num; ++i)
+    {
+        UString ustr(sortTokens[i].first, UString::UTF_8);
+        refinedResult.append(ustr);
+        refinedResult.push_back(SPACE_UCHAR);
     }
 }

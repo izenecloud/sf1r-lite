@@ -1,5 +1,6 @@
 #include "CollectionManager.h"
 #include "CollectionMeta.h"
+#include "CollectionTaskScheduler.h"
 #include <controllers/CollectionHandler.h>
 
 #include <bundles/index/IndexBundleActivator.h>
@@ -251,6 +252,11 @@ bool CollectionManager::startCollection(const string& collectionName,
 
         collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
     }
+
+    CollectionTaskScheduler::get()->schedule(collectionHandler.get());
+#ifdef COBRA_RESTRICT
+    CollectionTaskScheduler::get()->scheduleLicenseTask(collectionName);
+#endif // COBRA_RESTRICT
 
     collectionHandlers_[collectionName] = collectionHandler.release();
 

@@ -3,69 +3,47 @@
 #include "../util/FSUtil.hpp"
 #include "../MiningException.hpp"
 #include <document-manager/DocumentManager.h>
-#include "AttrManager.h"
 #include <glog/logging.h>
-#include <iostream>
 
 NS_FACETED_BEGIN
 AttrMiningTask::AttrMiningTask(DocumentManager& documentManager
         , AttrTable& attrTable
         , std::string dirPath
         , const AttrConfig& attrConfig)
-    :documentManager_(documentManager)
-    , attrTable_(attrTable)
+    : documentManager_(documentManager)
+    , propName_(attrTable.propName())
+    , swapper_(attrTable)
     , dirPath_(dirPath)
     , attrConfig_(attrConfig)
 {
-
 }
-
-//bool AttrMiningTask::processCollection_forTest()
-//{
-//    preProcess(0);
-//    docid_t MaxDocid = documentManager_.getMaxDocId();
-//    const docid_t startDocId = attrTable_.docIdNum();
-//    Document doc;
-//
-//    for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
-//    {
-//        if (docid % 10000 == 0)
-//        {
-//            std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
-//        }
-//        documentManager_.getDocument(docid, doc);
-//        buildDocument(docid, doc);
-//    }
-//    postProcess();
-//    return true;
-//}
 
 bool AttrMiningTask::preProcess(int64_t timestamp)
 {
-    const docid_t startDocId = attrTable_.docIdNum();
+    const docid_t startDocId = swapper_.reader.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
 
     if (startDocId > endDocId)
         return false;
 
-    attrTable_.reserveDocIdNum(endDocId + 1);
+    swapper_.copy(endDocId + 1);
     return true;
 }
 
 docid_t AttrMiningTask::getLastDocId()
 {
-    return attrTable_.docIdNum();
+    return swapper_.reader.docIdNum();
 }
 
 bool AttrMiningTask::postProcess()
 {
-    const char* propName = attrTable_.propName();
-
-    if (!attrTable_.flush())
+    if (!swapper_.writer.flush())
     {
-        LOG(ERROR) << "AttrTable::flush() failed, property name: " << propName;
+        LOG(ERROR) << "AttrTable::flush() failed, property name: " << propName_;
         return false;
     }
+
+    swapper_.swap();
 
     LOG(INFO) << "finished building attr index data";
     return true;
@@ -73,9 +51,8 @@ bool AttrMiningTask::postProcess()
 
 bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
-    const std::string propName(attrTable_.propName());
     std::vector<AttrTable::vid_t> valueIdList;
-    Document::property_const_iterator it = doc.findProperty(propName);
+    Document::property_const_iterator it = doc.findProperty(propName_);
     if (it != doc.propertyEnd())
     {
         izenelib::util::UString propValue(propstr_to_ustr(it->second.get<PropertyValue::PropertyValueStrType>()));
@@ -92,12 +69,14 @@ bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
                 if (attrConfig_.isExcludeAttrName(attrName))
                     continue;
 
-                AttrTable::nid_t nameId = attrTable_.insertNameId(attrName);
+                AttrTable::nid_t nameId =
+                        swapper_.writer.insertNameId(attrName);
 
                 for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
                     valueIt != pairIt->second.end(); ++valueIt)
                 {
-                    AttrTable::vid_t valueId = attrTable_.insertValueId(nameId, *valueIt);
+                    AttrTable::vid_t valueId =
+                            swapper_.writer.insertValueId(nameId, *valueIt);
                     valueIdList.push_back(valueId);
                 }
             }
@@ -111,7 +90,7 @@ bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
 
     try
     {
-        attrTable_.appendValueIdList(valueIdList);
+        swapper_.writer.setValueIdList(docID, valueIdList);
     }
     catch(MiningException& e)
     {

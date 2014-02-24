@@ -32,7 +32,7 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     const std::string& targetCategoryPropName,
     const boost::shared_ptr<const NumericPropertyTableBase>& priceTable)
     : documentManager_(documentManager)
-    , classifyTableReader_(classifyTable)
+    , swapper_(classifyTable)
     , targetCategoryPropName_(targetCategoryPropName)
     , priceTable_(priceTable)
     , startDocId_(0)
@@ -42,7 +42,7 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
 bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
     std::string title;
-    getDocPropValue(doc, classifyTableWriter_.propName(), title);
+    getDocPropValue(doc, swapper_.writer.propName(), title);
 
     if (title.empty())
         return true;
@@ -54,7 +54,7 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
         ruleBySource_(doc, classifyCategory) ||
         classifyByTitle_(title, docID, classifyCategory, isRule))
     {
-        classifyTableWriter_.setCategory(docID, classifyCategory, isRule);
+        swapper_.writer.setCategory(docID, classifyCategory, isRule);
     }
 
     return true;
@@ -136,7 +136,7 @@ bool CategoryClassifyMiningTask::classifyByTitle_(
 
 bool CategoryClassifyMiningTask::preProcess(int64_t timestamp)
 {
-    startDocId_ = classifyTableReader_.docIdNum();
+    startDocId_ = swapper_.reader.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
 
     LOG(INFO) << "category classify mining task"
@@ -146,24 +146,19 @@ bool CategoryClassifyMiningTask::preProcess(int64_t timestamp)
     if (startDocId_ > endDocId)
         return false;
 
-    classifyTableWriter_ = classifyTableReader_;
-    classifyTableWriter_.resize(endDocId + 1);
+    swapper_.copy(endDocId + 1);
 
     return true;
 }
 
 bool CategoryClassifyMiningTask::postProcess()
 {
-    if (!classifyTableWriter_.flush())
+    if (!swapper_.writer.flush())
     {
         LOG(ERROR) << "failed in CategoryClassifyTable::flush()";
         return false;
     }
 
-    classifyTableWriter_.swap(classifyTableReader_);
-
-    // release the memory of classifyTableWriter_
-    CategoryClassifyTable().swap(classifyTableWriter_);
-
+    swapper_.swap();
     return true;
 }

@@ -123,11 +123,11 @@ BOOST_AUTO_TEST_CASE(testGetDateSet)
 
         DateGroupTable::DateSet dateSet1;
         createDateSet1(dateSet1);
-        dateTable.appendDateSet(dateSet1);
+        dateTable.setDateSet(1, dateSet1);
 
         DateGroupTable::DateSet dateSet2;
         createDateSet2(dateSet2);
-        dateTable.appendDateSet(dateSet2);
+        dateTable.setDateSet(2, dateSet2);
 
         BOOST_CHECK_EQUAL(dateTable.docIdNum(), 3U);
 
