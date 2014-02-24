@@ -80,6 +80,8 @@ public:
     void updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, const std::vector<FeatureMapT>& ad_feature_list);
     void miningAdSegmentStr(docid_t startid, docid_t endid);
     void updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& features_map);
+    void trainOnlineRecommender(const std::string& user_str_id, const FeatureT& user_info,
+        const std::string& ad_docid, bool is_clicked);
 
 private:
 
@@ -102,7 +104,7 @@ private:
         std::map<std::string, std::size_t> segments_counter,
         std::map<std::string, FeatureT>& all_keys);
 
-    void getAdTopic(docid_t id, std::vector<std::string>& topics);
+    void getAdTagsForRec(docid_t id, std::vector<std::string>& tags);
 
     typedef izenelib::ir::idmanager::_IDManager<std::string, std::string, SegIdT,
             izenelib::util::ReadWriteLock,

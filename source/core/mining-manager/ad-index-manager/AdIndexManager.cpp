@@ -6,6 +6,7 @@
 #include "AdStreamSubscriber.h"
 #include "AdSelector.h"
 #include "AdClickPredictor.h"
+#include "AdFeedbackMgr.h"
 #include <common/ResultType.h>
 #include <mining-manager/group-manager/GroupManager.h>
 #include <query-manager/ActionItem.h>
@@ -87,22 +88,31 @@ void AdIndexManager::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
         LOG(INFO) << "got ad stream data. size: " << msg_list.size() << ", total " << cnt;
     }
     cnt += msg_list.size();
-    std::vector<AdClickPredictor::AssignmentT> user_segs;
+    std::vector<AdFeedbackMgr::FeedbackInfo> feedback_info_list;
     std::vector<AdClickPredictor::AssignmentT> ad_segs;
-    std::vector<bool> click_list;
+    std::vector<AdClickPredictor::AssignmentT> user_segs;
+    feedback_info_list.resize(msg_list.size());
     // read from stream msg and convert it to assignment list.
-    
-    assert(user_segs.size() == ad_segs.size() && ad_segs.size() == click_list.size());
-    for(size_t i = 0; i < user_segs.size(); ++i)
+    for (size_t i = 0; i < msg_list.size(); ++i)
     {
-        ad_click_predictor_->update(user_segs[i], ad_segs[i], click_list[i]);
-        if (click_list[i])
+        AdFeedbackMgr::get()->parserFeedbackLog(msg_list[i].body, feedback_info_list[i]);
+    }
+    
+    for(size_t i = 0; i < feedback_info_list.size(); ++i)
+    {
+        const AdFeedbackMgr::FeedbackInfo& info = feedback_info_list[i];
+        bool is_clicked = info.action > AdFeedbackMgr::View;
+        ad_click_predictor_->update(user_segs[i], ad_segs[i],
+            is_clicked);
+        if (is_clicked)
         {
             // get docid from adid.
             docid_t docid;
             AdSelector::get()->updateClicked(docid);
         }
         AdSelector::get()->updateSegments(user_segs[i], AdSelector::UserSeg);
+        AdSelector::get()->trainOnlineRecommender(info.user_id,
+            user_segs[i], info.ad_id, is_clicked);
     }
 }
 

@@ -4,6 +4,7 @@
 #include <search-manager/HitQueue.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/group-manager/GroupManager.h>
+#include <la-manager/TitlePCAWrapper.h>
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -298,8 +299,26 @@ void AdSelector::updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, cons
     }
 }
 
-void AdSelector::getAdTopic(docid_t id, std::vector<std::string>& topics)
+void AdSelector::getAdTagsForRec(docid_t id, std::vector<std::string>& tags)
 {
+    tags.clear();
+    // get the title of the ad doc.
+    std::string ad_title;
+
+    std::vector<std::pair<std::string, float> > tokens, subtokens;
+    std::string brand;
+    std::string model;
+
+    TitlePCAWrapper::get()->pca(ad_title, tokens, brand, model, subtokens, false);
+    if (!brand.empty())
+    {
+        tags.push_back(brand);
+    }
+    for (size_t i = 0; i < tokens.size(); ++i)
+    {
+        if (tokens[i].first.length() > 1)
+            tags.push_back(tokens[i].first);
+    }
 }
 
 void AdSelector::updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& features_map)
@@ -313,9 +332,9 @@ void AdSelector::updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& featu
             features.push_back(it->second[i]);
         }
     }
-    std::vector<std::string> topics;
-    getAdTopic(id, topics);
-    features.insert(features.end(), topics.begin(), topics.end());
+    std::vector<std::string> tags;
+    getAdTagsForRec(id, tags);
+    features.insert(features.end(), tags.begin(), tags.end());
     ad_feature_item_rec_->updateAdFeatures(boost::lexical_cast<std::string>(id), features);
 }
 
@@ -959,6 +978,13 @@ bool AdSelector::selectForTest(const FeatureT& user_info,
 {
     PropSharedLockSet propSharedLockSet;
     return select(user_info, max_select, ad_doclist, score_list, propSharedLockSet);
+}
+
+
+void AdSelector::trainOnlineRecommender(const std::string& user_str_id, const FeatureT& user_info,
+    const std::string& ad_docid, bool is_clicked)
+{
+    ad_feature_item_rec_->update(user_str_id, user_info, ad_docid, is_clicked);
 }
 
 }

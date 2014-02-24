@@ -200,7 +200,7 @@ void AdRecommender::recommend(const std::string& user_str_id,
     std::vector<std::string>& recommended_items,
     std::vector<double>& score_list)
 {
-    LOG(INFO) << "begin do the recommend for user : " << user_str_id;
+    //LOG(INFO) << "begin do the recommend for user : " << user_str_id;
     std::vector<std::string> user_keys;
     getUserLatentVecKeys(user_info, user_keys);
     LatentVecT user_latent_vec;
@@ -258,7 +258,7 @@ void AdRecommender::recommend(const std::string& user_str_id,
         score_list[i] = item.score;
     }
 
-    LOG(INFO) << "finished the ad recommend, size: " << recommended_items.size();
+    //LOG(INFO) << "finished the ad recommend, size: " << recommended_items.size();
 }
 
 void AdRecommender::update(const std::string& user_str_id,

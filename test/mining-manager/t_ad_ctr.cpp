@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <glog/logging.h>
+#include <la-manager/TitlePCAWrapper.h>
 
 namespace bfs=boost::filesystem;
 using namespace sf1r;
@@ -115,14 +116,38 @@ void select_ad_func(const std::vector<docid_t>& cand_docs,
     }
 }
 
+void recommend_ad_func(const AdSelector::FeatureT& old_male_userinfo,
+    const AdSelector::FeatureT& young_female_userinfo, AdRecommender* test_ad_rec)
+{
+    for(size_t i = 0; i < 1000000; ++i)
+    {
+        std::vector<double> score_list;
+        std::vector<std::string> rec_doclist;
+        test_ad_rec->recommend("", old_male_userinfo, 10, rec_doclist, score_list);
+        rec_doclist.clear();
+        score_list.clear();
+        test_ad_rec->recommend("", young_female_userinfo, 10, rec_doclist, score_list);
+        if (i % 100000 == 0)
+        {
+            LOG(INFO) << "recommended ads are :";
+            for (size_t j = 0; j < rec_doclist.size(); ++j)
+            {
+                std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    LOG(INFO) << "recommender thread finished.";
+}
+
 int main()
 {
 
     srand(time(NULL));
     if (!bfs::exists("/opt/mine/ad_ctr_test"))
         return 0;
-    //bfs::remove_all("/opt/mine/ad_ctr_test/data");
-    //bfs::create_directories("/opt/mine/ad_ctr_test/data");
+
+    TitlePCAWrapper::get()->loadDictFiles("/home/vincentlee/workspace/sf1/sf1r-engine/package/resource/dict/title_pca");
 
     LOG(INFO) << "begin generate training test data.";
     std::ifstream ifs("/opt/mine/track2/training.txt");
@@ -411,6 +436,44 @@ int main()
     std::cout << std::endl;
 
     test_ad_rec.dumpUserLatent();
+    boost::thread_group test_ad_rec_threads;
+    for(int i = 0; i < 8; ++i)
+    {
+        test_ad_rec_threads.add_thread(new boost::thread(boost::bind(&recommend_ad_func, old_male_userinfo,
+                    young_female_userinfo, &test_ad_rec)));
+    }
+
+    for (size_t i = 1; i < total_ad_num; ++i)
+    {
+        if (i % clicked_rate == 0)
+        {
+            if (rand() % 2 == 0)
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), female_liked_feature);
+                test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+            else
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), male_liked_feature);
+                test_ad_rec.update("", old_male_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+        }
+        else if (i % view_rate == 0)
+        {
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), unliked_feature);
+            test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
+        }
+        if (i % 100 == 0)
+            usleep(1);
+        if (i % 100000 == 0)
+        {
+            LOG(INFO) << "training : " << i;
+            usleep(1);
+        }
+    }
+    LOG(INFO) << "recommender training finished.";
+
+    test_ad_rec_threads.join_all();
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));
