@@ -29,7 +29,6 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
         return;
 
     TokenScoreMap tokenScoreMap;
-    TokenScoreVec sortTokens;
     double scoreSum = 0;
 
     for (TokenScoreVec::const_iterator it = tokens.begin();
@@ -40,13 +39,14 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
 
         tokenScoreMap[it->first] = it->second;
         scoreSum += it->second;
-        sortTokens.push_back(*it);
     }
 
+    TokenScoreVec sortTokens;
     for (TokenScoreMap::iterator it = tokenScoreMap.begin();
          it != tokenScoreMap.end(); ++it)
     {
         it->second /= scoreSum;
+        sortTokens.push_back(*it);
     }
 
     std::sort(sortTokens.begin(), sortTokens.end(), compareTokenScore_);
