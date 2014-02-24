@@ -2496,7 +2496,7 @@ bool MiningManager::GetSuffixMatch(
                 res_list,
                 tokenParam.rankBoundary);
 
-            if (res_list.empty() && !tokenParam.majorTokens.empty())
+            while (res_list.empty() && !tokenParam.majorTokens.empty())
             {
                 const ProductTokenParam::TokenScore& tokenScore(
                     tokenParam.majorTokens.back());

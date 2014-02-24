@@ -37,7 +37,7 @@ private:
         ProductTokenParam::TokenScoreList& tokenScoreList);
 
     void getRefinedResult_(
-        const TokenScoreVec& sortTokens,
+        const std::vector<std::string>& majorTokens,
         izenelib::util::UString& refinedResult);
 };
 
