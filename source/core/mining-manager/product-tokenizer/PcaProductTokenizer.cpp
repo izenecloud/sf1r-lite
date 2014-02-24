@@ -13,7 +13,7 @@ namespace
 {
 const float kMajorTermScore = 0.2;
 
-const std::size_t kRefineTokenNum = 2;
+const std::size_t kRefineTokenNum = 3;
 }
 
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
