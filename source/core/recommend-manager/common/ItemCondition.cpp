@@ -16,17 +16,13 @@ void ItemCondition::createBitset(QueryBuilder* queryBuilder)
     if (filterTree_.empty() || !queryBuilder)
         return;
 
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
-    queryBuilder->prepare_filter(filterTree_, filterBitmap);
-
-    pBitset_.reset(new izenelib::ir::indexmanager::Bitset);
-    pBitset_->importFromEWAH(*filterBitmap);
+    queryBuilder->prepare_filter(filterTree_, pFilterBitmap_);
 }
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const
 {
-    if (pBitset_)
-        return pBitset_->test(itemId);
+    if (pFilterBitmap_)
+        return pFilterBitmap_->test(itemId);
 
     if (itemManager_)
         return itemManager_->hasItem(itemId);

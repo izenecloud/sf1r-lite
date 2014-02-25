@@ -62,17 +62,22 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
+bool QueryBuilder::prepare_filter(
+    const ConditionsNode& conditionsTree_,
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
+{
+    return do_process_filtertree(conditionsTree_, pFilterBitmap);
+}
+
 bool QueryBuilder::do_process_filtertree(
     const ConditionsNode& conditionsTree_,
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
-    if (conditionsTree_.conditionLeafList_.size() == 1 
-            && conditionsTree_.conditionsNodeList_.size() == 0)
+    if (conditionsTree_.conditionLeafList_.size() == 1
+        && conditionsTree_.conditionsNodeList_.size() == 0)
     {
         if (!filterCache_->get(conditionsTree_.conditionLeafList_[0], pFilterBitmap))
         {
-            pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
-
             QueryFiltering::FilteringOperation filterOperation = conditionsTree_.conditionLeafList_[0].operation_;
             const std::string& property = conditionsTree_.conditionLeafList_[0].property_;
             const std::vector<PropertyValue>& filterParam = conditionsTree_.conditionLeafList_[0].values_;
@@ -91,8 +96,6 @@ bool QueryBuilder::do_process_filtertree(
     {
         if (!filterCache_->get(conditionsTree_.conditionLeafList_[i], filterBitmapTList1[i]))
         {
-            filterBitmapTList1[i].reset(new InvertedIndexManager::FilterBitmapT);
-
             QueryFiltering::FilteringOperation filterOperation = conditionsTree_.conditionLeafList_[i].operation_;
             const std::string& property = conditionsTree_.conditionLeafList_[i].property_;
             const std::vector<PropertyValue>& filterParam = conditionsTree_.conditionLeafList_[i].values_;
@@ -112,53 +115,34 @@ bool QueryBuilder::do_process_filtertree(
     }
 
     const unsigned int bitsNum = documentManagerPtr_->getMaxDocId() + 1;
-    const unsigned int wordBitNum = sizeof(InvertedIndexManager::FilterWordT) << 3;
-    const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT(bitsNum));
 
-    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
-    
-    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> dest;
     if (relation == "and")
     {
-        pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
+        pFilterBitmap->set();
         for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
         {
-            dest.reset(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicaland(*(filterBitmapTList1[k]), *dest);
-            (*pFilterBitmap).swap(*dest);
+            *pFilterBitmap &= *filterBitmapTList1[k];
         }
         for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
         {
-            dest.reset(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicaland(*(filterBitmapTList2[k]), *dest);
-            (*pFilterBitmap).swap(*dest);
+            *pFilterBitmap &= *filterBitmapTList2[k];
         }
     }
     else if (relation == "or")
     {
-        pFilterBitmap->addStreamOfEmptyWords(false, wordsNum);
         for (unsigned int k = 0; k < filterBitmapTList1.size(); ++k)
         {
-            dest.reset(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicalor(*(filterBitmapTList1[k]), *dest);
-            (*pFilterBitmap).swap(*dest);
+            *pFilterBitmap |= *filterBitmapTList1[k];
         }
         for (unsigned int k = 0; k < filterBitmapTList2.size(); ++k)
         {
-            dest.reset(new InvertedIndexManager::FilterBitmapT);
-            pFilterBitmap->logicalor(*(filterBitmapTList2[k]), *dest);
-            (*pFilterBitmap).swap(*dest);
+            *pFilterBitmap |= *filterBitmapTList2[k];
         }
     }
     return true;
 }
 
-bool QueryBuilder::prepare_filter(
-        const ConditionsNode& conditionsTree_,
-        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx)
-{
-    return do_process_filtertree(conditionsTree_, pFilterBitmapx);
-}
 /*
 void QueryBuilder::do_process_node(
     QueryFiltering::FilteringTreeValue &filteringTreeRules
@@ -460,9 +444,6 @@ void QueryBuilder::prefetch_term_doc_readers_(
         }
         else
         {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
-            boost::shared_ptr<Bitset> pBitset;
-
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
                 continue;
 
@@ -479,13 +460,14 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 std::vector<PropertyValue> filterParam;
                 filterParam.push_back(TermTypeDetector::propertyValue_);
                 filteringRule.values_ = filterParam;
+
+                boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
                 if(!filterCache_->get(filteringRule, pFilterBitmap))
                 {
-                    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
-                    pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
+                    pFilterBitmap.reset(
+                        new InvertedIndexManager::FilterBitmapT(pIndexReader_->maxDoc() + 1));
 
-                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitset);
-                    pBitset->compress(*pFilterBitmap);
+                    indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pFilterBitmap);
                     filterCache_->set(filteringRule, pFilterBitmap);
                 }
                 TermDocFreqs* pTermDocReader = new InvertedIndexManager::FilterTermDocFreqsT(pFilterBitmap);

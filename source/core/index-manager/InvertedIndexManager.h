@@ -14,7 +14,8 @@
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
-#include <ir/index_manager/utility/EWAHTermDocFreqs.h>
+#include <ir/index_manager/utility/Bitset.h>
+#include <ir/index_manager/utility/BitsetTermDocFreqs.h>
 #include <ir/id_manager/IDManager.h>
 
 #include <util/string/StringUtils.h>
@@ -121,13 +122,12 @@ public:
     ~InvertedIndexManager();
 
 public:
-    typedef uint64_t FilterWordT;
-    typedef EWAHBoolArray<FilterWordT> FilterBitmapT;
-    typedef EWAHTermDocFreqs<FilterWordT> FilterTermDocFreqsT;
+    typedef Bitset FilterBitmapT;
+    typedef BitsetTermDocFreqs FilterTermDocFreqsT;
 
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
+           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT>& filterBitMap);
 
     virtual bool isRealTime();
     virtual void flush(bool force = true);

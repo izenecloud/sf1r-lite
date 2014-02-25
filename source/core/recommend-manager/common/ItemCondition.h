@@ -9,7 +9,7 @@
 
 #include "RecTypes.h"
 #include <query-manager/QueryTypeDef.h> // FilteringType
-#include <ir/index_manager/utility/Bitset.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <boost/shared_ptr.hpp>
 #include <common/parsers/ConditionsTree.h>
 
@@ -27,7 +27,7 @@ struct ItemCondition
 
 
     /** bit 1 for meet condition, bit 0 for not meet condition */
-    boost::scoped_ptr<izenelib::ir::indexmanager::Bitset> pBitset_;
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap_;
 
     ItemCondition();
 

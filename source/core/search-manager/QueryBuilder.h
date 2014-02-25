@@ -88,8 +88,7 @@ public:
 
     bool prepare_filter(
         const ConditionsNode& conditionsTree_,
-        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmapx);
-
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap);
 
     /*
     *@brief Generate Filter, filter will be released by the user.

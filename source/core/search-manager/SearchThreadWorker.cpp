@@ -188,9 +188,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         AllDocumentIterator* pFilterIterator = NULL;
         if (pDelFilter)
         {
-            pFilterIdSet.reset(new InvertedIndexManager::FilterBitmapT);
-            pDelFilter->compress(*pFilterIdSet);
-            TermDocFreqs* pDelTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
+            TermDocFreqs* pDelTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pDelFilter);
             pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
         }
         else
