@@ -114,7 +114,7 @@ struct PropertyStatus
         , isAttr(false)
         , isFilter(false)
         , isTokenizer(false)
-        , weight(0)
+        , weight(1.0)
     {
     }
 
