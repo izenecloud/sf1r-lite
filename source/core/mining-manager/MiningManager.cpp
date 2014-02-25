@@ -164,6 +164,8 @@ double topAverageScore(const std::vector<ScoreDocId>& resultList)
     return sum / num;
 }
 
+const uint32_t kFuzzySearchMinLucky = 500;
+
 }
 
 namespace sf1r
@@ -2505,6 +2507,8 @@ bool MiningManager::GetSuffixMatch(
                 tokenScore.first.convertString(token, kEncodeType);
 
                 max_docs /= 2;
+                max_docs = std::max(max_docs, kFuzzySearchMinLucky);
+
                 LOG(INFO) << "try OR search again after removing one major token: "
                           << token << ", lucky: " << max_docs;
 
