@@ -2483,7 +2483,8 @@ bool MiningManager::GetSuffixMatch(
 
         if (isOrSearch)
         {
-            LOG(INFO) << "for long query or short AND result is empty, try OR search";
+            LOG(INFO) << "for long query or short AND result is empty, "
+                      << "try OR search, lucky: " << max_docs;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 useSynonym,
                 tokenParam.majorTokens,
@@ -2503,8 +2504,9 @@ bool MiningManager::GetSuffixMatch(
                 std::string token;
                 tokenScore.first.convertString(token, kEncodeType);
 
+                max_docs /= 2;
                 LOG(INFO) << "try OR search again after removing one major token: "
-                          << token;
+                          << token << ", lucky: " << max_docs;
 
                 tokenParam.minorTokens.push_back(tokenScore);
                 tokenParam.majorTokens.pop_back();
