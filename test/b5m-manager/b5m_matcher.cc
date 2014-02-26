@@ -9,6 +9,7 @@
 #include <b5m-manager/b5mp_processor2.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
+#include <b5m-manager/b5ma_scd_generator.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
@@ -286,6 +287,7 @@ int do_main(int ac, char** av)
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
+        ("b5ma-generate", "generate b5ma scd from b5mo mirror")
         ("logserver-update", "update logserver")
         ("match-test", "b5m matching test")
         ("isbn-test", "b5m isbn pid test")
@@ -1047,6 +1049,7 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         HotelProcessor processor(b5mm);
+        if(doc_limit>0) processor.SetDocLimit(doc_limit);
         if(!processor.Generate(mdb_instance))
         {
             std::cout<<"hotel generator fail"<<std::endl;
@@ -1111,6 +1114,26 @@ int do_main(int ac, char** av)
         //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
         B5mcScdGenerator generator(b5mm);
         if(!generator.Generate(mdb_instance, last_mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("b5ma-generate"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        b5mm.Show();
+
+        B5maScdGenerator generator(b5mm);
+        if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;
         }
