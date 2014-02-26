@@ -2,7 +2,7 @@
 #include "b5m_helper.h"
 #include "offer_db.h"
 using namespace sf1r::b5m;
-#define BMN_DEBUG
+//#define BMN_DEBUG
 BmnClustering::BmnClustering(const std::string& path)
 : path_(path), odb_(NULL), container_(NULL), model_regex_("[a-zA-Z\\d\\-]{3,}")
 {
@@ -15,6 +15,8 @@ BmnClustering::BmnClustering(const std::string& path)
     model_stop_set_.insert("13kim");
     model_stop_set_.insert("nike360");
     model_stop_set_.insert("8080s");
+    model_stop_set_.insert("1111");
+    model_stop_set_.insert("1212");
     AddCategoryRule("^服装服饰>男装.*$", "男装");
     AddCategoryRule("^服装服饰>女装.*$", "女装");
     AddCategoryRule("^运动户外>户外服饰.*$", "户外服饰");
@@ -34,7 +36,9 @@ BmnClustering::BmnClustering(const std::string& path)
     error_model_regex_.push_back(boost::regex("\\d{1,3}\\-\\d{1,2}0"));
     error_model_regex_.push_back(boost::regex("[a-z]*201\\d"));
     error_model_regex_.push_back(boost::regex("201\\d[a-z]*"));
+    error_model_regex_.push_back(boost::regex("200\\d[a-z]*"));
     error_model_regex_.push_back(boost::regex("[a-z]{4,}\\d"));
+    error_model_regex_.push_back(boost::regex("123\\d{0,3}"));
     std::string odb_path = path_+"/odb";
     if(!boost::filesystem::exists(odb_path))
     {
@@ -141,7 +145,7 @@ bool BmnClustering::Finish(const Func& func, int thread_num)
     func_ = func;
     if(container_!=NULL) 
     {
-        container_->Finish2(boost::bind(&BmnClustering::Calculate_, this, _1), thread_num);
+        container_->Finish(boost::bind(&BmnClustering::Calculate_, this, _1), thread_num);
         delete container_;
         container_ = NULL;
     }
@@ -198,7 +202,7 @@ void BmnClustering::Calculate_(ValueArray& va)
 #ifdef BMN_DEBUG
         //std::string str;
         //v.doc.getString("Title", str);
-        //std::cout<<"["<<i<<"]"<<str<<std::endl;
+        std::cout<<"["<<i<<"]"<<v.brand<<std::endl;
 #endif
         for(std::size_t w=0;w<v.word.size();w++)
         {
@@ -347,6 +351,11 @@ void BmnClustering::Calculate_(ValueArray& va)
         threshold.first = 0.3;
         threshold.second = 0.3;
     }
+    else if(model.length()>7)
+    {
+        threshold.first = 0.15;
+        threshold.second = 0.15;
+    }
     for(MCS::const_iterator it=mcs.begin();it!=mcs.end();++it)
     {
         const DocPair& doc_pair = it->first;
@@ -369,10 +378,14 @@ void BmnClustering::Calculate_(ValueArray& va)
         if(pricei<=0.0||pricej<=0.0) continue;
         double priceratio = std::max(pricei, pricej)/std::min(pricei, pricej);
         if(priceratio>2.0) continue;
-        if(!vi.brand.empty()&&!vj.brand.empty()&&vi.brand!=vj.brand)
+        if(vi.brand==vj.brand)
         {
-            continue;
+            mcs_ratio *= 1.3;
         }
+        //if(!vi.brand.empty()&&!vj.brand.empty()&&vi.brand!=vj.brand)
+        //{
+        //    continue;
+        //}
         std::size_t i=0;
         std::size_t j=0;
         while(i<vi.keywords.size()&&j<vj.keywords.size())
