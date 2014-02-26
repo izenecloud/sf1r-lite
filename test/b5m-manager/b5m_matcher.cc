@@ -1,5 +1,5 @@
-#include <b5m-manager/product_matcher.h>
-#include <b5m-manager/product_discover.h>
+#include <types.h>
+#include <boost/network/protocol/http/server.hpp>
 #include <b5m-manager/category_mapper.h>
 #include <b5m-manager/b5mo_processor.h>
 #include <b5m-manager/image_server_client.h>
@@ -12,20 +12,23 @@
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
-#include <b5m-manager/brand_db.h>
 #include <b5m-manager/comment_db.h>
 #include <b5m-manager/psm_indexer.h>
+#include <b5m-manager/hotel_processor.h>
+#include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 #include "../TestResources.h"
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/trie_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
 #include <stack>
-#include <boost/network/protocol/http/server.hpp>
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 
 
 using namespace sf1r;
@@ -277,6 +280,7 @@ int do_main(int ac, char** av)
         ("ticket-generate", "do directly ticket matching")
         ("tuan-generate", "do directly tuan matching")
         ("tour-generate", "do directly tour matching")
+        ("hotel-generate", "do hotel matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
@@ -289,7 +293,8 @@ int do_main(int ac, char** av)
         ("search-keyword", "get search keywords")
         ("scd-merge", "merge scd")
         ("imc", po::value<uint32_t>(), "specify in memory doc count of scd merger")
-        ("mdb-instance", po::value<std::string>(), "specify mdb instance")
+        ("doc-limit", po::value<std::size_t>(), "specify doc limit number")
+        ("mdb-instance,M", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
         ("thread-num", po::value<int>(), "specify thread num")
@@ -354,7 +359,6 @@ int do_main(int ac, char** av)
     std::string output;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
-    boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<CommentDb> cdb;
 
     boost::shared_ptr<sf1r::RpcServerConnectionConfig> imgserver_config;
@@ -376,6 +380,7 @@ int do_main(int ac, char** av)
     uint16_t max_depth = 0;
     int thread_num = 1;
     uint32_t imc = 0;
+    std::size_t doc_limit=0;
     std::string buffer_size;
     std::string sorter_bin;
     if (vm.count("mdb-instance")) {
@@ -441,11 +446,6 @@ int do_main(int ac, char** av)
         std::string odb_path = vm["odb"].as<std::string>();
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
-    } 
-    if (vm.count("bdb")) {
-        std::string bdb_path = vm["bdb"].as<std::string>();
-        std::cout << "bdb path: " << bdb_path <<std::endl;
-        bdb.reset(new BrandDb(bdb_path));
     } 
     if (vm.count("cdb")) {
         std::string cdb_path = vm["cdb"].as<std::string>();
@@ -543,6 +543,11 @@ int do_main(int ac, char** av)
     {
         imc = vm["imc"].as<uint32_t>();
         LOG(INFO)<<"set imc to "<<imc<<std::endl;
+    }
+    if(vm.count("doc-limit"))
+    {
+        doc_limit = vm["doc-limit"].as<std::size_t>();
+        LOG(INFO)<<"set doc-limit to "<<doc_limit<<std::endl;
     }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
@@ -1013,6 +1018,26 @@ int do_main(int ac, char** av)
         if(!processor.Generate(mdb_instance))
         {
             std::cout<<"tour generator fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("hotel-generate"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        HotelProcessor processor(b5mm);
+        if(doc_limit>0) processor.SetDocLimit(doc_limit);
+        if(!processor.Generate(mdb_instance))
+        {
+            std::cout<<"hotel generator fail"<<std::endl;
             return EXIT_FAILURE;
         }
     }
