@@ -648,23 +648,23 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
             u_scd_list.push_back(scd);
         }
     }
-    //if(!r_scd_list.empty()||!d_scd_list.empty())
-    //{
-    //    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-    //    ScdDocProcessor sd_processor(p, 1);
-    //    sd_processor.AddInput(r_scd_list);
-    //    sd_processor.AddInput(d_scd_list);
-    //    sd_processor.SetOutput(writer_);
-    //    sd_processor.Process();
-    //}
-    //if(!u_scd_list.empty())
-    //{
-    //    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
-    //    ScdDocProcessor sd_processor(p, thread_num);
-    //    sd_processor.AddInput(u_scd_list);
-    //    sd_processor.SetOutput(writer_);
-    //    sd_processor.Process();
-    //}
+    if(!r_scd_list.empty()||!d_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, 1);
+        sd_processor.AddInput(r_scd_list);
+        sd_processor.AddInput(d_scd_list);
+        sd_processor.SetOutput(writer_);
+        sd_processor.Process();
+    }
+    if(!u_scd_list.empty())
+    {
+        ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1);
+        ScdDocProcessor sd_processor(p, thread_num);
+        sd_processor.AddInput(u_scd_list);
+        sd_processor.SetOutput(writer_);
+        sd_processor.Process();
+    }
     matcher_->PendingFinish(boost::bind(&B5moProcessor::PendingProcess_, this, _1), thread_num);
     LOG(INFO)<<"start to close scd writer"<<std::endl;
     writer_->Close();

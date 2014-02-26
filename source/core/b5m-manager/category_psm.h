@@ -165,9 +165,15 @@ public:
             }
             else
             {
-                bmn_->Append(doc, brands, ckeywords);
-                product.type = Product::PENDING;
-                return PENDING;
+                if(bmn_->Append(doc, brands, ckeywords))
+                {
+                    product.type = Product::PENDING;
+                    return PENDING;
+                }
+                else
+                {
+                    return NO;
+                }
             }
         }
 
