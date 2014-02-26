@@ -2529,6 +2529,8 @@ bool MiningManager::GetSuffixMatch(
             }
         }
 
+        distSearchInfo.majorTokenNum_ = tokenParam.majorTokens.size();
+
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
             std::vector<uint32_t> _docIdList;
