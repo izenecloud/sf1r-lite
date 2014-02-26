@@ -30,9 +30,11 @@ struct ProductRankParam
 
     SearchingMode::SearchingModeType searchMode_;
 
-    static const std::size_t kMaxDocNum = 4000;
-
-    ProductRankParam(
+	//debug wang,lele
+    //static const std::size_t kMaxDocNum = 4000;
+    static const size_t kMaxDocNum;
+    
+	ProductRankParam(
         std::vector<docid_t>& docIds,
         std::vector<score_t>& topKScores,
         bool isRandomRank,

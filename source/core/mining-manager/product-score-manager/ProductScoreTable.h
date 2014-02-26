@@ -19,9 +19,15 @@ namespace sf1r
 class ProductScoreTable : public PropSharedLock
 {
 public:
+    ProductScoreTable();
+
     ProductScoreTable(
         const std::string& dirPath,
         const std::string& scoreTypeName);
+
+    ProductScoreTable& operator=(const ProductScoreTable& other);
+
+    void swap(ProductScoreTable& other);
 
     bool open();
     bool flush();
@@ -50,9 +56,9 @@ public:
     score_t getScoreNoLock(docid_t docId) const;
 
 private:
-    const std::string dirPath_;
+    std::string dirPath_;
 
-    const std::string scoreTypeName_;
+    std::string scoreTypeName_;
 
     std::vector<score_t> scores_;
 };

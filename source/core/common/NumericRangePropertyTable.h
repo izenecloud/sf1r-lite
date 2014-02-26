@@ -221,7 +221,6 @@ public:
         return true;
     }
 
-
     bool getValue(std::size_t pos, value_type& value, bool isLock = true) const
     {
         ScopedReadBoolLock lock(mutex_, isLock);

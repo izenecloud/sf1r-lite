@@ -58,7 +58,7 @@ void PropIdTableTestFixture<valueid_t, index_t>::appendIdList(const std::string&
     InputIdList inputIdList;
     split_str_to_items(idListStr, inputIdList);
 
-    propIdTable_.appendIdList(inputIdList);
+    propIdTable_.setIdList(inputIdTable_.size(), inputIdList);
     inputIdTable_.push_back(inputIdList);
 }
 
@@ -119,7 +119,7 @@ void PropIdTableTestFixture<valueid_t, index_t>::checkOverFlow()
         checkOverFlow_(*it);
     }
 
-    propIdTable_.appendIdList(inputIdList);
+    propIdTable_.setIdList(inputIdTable_.size(), inputIdList);
     inputIdTable_.push_back(inputIdList);
 
     checkIdList();
@@ -135,7 +135,9 @@ void PropIdTableTestFixture<valueid_t, index_t>::checkOverFlow_(valueid_t valueI
 
     InputIdList goldList;
 
-    BOOST_CHECK_THROW(propIdTable_.appendIdList(inputIdList), ExpectException);
+    BOOST_CHECK_THROW(propIdTable_.setIdList(inputIdTable_.size(),
+                                             inputIdList),
+                      ExpectException);
     inputIdTable_.push_back(goldList);
 }
 

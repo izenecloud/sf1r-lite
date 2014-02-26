@@ -49,9 +49,12 @@ public:
     typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-
+    PropValueTable();
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
+
+    PropValueTable& operator=(const PropValueTable& other);
+    void swap(PropValueTable& other);
 
     bool open();
     bool flush();
@@ -61,13 +64,15 @@ public:
      */
     void clear();
 
+    const std::string& dirPath() const { return dirPath_; }
+
     const std::string& propName() const { return propName_; }
 
-    std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
+    std::size_t docIdNum() const { return valueIdTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendPropIdList(const std::vector<pvid_t>& inputIdList);
+    void setPropIdList(docid_t docId, const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
 
@@ -177,10 +182,10 @@ private:
 
 private:
     /** directory path */
-    const std::string dirPath_;
+    std::string dirPath_;
 
     /** property name */
-    const std::string propName_;
+    std::string propName_;
 
     /** mapping from value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;

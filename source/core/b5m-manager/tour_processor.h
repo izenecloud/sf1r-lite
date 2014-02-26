@@ -19,15 +19,33 @@ const static std::string SCD_DOC_ID		= "DOCID";
 const static std::string SCD_TIME_PLAN	= "TimePlan";
 const static std::string SCD_UUID		= "uuid";
 const static std::string SCD_START_DATE	= "StartDate";
-class TourProcessor{
-	typedef izenelib::util::UString UString;
 
-	typedef std::pair<std::string, std::string> BufferKey;
+class TourProcessor{
+	
+	struct BufferValueItem
+	{
+		std::string from;
+		std::string to;
+		std::pair<uint32_t, uint32_t> days;
+		double price;
+		ScdDocument doc;
+		bool bcluster;
+		bool operator<(const BufferValueItem& another) const
+		{
+			return price < another.price ? true:false;
+		}
+	};
+
+	typedef izenelib::util::UString UString;
+	typedef std::pair<std::string, std::string> BufferKey;	
+	typedef std::vector<BufferValueItem> BufferValue;
+	typedef boost::unordered_set<std::string> Set;
+	typedef BufferValue Group;
 
 	struct UnionBufferKey
 	{
 		std::vector<BufferKey> union_key_;
-
+		
 		bool operator<(const UnionBufferKey&key)const 
 		{
 			boost::unordered_set<BufferKey> key_set;
@@ -59,26 +77,7 @@ class TourProcessor{
 			return union_key_.size();
 		}
 	};
-
-	struct BufferValueItem
-	{
-		std::string from;
-		std::string to;
-		std::pair<uint32_t, uint32_t> days;
-		std::string start_date;
-		double price;
-		ScdDocument doc;
-		bool bcluster;
-		bool operator<(const BufferValueItem& another) const
-		{
-			return days < another.days ? true:false;
-		}
-	};
-
-	typedef std::vector<BufferValueItem> BufferValue;
 	typedef std::map<UnionBufferKey, BufferValue> Buffer;
-	typedef boost::unordered_set<std::string> Set;
-	typedef BufferValue Group;
 
 public:
 	TourProcessor(const B5mM&b5mm);
@@ -86,7 +85,6 @@ public:
 	bool Generate(const std::string& mdb_instance);
 
 private:
-
 	void Insert_(ScdDocument& doc);
 	std::pair<uint32_t, uint32_t> ParseDays_(const std::string& sdays) const;
 	void Finish_();
@@ -109,5 +107,3 @@ private:
 NS_SF1R_B5M_END
 
 #endif
-
-

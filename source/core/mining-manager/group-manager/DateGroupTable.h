@@ -42,8 +42,12 @@ public:
     typedef PropIdTable<date_t, uint32_t> DateValueTable;
     typedef DateValueTable::PropIdList DateValueList;
 
+    DateGroupTable();
     DateGroupTable(const std::string& dirPath, const std::string& propName);
     DateGroupTable(const DateGroupTable& table);
+
+    DateGroupTable& operator=(const DateGroupTable& other);
+    void swap(DateGroupTable& other);
 
     bool open();
     bool flush();
@@ -53,13 +57,15 @@ public:
      */
     void clear();
 
+    const std::string& dirPath() const { return dirPath_; }
+
     const std::string& propName() const { return propName_; }
 
-    std::size_t docIdNum() const { return dateValueTable_.indexTable_.size(); }
+    std::size_t docIdNum() const { return dateValueTable_.size(); }
 
-    void reserveDocIdNum(std::size_t num);
+    void resize(std::size_t num);
 
-    void appendDateSet(const DateSet& dateSet);
+    void setDateSet(docid_t docId, const DateSet& dateSet);
 
     /**
      * @attention before calling below public functions,
@@ -73,10 +79,10 @@ public:
 
 private:
     /** directory path */
-    const std::string dirPath_;
+    std::string dirPath_;
 
     /** property name */
-    const std::string propName_;
+    std::string propName_;
 
     /** mapping from doc id to a list of date values */
     DateValueTable dateValueTable_;

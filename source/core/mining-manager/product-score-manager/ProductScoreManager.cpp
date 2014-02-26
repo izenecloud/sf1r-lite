@@ -9,6 +9,7 @@
 #include <configuration-manager/MiningConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <common/SearchCache.h>
+#include <common/TableSwapper.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
@@ -179,8 +180,8 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
               << ", start doc id: " << startDocId
               << ", end doc id: " << endDocId;
 
-    ProductScoreTable* scoreTable = scoreTableMap_[type];
-    scoreTable->resize(endDocId + 1);
+    TableSwapper<ProductScoreTable> swapper(*scoreTableMap_[type]);
+    swapper.copy(endDocId + 1);
 
     for (docid_t docId = startDocId; docId <= endDocId; ++docId)
     {
@@ -191,18 +192,19 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
         }
 
         score_t score = scorer->score(docId);
-        scoreTable->setScore(docId, score);
+        swapper.writer.setScore(docId, score);
     }
     std::cout << "\rbuilding score for doc id: " << endDocId
               << "\t" << std::endl;
 
-    if (!scoreTable->flush())
+    if (!swapper.writer.flush())
     {
         LOG(ERROR) << "ProductScoreTable::flush() failed, score type: "
                    << typeName;
         return false;
     }
 
+    swapper.swap();
     return true;
 }
 

@@ -132,6 +132,9 @@
 
 namespace
 {
+const izenelib::util::UString::EncodingType kEncodeType =
+    izenelib::util::UString::UTF_8;
+
 const std::string kTopLabelPropName = "Category";
 const size_t kTopLabelDocNum = 1000;
 const size_t kTopLabelCateNum = 4;
@@ -143,6 +146,25 @@ double elapsedFromLast(izenelib::util::ClockTimer& clock, double& lastSec)
     lastSec = curSec;
     return result;
 }
+
+typedef std::pair<double, uint32_t> ScoreDocId;
+const size_t kTopAverageNum = 10;
+
+double topAverageScore(const std::vector<ScoreDocId>& resultList)
+{
+    size_t num = std::min(kTopAverageNum, resultList.size());
+    if (num == 0)
+        return 0;
+
+    double sum = 0;
+    for (size_t i = 0; i < num; ++i)
+    {
+        sum += resultList[i].first;
+    }
+    return sum / num;
+}
+
+const uint32_t kFuzzySearchMinLucky = 500;
 
 }
 
@@ -2463,7 +2485,8 @@ bool MiningManager::GetSuffixMatch(
 
         if (isOrSearch)
         {
-            LOG(INFO) << "for long query or short AND result is empty, try OR search";
+            LOG(INFO) << "for long query or short AND result is empty, "
+                      << "try OR search, lucky: " << max_docs;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 useSynonym,
                 tokenParam.majorTokens,
@@ -2475,7 +2498,38 @@ bool MiningManager::GetSuffixMatch(
                 actionOperation.actionItem_.groupParam_,
                 res_list,
                 tokenParam.rankBoundary);
+
+            while (res_list.empty() && !tokenParam.majorTokens.empty())
+            {
+                const ProductTokenParam::TokenScore& tokenScore(
+                    tokenParam.majorTokens.back());
+                std::string token;
+                tokenScore.first.convertString(token, kEncodeType);
+
+                max_docs /= 2;
+                max_docs = std::max(max_docs, kFuzzySearchMinLucky);
+
+                LOG(INFO) << "try OR search again after removing one major token: "
+                          << token << ", lucky: " << max_docs;
+
+                tokenParam.minorTokens.push_back(tokenScore);
+                tokenParam.majorTokens.pop_back();
+
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    useSynonym,
+                    tokenParam.majorTokens,
+                    tokenParam.minorTokens,
+                    search_in_properties,
+                    max_docs,
+                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                    filter_param,
+                    actionOperation.actionItem_.groupParam_,
+                    res_list,
+                    tokenParam.rankBoundary);
+            }
         }
+
+        distSearchInfo.majorTokenNum_ = tokenParam.majorTokens.size();
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -2512,6 +2566,12 @@ bool MiningManager::GetSuffixMatch(
         }
 
         suffixMatchTime = elapsedFromLast(clock, lastSec);
+
+        if (!res_list.empty())
+        {
+            LOG(INFO) << "average score of fuzzy search top results: "
+                      << topAverageScore(res_list);
+        }
 
         searchManager_->fuzzySearchRanker_.rankByProductScore(
             actionOperation.actionItem_, res_list, isCompare);
