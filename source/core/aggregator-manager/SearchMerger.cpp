@@ -45,9 +45,16 @@ static void emptyWorkerResult(KeywordSearchResult& wresult)
     wresult.topKRankScoreList_.clear();
     wresult.topKCustomRankScoreList_.clear();
     wresult.pageOffsetList_.clear();
-    wresult.fullTextOfDocumentInPage_.clear();
-    wresult.snippetTextOfDocumentInPage_.clear();
-    wresult.rawTextOfSummaryInPage_.clear();
+
+    for(size_t i = 0; i < wresult.fullTextOfDocumentInPage_.size(); ++i)
+    {
+        wresult.fullTextOfDocumentInPage_[i].clear();
+    }
+    for(size_t i = 0; i < wresult.snippetTextOfDocumentInPage_.size(); ++i)
+        wresult.snippetTextOfDocumentInPage_[i].clear();
+    for(size_t i = 0; i < wresult.rawTextOfSummaryInPage_.size(); ++i)
+        wresult.rawTextOfSummaryInPage_[i].clear();
+
     wresult.numberOfDuplicatedDocs_.clear();
     wresult.numberOfSimilarDocs_.clear();
     wresult.docCategories_.clear();
