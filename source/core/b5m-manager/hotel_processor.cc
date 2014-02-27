@@ -775,6 +775,36 @@ void HotelProcessor::GenP_(const std::vector<Document>& docs, Document& pdoc)
             break;
         }
     }
+    int64_t spread=0;
+    bool spread_set = false;
+    for(std::size_t i=0;i<docs.size();i++)
+    {
+        std::string sspread;
+        docs[i].getString("Spread", sspread);
+        if(!sspread.empty())
+        {
+            try {
+                int32_t tspread = boost::lexical_cast<int64_t>(sspread);
+                if(!spread_set)
+                {
+                    spread = tspread;
+                    spread_set = true;
+                }
+                else
+                {
+                    if(tspread>spread) spread = tspread;
+                }
+            }
+            catch(std::exception& ex)
+            {
+                LOG(ERROR)<<"parser spread value error {"<<sspread<<"}"<<std::endl;
+            }
+        }
+    }
+    if(spread_set)
+    {
+        pdoc.property("Spread") = spread;
+    }
     pdoc.eraseProperty("uuid");
     pdoc.property("itemcount") = (int64_t)(docs.size());
 }
