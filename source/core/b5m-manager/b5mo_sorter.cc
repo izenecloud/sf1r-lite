@@ -56,7 +56,38 @@ bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
     std::string sort_bin = sorter_bin_;
     if(sort_bin.empty()) sort_bin = "sort";
     LOG(INFO)<<"sorter bin : "<<sort_bin<<std::endl;
-    std::string cmd = sort_bin+" --stable --field-separator='\t' -k1,1 --buffer-size="+buffer_size+" -T "+tmp_path+" "+sorter_path+"/block > "+sorter_path+"/block.sort";
+    std::string block_file = sorter_path+"/block";
+    if(!boost::filesystem::exists(block_file))
+    {
+        LOG(ERROR)<<"block file not exists"<<std::endl;
+        return false;
+    }
+    {
+        std::string line;
+        std::ifstream ifs(block_file.c_str());
+        static const std::size_t maxline = 10;
+        std::size_t i=0;
+        bool has_item = false;
+        while( getline(ifs, line))
+        {
+            boost::algorithm::trim(line);
+            if(!line.empty())
+            {
+                has_item = true;
+                break;
+            }
+            ++i;
+            if(i==maxline) break;
+        }
+        ifs.close();
+        if(!has_item)
+        {
+            LOG(ERROR)<<"block file empty"<<std::endl;
+            return false;
+        }
+    }
+    std::string sorted_block_file = sorter_path+"/block.sort";
+    std::string cmd = sort_bin+" --stable --field-separator='\t' -k1,1 --buffer-size="+buffer_size+" -T "+tmp_path+" "+block_file+" > "+sorted_block_file;
     LOG(INFO)<<"cmd : "<<cmd<<std::endl;
     int status = system(cmd.c_str());
     LOG(INFO)<<"cmd finished : "<<status<<std::endl;
@@ -92,7 +123,6 @@ bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
         awriter_.reset(new ScdTypeWriter(b5ma_path));
     }
     std::string mirror_file = mirror_path+"/block";
-    std::string block_file = sorter_path+"/block.sort";
     ordered_writer_.reset(new OrderedWriter(mirror_file));
     //mirror_ofs_.open(mirror_file.c_str());
     typedef PItem BufferType;
@@ -102,7 +132,7 @@ bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
     buffer->id = id++;
     B5mThreadPool<BufferType> pool(thread_num, boost::bind(&B5moSorter::OBag_, this, _1));
 
-    std::ifstream is1(block_file.c_str());
+    std::ifstream is1(sorted_block_file.c_str());
     std::ifstream is2;
     std::string line1;
     std::string line2;
