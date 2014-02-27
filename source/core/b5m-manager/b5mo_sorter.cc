@@ -85,6 +85,12 @@ bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
     std::string b5mp_path = b5mm_.b5mp_path;
     B5MHelper::PrepareEmptyDir(b5mp_path);
     pwriter_.reset(new ScdTypeWriter(b5mp_path));
+    if(b5mm_.gen_b5ma)
+    {
+        std::string b5ma_path = b5mm_.b5ma_path;
+        B5MHelper::PrepareEmptyDir(b5ma_path);
+        awriter_.reset(new ScdTypeWriter(b5ma_path));
+    }
     std::string mirror_file = mirror_path+"/block";
     std::string block_file = sorter_path+"/block.sort";
     ordered_writer_.reset(new OrderedWriter(mirror_file));

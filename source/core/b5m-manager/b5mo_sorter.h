@@ -156,6 +156,7 @@ private:
     uint32_t mcount_;
     uint32_t index_;
     std::string buffer_size_;
+    bool gen_b5ma_;
     //boost::atomic<uint32_t> last_pitemid_;
     //uint32_t last_pitemid_;
     std::vector<Value> buffer_;
@@ -163,6 +164,7 @@ private:
     //std::ofstream mirror_ofs_;
     boost::shared_ptr<OrderedWriter> ordered_writer_;
     boost::shared_ptr<ScdTypeWriter> pwriter_;
+    boost::shared_ptr<ScdTypeWriter> awriter_;
     B5mpDocGenerator pgenerator_;
     Json::Reader json_reader_;
     MutexType mutex_;
