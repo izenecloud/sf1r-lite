@@ -79,13 +79,14 @@ public:
     };
 
     struct PItem{
-        PItem():id(0), pdoc(NOT_SCD)
+        PItem():id(0), pdoc(NOT_SCD), adoc(NOT_SCD)
         {
         }
         uint32_t id;
         std::vector<Value> odocs;
         std::vector<ScdDocument> diff_odocs;
         ScdDocument pdoc;
+        ScdDocument adoc;
     };
     B5moSorter(const std::string& m, uint32_t mcount=100000);
 
@@ -145,6 +146,7 @@ private:
     static void SetAttributes_(std::vector<Value>& values, const ScdDocument& pdoc);
     bool GenMirrorBlock_(const std::string& mirror_path);
     bool GenMBlock_();
+    void GenOutputPDoc_(ScdDocument& pdoc, const ScdDocument& prev_pdoc, uint32_t min_ic=1);
     void WritePItem_(PItem& pitem);
 
 private:
@@ -156,7 +158,6 @@ private:
     uint32_t mcount_;
     uint32_t index_;
     std::string buffer_size_;
-    bool gen_b5ma_;
     //boost::atomic<uint32_t> last_pitemid_;
     //uint32_t last_pitemid_;
     std::vector<Value> buffer_;

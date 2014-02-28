@@ -298,6 +298,57 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
     ofs.close();
 }
 
+void B5moSorter::GenOutputPDoc_(ScdDocument& pdoc, const ScdDocument& prev_pdoc, uint32_t min_ic)
+{
+    if(pdoc.type==NOT_SCD)
+    {
+    }
+    else if(pdoc.type==DELETE_SCD)
+    {
+    }
+    else
+    {
+        int64_t itemcount=0;
+        pdoc.getProperty("itemcount", itemcount);
+        int64_t prev_itemcount=0;
+        prev_pdoc.getProperty("itemcount", prev_itemcount);
+        if(itemcount>=min_ic)
+        {
+            if(prev_itemcount>=min_ic)
+            {
+                pdoc.diff(prev_pdoc);
+            }
+        }
+        else
+        {
+            if(prev_itemcount>=min_ic)
+            {
+                pdoc.type = DELETE_SCD;
+            }
+        }
+    }
+    if(pdoc.type!=NOT_SCD&&pdoc.type!=DELETE_SCD)
+    {
+        SCD_TYPE ptype = pdoc.type;
+        if(pdoc.getPropertySize()<2)
+        {
+            ptype = NOT_SCD;
+        }
+        else if(pdoc.getPropertySize()==2)//DATE only update
+        {
+            if(pdoc.hasProperty("DATE"))
+            {
+                ptype = NOT_SCD;
+            }
+        }
+        pdoc.type = ptype;
+    }
+    if(pdoc.type==DELETE_SCD)
+    {
+        pdoc.clearExceptDOCID();
+    }
+}
+
 void B5moSorter::OBag_(PItem& pitem)
 {
 
@@ -383,34 +434,41 @@ void B5moSorter::OBag_(PItem& pitem)
             }
         }
         pitem.odocs = ovalues;
-        if(pdoc.type==NOT_SCD)
+        if(awriter_)
         {
+            ScdDocument& adoc = pitem.adoc;
+            adoc = pdoc;
+            GenOutputPDoc_(adoc, prev_pdoc, 4);
         }
-        else if(pdoc.type==DELETE_SCD)
-        {
-        }
-        else
-        {
-            int64_t prev_itemcount=0;
-            prev_pdoc.getProperty("itemcount", prev_itemcount);
-            if(prev_itemcount>1)
-            {
-                pdoc.diff(prev_pdoc);
-            }
-            SCD_TYPE ptype = pdoc.type;
-            if(pdoc.getPropertySize()<2)
-            {
-                ptype = NOT_SCD;
-            }
-            else if(pdoc.getPropertySize()==2)//DATE only update
-            {
-                if(pdoc.hasProperty("DATE"))
-                {
-                    ptype = NOT_SCD;
-                }
-            }
-            pdoc.type = ptype;
-        }
+        GenOutputPDoc_(pdoc, prev_pdoc, 2);
+        //if(pdoc.type==NOT_SCD)
+        //{
+        //}
+        //else if(pdoc.type==DELETE_SCD)
+        //{
+        //}
+        //else
+        //{
+        //    int64_t prev_itemcount=0;
+        //    prev_pdoc.getProperty("itemcount", prev_itemcount);
+        //    if(prev_itemcount>1)
+        //    {
+        //        pdoc.diff(prev_pdoc);
+        //    }
+        //    SCD_TYPE ptype = pdoc.type;
+        //    if(pdoc.getPropertySize()<2)
+        //    {
+        //        ptype = NOT_SCD;
+        //    }
+        //    else if(pdoc.getPropertySize()==2)//DATE only update
+        //    {
+        //        if(pdoc.hasProperty("DATE"))
+        //        {
+        //            ptype = NOT_SCD;
+        //        }
+        //    }
+        //    pdoc.type = ptype;
+        //}
     }
     for(uint32_t i=0;i<pitem.odocs.size();i++)
     {
@@ -540,6 +598,7 @@ void B5moSorter::WritePItem_(PItem& pitem)
     ordered_writer_->Insert(pitem.id, mtexts);
     typedef std::pair<std::string, SCD_TYPE> WriteDoc;
     std::vector<WriteDoc> write_docs;
+    std::vector<WriteDoc> awrite_docs;
     uint32_t odoc_count=0;
     uint32_t odoc_precount=0;
     for(uint32_t i=0;i<pitem.odocs.size();i++)
@@ -577,34 +636,53 @@ void B5moSorter::WritePItem_(PItem& pitem)
             //pwriter_->Append(odoc);
         }
     }
-    if(odoc_count>1)
+    if(pitem.pdoc.type!=NOT_SCD)
     {
-        if(pitem.pdoc.type!=NOT_SCD)
-        {
-            std::string doctext;
-            ScdWriter::DocToString(pitem.pdoc, doctext);
-            write_docs.push_back(std::make_pair(doctext, pitem.pdoc.type));
-            //LOG(INFO)<<"output P "<<pitem.pdoc.property("DOCID")<<std::endl;
-            //boost::unique_lock<MutexType> lock(mutex_);
-            //pwriter_->Append(pitem.pdoc);
-        }
-    }
-    else if(odoc_precount>1&&pitem.pdoc.type!=NOT_SCD)
-    {
-        pitem.pdoc.type = DELETE_SCD;
-        pitem.pdoc.clearExceptDOCID();
         std::string doctext;
         ScdWriter::DocToString(pitem.pdoc, doctext);
         write_docs.push_back(std::make_pair(doctext, pitem.pdoc.type));
-        //LOG(INFO)<<"output PD "<<pitem.pdoc.property("DOCID")<<std::endl;
-        //boost::unique_lock<MutexType> lock(mutex_);
-        //pwriter_->Append(pitem.pdoc);
     }
+    if(pitem.adoc.type!=NOT_SCD)
+    {
+        std::string doctext;
+        ScdWriter::DocToString(pitem.adoc, doctext);
+        awrite_docs.push_back(std::make_pair(doctext, pitem.adoc.type));
+    }
+    //if(odoc_count>1)
+    //{
+    //    if(pitem.pdoc.type!=NOT_SCD)
+    //    {
+    //        std::string doctext;
+    //        ScdWriter::DocToString(pitem.pdoc, doctext);
+    //        write_docs.push_back(std::make_pair(doctext, pitem.pdoc.type));
+    //        //LOG(INFO)<<"output P "<<pitem.pdoc.property("DOCID")<<std::endl;
+    //        //boost::unique_lock<MutexType> lock(mutex_);
+    //        //pwriter_->Append(pitem.pdoc);
+    //    }
+    //}
+    //else if(odoc_precount>1&&pitem.pdoc.type!=NOT_SCD)
+    //{
+    //    pitem.pdoc.type = DELETE_SCD;
+    //    pitem.pdoc.clearExceptDOCID();
+    //    std::string doctext;
+    //    ScdWriter::DocToString(pitem.pdoc, doctext);
+    //    write_docs.push_back(std::make_pair(doctext, pitem.pdoc.type));
+    //    //LOG(INFO)<<"output PD "<<pitem.pdoc.property("DOCID")<<std::endl;
+    //    //boost::unique_lock<MutexType> lock(mutex_);
+    //    //pwriter_->Append(pitem.pdoc);
+    //}
     {
         boost::unique_lock<MutexType> lock(mutex_);
         for(uint32_t i=0;i<write_docs.size();i++)
         {
             pwriter_->Append(write_docs[i].first, write_docs[i].second);
+        }
+        if(awriter_)
+        {
+            for(uint32_t i=0;i<awrite_docs.size();i++)
+            {
+                awriter_->Append(awrite_docs[i].first, awrite_docs[i].second);
+            }
         }
     }
 }
