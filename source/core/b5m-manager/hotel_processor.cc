@@ -66,8 +66,7 @@ bool HotelProcessor::Generate(const std::string& mdb_instance)
     Reader reader(writer_->GetPath());
     reader.Open();
     std::size_t key=0;
-    Document doc;
-    std::vector<Document> items;
+    typedef std::vector<Document> Documents;
     std::size_t lkey=0;
     const std::string& b5mo_path = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(b5mo_path);
@@ -77,6 +76,9 @@ bool HotelProcessor::Generate(const std::string& mdb_instance)
     pwriter_.reset(new ScdWriter(b5mp_path, UPDATE_SCD));
     LOG(INFO)<<"reader size "<<reader.Count()<<std::endl;
     std::size_t p=0;
+    B5mThreadPool<Documents> pool(b5mm_.thread_num, boost::bind(&HotelProcessor::DoClustering_, this, _1));
+    Documents* docs = new Documents;
+    Document doc;
     while(reader.Next(key, doc))
     {
         ++p;
@@ -85,19 +87,24 @@ bool HotelProcessor::Generate(const std::string& mdb_instance)
             LOG(INFO)<<"Processing "<<p<<std::endl;
         }
         //if(p<310000) continue;
-        if(key!=lkey&&!items.empty())
+        if(key!=lkey&&!docs->empty())
         {
-            DoClustering_(items);
-            items.resize(0);
+            pool.schedule(docs);
+            docs = new Documents;
         }
-        items.push_back(doc);
+        docs->push_back(doc);
         lkey = key;
     }
     reader.Close();
-    if(!items.empty())
+    if(!docs->empty())
     {
-        DoClustering_(items);
+        pool.schedule(docs);
     }
+    else
+    {
+        delete docs;
+    }
+    pool.wait();
     owriter_->Close();
     pwriter_->Close();
     return true;
@@ -336,6 +343,8 @@ void HotelProcessor::DoClustering_(std::vector<Document>& docs)
     ForwardMap fmap;
     FindSimilar_(items, fmap);
     std::size_t findex=0;
+    std::vector<std::string> owrite_docs;
+    std::vector<std::string> pwrite_docs;
     for(ForwardMap::const_iterator it=fmap.begin();it!=fmap.end();++it)
     {
         std::vector<Document> docs;
@@ -345,7 +354,10 @@ void HotelProcessor::DoClustering_(std::vector<Document>& docs)
             std::size_t index = (it->second)[i];
             Item& item = items[index];
             item.doc.property("uuid") = t.doc.property("DOCID");
-            owriter_->Append(item.doc);
+            std::string doctext;
+            ScdWriter::DocToString(item.doc, doctext);
+            owrite_docs.push_back(doctext);
+            //owriter_->Append(item.doc);
             docs.push_back(item.doc);
 #ifdef HOTEL_DEBUG
             std::string name;
@@ -367,8 +379,25 @@ void HotelProcessor::DoClustering_(std::vector<Document>& docs)
         //{
         //    pwriter_->Append(pdoc);
         //}
-        pwriter_->Append(pdoc);
+        std::string doctext;
+        ScdWriter::DocToString(pdoc, doctext);
+        pwrite_docs.push_back(doctext);
+        //pwriter_->Append(pdoc);
         findex++;
+    }
+    {
+        boost::unique_lock<boost::mutex> lock(omutex_);
+        for(std::size_t i=0;i<owrite_docs.size();i++)
+        {
+            owriter_->Append(owrite_docs[i]);
+        }
+    }
+    {
+        boost::unique_lock<boost::mutex> lock(pmutex_);
+        for(std::size_t i=0;i<pwrite_docs.size();i++)
+        {
+            pwriter_->Append(pwrite_docs[i]);
+        }
     }
 #ifdef HOTEL_DEBUG
     std::cerr<<std::endl;
@@ -792,7 +821,7 @@ void HotelProcessor::GenP_(const std::vector<Document>& docs, Document& pdoc)
                 }
                 else
                 {
-                    if(tspread>spread) spread = tspread;
+                    if(tspread<spread) spread = tspread;
                 }
             }
             catch(std::exception& ex)

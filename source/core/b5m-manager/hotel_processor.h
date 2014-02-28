@@ -150,6 +150,8 @@ private:
     NoiseSet postfix_noise_;
     std::size_t postfix_index_;
     TermText term_text_;
+    boost::mutex omutex_;
+    boost::mutex pmutex_;
 
 };
 
