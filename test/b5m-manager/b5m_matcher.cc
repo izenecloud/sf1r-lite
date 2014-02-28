@@ -115,14 +115,29 @@ private:
 
 int main(int ac, char** av)
 {
+    std::string port = "18190";
     if(ac>1)
     {
-        return do_main(ac, av);
+        bool bdomain = true;
+        if(ac==3)
+        {
+            std::string f = av[1];
+            if(f=="-P")
+            {
+                port = av[2];
+                std::cerr<<"port set to "<<port<<std::endl;
+                bdomain = false;
+            }
+        }
+        if(bdomain)
+        {
+            return do_main(ac, av);
+        }
     }
     std::string program_path(av[0]);
 
     ServerHandler handler(program_path);
-    Server server("0.0.0.0", "18190", handler);
+    Server server("0.0.0.0", port, handler);
     static const uint32_t thread_count = 2;
     std::vector<boost::thread*> threads;
     for(uint32_t i=0;i<thread_count;i++)
