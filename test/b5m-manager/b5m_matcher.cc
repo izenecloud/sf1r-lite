@@ -1033,6 +1033,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
             return EXIT_FAILURE;
         }
+        b5mm.Show();
         HotelProcessor processor(b5mm);
         if(doc_limit>0) processor.SetDocLimit(doc_limit);
         if(!processor.Generate(mdb_instance))

@@ -784,6 +784,7 @@ void HotelProcessor::ProcessDoc_(ScdDocument& doc)
     //if(img.empty()) return;
     std::size_t key=izenelib::util::HashFunction<std::string>::generateHash64(city);
     const Document& d = doc;
+    boost::unique_lock<boost::mutex> lock(omutex_);
     writer_->Append(key, d);
 }
 
