@@ -7,7 +7,7 @@
 NS_SF1R_B5M_BEGIN
 struct B5mM
 {
-    B5mM(): mode(0), cmode(-1), thread_num(1)
+    B5mM(): mode(0), cmode(-1), thread_num(1), gen_b5ma(false)
     {
     }
     B5mM(const std::string& m)
@@ -80,6 +80,7 @@ struct B5mM
         SetValue_(config["thread_num"], thread_num);
         SetValue_(config["buffer_size"], buffer_size);
         SetValue_(config["sorter_bin"], sorter_bin);
+        SetValue_(config["gen_b5ma"], gen_b5ma);
         return true;
     }
     void Gen()
@@ -95,12 +96,14 @@ struct B5mM
         std::cerr<<"thread_num: "<<thread_num<<std::endl;
         std::cerr<<"b5mo_path: "<<b5mo_path<<std::endl;
         std::cerr<<"b5mp_path: "<<b5mp_path<<std::endl;
+        std::cerr<<"b5ma_path: "<<b5ma_path<<std::endl;
         std::cerr<<"b5mc_path: "<<b5mc_path<<std::endl;
         std::cerr<<"scd_path: "<<scd_path<<std::endl;
         std::cerr<<"comment_scd_path: "<<comment_scd_path<<std::endl;
         std::cerr<<"knowledge: "<<knowledge<<std::endl;
         std::cerr<<"addr_knowledge: "<<addr_knowledge<<std::endl;
         std::cerr<<"cma_path: "<<cma_path<<std::endl;
+        std::cerr<<"gen_b5ma: "<<gen_b5ma<<std::endl;
         std::cerr<<"mobile_source: "<<mobile_source<<std::endl;
         std::cerr<<"human_match: "<<human_match<<std::endl;
         std::cerr<<"buffer_size: "<<buffer_size<<std::endl;
@@ -118,6 +121,7 @@ struct B5mM
     int mode;
     int cmode;
     int thread_num;
+    bool gen_b5ma;
     std::string mobile_source;
     std::string human_match;
     std::string knowledge;
@@ -152,6 +156,7 @@ private:
         {
             ts = boost::filesystem::path(m).parent_path().filename().string();
         }
+        gen_b5ma = false;
     }
 
 };

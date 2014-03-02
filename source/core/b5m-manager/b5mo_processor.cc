@@ -457,6 +457,10 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
         bfs::remove_all(odb_path);
     }
     std::string psm_path = B5MHelper::GetPsmPath(mdb_instance);
+    if(bfs::exists(psm_path))
+    {
+        bfs::remove_all(psm_path);
+    }
     if(!last_mdb_instance.empty())
     {
         std::string last_odb_path = B5MHelper::GetOdbPath(last_mdb_instance);

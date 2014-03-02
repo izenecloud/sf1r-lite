@@ -29,6 +29,8 @@
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 
 
 using namespace sf1r;
@@ -115,14 +117,29 @@ private:
 
 int main(int ac, char** av)
 {
+    std::string port = "18190";
     if(ac>1)
     {
-        return do_main(ac, av);
+        bool bdomain = true;
+        if(ac==3)
+        {
+            std::string f = av[1];
+            if(f=="-P")
+            {
+                port = av[2];
+                std::cerr<<"port set to "<<port<<std::endl;
+                bdomain = false;
+            }
+        }
+        if(bdomain)
+        {
+            return do_main(ac, av);
+        }
     }
     std::string program_path(av[0]);
 
     ServerHandler handler(program_path);
-    Server server("0.0.0.0", "18190", handler);
+    Server server("0.0.0.0", port, handler);
     static const uint32_t thread_count = 2;
     std::vector<boost::thread*> threads;
     for(uint32_t i=0;i<thread_count;i++)
@@ -1048,6 +1065,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
             return EXIT_FAILURE;
         }
+        b5mm.Show();
         HotelProcessor processor(b5mm);
         if(doc_limit>0) processor.SetDocLimit(doc_limit);
         if(!processor.Generate(mdb_instance))

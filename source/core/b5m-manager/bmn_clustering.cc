@@ -526,7 +526,7 @@ void BmnClustering::Output_(const Value& v) const
     if(v.gid>0)
     {
         std::stringstream ss;
-        ss<<"http://www.b5m.com/"<<v.category<<"/"<<v.brand<<"/"<<v.model<<"/"<<v.gid;
+        ss<<"http://www.b5m.com/"<<v.category<<"/"<<v.model<<"/"<<v.gid;
         std::string url = ss.str();
         std::string pid = B5MHelper::GetPidByUrl(url);
         doc.property("uuid") = str_to_propstr(pid);

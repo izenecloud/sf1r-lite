@@ -62,7 +62,7 @@ public:
                   doc_iter!= parser.end(); ++doc_iter, ++n)
                 {
                     ++p;
-                    if(limit_>0&&p>limit_) break;
+                    if(limit_>0&&p>=limit_) break;
                     if(n%debug_count_==0)
                     {
                         LOG(INFO)<<"Find Documents "<<n<<std::endl;
