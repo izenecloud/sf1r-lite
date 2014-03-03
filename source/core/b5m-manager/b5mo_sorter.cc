@@ -300,18 +300,23 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
 
 void B5moSorter::GenOutputPDoc_(ScdDocument& pdoc, const ScdDocument& prev_pdoc, uint32_t min_ic)
 {
+    int64_t itemcount=0;
+    pdoc.getProperty("itemcount", itemcount);
+    int64_t prev_itemcount=0;
+    prev_pdoc.getProperty("itemcount", prev_itemcount);
     if(pdoc.type==NOT_SCD)
     {
     }
     else if(pdoc.type==DELETE_SCD)
     {
+        //pdoc's itemcount==0
+        if(prev_itemcount<min_ic)
+        {
+            pdoc.type = NOT_SCD;
+        }
     }
     else
     {
-        int64_t itemcount=0;
-        pdoc.getProperty("itemcount", itemcount);
-        int64_t prev_itemcount=0;
-        prev_pdoc.getProperty("itemcount", prev_itemcount);
         if(itemcount>=min_ic)
         {
             if(prev_itemcount>=min_ic)

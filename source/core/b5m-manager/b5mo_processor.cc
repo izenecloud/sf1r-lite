@@ -492,7 +492,14 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
     {
         boost::filesystem::create_directories(psm_path);
     }
-    matcher_->OpenPsm(psm_path);
+    if(!knowledge.empty())
+    {
+        if(!matcher_->OpenPsm(psm_path))
+        {
+            LOG(ERROR)<<"open psm error"<<std::endl;
+            return false;
+        }
+    }
     //std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
     std::string output_dir = b5mm_.b5mo_path;
     B5MHelper::PrepareEmptyDir(output_dir);

@@ -417,8 +417,15 @@ bool ProductMatcher::Open(const std::string& kpath)
 }
 bool ProductMatcher::OpenPsm(const std::string& path)
 {
-    psm_->Open(path);
-    return true;
+    if(psm_!=NULL)
+    {   
+        psm_->Open(path);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void ProductMatcher::UpdateSynonym(const std::string& dict_path)

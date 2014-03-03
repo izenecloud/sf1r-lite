@@ -729,9 +729,9 @@ void HotelProcessor::FindSimilar_(const std::vector<Item>& items, ForwardMap& fm
             const Item& item = items[v[i]];
             item.doc.getString("Address", addr_list[i]);
 #ifdef HOTEL_DEBUG
-            //std::string name;
-            //item.doc.getString("Name", name);
-            //std::cerr<<"[A"<<i<<"]"<<addr_list[i]<<"\t"<<name<<"\t"<<item.index<<std::endl;
+            std::string name;
+            item.doc.getString("Name", name);
+            std::cerr<<"[A"<<i<<"]"<<addr_list[i]<<"\t"<<name<<"\t"<<item.index<<std::endl;
 #endif
         }
         std::vector<std::pair<std::size_t, std::size_t> > r;
@@ -745,9 +745,9 @@ void HotelProcessor::FindSimilar_(const std::vector<Item>& items, ForwardMap& fm
 //            std::size_t a = v[r[i].first];
 //            std::size_t b = v[r[i].second];
 //            std::size_t t = a;
-//#ifdef HOTEL_DEBUG
-//            std::cerr<<"[AR"<<i<<"]"<<r[i].first<<","<<r[i].second<<std::endl;
-//#endif
+#ifdef HOTEL_DEBUG
+            std::cerr<<"[AR"<<i<<"]"<<r[i].first<<","<<r[i].second<<std::endl;
+#endif
 //            IdMap::const_iterator idit = idmap.find(a);
 //            if(idit!=idmap.end()) t = idit->second;
 //            idmap[b] = t;
