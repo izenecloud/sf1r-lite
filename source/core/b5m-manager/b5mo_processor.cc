@@ -53,8 +53,6 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
 void B5moProcessor::Process(ScdDocument& doc)
 {
     SCD_TYPE& type = doc.type;
-    static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
-    //return;
     //reset type
     if(mode_!=B5MMode::INC)
     {
@@ -129,7 +127,7 @@ void B5moProcessor::Process(ScdDocument& doc)
         }
         else
         {
-            LOG(ERROR)<<"rtype docid "<<sdocid<<" does not exist"<<std::endl;
+            //LOG(ERROR)<<"rtype docid "<<sdocid<<" does not exist"<<std::endl;
             type = NOT_SCD;
         }
     }
@@ -150,16 +148,13 @@ void B5moProcessor::Process(ScdDocument& doc)
         if(spid.empty())
         {
             type=NOT_SCD;
-            LOG(INFO)<<"DELETE pid empty : "<<sdocid<<std::endl;
+            //LOG(INFO)<<"DELETE pid empty : "<<sdocid<<std::endl;
         }
         else
         {
             doc.property("uuid") = str_to_propstr(spid);
-            if(sorter_!=NULL)
-            {
-                ScdDocument sdoc(doc, DELETE_SCD);
-                sorter_->Append(sdoc, ts_);
-            }
+            ScdDocument sdoc(doc, DELETE_SCD);
+            sorter_->Append(sdoc, ts_);
         }
     }
     if(!changed_match_.empty())
