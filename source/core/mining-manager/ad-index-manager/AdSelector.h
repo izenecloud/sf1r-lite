@@ -17,6 +17,7 @@ namespace sf1r
 {
 
 class AdClickPredictor;
+class Document;
 class DocumentManager;
 class AdRecommender;
 namespace faceted
@@ -51,7 +52,8 @@ public:
         const std::string& segments_data_path,
         const std::string& rec_data_path,
         AdClickPredictor* pad_predictor,
-        faceted::GroupManager* grp_mgr);
+        faceted::GroupManager* grp_mgr,
+        DocumentManager* doc_mgr);
     void stop();
 
     bool selectFromRecommend(const FeatureT& user_info, std::size_t max_return,
@@ -82,6 +84,7 @@ public:
     void updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& features_map);
     void trainOnlineRecommender(const std::string& user_str_id, const FeatureT& user_info,
         const std::string& ad_docid, bool is_clicked);
+    void buildDocument(docid_t docid, const Document& doc);
 
 private:
 
@@ -116,6 +119,7 @@ private:
 
     typedef boost::unordered_map<std::string, std::vector<double> > HistoryCTRDataT;
     faceted::GroupManager* groupManager_;
+    DocumentManager* doc_mgr_;
     std::string res_path_;
     std::string segments_data_path_;
     std::string rec_data_path_;

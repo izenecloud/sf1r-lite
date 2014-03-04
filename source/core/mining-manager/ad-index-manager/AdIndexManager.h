@@ -9,6 +9,7 @@
 #include <boost/lexical_cast.hpp>
 #include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
+#include <ir/be_index/InvIndex.hpp>
 
 
 #define CPM 0
@@ -73,6 +74,7 @@ public:
 
 private:
 
+    typedef izenelib::ir::be_index::DNFInvIndex AdDNFIndexType;
     std::string indexPath_;
 
     std::string clickPredictorWorkingPath_;
@@ -85,6 +87,8 @@ private:
     NumericPropertyTableBuilder* numericTableBuilder_;
     SearchBase* ad_searcher_;
     faceted::GroupManager* groupManager_;
+    boost::shared_mutex  rwMutex_;
+    boost::shared_ptr<AdDNFIndexType> ad_dnf_index_;
 };
 
 } //namespace sf1r

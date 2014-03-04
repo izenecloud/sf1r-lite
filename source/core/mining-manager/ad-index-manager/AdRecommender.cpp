@@ -4,6 +4,9 @@
 #include <fstream>
 #include <boost/numeric/ublas/vector_sparse.hpp>
 #include <3rdparty/am/google/sparsetable.h>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/unordered_map.hpp>
 
 #define LATENT_VEC_DIM  10
 
@@ -45,14 +48,12 @@ static int getunviewed(const std::bitset<AdRecommender::MAX_AD_ITEMS>& bits, std
 }
 
 AdRecommender::AdRecommender()
-    :db_(NULL), use_ad_feature_(true)
+    :use_ad_feature_(true)
 {
 }
 
 AdRecommender::~AdRecommender()
 {
-    if (db_)
-        delete db_;
 }
 
 void AdRecommender::init(const std::string& data_path, bool use_ad_feature)
@@ -72,15 +73,121 @@ void AdRecommender::init(const std::string& data_path, bool use_ad_feature)
     ratio_ = -1 * (double)clicked_num_ /(double)(impression_num_ - clicked_num_);
     LOG(INFO) << "init clicked_num_: " << clicked_num_ << ", ratio_:" << ratio_;
     default_latent_.resize(LATENT_VEC_DIM, 1);
-    db_ = new MatrixType(10000, data_path + "/rec.db");
+    //db_ = new MatrixType(10000, data_path + "/rec.db");
 }
 
 void AdRecommender::load()
 {
+    std::ifstream ifs(std::string(data_path_ + "/ad_latent.data").c_str());
+    std::string data;
+    if (ifs.good())
+    {
+        std::size_t len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        data.resize(len);
+        ifs.read((char*)&data[0], len);
+        izenelib::util::izene_deserialization<LatentVecContainerT> izd(data.data(), data.size());
+        izd.read_image(ad_latent_vec_list_);
+    }
+    LOG(INFO) << "ad latent vec list loaded: " << ad_latent_vec_list_.size();
+    ifs.close();
+
+    ifs.open(std::string(data_path_ + "/user_latent.data").c_str());
+    if (ifs.good())
+    {
+        std::size_t len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        data.resize(len);
+        ifs.read((char*)&data[0], len);
+        izenelib::util::izene_deserialization<LatentVecContainerT> izd(data.data(), data.size());
+        izd.read_image(user_feature_latent_vec_list_);
+    }
+    LOG(INFO) << "user latent vec list loaded: " << user_feature_latent_vec_list_.size();
+    ifs.close();
+
+    ifs.open(std::string(data_path_ + "/history_data.data").c_str());
+    if (ifs.good())
+    {
+        ifs.read((char*)&clicked_num_, sizeof(clicked_num_));
+        ifs.read((char*)&impression_num_, sizeof(impression_num_));
+    }
+    LOG(INFO) << "history data: clicked " << clicked_num_ << ", impression " << impression_num_;
+    ifs.close();
+
+    ifs.open(std::string(data_path_ + "/ad_feature_info.data").c_str());
+    if(ifs.good())
+    {
+        std::size_t len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        data.resize(len);
+        ifs.read((char*)&data[0], len);
+        izenelib::util::izene_deserialization<std::vector<std::string> > izd(data.data(), data.size());
+        izd.read_image(ad_feature_value_list_);
+        len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        data.resize(len);
+        ifs.read((char*)&data[0], len);
+        izenelib::util::izene_deserialization<AdFeatureContainerT> izd_2(data.data(), data.size());
+        izd_2.read_image(ad_features_map_);
+        for(size_t i = 0; i < ad_feature_value_list_.size(); ++i)
+        {
+            ad_feature_value_id_list_[ad_feature_value_list_[i]] = i;
+        }
+    }
+    LOG(INFO) << "ad feature items loaded: " << ad_feature_value_list_.size();
 }
 
 void AdRecommender::save()
 {
+    std::ofstream ofs(std::string(data_path_ + "/ad_latent.data").c_str());
+    std::size_t len = 0;
+    char* buf = NULL;
+    {
+        izenelib::util::izene_serialization<LatentVecContainerT> izs(ad_latent_vec_list_);
+        izs.write_image(buf, len);
+        ofs.write((const char*)&len, sizeof(len));
+        ofs.write(buf, len);
+        ofs.flush();
+        ofs.close();
+    }
+
+    {
+        ofs.open(std::string(data_path_ + "/user_latent.data").c_str());
+        len = 0;
+        izenelib::util::izene_serialization<LatentVecContainerT> izs(user_feature_latent_vec_list_);
+        izs.write_image(buf, len);
+        ofs.write((const char*)&len, sizeof(len));
+        ofs.write(buf, len);
+        ofs.flush();
+        ofs.close();
+    }
+
+    {
+        ofs.open(std::string(data_path_ + "/history_data.data").c_str());
+        ofs.write((const char*)&clicked_num_, sizeof(clicked_num_));
+        ofs.write((const char*)&impression_num_, sizeof(impression_num_));
+        ofs.flush();
+        ofs.close();
+    }
+
+    ofs.open(std::string(data_path_ + "/ad_feature_info.data").c_str());
+    {
+        len = 0;
+        izenelib::util::izene_serialization<std::vector<std::string> > izs(ad_feature_value_list_);
+        izs.write_image(buf, len);
+        ofs.write((const char*)&len, sizeof(len));
+        ofs.write(buf, len);
+    }
+
+    {
+        len = 0;
+        izenelib::util::izene_serialization<AdFeatureContainerT> izs(ad_features_map_);
+        izs.write_image(buf, len);
+        ofs.write((const char*)&len, sizeof(len));
+        ofs.write(buf, len);
+    }
+    ofs.flush();
+    ofs.close();
 }
 
 //void AdRecommender::setMaxAdDocId(docid_t max_docid)
@@ -188,19 +295,11 @@ void AdRecommender::getCombinedUserLatentVec(const std::vector<LatentVecT*>& lat
     }
 }
 
-void AdRecommender::recommendFromCand(const std::string& user_str_id,
-    const FeatureT& user_info, std::size_t max_return,
-    std::vector<std::string>& recommended_doclist,
-    std::vector<double>& score_list)
-{
-}
-
-void AdRecommender::recommend(const std::string& user_str_id,
+void AdRecommender::doRecommend(const std::string& user_str_id,
     const FeatureT& user_info, std::size_t max_return,
     std::vector<std::string>& recommended_items,
-    std::vector<double>& score_list)
+    std::vector<double>& score_list, bool rec_for_unview)
 {
-    //LOG(INFO) << "begin do the recommend for user : " << user_str_id;
     std::vector<std::string> user_keys;
     getUserLatentVecKeys(user_info, user_keys);
     LatentVecT user_latent_vec;
@@ -210,22 +309,40 @@ void AdRecommender::recommend(const std::string& user_str_id,
         getCombinedUserLatentVec(user_keys, user_latent_vec);
     }
     
-    bool has_unviewed_item = unviewed_items_.any();
+    bool has_unviewed_item = rec_for_unview && unviewed_items_.any();
 
     ScoreSortedAdQueue hit_list(max_return);
     {
         boost::shared_lock<boost::shared_mutex> lock(ad_latent_lock_);
-        LatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
-        while (it != ad_latent_vec_list_.end())
+        if (recommended_items.empty())
         {
-            if (!(it->second.empty()))
+            LatentVecContainerT::const_iterator it = ad_latent_vec_list_.begin();
+            while (it != ad_latent_vec_list_.end())
             {
+                if (!(it->second.empty()))
+                {
+                    ScoredAdItem item;
+                    item.score = affinity(user_latent_vec, it->second);
+                    item.key = it->first;
+                    hit_list.insert(item);
+                }
+                ++it;
+            }
+        }
+        else
+        {
+            for(size_t i = 0; i < recommended_items.size(); ++i)
+            {
+                LatentVecContainerT::const_iterator it = ad_latent_vec_list_.find(recommended_items[i]);
+                if (it == ad_latent_vec_list_.end())
+                    continue;
+                if (it->second.empty())
+                    continue;
                 ScoredAdItem item;
                 item.score = affinity(user_latent_vec, it->second);
                 item.key = it->first;
                 hit_list.insert(item);
             }
-            ++it;
         }
     }
     double default_score = 0;
@@ -257,7 +374,23 @@ void AdRecommender::recommend(const std::string& user_str_id,
         recommended_items[i] = item.key;
         score_list[i] = item.score;
     }
+}
 
+void AdRecommender::recommendFromCand(const std::string& user_str_id,
+    const FeatureT& user_info, std::size_t max_return,
+    std::vector<std::string>& recommended_items,
+    std::vector<double>& score_list)
+{
+    doRecommend(user_str_id, user_info, max_return, recommended_items, score_list, false);
+}
+
+void AdRecommender::recommend(const std::string& user_str_id,
+    const FeatureT& user_info, std::size_t max_return,
+    std::vector<std::string>& recommended_items,
+    std::vector<double>& score_list)
+{
+    //LOG(INFO) << "begin do the recommend for user : " << user_str_id;
+    doRecommend(user_str_id, user_info, max_return, recommended_items, score_list, true);
     //LOG(INFO) << "finished the ad recommend, size: " << recommended_items.size();
 }
 

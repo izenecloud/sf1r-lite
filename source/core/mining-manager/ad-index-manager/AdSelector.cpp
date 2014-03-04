@@ -20,6 +20,11 @@ namespace sf1r
 static const std::string linker("-");
 static const std::string UnknownStr("Unknown");
 
+static bool sort_tokens_func(const std::pair<std::string, double>& left, const std::pair<std::string, double>& right)
+{
+    return left.second > right.second;
+}
+
 static inline void getValueStrFromPropId(faceted::PropValueTable* pvt,
     const faceted::PropValueTable::PropIdList& propids, AdSelector::FeatureValueT& value_list)
 {
@@ -77,13 +82,15 @@ void AdSelector::init(const std::string& res_path,
     const std::string& segments_data_path,
     const std::string& rec_data_path,
     AdClickPredictor* pad_predictor,
-    faceted::GroupManager* grp_mgr)
+    faceted::GroupManager* grp_mgr,
+    DocumentManager* doc_mgr)
 {
     res_path_ = res_path;
     segments_data_path_ = segments_data_path;
     rec_data_path_ = rec_data_path;
     ad_click_predictor_ = pad_predictor;
     groupManager_ = grp_mgr;
+    doc_mgr_ = doc_mgr;
     //
     // load default all features from config file.
     loadDef(res_path_ + "/all_user_feature_name.txt", default_full_features_[UserSeg], init_counter_[UserSeg]);
@@ -233,6 +240,8 @@ void AdSelector::save()
     ofs_segid_data.write((const char*)&len, sizeof(len));
     ofs_segid_data.write(buf, len);
     ofs_segid_data.flush();
+
+    ad_feature_item_rec_->save();
 }
 
 void AdSelector::stop()
@@ -301,9 +310,14 @@ void AdSelector::updateAdSegmentStr(const std::vector<docid_t>& ad_doclist, cons
 
 void AdSelector::getAdTagsForRec(docid_t id, std::vector<std::string>& tags)
 {
+    if (doc_mgr_ == NULL)
+        return;
     tags.clear();
     // get the title of the ad doc.
     std::string ad_title;
+    Document::doc_prop_value_strtype prop_value;
+    doc_mgr_->getPropertyValue(id, "Title", prop_value);
+    ad_title = propstr_to_str(prop_value);
 
     std::vector<std::pair<std::string, float> > tokens, subtokens;
     std::string brand;
@@ -314,10 +328,17 @@ void AdSelector::getAdTagsForRec(docid_t id, std::vector<std::string>& tags)
     {
         tags.push_back(brand);
     }
+    if (!model.empty())
+    {
+        tags.push_back(model);
+    }
+    std::sort(tokens.begin(), tokens.end(), sort_tokens_func);
     for (size_t i = 0; i < tokens.size(); ++i)
     {
         if (tokens[i].first.length() > 1)
             tags.push_back(tokens[i].first);
+        if (tags.size() > 3)
+            break;
     }
 }
 
@@ -338,8 +359,14 @@ void AdSelector::updateAdFeatureItemsForRec(docid_t id, const FeatureMapT& featu
     ad_feature_item_rec_->updateAdFeatures(boost::lexical_cast<std::string>(id), features);
 }
 
+void AdSelector::buildDocument(docid_t docid, const Document& doc)
+{
+}
+
 void AdSelector::miningAdSegmentStr(docid_t startid, docid_t endid)
 {
+    if (groupManager_ == NULL)
+        return;
     PropSharedLockSet propSharedLockSet;
     std::vector<faceted::PropValueTable*> pvt_list;
     std::vector<std::string>  prop_name;

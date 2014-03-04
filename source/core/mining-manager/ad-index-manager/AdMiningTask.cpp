@@ -3,16 +3,19 @@
  */
 
 #include "AdMiningTask.h"
+#include "AdSelector.h"
 
 namespace sf1r
 {
 
 AdMiningTask::AdMiningTask(
         const std::string& path,
-        boost::shared_ptr<DocumentManager>& dm)
-    :indexPath_(path), documentManager_(dm)
+        boost::shared_ptr<DocumentManager>& dm,
+        boost::shared_ptr<AdDNFIndexType>& ad_dnf_index,
+        boost::shared_mutex& ad_dnf_mutex)
+    :indexPath_(path), documentManager_(dm),
+    ad_dnf_index_(ad_dnf_index), rwDNFMutex_(ad_dnf_mutex)
 {
-    adIndex_.reset(new AdIndexType());
 }
 
 AdMiningTask::~AdMiningTask()
@@ -44,12 +47,13 @@ bool AdMiningTask::buildDocument(docid_t docID, const Document& doc)
     dnf.conjunctions[0].assignments.push_back(a2);
     dnf.conjunctions[0].assignments.push_back(a3);
     incrementalAdIndex_->addDNF(docID, dnf);
+    AdSelector::get()->buildDocument(docID, doc);
     return true;
 }
 
 bool AdMiningTask::preProcess(int64_t timestamp)
 {
-    incrementalAdIndex_.reset(new AdIndexType(*adIndex_));
+    incrementalAdIndex_.reset(new AdDNFIndexType(*ad_dnf_index_));
 /*
     incrementalAdIndex_.reset(new AdIndexType);
 
@@ -104,34 +108,10 @@ bool AdMiningTask::postProcess()
         return false;
     }
 
-    writeLock lock(rwMutex_);
-    adIndex_ = incrementalAdIndex_;
+    writeLock lock(rwDNFMutex_);
+    ad_dnf_index_ = incrementalAdIndex_;
 
     incrementalAdIndex_.reset();
-    return true;
-}
-
-void AdMiningTask::save()
-{
-    postProcess();
-}
-
-bool AdMiningTask::load()
-{
-    std::ifstream ifs(indexPath_.c_str(), std::ios_base::binary);
-    if(!ifs)
-        return false;
-    try
-    {
-        writeLock lock(rwMutex_);
-        adIndex_->load_binary(ifs);
-    }
-    catch(const std::exception& e)
-    {
-        LOG(ERROR) << "exception in read file: " << e.what()
-                   << ", path: "<< indexPath_<<endl;
-        return false;
-    }
     return true;
 }
 

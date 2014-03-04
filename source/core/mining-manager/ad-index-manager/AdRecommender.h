@@ -110,22 +110,24 @@ public:
     void updateAdFeatures(const std::string& ad_docid, const std::vector<std::string>& features);
 
 private:
-    typedef izenelib::am::MatrixDB<uint32_t, double> MatrixType;
-    typedef MatrixType::row_type RowType;
+    //typedef izenelib::am::MatrixDB<uint32_t, double> MatrixType;
+    //typedef MatrixType::row_type RowType;
     typedef boost::unordered_map<std::string, LatentVecT> LatentVecContainerT;
     //typedef std::vector<LatentVecT> AdLatentVecContainerT;
     
     typedef std::map<std::string, std::set<uint32_t> >  AdFeatureContainerT;
 
+    void doRecommend(const std::string& user_str_id,
+        const FeatureT& user_info, std::size_t max_return,
+        std::vector<std::string>& recommended_items,
+        std::vector<double>& score_list, bool rec_for_unview);
     void getAdLatentVecKeys(const std::string& ad_docid, std::vector<std::string>& ad_latentvec_keys);
     void getUserLatentVecKeys(const FeatureT& user_info, std::vector<std::string>& user_latentvec_keys);
     void getCombinedUserLatentVec(const std::vector<std::string>& latentvec_keys, LatentVecT& latent_vec);
     void getCombinedUserLatentVec(const std::vector<LatentVecT*>& latentvec_list, LatentVecT& latent_vec);
 
-    MatrixType* db_;
     std::string data_path_;
     bool use_ad_feature_;
-    boost::unordered_map<std::string, FeatureT> user_feature_map_;
     LatentVecContainerT ad_latent_vec_list_;
     LatentVecContainerT user_feature_latent_vec_list_;
 

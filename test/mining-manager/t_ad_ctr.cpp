@@ -290,7 +290,8 @@ int main()
     ofs_selector << "Age" << std::endl;
     ofs_selector << "Gender" << std::endl;
     ofs_selector.close();
-    AdSelector::get()->init(selector_base_path, selector_base_path, selector_base_path + "/rec", &ad, NULL);
+    AdSelector::get()->init(selector_base_path, selector_base_path,
+        selector_base_path + "/rec", &ad, NULL, NULL);
     bfs::remove(selector_base_path + "/clicked_ad.data");
 
     static const int total_ad_num = 7000000;
@@ -474,6 +475,7 @@ int main()
     LOG(INFO) << "recommender training finished.";
 
     test_ad_rec_threads.join_all();
+    test_ad_rec.save();
 
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
     //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));

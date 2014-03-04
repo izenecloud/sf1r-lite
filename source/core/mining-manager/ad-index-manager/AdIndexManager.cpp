@@ -59,14 +59,31 @@ AdIndexManager::~AdIndexManager()
 
 bool AdIndexManager::buildMiningTask()
 {
-    adMiningTask_ = new AdMiningTask(indexPath_, documentManager_);
-    adMiningTask_->load();
+    ad_dnf_index_.reset(new AdDNFIndexType());
+
+    std::ifstream ifs(indexPath_.c_str(), std::ios_base::binary);
+    if(ifs.good())
+    {
+        try
+        {
+            boost::unique_lock<boost::shared_mutex> lock(rwMutex_);
+            ad_dnf_index_->load_binary(ifs);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "exception in read file: " << e.what()
+                << ", path: "<< indexPath_<<endl;
+        }
+    }
+
+    adMiningTask_ = new AdMiningTask(indexPath_, documentManager_, ad_dnf_index_, rwMutex_);
     adMiningTask_->setPostProcessFunc(boost::bind(&AdIndexManager::postMining, this, _1, _2));
 
     ad_click_predictor_ = AdClickPredictor::get();
     ad_click_predictor_->init(clickPredictorWorkingPath_);
     AdSelector::get()->init(ad_selector_res_path_, ad_selector_data_path_,
-        ad_selector_data_path_ + "/rec", ad_click_predictor_, groupManager_);
+        ad_selector_data_path_ + "/rec", ad_click_predictor_, groupManager_,
+        documentManager_.get());
     bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdIndexManager::onAdStreamMessage, this, _1));
     if (!ret)
     {
@@ -237,7 +254,12 @@ bool AdIndexManager::searchByDNF(const FeatureT& info,
     std::size_t& totalCount)
 {
     boost::unordered_set<uint32_t> dnfIDs;
-    adMiningTask_->retrieve(info, dnfIDs);
+
+    {
+        boost::shared_lock<boost::shared_mutex> lock(rwMutex_);
+        ad_dnf_index_->retrieve(info, dnfIDs);
+    }
+
     LOG(INFO)<< "dnfIDs.size(): "<< dnfIDs.size() << std::endl;
 
     docids.resize(dnfIDs.size());
