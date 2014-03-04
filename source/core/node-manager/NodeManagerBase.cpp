@@ -1069,6 +1069,11 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
         unregisterPrimary();
         nodeState_ = NODE_STATE_STARTING;
+        if (need_stop_)
+        {
+            stop();
+            return;
+        }
         sleep(10);
         if (s_enable_async_)
         {
