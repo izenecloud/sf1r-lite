@@ -11,7 +11,7 @@ using izenelib::util::UString;
 
 namespace
 {
-const std::size_t kMajorTermNum = 4;
+const std::size_t kMajorTermNum = 3;
 }
 
 void PcaProductTokenizer::tokenize(ProductTokenParam& param)
