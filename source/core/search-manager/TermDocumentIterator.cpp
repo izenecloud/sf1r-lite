@@ -110,6 +110,8 @@ bool TermDocumentIterator::accept()
     }
     else
     {
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
+        boost::shared_ptr<izenelib::ir::indexmanager::Bitset> pBitset;
         if (!TermTypeDetector::isTypeMatch(rawTerm_, dataType_))
             return false;
 
@@ -120,11 +122,11 @@ bool TermDocumentIterator::accept()
         bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
         if (find)
         {
-            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap(
-                new InvertedIndexManager::FilterBitmapT(pIndexReader_->maxDoc() + 1));
+            pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
+            pBitset.reset(new izenelib::ir::indexmanager::Bitset(pIndexReader_->maxDoc() + 1));
 
-            indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pFilterBitmap);
-
+            indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitset);
+            pBitset->compress(*pFilterBitmap);
             if(pTermDocReader_) delete pTermDocReader_;
             pTermDocReader_ = new InvertedIndexManager::FilterTermDocFreqsT(pFilterBitmap);
             df_ = pTermDocReader_->docFreq();

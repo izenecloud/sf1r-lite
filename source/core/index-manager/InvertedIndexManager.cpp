@@ -270,11 +270,12 @@ void InvertedIndexManager::getDocsByPropertyValue(const std::string& property, c
 }
 
 void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT>& filterBitMap)
+        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap)
 {
     collectionid_t colId = 1;
     std::string propertyL = boost::to_upper_copy(property);
-    filterBitMap.reset(new FilterBitmapT(pIndexReader_->maxDoc() + 1));
+    boost::scoped_ptr<Bitset> pBitset;
+    if (QueryFiltering::EQUAL != filterOperation) pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
 
     switch (filterOperation)
     {
@@ -293,7 +294,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         {
             convertData(propertyL, filterParam[i], values[i]);
         }
-        getDocsByPropertyValueIn(colId, property, values, *filterBitMap);
+        getDocsByPropertyValueIn(colId, property, values, *pBitset, *filterBitMap);
         return;
     }
     case QueryFiltering::EXCLUDE:
@@ -303,7 +304,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         {
             convertData(propertyL, filterParam[i], values[i]);
         }
-        getDocsByPropertyValueNotIn(colId, property, values, *filterBitMap);
+        getDocsByPropertyValueNotIn(colId, property, values, *pBitset);
     }
         break;
     case QueryFiltering::NOT_EQUAL:
@@ -311,7 +312,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueNotEqual(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueNotEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::GREATER_THAN:
@@ -319,7 +320,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThan(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueGreaterThan(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::GREATER_THAN_EQUAL:
@@ -327,7 +328,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::LESS_THAN:
@@ -335,7 +336,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThan(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueLessThan(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::LESS_THAN_EQUAL:
@@ -343,7 +344,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::RANGE:
@@ -354,7 +355,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         convertData(propertyL, filterParam[0], value1);
         convertData(propertyL, filterParam[1], value2);
 
-        getDocsByPropertyValueRange(colId, property, value1, value2, *filterBitMap);
+        getDocsByPropertyValueRange(colId, property, value1, value2, *pBitset);
     }
         break;
     case QueryFiltering::PREFIX:
@@ -362,7 +363,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueStart(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueStart(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::SUFFIX:
@@ -370,7 +371,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueEnd(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueEnd(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::SUB_STRING:
@@ -378,12 +379,15 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueSubString(colId, property, value, *filterBitMap);
+        getDocsByPropertyValueSubString(colId, property, value, *pBitset);
     }
         break;
     default:
         break;
     }
+    //Compress bit vector
+    BOOST_ASSERT(pBitset);
+    pBitset->compress(*filterBitMap);
 }
 
 void InvertedIndexManager::flush(bool force)

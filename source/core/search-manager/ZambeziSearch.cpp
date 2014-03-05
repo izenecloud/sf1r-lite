@@ -167,11 +167,14 @@ bool ZambeziSearch::search(
         actionOperation.actionItem_.filterTree_;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
+    boost::shared_ptr<izenelib::ir::indexmanager::Bitset> filterBitset;
+
     if (!filterTree.empty())
     {
         queryBuilder_.prepare_filter(filterTree, filterBitmap);
+        filterBitset.reset(new izenelib::ir::indexmanager::Bitset);
+        filterBitset->importFromEWAH(*filterBitmap);
     }
-
     //Query Analyzer
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);
 
@@ -185,7 +188,7 @@ bool ZambeziSearch::search(
     if (tokenList.empty())
         return false;
     
-    ZambeziFilter filter(documentManager_, groupFilter, filterBitmap);
+    ZambeziFilter filter(documentManager_, groupFilter, filterBitset);
 
     zambeziManager_->search(algorithm, tokenList, search_in_properties,
                             &filter, kZambeziTopKNum, candidates, scores);
