@@ -23,21 +23,8 @@ private:
 
     static bool compareTokenScore_(const TokenScore& x, const TokenScore& y);
 
-    void extractMajorTokens_(
-        const TokenScoreVec& sortTokens,
-        std::vector<std::string>& majorTokens);
-
-    void getMajorTokens_(
-        const std::vector<std::string>& majorTokens,
-        TokenScoreMap& tokenScoreMap,
-        ProductTokenParam::TokenScoreList& tokenScoreList);
-
-    void getMinorTokens_(
-        const TokenScoreMap& tokenScoreMap,
-        ProductTokenParam::TokenScoreList& tokenScoreList);
-
     void getRefinedResult_(
-        const std::vector<std::string>& majorTokens,
+        const ProductTokenParam::TokenScoreList& majorTokens,
         izenelib::util::UString& refinedResult);
 };
 
