@@ -7,7 +7,7 @@
 NS_SF1R_B5M_BEGIN
 struct B5mM
 {
-    B5mM(): mode(0), cmode(-1), thread_num(1)
+    B5mM(): mode(0), cmode(-1), thread_num(1), gen_b5ma(false)
     {
     }
     B5mM(const std::string& m)
@@ -43,6 +43,7 @@ struct B5mM
         SetValue_(path_of["mobile_source"], mobile_source);
         SetValue_(path_of["human_match"], human_match);
         SetValue_(path_of["knowledge"], knowledge);
+        SetValue_(path_of["addr_knowledge"], addr_knowledge);
         SetValue_(path_of["cma"], cma_path);
         if(indexer["type"].as<std::string>()=="hdfs")
         {
@@ -63,6 +64,7 @@ struct B5mM
                 b5mo_path = hdfs_dir+"/"+cname+"o";
                 b5mp_path = hdfs_dir+"/"+cname+"p";
                 b5mc_path = hdfs_dir+"/"+cname+"c";
+                b5ma_path = hdfs_dir+"/"+cname+"a";
             }
             if(indexer["o_collection_name"].Type()!=YAML::NodeType::Undefined)
             {
@@ -78,6 +80,7 @@ struct B5mM
         SetValue_(config["thread_num"], thread_num);
         SetValue_(config["buffer_size"], buffer_size);
         SetValue_(config["sorter_bin"], sorter_bin);
+        SetValue_(config["gen_b5ma"], gen_b5ma);
         return true;
     }
     void Gen()
@@ -93,11 +96,14 @@ struct B5mM
         std::cerr<<"thread_num: "<<thread_num<<std::endl;
         std::cerr<<"b5mo_path: "<<b5mo_path<<std::endl;
         std::cerr<<"b5mp_path: "<<b5mp_path<<std::endl;
+        std::cerr<<"b5ma_path: "<<b5ma_path<<std::endl;
         std::cerr<<"b5mc_path: "<<b5mc_path<<std::endl;
         std::cerr<<"scd_path: "<<scd_path<<std::endl;
         std::cerr<<"comment_scd_path: "<<comment_scd_path<<std::endl;
         std::cerr<<"knowledge: "<<knowledge<<std::endl;
+        std::cerr<<"addr_knowledge: "<<addr_knowledge<<std::endl;
         std::cerr<<"cma_path: "<<cma_path<<std::endl;
+        std::cerr<<"gen_b5ma: "<<gen_b5ma<<std::endl;
         std::cerr<<"mobile_source: "<<mobile_source<<std::endl;
         std::cerr<<"human_match: "<<human_match<<std::endl;
         std::cerr<<"buffer_size: "<<buffer_size<<std::endl;
@@ -109,14 +115,17 @@ struct B5mM
     std::string b5mo_path;
     std::string b5mp_path;
     std::string b5mc_path;
+    std::string b5ma_path;
     std::string scd_path;
     std::string comment_scd_path;
     int mode;
     int cmode;
     int thread_num;
+    bool gen_b5ma;
     std::string mobile_source;
     std::string human_match;
     std::string knowledge;
+    std::string addr_knowledge;
     std::string cma_path;
     std::string buffer_size;
     std::string sorter_bin;
@@ -141,11 +150,13 @@ private:
         b5mo_path = m+"/b5mo";
         b5mp_path = m+"/b5mp";
         b5mc_path = m+"/b5mc";
+        b5ma_path = m+"/b5ma";
         ts = boost::filesystem::path(m).filename().string();
         if(ts==".")
         {
             ts = boost::filesystem::path(m).parent_path().filename().string();
         }
+        gen_b5ma = false;
     }
 
 };

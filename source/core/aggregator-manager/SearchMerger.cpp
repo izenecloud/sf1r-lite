@@ -34,6 +34,47 @@ static bool IsGreaterGroup(const std::pair<GroupParam::GroupPath, GroupPathScore
     return IsGreaterGPScoreInfo(left.second, right.second);
 }
 
+static void emptyWorkerResult(KeywordSearchResult& wresult)
+{
+    wresult.totalCount_ = 0;
+    wresult.counterResults_.clear();
+    wresult.docsInPage_.clear();
+    wresult.topKDocs_.clear();
+    wresult.topKWorkerIds_.clear();
+    wresult.topKtids_.clear();
+    wresult.topKRankScoreList_.clear();
+    wresult.topKCustomRankScoreList_.clear();
+    wresult.pageOffsetList_.clear();
+
+    for(size_t i = 0; i < wresult.fullTextOfDocumentInPage_.size(); ++i)
+    {
+        wresult.fullTextOfDocumentInPage_[i].clear();
+    }
+    for(size_t i = 0; i < wresult.snippetTextOfDocumentInPage_.size(); ++i)
+        wresult.snippetTextOfDocumentInPage_[i].clear();
+    for(size_t i = 0; i < wresult.rawTextOfSummaryInPage_.size(); ++i)
+        wresult.rawTextOfSummaryInPage_[i].clear();
+
+    wresult.numberOfDuplicatedDocs_.clear();
+    wresult.numberOfSimilarDocs_.clear();
+    wresult.docCategories_.clear();
+    wresult.onto_rep_.clear();
+    wresult.groupRep_.clear();
+    wresult.attrRep_.clear();
+    wresult.autoSelectGroupLabels_.clear();
+    wresult.relatedQueryList_.clear();
+    wresult.rqScore_.clear();
+    wresult.distSearchInfo_.dfmap_.clear();
+    wresult.distSearchInfo_.ctfmap_.clear();
+    wresult.distSearchInfo_.maxtfmap_.clear();
+    wresult.distSearchInfo_.sortPropertyList_.clear();
+    wresult.distSearchInfo_.sortPropertyInt32DataList_.clear();
+    wresult.distSearchInfo_.sortPropertyInt64DataList_.clear();
+    wresult.distSearchInfo_.sortPropertyFloatDataList_.clear();
+    wresult.distSearchInfo_.sortPropertyStrDataList_.clear();
+
+}
+
 void SearchMerger::mergeScoreGroupLabel(GroupParam::GroupLabelScoreMap& mergeto,
     const GroupParam::GroupLabelScoreMap& from, workerid_t from_workerid)
 {
@@ -180,6 +221,35 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
     mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
+
+    // check for the fuzzy major token num. Only need the results with the largest token num.
+    int largest_major_token_num = result0.distSearchInfo_.majorTokenNum_;
+    bool is_token_num_diff = false;
+    for (size_t i = 1; i < workerNum; i++)
+    {
+        int cur_token_num = workerResults.result(i).distSearchInfo_.majorTokenNum_;
+        if (cur_token_num != largest_major_token_num)
+        {
+            is_token_num_diff = true;
+        }
+        if (cur_token_num > largest_major_token_num)
+        {
+            LOG(INFO) << "worker: " << i << "  has larger token num: " << cur_token_num;
+            largest_major_token_num = cur_token_num;
+        }
+    }
+    if (is_token_num_diff)
+    {
+        for (size_t i = 0; i < workerNum; i++)
+        {
+            int cur_token_num = workerResults.result(i).distSearchInfo_.majorTokenNum_;
+            if (cur_token_num < largest_major_token_num)
+            {
+                LOG(INFO) << "worker:" << i << " result was empty since the token num is less than largest : " << cur_token_num;
+                emptyWorkerResult(const_cast<KeywordSearchResult&>(workerResults.result(i)));
+            }
+        }
+    }
 
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;

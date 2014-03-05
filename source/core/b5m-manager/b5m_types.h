@@ -64,7 +64,7 @@ struct Attribute
 };
 struct Product
 {
-    enum Type {NOTP, BOOK, SPU, FASHION, ATTRIB};
+    enum Type {NOTP, PENDING, BOOK, SPU, FASHION, ATTRIB};
     typedef idmlib::sim::StringSimilarity::Object SimObject;
     Product()
     : id(0), cid(0), aweight(0.0), tweight(0.0), score(0.0), type(NOTP)

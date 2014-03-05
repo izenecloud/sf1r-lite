@@ -17,6 +17,7 @@ public:
         , include_summary_data_(false)
         , option_(OPTION_NONE)
         , nodeType_(NODE_MASTER)
+        , majorTokenNum_(0)
     {
     }
 
@@ -52,6 +53,9 @@ public:
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
     std::vector<std::pair<std::string, std::vector<std::string> > > sortPropertyStrDataList_;
 
+    /// the number of major tokens matched in fuzzy search
+    int majorTokenNum_;
+
     bool isOptionGatherInfo() const
     {
         return effective_ && option_ == OPTION_GATHER_INFO;
@@ -78,10 +82,12 @@ public:
         sortPropertyInt64DataList_.swap(other.sortPropertyInt64DataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
         sortPropertyStrDataList_.swap(other.sortPropertyStrDataList_);
+        swap(majorTokenNum_, other.majorTokenNum_);
     }
 
     MSGPACK_DEFINE(isDistributed_, effective_, include_summary_data_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
-        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyStrDataList_);
+                   sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyStrDataList_,
+                   majorTokenNum_);
 };
 
 class DistSummaryMiningResult : public ErrorInfo

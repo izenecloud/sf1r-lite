@@ -170,14 +170,38 @@ void ProductForwardManager::forwardSearch(const std::string& src,
         score.push_back(std::make_pair(sc, docs[i].second));
     }
     for (size_t i = 0; i < score.size(); ++i)
-        if (score[i].first > 0.8)
+        if (score[i].first > 0.70)
             res.push_back(make_pair(docs[i].first+100000*score[i].first, docs[i].second));
     if (res.size())
         std::sort(res.begin(), res.end(), std::greater<std::pair<double, docid_t> >());
     //if (res.size() == 0)res = docs;
 }
 
+double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_model, 
+  const std::vector<uint32_t>& q_res, const double q_score, const docid_t docid)
+{
+    std::string title_string(getIndex(docid));
+    std::vector<uint32_t> t_res;
+    uint32_t t_brand = 0;
+    uint32_t t_model = 0;
+    featureParser_.convertStrToIds(title_string, t_brand, t_model, t_res);
 
+    std::set<uint32_t> qset(q_res.begin(), q_res.end());
+    if(q_brand>0)qset.insert(q_brand);
+    if(q_model>0)qset.insert(q_model);
+
+    std::set<uint32_t> tset(t_res.begin(), t_res.end());
+    if(t_brand>0)tset.insert(t_brand);
+    if(t_model>0)tset.insert(t_model);
+
+    double common = 0;
+    for (std::set<uint32_t>::iterator it=qset.begin();it!=qset.end();it++)
+        if (tset.find(*it)!=tset.end())
+            common++;
+
+    return common/(qset.size()+tset.size()-common);
+}
+/*
 double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_model, 
   const std::vector<uint32_t>& q_res, const double q_score, const docid_t docid)
 {
@@ -215,5 +239,5 @@ double ProductForwardManager::compare_(const uint32_t q_brand, const uint32_t q_
 
     return same/sqrt(q_deno*t_deno);
 }
-
+*/
 }

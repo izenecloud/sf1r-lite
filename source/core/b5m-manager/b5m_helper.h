@@ -181,6 +181,11 @@ public:
         return mdb_instance+"/omapper";
     }
 
+    static std::string GetPsmPath(const std::string& mdb_instance)
+    {
+        return mdb_instance+"/psm";
+    }
+
     static std::string GetBrandPropertyName()
     {
         static std::string p("Brand");

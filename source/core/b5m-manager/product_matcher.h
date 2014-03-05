@@ -1,11 +1,10 @@
 #ifndef SF1R_B5MMANAGER_PRODUCTMATCHER_H_
 #define SF1R_B5MMANAGER_PRODUCTMATCHER_H_
-#include "brand_db.h"
 #include "ngram_synonym.h"
 #include "b5m_helper.h"
 #include "b5m_types.h"
-#include "category_psm.h"
 #include "brand_manager.h"
+#include "category_psm.h"
 #include <boost/regex.hpp>
 #include <boost/atomic.hpp>
 #include <boost/unordered_map.hpp>
@@ -23,9 +22,6 @@
 #include <document-manager/ScdDocument.h>
 #include <idmlib/keyphrase-extraction/kpe_task.h>
 #include <idmlib/similarity/string_similarity.h>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/trie_policy.hpp>
-#include <ext/pb_ds/tag_and_trait.hpp>
 
 NS_SF1R_B5M_BEGIN
 
@@ -533,6 +529,7 @@ public:
         bool IsAttribSynonym(const KeywordTag& another) const;
         bool IsBrand() const;
         bool IsModel() const;
+        bool IsCategoryKeyword() const;
         friend class boost::serialization::access;
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
@@ -597,6 +594,7 @@ public:
     {
         is_open_ = true;
     }
+    bool OpenPsm(const std::string& path);
     //static void Clear(const std::string& path, int mode=3);
     static std::string GetVersion(const std::string& path);
     static std::string GetAVersion(const std::string& path);
@@ -629,6 +627,7 @@ public:
     bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
     bool GetSynonymId(const UString& pattern, int& setid);
     void UpdateSynonym(const std::string& dict_path);
+    void PendingFinish(const boost::function<void (ScdDocument&)>& func, int thread_num=1);
 
     
     void SetCmaPath(const std::string& path)
@@ -671,6 +670,10 @@ public:
     }
 
     static void CategoryDepthCut(std::string& category, uint16_t d);
+    bool IsBrand(const std::string& scategory, const KeywordTag& k) const
+    {
+        return IsBrand_(scategory, k);
+    }
 
 private:
     static void SetIndexDone_(const std::string& path, bool b);
@@ -690,7 +693,7 @@ private:
     //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
-    void GetPsmKeywords_(const KeywordVector& keywords, const std::string& scategory, std::vector<std::string>& brands, std::vector<std::pair<std::string, double> >& psm_keywords) const;
+    void GetPsmKeywords_(const KeywordVector& keywords, const std::string& scategory, std::vector<std::string>& brands, std::vector<std::string>& ckeywords) const;
     void IndexOffer_(const std::string& offer_scd, int thread_num);
     void OfferProcess_(ScdDocument& doc);
     void PostProcess_(ScdDocument& doc);

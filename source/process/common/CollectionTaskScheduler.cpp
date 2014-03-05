@@ -51,7 +51,6 @@ bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandle
         if (task && task->setCronExpression(cronStr))
         {
             task->setIsCronTask(true);
-            taskList_.push_back(task);
             if (!izenelib::util::Scheduler::addJob(
                     collectionCronJobName + task->getTaskName(),
                     60*1000, // notify in every minute
@@ -60,6 +59,7 @@ bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandle
             {
                 LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName + task->getTaskName();
             }
+            taskList_.push_back(task);
         }
         else
         {
@@ -82,7 +82,6 @@ bool CollectionTaskScheduler::scheduleLicenseTask(std::string collectionName)
 		if (task && task->setCronExpression(cronStr))
 		{
 			task->setIsCronTask(true);
-			taskList_.push_back(task);
             if (!izenelib::util::Scheduler::addJob(
                     collectionCronJobName + task->getTaskName(),
                     60*1000, // notify in every minute
@@ -92,6 +91,7 @@ bool CollectionTaskScheduler::scheduleLicenseTask(std::string collectionName)
                 LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName + task->getTaskName();
                 return false;
             }
+			taskList_.push_back(task);
 		}
 		else
 		{

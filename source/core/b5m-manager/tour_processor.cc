@@ -8,7 +8,7 @@
 #include <document-manager/ScdDocument.h>
 #include <assert.h>
 
-//#define TOUR_DEBUG
+#define _TOUR_DEBUG
 
 using namespace sf1r;
 using namespace sf1r::b5m;
@@ -47,12 +47,16 @@ void TourProcessor::Insert_(ScdDocument& doc)
     value.days = ParseDays_(sdays);
     value.doc = doc;
     value.price = 0.0;
-    try {
+    try 
+	{
         value.price = boost::lexical_cast<double>(price);
     }
     catch(std::exception& ex)
     {
-		std::cerr << ex.what() << std::endl;
+		std::string error_doc_id;
+		doc.getString(SCD_DOC_ID,error_doc_id);
+		LOG(INFO) << "doc id:" << error_doc_id;
+		LOG(INFO) << ex.what() << "\n";
     }
     value.bcluster = true;
     if(value.days.second==0||value.price==0.0||
@@ -170,7 +174,11 @@ void TourProcessor::Finish_()
                 g.push_back(vi);
                 groups.push_back(g);
 #ifdef _TOUR_DEBUG
-                LOG(INFO) << "Create new group" << ++group_index << std::endl;
+				if(group_index % 1000 == 0)
+				{
+					LOG(INFO) << "Create new group:" << group_index << std::endl;
+				}
+				++group_index;
 #endif
             }
             else
@@ -198,6 +206,7 @@ void TourProcessor::Finish_()
             pwriter.Append(pdoc);
         }
     }
+	LOG(INFO) << "Group total: " << group_index << "\n\n";
     owriter.Close();
     pwriter.Close();
 }

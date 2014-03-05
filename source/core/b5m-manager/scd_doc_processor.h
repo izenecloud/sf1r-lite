@@ -16,11 +16,12 @@ NS_SF1R_B5M_BEGIN
 class ScdDocProcessor {
 public:
     typedef boost::function<void (ScdDocument&) > ProcessorType;
-    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), self_writer_(false), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0), debug_count_(100000)
+    ScdDocProcessor(const ProcessorType& p, int thread_num=1):p_(p), self_writer_(false), thread_num_(thread_num), pool_(thread_num, boost::bind(&ScdDocProcessor::DoProcessDoc_, this, _1)), count_(0), debug_count_(100000), limit_(0)
     {
     }
 
     void SetDebugCount(std::size_t c) {debug_count_ = c;}
+    void SetLimit(std::size_t l) {limit_ = l;}
 
     void AddInput(const std::string& scd_path)
     {
@@ -44,6 +45,7 @@ public:
 
     void Process()
     {
+        std::size_t p=0;
         for(uint32_t i=0;i<input_.size();i++)
         {
             std::vector<std::string> scd_list;
@@ -59,6 +61,8 @@ public:
                 for( ScdParser::iterator doc_iter = parser.begin();
                   doc_iter!= parser.end(); ++doc_iter, ++n)
                 {
+                    ++p;
+                    if(limit_>0&&p>=limit_) break;
                     if(n%debug_count_==0)
                     {
                         LOG(INFO)<<"Find Documents "<<n<<std::endl;
@@ -124,6 +128,7 @@ private:
     boost::mutex mutex_;
     std::size_t count_;
     std::size_t debug_count_;
+    std::size_t limit_;
     //std::string output_;
 };
 

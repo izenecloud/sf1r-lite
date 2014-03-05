@@ -23,6 +23,10 @@ public:
     bool Open(const std::string& path)
     {
         std::string file = path+"/data";
+        return OpenFile(file);
+    }
+    bool OpenFile(const std::string& file)
+    {
         std::string line;
         std::ifstream ifs(file.c_str());
         while(getline(ifs, line))
@@ -33,7 +37,6 @@ public:
             if(!Parse_(line, key, value)) continue;
             mapper_[key] = value;
         }
-
         is_open_ = true;
         return true;
     }
