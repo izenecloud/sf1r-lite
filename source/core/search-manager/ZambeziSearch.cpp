@@ -173,7 +173,7 @@ bool ZambeziSearch::search(
     {
         queryBuilder_.prepare_filter(filterTree, filterBitmap);
         filterBitset.reset(new izenelib::ir::indexmanager::Bitset);
-        filterBitset->importFromEWAH(*filterBitmap);
+        filterBitset->decompress(*filterBitmap);
     }
     //Query Analyzer
     getAnalyzedQuery_(query, searchResult.analyzedQuery_);

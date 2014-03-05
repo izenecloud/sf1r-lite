@@ -20,7 +20,7 @@ void ItemCondition::createBitset(QueryBuilder* queryBuilder)
     queryBuilder->prepare_filter(filterTree_, filterBitmap);
 
     pBitset_.reset(new izenelib::ir::indexmanager::Bitset);
-    pBitset_->importFromEWAH(*filterBitmap);
+    pBitset_->decompress(*filterBitmap);
 }
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const
