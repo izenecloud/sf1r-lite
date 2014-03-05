@@ -88,7 +88,7 @@ private:
         RawBitmapPointer operator()(CompressBitmapPointer& compress) const
         {
             RawBitmapPointer raw(new RawBitmap);
-            raw->importFromEWAH(*compress);
+            raw->decompress(*compress);
             return raw;
         }
 
