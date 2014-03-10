@@ -196,7 +196,7 @@ bool ZambeziSearch::search(
     if (candidates.empty() && zambeziManager_->isAttrTokenize())
     {
         std::vector<std::pair<std::string, int> > subTokenList;
-        AttrTokenizeWrapper::get()->attr_subtokenize(tokenList, subTokenList);
+        AttrTokenizeWrapper::get()->attr_tokenize(query, subTokenList, true); // kevin'dict
 
         zambeziManager_->search(algorithm, subTokenList, search_in_properties,
                                 &filter, kZambeziTopKNum, candidates, scores);
