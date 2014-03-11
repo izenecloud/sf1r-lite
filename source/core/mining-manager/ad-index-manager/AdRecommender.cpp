@@ -366,7 +366,7 @@ void AdRecommender::doRecommend(const std::string& user_str_id,
                 {
                     recommended_items[i] = ad_feature_value_list_[unview_index];
                     score_list[i] = default_score;
-                    LOG(INFO) << "recommend from unviewed items : " << recommended_items[i];
+                    //LOG(INFO) << "recommend from unviewed items : " << recommended_items[i];
                     continue;
                 }
             }

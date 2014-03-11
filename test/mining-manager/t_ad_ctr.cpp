@@ -2,6 +2,7 @@
 #include <mining-manager/ad-index-manager/AdStreamSubscriber.h>
 #include <mining-manager/ad-index-manager/AdSelector.h>
 #include <mining-manager/ad-index-manager/AdRecommender.h>
+#include <mining-manager/ad-index-manager/AdFeedbackMgr.h>
 #include <node-manager/SuperNodeManager.h>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
@@ -119,7 +120,7 @@ void select_ad_func(const std::vector<docid_t>& cand_docs,
 void recommend_ad_func(const AdSelector::FeatureT& old_male_userinfo,
     const AdSelector::FeatureT& young_female_userinfo, AdRecommender* test_ad_rec)
 {
-    for(size_t i = 0; i < 1000000; ++i)
+    for(size_t i = 0; i < 200000; ++i)
     {
         std::vector<double> score_list;
         std::vector<std::string> rec_doclist;
@@ -312,7 +313,7 @@ int main()
     {
         new_ad_segs.push_back(std::make_pair("Category", gen_rand_str()));
     }
-    for (size_t i = 0; i < 100; ++i)
+    for (size_t i = 0; i < 1000; ++i)
     {
         new_ad_segs.push_back(std::make_pair("Topic", gen_rand_str()));
     }
@@ -323,7 +324,7 @@ int main()
     new_user_segs.push_back(std::make_pair("Age", "28"));
     new_user_segs.push_back(std::make_pair("Age", "30"));
     new_user_segs.push_back(std::make_pair("Age", "38"));
-    for (size_t i = 0; i < 100; i += 5)
+    for (size_t i = 0; i < 1000; i += 5)
     {
         new_user_segs.push_back(std::make_pair("Age", boost::lexical_cast<std::string>(i)));
     }
@@ -341,6 +342,13 @@ int main()
     adinfo[2]["Category"].push_back("Cloth");
     adinfo[3]["Category"].push_back("Computer");
     adinfo[3]["Topic"].push_back("iPhone");
+    std::vector<AdSelector::FeatureMapT> rand_ad_info;
+    rand_ad_info.resize(10000);
+    for(size_t i = 0; i < rand_ad_info.size(); ++i)
+    {
+        const std::pair<std::string, std::string>& tmp = new_ad_segs[rand()%new_ad_segs.size()];
+        rand_ad_info[i][tmp.first].push_back(tmp.second);
+    }
     std::vector<docid_t> cand_docs;
     std::vector<AdSelector::FeatureMapT> cand_ad_info;
     AdRecommender test_ad_rec;
@@ -360,12 +368,17 @@ int main()
     male_liked_feature.push_back("Computer");
     std::vector<std::string>  unliked_feature;
     unliked_feature.push_back("Android");
+    std::vector<AdSelector::SegIdT> tmp_segids;
     for (size_t i = 1; i < total_ad_num; ++i)
     {
         if (i % sponsor_searched_rate == 0)
         {
             cand_docs.push_back(i);
             cand_ad_info.push_back(adinfo[rand()%4]);
+        }
+        else
+        {
+            AdSelector::get()->updateAdSegmentStr(i, rand_ad_info[rand()%rand_ad_info.size()], tmp_segids);
         }
         if (i % clicked_rate == 0)
         {
@@ -382,14 +395,42 @@ int main()
         }
         else if (i % view_rate == 0)
         {
-            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), unliked_feature);
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
             test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
+        }
+        else
+        {
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
         }
     }
     LOG(INFO) << "begin update ad segment string.";
     AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
     LOG(INFO) << "end update ad segment string.";
 
+    LOG(INFO) << "begin test ad log parser";
+    AdFeedbackMgr::get()->init("172.16.11.60", 8091);
+    std::ifstream ifs_adlog("/home/vincentlee/workspace/ad-clicked-log.json");
+    std::size_t ad_impression = 0;
+    std::size_t ad_clicked = 0;
+    while (ifs_adlog.good())
+    {
+        std::string line;
+        AdFeedbackMgr::FeedbackInfo feedback_info;
+        std::getline(ifs_adlog, line);
+        bool ret = AdFeedbackMgr::get()->parserFeedbackLog(line, feedback_info);
+        if (ret)
+        {
+            ++ad_impression;
+            if (feedback_info.action == AdFeedbackMgr::Click)
+            {
+                ad_clicked++;
+                LOG(INFO) << "clicked log : " << feedback_info.user_id << ", "
+                    << feedback_info.ad_id;
+            }
+        }
+    }
+
+    LOG(INFO) << "end test ad log parser. impression: " << ad_impression << " , clicked: " << ad_clicked;
     sleep(30);
     LOG(INFO) << "begin test ad select.";
     //boost::thread_group test_ad_selector_threads;
@@ -461,15 +502,14 @@ int main()
         }
         else if (i % view_rate == 0)
         {
-            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), unliked_feature);
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
             test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
         }
-        if (i % 100 == 0)
-            usleep(1);
-        if (i % 100000 == 0)
+        if (i % 10000 == 0)
         {
-            LOG(INFO) << "training : " << i;
-            usleep(1);
+            usleep(100);
+            if (i % 100000 == 0)
+                LOG(INFO) << "training : " << i;
         }
     }
     LOG(INFO) << "recommender training finished.";
