@@ -7,6 +7,7 @@
 #include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <algorithm> // min
 #include <vector>
@@ -21,8 +22,8 @@ static bool IsGreaterGPScoreInfo(const GroupPathScoreInfo& left, const GroupPath
 {
     if (std::fabs(left.score - right.score) <= std::numeric_limits<double>::epsilon())
     {
-        LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
-            << ", docid : " << left.wdocid << " VS " << right.wdocid;
+        //LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
+        //    << ", docid : " << left.wdocid << " VS " << right.wdocid;
         return net::aggregator::Util::IsNewerDocId(left.wdocid, right.wdocid);
     }
     return left.score > right.score;
@@ -782,13 +783,14 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     const GetDocumentsByIdsActionItem& actionItem,
     std::map<workerid_t, GetDocumentsByIdsActionItem>& actionItemMap)
 {
-    if (actionItem.idList_.empty())
+    // idList_ store the combination of internal id and worker id
+    // docIdList_ store the real MD5 value of DOCID.
+    if (actionItem.idList_.empty() && actionItem.docIdList_.empty())
         return false;
 
     std::vector<sf1r::docid_t> idList;
     std::vector<sf1r::workerid_t> workeridList;
     actionItem.getDocWorkerIdLists(idList, workeridList);
-
     // split
     for (size_t i = 0; i < workeridList.size(); i++)
     {
@@ -798,13 +800,35 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
         if (subActionItem.idList_.empty())
         {
             subActionItem = actionItem;
+            subActionItem.docIdList_.clear();
             subActionItem.idList_.clear();
         }
 
         subActionItem.idList_.push_back(actionItem.idList_[i]);
     }
+    ShardingStrategy::ShardFieldListT kv_list;
+    kv_list[sharding_strategy_->shard_cfg_.unique_shardkey_] = "";
+    for (std::vector<std::string>::const_iterator it = actionItem.docIdList_.begin();
+      it != actionItem.docIdList_.end(); ++it)
+    {
+        kv_list[sharding_strategy_->shard_cfg_.unique_shardkey_] = *it;;
+        ShardingStrategy::ShardIDListT wid_list = sharding_strategy_->sharding_for_get(kv_list);
+        for (size_t i = 0; i < wid_list.size(); ++i)
+        {
+            workerid_t wid = (workerid_t)wid_list[i];
+            GetDocumentsByIdsActionItem& subActionItem = actionItemMap[wid];
+            if (subActionItem.idList_.empty() && subActionItem.docIdList_.empty())
+            {
+                subActionItem = actionItem;
+                subActionItem.docIdList_.clear();
+                subActionItem.idList_.clear();
+            }
+            subActionItem.docIdList_.push_back(*it);
+        }
+    }
 
-    return true;
+    LOG(INFO) << "split get docs worker num: " << actionItemMap.size();
+    return !actionItemMap.empty();
 }
 
 void SearchMerger::getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)

@@ -97,8 +97,9 @@ bool IndexSearchService::getSearchResult(
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
     bool ret = true;
-    struct timeval start_time;
-    gettimeofday(&start_time, 0);
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    //gettimeofday(&start_time, 0);
     if (!searchCache_->get(identity, resultItem))
     {
         LOG(INFO) << "cache miss, begin do search";
@@ -112,10 +113,10 @@ bool IndexSearchService::getSearchResult(
             LOG(ERROR) << "got dist search result failed.";
             return false;
         }
-        struct timeval end_time;
-        gettimeofday(&end_time, 0);
+        struct timespec end_time;
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
         int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
-        interval_ms += (end_time.tv_usec - start_time.tv_usec) / 1000;
+        interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
         if (interval_ms > CACHE_THRESHOLD*5)
         {
@@ -239,7 +240,17 @@ bool IndexSearchService::getDocumentsByIds(
     ActionItemMapT actionItemMap;
     if (!searchMerger_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
     {
-        ro_searchAggregator_->distributeRequest(actionItem.collectionName_, request_index, "getDocumentsByIds", actionItem, resultItem);
+        if (!actionItem.propertyName_.empty() && !actionItem.propertyValueList_.empty())
+        {
+            LOG(INFO) << "get docs by property value.";
+            ro_searchAggregator_->distributeRequest(actionItem.collectionName_, request_index, "getDocumentsByIds", actionItem, resultItem);
+        }
+        else
+        {
+            LOG(WARNING) << "split docs failed.";
+            actionItem.print();
+            return false;
+        }
     }
     else
     {

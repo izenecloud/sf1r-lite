@@ -184,6 +184,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             boost::apply_visitor(converter, (*property_value).getVariant());
             invertedIndexManager_->getDocsByPropertyValue(actionItem.propertyName_, value, idList);
         }
+        LOG(INFO) << "after get docs from property, ids idlist: " << idList.size();
     }
 
     // get query terms

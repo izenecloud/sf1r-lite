@@ -24,6 +24,7 @@ class KeywordSearchResult;
 class RawTextResultFromSIA;
 class GetDocumentsByIdsActionItem;
 class Summarization;
+class ShardingStrategy;
 
 class SearchMerger : public net::aggregator::BindCallProxyBase<SearchMerger>
 {
@@ -83,6 +84,7 @@ public:
 private:
     //std::size_t TOP_K_NUM;
     boost::shared_ptr<MiningManager> miningManager_;
+    boost::shared_ptr<ShardingStrategy> sharding_strategy_;
 
     friend class IndexBundleActivator;
 };
