@@ -24,7 +24,13 @@ BOOST_AUTO_TEST_CASE(Insert_test)
 //int main()
 {
     //system("rm ./cdb");
-    CommentDb cdb_("./cdb");
+    std::string dir = "./cdb_test";
+    if(boost::filesystem::exists(dir))
+    {
+        boost::filesystem::remove_all(dir);
+    }
+
+    CommentDb cdb_(dir);
     cdb_.open();
     //std::cout<<"running a case"<<std::endl;
     std::cout<<"cdb open"<< cdb_.is_open()<<std::endl;
