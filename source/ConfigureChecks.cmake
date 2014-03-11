@@ -25,7 +25,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   index_manager
   mock_index_manager
   febird
-  udt3
   izene_log
   bigint
   procmeminfo

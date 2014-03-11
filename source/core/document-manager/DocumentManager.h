@@ -15,6 +15,7 @@
 
 #include "Document.h"
 
+#include <configuration-manager/ZambeziConfig.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <common/PropertyKey.h>
 #include <common/PropertyValue.h>
@@ -65,6 +66,7 @@ class DocumentManager
     typedef uint32_t CharacterOffset;
     typedef uint32_t DelFilterBlockType;
     typedef boost::dynamic_bitset<DelFilterBlockType> DelFilterType;
+
 public:
     typedef Document DocumentType;
     typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > NumericPropertyTableMap;
@@ -80,6 +82,8 @@ public:
             const IndexBundleSchema& indexSchema,
             izenelib::util::UString::EncodingType encondingType,
             size_t documentCacheNum = 20000);
+
+    void setZambeziConfig(const ZambeziConfig& zambeziConfig);
     /**
      * @brief a destructor
      */
@@ -136,7 +140,7 @@ public:
      * @return \c true if document is already deleted \c false
      *         otherwise.
      */
-    bool isDeleted(docid_t docId, bool use_lock = true) const;
+    bool isDeleted(docid_t docId) const;
 
     /**
      * @brief gets one document by id
@@ -267,7 +271,7 @@ public:
 
     uint32_t getNumDocs();
 
-    bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
+    bool getDeletedDocIdList(std::vector<docid_t>& docid_list) const;
 
     boost::shared_ptr<NumericPropertyTableBase>& getNumericPropertyTable(const std::string& propertyName);
     boost::shared_ptr<RTypeStringPropTable>& getRTypeStringPropTable(const std::string& propertyName);
@@ -290,18 +294,13 @@ public:
         return RtypeDocidPros_.size() > 0;
     }
 
-    boost::shared_mutex& getMutex() const
-    {
-        return delfilter_mutex_;
-    }
-
     std::set<string> RtypeDocidPros_;
     std::vector<uint32_t> last_delete_docid_;
 
 private:
     bool loadDelFilter_();
 
-    bool saveDelFilter_();
+    bool saveDelFilter_() const;
 
     /**
      * @brief builds property-id pair map for properties from configuration. Different
@@ -387,15 +386,18 @@ private:
     RTypeStringPropTableMap rtype_string_proptable_;
 
     /// @brief The delete flag filter
-    DelFilterType delfilter_;
-
-    mutable boost::shared_mutex delfilter_mutex_;
+    static const size_t DELFILTER_SEGMENT_SIZE = 1 << 27;
+    size_t delfilter_count_;
+    DelFilterType delfilter_[32];
 
     /// @brief document cache holds the retrieved property values of document
     izenelib::cache::IzeneCache<docid_t, Document, izenelib::util::ReadWriteLock> documentCache_;
 
     /// @brief property specification from the configuration file
     IndexBundleSchema indexSchema_;
+
+    /// @brief zambezi index config ...
+    ZambeziConfig zambeziConfig_;
 
     /// @brief encoding type used in system
     izenelib::util::UString::EncodingType encodingType_;

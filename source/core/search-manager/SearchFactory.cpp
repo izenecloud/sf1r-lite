@@ -9,11 +9,13 @@ SearchFactory::SearchFactory(
     const IndexBundleConfiguration& config,
     const boost::shared_ptr<DocumentManager>& documentManager,
     const boost::shared_ptr<InvertedIndexManager>& indexManager,
-    const boost::shared_ptr<RankingManager>& rankingManager)
+    const boost::shared_ptr<RankingManager>& rankingManager,
+    ZambeziManager* zambeziMagager)
     : config_(config)
     , documentManager_(documentManager)
     , indexManager_(indexManager)
     , rankingManager_(rankingManager)
+    , zambeziMagager_(zambeziMagager)
 {
 }
 
@@ -44,7 +46,8 @@ SearchBase* SearchFactory::createSearchBase(
     case SearchingMode::ZAMBEZI:
         return new ZambeziSearch(*documentManager_,
                                  preprocessor,
-                                 queryBuilder);
+                                 queryBuilder,
+                                 zambeziMagager_); // add zambezimanager ...
 
     default:
         return NULL;

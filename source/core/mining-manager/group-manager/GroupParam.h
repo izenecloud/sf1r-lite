@@ -120,6 +120,8 @@ struct GroupParam
 
     int searchMode_;
 
+    bool isAttrToken_;
+
     bool isEmpty() const;
     bool isGroupEmpty() const;
     bool isAttrEmpty() const;
@@ -128,12 +130,12 @@ struct GroupParam
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
                       &autoSelectLimits_&boostGroupLabels_
                       &isAttrGroup_&attrGroupNum_&attrLabels_
-                      &searchMode_);
+                      &searchMode_&isAttrToken_);
 
     MSGPACK_DEFINE(groupProps_, groupLabels_,
                    autoSelectLimits_, boostGroupLabels_,
                    isAttrGroup_, attrGroupNum_, attrLabels_,
-                   searchMode_);
+                   searchMode_, isAttrToken_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -146,6 +148,7 @@ struct GroupParam
         ar & attrGroupNum_;
         ar & attrLabels_;
         ar & searchMode_;
+        ar & isAttrToken_;
     }
 
 private:

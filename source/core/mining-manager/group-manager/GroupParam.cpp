@@ -156,6 +156,7 @@ GroupParam::GroupParam()
     , attrGroupNum_(0)
     , attrIterDocNum_(0)
     , searchMode_(SearchingMode::DefaultSearchingMode)
+    , isAttrToken_(false)
 {
 }
 

@@ -4,10 +4,9 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/RankingManagerConfig.h>
 #include <configuration-manager/CollectionPath.h>
-
+#include <configuration-manager/ZambeziConfig.h>
 #include <node-manager/Sf1rTopology.h>
 #include <ir/index_manager/utility/IndexManagerConfig.h>
-
 #include <util/osgi/BundleConfiguration.h>
 #include <util/ustring/UString.h>
 
@@ -22,6 +21,8 @@ public:
     IndexBundleConfiguration(const std::string& collectionName);
 
     void setSchema(const DocumentSchema& documentSchema);
+
+    void setZambeziSchema(const DocumentSchema& documentSchema);
 
     void numberProperty();
 
@@ -47,6 +48,9 @@ public:
         std::string& analysis,
         std::string& language
     ) const;
+
+    std::set<PropertyConfig, PropertyComp>::const_iterator 
+    findIndexProperty(PropertyConfig tempPropertyConfig, bool& isIndexSchema) const;
 
     std::string getSearchAnalyzer() const
     {
@@ -82,15 +86,32 @@ private:
         return indexSchema_.erase(config);
     }
 
+    bool eraseZambeziProperty(const std::string& name)
+    {
+        PropertyConfig config;
+        config.propertyName_ = name;
+        return zambeziConfig_.zambeziIndexSchema.erase(config);
+    }
+
 public:
     std::string collectionName_;
 
-    // <IndexBundle><Schema>
+    // if there is any index;
     bool isSchemaEnable_;
+
+    // <IndexBundle><NormalSchema>
+    bool isNormalSchemaEnable_;
+
+    // <IndexBundle><ZambeziSchema>
+    bool isZambeziSchemaEnable_;
 
     CollectionPath collPath_;
 
+    // config for NO.1 Inverted Index (Normal Index)
     IndexBundleSchema indexSchema_;
+
+    // config for No.2 Inverted Index (Zambezi Index)
+    ZambeziConfig zambeziConfig_;
 
     DocumentSchema documentSchema_;
 

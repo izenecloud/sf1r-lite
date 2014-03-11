@@ -65,7 +65,7 @@
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
-#include "zambezi-manager/ZambeziManager.h"
+#include <index-manager/zambezi-manager/ZambeziManager.h>
 
 #include "ad-index-manager/AdIndexManager.h"
 
@@ -811,11 +811,11 @@ bool MiningManager::open()
         }
 
         /** zambezi */
-        if (!initZambeziManager_(mining_schema_.zambezi_config))
+        /*if (!initZambeziManager_(mining_schema_.zambezi_config))
         {
             LOG(ERROR) << "init ZambeziManager fail";
             return false;
-        }
+        }*/
 
         if(!initAdIndexManager_(mining_schema_.ad_index_config))
         {
@@ -3189,6 +3189,7 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
 bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 {
+    /*
     if (!zambeziConfig.isEnable)
         return true;
 
@@ -3209,10 +3210,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
     {
         LOG(ERROR) << "open " << filePath << " failed";
         return false;
-    }
-
-    miningTaskBuilder_->addTask(
-        zambeziManager_->createMiningTask(*document_manager_));
+    }*/
 
     return true;
 }

@@ -471,8 +471,8 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
             LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
-        LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
-        LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
+        //LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
+        //LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
     }
 
     size_t pageCount = mergeResult.count_;
@@ -676,7 +676,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
         workerid_t workerid = workerResults.workerId(w);
         const RawTextResultFromSIA& wResult = workerResults.result(w);
 
-        LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
+        //LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
         for (size_t i = 0; i < wResult.idList_.size(); i++)
         {
             if (mergeResult.idList_.empty())

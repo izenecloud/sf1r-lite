@@ -79,6 +79,7 @@ DocumentsSearchHandler::DocumentsSearchHandler(
         miningSearchService_(collectionHandler.miningSearchService_),
         indexSchema_(collectionHandler.indexSchema_),
         miningSchema_(collectionHandler.miningSchema_),
+        zambeziConfig_(collectionHandler.zambeziConfig_),
         actionItem_(),
         TOP_K_NUM(collectionHandler.indexSearchService_->getBundleConfig()->topKNum_),
         renderer_(miningSchema_, TOP_K_NUM)
@@ -366,23 +367,33 @@ bool DocumentsSearchHandler::parse()
 
     std::vector<Parser*> parsers;
     std::vector<const Value*> values;
-
-    SelectParser selectParser(indexSchema_);
-    parsers.push_back(&selectParser);
-    values.push_back(&request_[Keys::select]);
-
-    SearchParser searchParser(indexSchema_);
+    
+    SearchParser searchParser(indexSchema_, zambeziConfig_);
     parsers.push_back(&searchParser);
     values.push_back(&request_[Keys::search]);
 
-    FilteringParser filteringParser(indexSchema_,miningSchema_);
+     for (std::size_t i = 0; i < 1; ++i)
+    {
+        if (!parsers[i]->parse(*values[i]))
+        {
+            response_.addError(parsers[i]->errorMessage());
+            return false;
+        }
+        response_.addWarning(parsers[i]->warningMessage());
+    }
+
+    SelectParser selectParser(indexSchema_, zambeziConfig_, searchParser.searchingModeInfo().mode_);
+    parsers.push_back(&selectParser);
+    values.push_back(&request_[Keys::select]); 
+
+    FilteringParser filteringParser(indexSchema_, miningSchema_); 
     parsers.push_back(&filteringParser);
     values.push_back(&request_[Keys::conditions]);
 
-    CustomRankingParser customrRankingParser(indexSchema_);
+    CustomRankingParser customrRankingParser(indexSchema_); 
     parsers.push_back(&customrRankingParser);
     values.push_back(&request_[Keys::custom_rank]);
-
+ 
     SortParser sortParser(indexSchema_);
     Value& customRankingValue = request_[Keys::custom_rank];
     if (customRankingValue.type() != Value::kNullType) {
@@ -407,7 +418,7 @@ bool DocumentsSearchHandler::parse()
     parsers.push_back(&rangeParser);
     values.push_back(&request_[Keys::range]);
 
-    for (std::size_t i = 0; i < parsers.size(); ++i)
+    for (std::size_t i = 1; i < parsers.size(); ++i)
     {
         if (!parsers[i]->parse(*values[i]))
         {

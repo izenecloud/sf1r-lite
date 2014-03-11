@@ -10,6 +10,13 @@
 #include "SearchBase.h"
 #include <common/inttypes.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <mining-manager/group-manager/PropValueTable.h> // pvid_t
+#include <mining-manager/group-manager/GroupManager.h>
+#include <mining-manager/attr-manager/AttrManager.h>
+#include <ir/Zambezi/Consts.hpp>
+#include <mining-manager/attr-manager/AttrTable.h>
+#include <index-manager/zambezi-tokenizer/ZambeziTokenizer.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 #include <util/ustring/UString.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -24,6 +31,9 @@ class QueryBuilder;
 class ZambeziManager;
 class PropSharedLockSet;
 class ZambeziScoreNormalizer;
+class ProductScorer;
+class HitQueue;
+class ScoreDoc;
 
 namespace faceted
 {
@@ -38,7 +48,8 @@ public:
     ZambeziSearch(
         DocumentManager& documentManager,
         SearchManagerPreProcessor& preprocessor,
-        QueryBuilder& queryBuilder);
+        QueryBuilder& queryBuilder,
+        ZambeziManager* zambeziManager);
 
     virtual void setMiningManager(
         const boost::shared_ptr<MiningManager>& miningManager);
@@ -50,6 +61,17 @@ public:
         std::size_t offset);
 
 private:
+    // void normalizeScore_(
+    //     std::vector<docid_t>& docids,
+    //     std::vector<float>& scores,
+    //     std::vector<float>& productScores,
+    //     PropSharedLockSet &sharedLockSet);
+    
+    void normalizeTopDocs_(
+        const boost::scoped_ptr<ProductScorer>& productScorer, 
+        boost::scoped_ptr<HitQueue>& scoreItemQueue,
+        std::vector<ScoreDoc>& resultList);
+
     void getTopLabels_(
         const std::vector<unsigned int>& docIdList,
         const std::vector<float>& rankScoreList,
@@ -65,6 +87,10 @@ private:
     void getAnalyzedQuery_(
         const std::string& rawQuery,
         izenelib::util::UString& analyzedQuery);
+
+    bool getZambeziAlgorithm(
+         const int &algorithm,
+         izenelib::ir::Zambezi::Algorithm& Algorithm);
 
 private:
     DocumentManager& documentManager_;
@@ -82,6 +108,10 @@ private:
     const faceted::PropValueTable* merchantValueTable_;
 
     boost::scoped_ptr<ZambeziScoreNormalizer> zambeziScoreNormalizer_;
+
+    faceted::AttrManager* attrManager_;
+
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r

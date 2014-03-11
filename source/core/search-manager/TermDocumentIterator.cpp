@@ -3,7 +3,7 @@
 #include <index-manager/InvertedIndexManager.h>
 
 #include <ir/index_manager/index/TermPositions.h>
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Bitset.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -111,7 +111,7 @@ bool TermDocumentIterator::accept()
     else
     {
         boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
-        boost::shared_ptr<izenelib::ir::indexmanager::BitVector> pBitVector;
+        boost::shared_ptr<izenelib::ir::indexmanager::Bitset> pBitset;
         if (!TermTypeDetector::isTypeMatch(rawTerm_, dataType_))
             return false;
 
@@ -123,10 +123,10 @@ bool TermDocumentIterator::accept()
         if (find)
         {
             pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
-            pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
+            pBitset.reset(new izenelib::ir::indexmanager::Bitset(pIndexReader_->maxDoc() + 1));
 
-            indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
-            pBitVector->compressed(*pFilterBitmap);
+            indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitset);
+            pBitset->compress(*pFilterBitmap);
             if(pTermDocReader_) delete pTermDocReader_;
             pTermDocReader_ = new InvertedIndexManager::FilterTermDocFreqsT(pFilterBitmap);
             df_ = pTermDocReader_->docFreq();

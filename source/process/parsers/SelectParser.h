@@ -8,7 +8,7 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 #include <util/ustring/UString.h>
-
+#include <query-manager/SearchingEnumerator.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 
 #include <vector>
@@ -28,8 +28,12 @@ class SelectParser : public ::izenelib::driver::Parser
 {
     typedef std::vector<izenelib::util::UString> query_list;
 public:
-    explicit SelectParser(const IndexBundleSchema& indexSchema)
+    explicit SelectParser(const IndexBundleSchema& indexSchema,
+        const ZambeziConfig& zambeziConfig,
+        const SearchingMode::SearchingModeType& searchingMode)
     : indexSchema_(indexSchema)
+    , zambeziConfig_(zambeziConfig)
+    , searchingMode_(searchingMode)
     {}
 
     /// @brief Default suffix of the summary property
@@ -54,6 +58,8 @@ public:
 
 private:
     const IndexBundleSchema& indexSchema_;
+    const ZambeziConfig& zambeziConfig_;
+    const SearchingMode::SearchingModeType& searchingMode_;
 
     std::vector<DisplayProperty> properties_;
 };

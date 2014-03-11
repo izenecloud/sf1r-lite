@@ -47,14 +47,15 @@ public:
 
     void attr_tokenize(
         const std::string& Q,
-        std::vector<std::pair<std::string, int> >& tokenList);
+        std::vector<std::pair<std::string, int> >& tokenList,
+        bool do_subtok = false);
 
     /**
      * @return true if @p tokenList is not equal with @p tks.
      */
-    bool attr_subtokenize(
-        const std::vector<std::pair<std::string, int> >& tks,
-        std::vector<std::pair<std::string, int> >& tokenList);
+    //bool attr_subtokenize(
+      //  const std::vector<std::pair<std::string, int> >& tks,
+        //std::vector<std::pair<std::string, int> >& tokenList);
 
     double att_name_weight(
         const std::string& attr_name,

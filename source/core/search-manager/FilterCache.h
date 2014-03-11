@@ -32,10 +32,7 @@ public:
 
     bool get(const key_type& key, value_type& value)
     {
-        if (cache_.getValueNoInsert(key, value))
-            return true;
-
-        return false;
+        return cache_.getValueNoInsert(key, value);
     }
 
     void set(const key_type& key, value_type value)
@@ -47,13 +44,14 @@ public:
     {
         cache_.clear();
     }
+
 private:
     typedef izenelib::cache::IzeneCache<
-    key_type,
-    value_type,
-    izenelib::util::ReadWriteLock,
-    izenelib::cache::RDE_HASH,
-    izenelib::cache::LRLFU
+        key_type,
+        value_type,
+        izenelib::util::ReadWriteLock,
+        izenelib::cache::RDE_HASH,
+        izenelib::cache::LRLFU
     > cache_type;
 
     cache_type cache_;

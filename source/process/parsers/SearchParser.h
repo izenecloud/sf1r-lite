@@ -7,7 +7,7 @@
  */
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
-
+#include <ir/Zambezi/Consts.hpp>
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
 #include <mining-manager/group-manager/GroupParam.h>
@@ -32,8 +32,10 @@ class SearchParser : public ::izenelib::driver::Parser
 public:
     bool parse(const Value& search);
 
-    SearchParser(const IndexBundleSchema& indexSchema)
+    SearchParser(const IndexBundleSchema& indexSchema,
+                const ZambeziConfig& zambeziConfig)
     : indexSchema_(indexSchema)
+    , zambeziConfig_(zambeziConfig)
     {}
 
     std::string& mutableKeywords()
@@ -187,6 +189,7 @@ private:
 
 private:
     const IndexBundleSchema& indexSchema_;
+    const ZambeziConfig& zambeziConfig_;
 
     std::string keywords_;
     std::string userID_;

@@ -926,6 +926,7 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
         parseIndexEcSchema(getUniqChildElement(indexBundle, "EcSchema", false), collectionMeta);
         parseIndexBundleSchema(getUniqChildElement(indexBundle, "Schema", false), collectionMeta);
         parseIndexShardSchema(getUniqChildElement(indexBundle, "ShardSchema", false), collectionMeta); //after Schema
+        parseZambeziNode(getUniqChildElement(indexBundle, "ZambeziSchema", false), collectionMeta);
 
         IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
         const std::string& collectionName = collectionMeta.getName();
@@ -1363,7 +1364,9 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
         return;
 
     IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
+
     indexBundleConfig.isSchemaEnable_ = true;
+    indexBundleConfig.isNormalSchemaEnable_ = true;
     indexBundleConfig.setSchema(collectionMeta.documentSchema_);
 
     Iterator<Element> property("Property");
@@ -2335,9 +2338,6 @@ NEXT:
         }
     }
 
-    task_node = getUniqChildElement(mining_schema_node, "Zambezi", false);
-    parseZambeziNode(task_node, collectionMeta);
-
     task_node = getUniqChildElement(mining_schema_node, "AdIndex", false);
     parseAdIndexNode(task_node, collectionMeta);
 }
@@ -2390,15 +2390,201 @@ void CollectionConfig::parseZambeziNode(
     if (!zambeziNode)
         return;
 
-    MiningSchema& miningSchema =
-        collectionMeta.miningBundleConfig_->mining_schema_;
+    collectionMeta.indexBundleConfig_->setZambeziSchema(collectionMeta.documentSchema_);
 
-    ZambeziConfig& zambeziConfig = miningSchema.zambezi_config;
+    collectionMeta.indexBundleConfig_->isZambeziSchemaEnable_ = true;
+    ZambeziConfig& zambeziConfig = collectionMeta.indexBundleConfig_->zambeziConfig_;
 
     getAttribute(zambeziNode, "reverse", zambeziConfig.reverse, false);
-    getAttribute(zambeziNode, "poolSize", zambeziConfig.poolSize, 1 << 28);
-    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, 8);
+    getAttribute_ByteSize(zambeziNode, "poolSize", zambeziConfig.poolSize, true);
+    getAttribute(zambeziNode, "poolCount", zambeziConfig.poolCount, true);
+
+    std::string indexType;
+    getAttribute(zambeziNode, "indexType", indexType, false);
+    if (indexType.empty() || indexType == "ATTR")
+        zambeziConfig.indexType_ = ZambeziIndexType::DefultIndexType;
+    else if (indexType == "POSITION")
+        zambeziConfig.indexType_ = ZambeziIndexType::PostionIndexType;
+    else
+    {
+        stringstream message;
+        message << "zambeziConfig indexType is wrong: default is AttrScoreIndex, or use indexType = \"ATTR\" / \"POSITION\"";
+        throw XmlConfigParserException(message.str());
+    }
+	getAttribute_ByteSize(zambeziNode, "vocabSize", zambeziConfig.vocabSize, false);
+
     zambeziConfig.isEnable = true;
+    //zambeziConfig.indexFilePath = collectionMeta.indexBundleConfig_->collPath_.getCollectionDataPath();
+    zambeziConfig.system_resource_path_ = SF1Config::get()->getResourceDir();
+
+    Iterator<Element> property("IndexProperty");
+    for (property = property.begin(zambeziNode); property != property.end(); property++)
+    {
+        try
+        {
+            ZambeziProperty zProperty;
+            PropertyStatus  sProperty;
+            // name and type
+            std::string propertyName;
+            std::string type;
+            getAttribute(property.Get(), "name", propertyName);
+            if (!validateID(propertyName))
+                throw XmlConfigParserException("Alphabets, Numbers, Dot(.), Dash(-) and Underscore(_)");
+
+            PropertyConfigBase tmpConfig;
+            tmpConfig.propertyName_ = propertyName;
+            PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+            dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
+
+            zProperty.type = dataType;
+            std::string pName = propertyName;
+            boost::to_lower(pName);
+            if ((pName == "date")||(pName == "docid"))
+            {
+                stringstream message;
+                message << "DATE/DOCID are inherent properties and should not exist within IndexBundleSchema";
+                throw XmlConfigParserException(message.str());
+            }
+            zProperty.name = propertyName;
+
+            // tokenizer
+            bool istokenizer;
+            getAttribute(property.Get(), "tokenizer", istokenizer, true);
+            zProperty.isTokenizer = istokenizer;
+            sProperty.isTokenizer = istokenizer;
+
+            // weight
+            float propertyWeight;
+            if (getAttribute_FloatType(property.Get(), "weight", propertyWeight, false))
+            {
+                zProperty.weight = propertyWeight;
+                sProperty.weight = propertyWeight;
+            }
+
+            // poolSize
+            uint32_t poolsize = 0;
+            if (getAttribute_ByteSize(property.Get(), "poolSize", poolsize, false))
+                zProperty.poolSize = poolsize;
+            else
+                zProperty.poolSize = zambeziConfig.poolSize;
+
+            // filter
+            bool isFilter;
+            getAttribute(property.Get(), "filter", isFilter, true);
+            zProperty.isFilter = isFilter;
+            sProperty.isFilter = isFilter;
+            if (isFilter)
+                zProperty.poolSize = 0;
+
+            zambeziConfig.properties.push_back(zProperty);
+            zambeziConfig.property_status_map.insert(std::make_pair(propertyName, sProperty));
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
+    //// for virtual Property
+    Iterator<Element> virtualproperty("VirtualProperty");
+    for (virtualproperty = virtualproperty.begin(zambeziNode); virtualproperty != virtualproperty.end(); virtualproperty++)
+    {
+        try
+        {
+            // name
+            ZambeziVirtualProperty vProperty;
+            PropertyStatus  sProperty;
+            sProperty.isCombined = true;
+            getAttribute(virtualproperty.Get(), "name", vProperty.name);
+
+            // weight
+            //getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
+            float propertyWeight;
+            if (getAttribute_FloatType(virtualproperty.Get(), "weight", propertyWeight, false))
+            {
+                vProperty.weight = propertyWeight;
+                sProperty.weight = propertyWeight;
+            }
+
+            // poolsize
+            uint32_t poolSize = 0;
+            if (getAttribute_ByteSize(virtualproperty.Get(), "poolSize", poolSize, false))
+                vProperty.poolSize = poolSize;
+            else
+                vProperty.poolSize = zambeziConfig.poolSize;
+
+            // isAttrToken
+            bool isAttrToken = false;
+            if (getAttribute(virtualproperty.Get(), "isAttrToken", isAttrToken, false))
+            {
+                vProperty.isAttrToken = isAttrToken;
+                if (isAttrToken)
+                {
+                    zambeziConfig.hasAttrtoken = true;
+                    sProperty.isAttr = true;
+                }
+            }
+
+            // SubProperty
+            PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(virtualproperty.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                std::string subPropName;
+
+                getAttribute(subproperty.Get(), "name", subPropName);
+
+                PropertyConfigBase tmpConfig;
+                tmpConfig.propertyName_ = subPropName;
+                PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+                dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
+
+                if (dataType != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("VirtualProperty's subproperty only support STRING type!!!");
+                }
+
+                vProperty.subProperties.insert(subPropName);
+            }
+            vProperty.type = dataType;
+            /// add default config
+            sProperty.isFilter = false;
+            sProperty.isTokenizer = true;
+
+            zambeziConfig.virtualPropeties.push_back(vProperty);
+            zambeziConfig.property_status_map.insert(std::make_pair(vProperty.name, sProperty));
+        }
+        catch (XmlConfigParserException & e)
+        {
+            throw e;
+        }
+    }
+
+    std::string DictionaryPath;
+    ticpp::Element* subNode = getUniqChildElement(zambeziNode, "TokenizeDictionary", false);
+    if (subNode)
+    {
+        std::string DictionaryPath;
+        getAttribute(subNode, "path", DictionaryPath);
+        zambeziConfig.tokenPath = DictionaryPath;
+    }
+    else
+    {
+        if (!zambeziConfig.hasAttrtoken)
+            throw XmlConfigParserException("[TokenizeDictionary] used in ZambeziConfig is missing.");
+    }
+
+    zambeziConfig.display();
+
+    if (!zambeziConfig.checkConfig())
+    {
+        zambeziConfig.isEnable = false;
+        LOG(ERROR) << "att_token index can not should not config togther with other index";
+    }
+    else
+    {
+        collectionMeta.indexBundleConfig_->isSchemaEnable_ = true;
+    }
 }
 
 void CollectionConfig::parseProductRankingNode(

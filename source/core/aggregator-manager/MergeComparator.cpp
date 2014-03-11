@@ -17,7 +17,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         std::string property = iter->first;
         SortPropertyData* pPropertyComparator = new SortPropertyData(iter->first, iter->second);
 
-        std::cout << "=== merge sort property : " << property << std::endl;
+        //std::cout << "=== merge sort property : " << property << std::endl;
         void* dataList = NULL;
         if (property == "RANK")
         {
@@ -93,7 +93,7 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
         else
         {
             delete pPropertyComparator;
-            std::cerr << "Merging, no data for sort property " << property <<endl;
+            //std::cerr << "Merging, no data for sort property " << property <<endl;
         }
     }
 }

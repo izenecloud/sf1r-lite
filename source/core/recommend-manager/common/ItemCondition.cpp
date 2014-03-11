@@ -10,7 +10,7 @@ ItemCondition::ItemCondition()
 {
 }
 
-void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
+void ItemCondition::createBitset(QueryBuilder* queryBuilder)
 {
     // no condition
     if (filterTree_.empty() || !queryBuilder)
@@ -19,14 +19,14 @@ void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     queryBuilder->prepare_filter(filterTree_, filterBitmap);
 
-    pBitVector_.reset(new izenelib::ir::indexmanager::BitVector);
-    pBitVector_->importFromEWAH(*filterBitmap);
+    pBitset_.reset(new izenelib::ir::indexmanager::Bitset);
+    pBitset_->decompress(*filterBitmap);
 }
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const
 {
-    if (pBitVector_)
-        return pBitVector_->test(itemId);
+    if (pBitset_)
+        return pBitset_->test(itemId);
 
     if (itemManager_)
         return itemManager_->hasItem(itemId);

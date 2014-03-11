@@ -40,6 +40,7 @@ DocumentsGetHandler::DocumentsGetHandler(
     , miningSearchService_(collectionHandler.miningSearchService_)
     , indexSchema_(collectionHandler.indexSchema_)
     , miningSchema_(collectionHandler.miningSchema_)
+    , zambeziConfig_(collectionHandler.zambeziConfig_)
     , actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
@@ -208,7 +209,7 @@ bool DocumentsGetHandler::parseSelect()
 {
     using std::swap;
 
-    SelectParser selectParser(indexSchema_);
+    SelectParser selectParser(indexSchema_, zambeziConfig_, SearchingMode::NotUseSearchingMode); //  TODO update
     if (selectParser.parse(request_[Keys::select]))
     {
         response_.addWarning(selectParser.warningMessage());
@@ -230,7 +231,7 @@ bool DocumentsGetHandler::parseSearchSession()
 {
     if (!nullValue(request_[Keys::search_session]))
     {
-        SearchParser searchParser(indexSchema_);
+        SearchParser searchParser(indexSchema_, zambeziConfig_);
         if (searchParser.parse(request_[Keys::search_session]))
         {
             response_.addWarning(searchParser.warningMessage());

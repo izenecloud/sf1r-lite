@@ -13,6 +13,7 @@
 #include <common/parsers/ConditionArrayParser.h>
 
 #include <common/BundleSchemaHelpers.h>
+#include <common/ValueConverter.h>
 
 namespace sf1r {
 

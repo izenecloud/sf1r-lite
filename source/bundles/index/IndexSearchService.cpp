@@ -11,6 +11,8 @@
 namespace sf1r
 {
 
+const static int CACHE_THRESHOLD = 200;
+
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
     : bundleConfig_(config)
     , searchMerger_(NULL)
@@ -95,8 +97,11 @@ bool IndexSearchService::getSearchResult(
     searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
     bool ret = true;
+    struct timeval start_time;
+    gettimeofday(&start_time, 0);
     if (!searchCache_->get(identity, resultItem))
     {
+        LOG(INFO) << "cache miss, begin do search";
         // Get and aggregate keyword search results from mutliple nodes
         distResultItem.setStartCount(actionItem.pageInfo_);
 
@@ -106,6 +111,15 @@ bool IndexSearchService::getSearchResult(
         {
             LOG(ERROR) << "got dist search result failed.";
             return false;
+        }
+        struct timeval end_time;
+        gettimeofday(&end_time, 0);
+        int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
+        interval_ms += (end_time.tv_usec - start_time.tv_usec) / 1000;
+
+        if (interval_ms > CACHE_THRESHOLD*5)
+        {
+            LOG(INFO) << "get search result cost too long: " << interval_ms;
         }
         // remove the first topKStart docids.
         if (topKStart > 0)
@@ -166,7 +180,7 @@ bool IndexSearchService::getSearchResult(
                     actionItem.collectionName_, request_index, "getSummaryMiningResult", requestGroup, resultItem);
             }
         }
-        if (searchCache_ && !resultItem.topKDocs_.empty())
+        if (searchCache_ && !resultItem.topKDocs_.empty() && interval_ms > CACHE_THRESHOLD)
             searchCache_->set(identity, resultItem);
     }
     else

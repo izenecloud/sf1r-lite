@@ -6,7 +6,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <ir/index_manager/utility/StringUtils.h>
-#include <ir/index_manager/utility/BitVector.h>
+#include <ir/index_manager/utility/Bitset.h>
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
 #include <common/RTypeStringPropTable.h>
@@ -249,23 +249,21 @@ void InvertedIndexManager::getDocsByPropertyValue(const std::string& property, c
     size_t actual_size = 0;
     if (data.which() == 0)
     {
-        idlist = boost::get<BTreeIndexerManager::VecValueType>(data);
+        idlist = boost::get<BTreeIndexerManager::DocListType>(data);
         actual_size = idlist.size();
         idlist.resize(std::min((uint16_t)idlist.size(), max_return));
     }
     else
     {
-        BitVector& tmp = boost::get<BitVector>(data);
-        for(size_t i = 0; i < tmp.size(); ++i)
+        Bitset& tmp = boost::get<Bitset>(data);
+        size_t id = tmp.find_first();
+        while (id != Bitset::npos)
         {
-            if (idlist.size() >= max_return)
-            {
-                actual_size = tmp.count();
-                break;
-            }
-            if (tmp.test(i))
-                idlist.push_back(i);
+            idlist.push_back(id);
+            if (idlist.size() >= max_return) break;
+            id = tmp.find_next(id);
         }
+        actual_size = tmp.count();
     }
     if (idlist.size() >= max_return)
         LOG(WARNING) << "the returned doclist num is restricted. " << idlist.size() << " VS " << actual_size;
@@ -276,8 +274,8 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
 {
     collectionid_t colId = 1;
     std::string propertyL = boost::to_upper_copy(property);
-    boost::scoped_ptr<BitVector> pBitVector;
-    if(QueryFiltering::EQUAL != filterOperation) pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
+    boost::scoped_ptr<Bitset> pBitset;
+    if (QueryFiltering::EQUAL != filterOperation) pBitset.reset(new Bitset(pIndexReader_->maxDoc() + 1));
 
     switch (filterOperation)
     {
@@ -296,7 +294,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         {
             convertData(propertyL, filterParam[i], values[i]);
         }
-        getDocsByPropertyValueIn(colId, property, values, *pBitVector, *filterBitMap);
+        getDocsByPropertyValueIn(colId, property, values, *pBitset, *filterBitMap);
         return;
     }
     case QueryFiltering::EXCLUDE:
@@ -306,7 +304,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         {
             convertData(propertyL, filterParam[i], values[i]);
         }
-        getDocsByPropertyValueNotIn(colId, property, values, *pBitVector);
+        getDocsByPropertyValueNotIn(colId, property, values, *pBitset);
     }
         break;
     case QueryFiltering::NOT_EQUAL:
@@ -314,7 +312,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueNotEqual(colId, property, value, *pBitVector);
+        getDocsByPropertyValueNotEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::GREATER_THAN:
@@ -322,7 +320,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThan(colId, property, value, *pBitVector);
+        getDocsByPropertyValueGreaterThan(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::GREATER_THAN_EQUAL:
@@ -330,7 +328,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *pBitVector);
+        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::LESS_THAN:
@@ -338,7 +336,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThan(colId, property, value, *pBitVector);
+        getDocsByPropertyValueLessThan(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::LESS_THAN_EQUAL:
@@ -346,7 +344,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *pBitVector);
+        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::RANGE:
@@ -357,7 +355,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         convertData(propertyL, filterParam[0], value1);
         convertData(propertyL, filterParam[1], value2);
 
-        getDocsByPropertyValueRange(colId, property, value1, value2, *pBitVector);
+        getDocsByPropertyValueRange(colId, property, value1, value2, *pBitset);
     }
         break;
     case QueryFiltering::PREFIX:
@@ -365,7 +363,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueStart(colId, property, value, *pBitVector);
+        getDocsByPropertyValueStart(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::SUFFIX:
@@ -373,7 +371,7 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueEnd(colId, property, value, *pBitVector);
+        getDocsByPropertyValueEnd(colId, property, value, *pBitset);
     }
         break;
     case QueryFiltering::SUB_STRING:
@@ -381,15 +379,15 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueSubString(colId, property, value, *pBitVector);
+        getDocsByPropertyValueSubString(colId, property, value, *pBitset);
     }
         break;
     default:
         break;
     }
     //Compress bit vector
-    BOOST_ASSERT(pBitVector);
-    pBitVector->compressed(*filterBitMap);
+    BOOST_ASSERT(pBitset);
+    pBitset->compress(*filterBitMap);
 }
 
 void InvertedIndexManager::flush(bool force)
@@ -409,7 +407,7 @@ bool InvertedIndexManager::isRealTime()
     return izenelib::ir::indexmanager::Indexer::isRealTime();
 }
 
-void InvertedIndexManager::preBuildFromSCD(size_t total_filesize)
+void InvertedIndexManager::preBuildFromSCD(std::size_t total_filesize)
 {
     //here, try to set the index mode(default[batch] or realtime)
     //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
@@ -455,6 +453,7 @@ void InvertedIndexManager::finishRebuild()
     flush();
 }
 
+// inverted index always true here, that means the doc an not be out-of-order;
 void InvertedIndexManager::preProcessForAPI()
 {
     if (!isRealTime())
@@ -463,6 +462,9 @@ void InvertedIndexManager::preProcessForAPI()
 
 void InvertedIndexManager::postProcessForAPI()
 {
+    idManager_->flush();
+    flush();
+    deletebinlog();
 }
 
 bool InvertedIndexManager::prepareIndexRTypeProperties_(
@@ -483,7 +485,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         if (index_it->getType() == STRING_PROPERTY_TYPE ||
             index_it->getType() == SUBDOC_PROPERTY_TYPE)
         {
-            prepareIndexDocumentStringProperty_(docId, it->first, 
+            prepareIndexDocumentStringProperty_(docId, it->first,
                 it->second.getPropertyStrValue(), index_it, indexDocument);
         }
         else
@@ -512,7 +514,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             continue;
         std::string s_propvalue;
         rtype_it->second->getRTypeString(docId, s_propvalue);
-        prepareIndexDocumentStringProperty_(docId, rtype_it->first, 
+        prepareIndexDocumentStringProperty_(docId, rtype_it->first,
             str_to_propstr(s_propvalue, bundleConfig_->encoding_), index_it, indexDocument);
     }
 
@@ -574,7 +576,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
-	
+
 		case DOUBLE_PROPERTY_TYPE:
         case FLOAT_PROPERTY_TYPE:
             if (iter->getIsRange())
@@ -1169,4 +1171,3 @@ bool InvertedIndexManager::mergeDocument_(
     return true;
 }
 }
-
