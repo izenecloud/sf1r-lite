@@ -2,6 +2,7 @@
 #include <boost/network/protocol/http/server.hpp>
 #include <b5m-manager/category_mapper.h>
 #include <b5m-manager/b5mo_processor.h>
+#include <b5m-manager/b5mo_checker.h>
 #include <b5m-manager/image_server_client.h>
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/tuan_processor.h>
@@ -10,6 +11,7 @@
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/b5ma_scd_generator.h>
+#include <b5m-manager/b5mr_scd_generator.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
@@ -301,10 +303,12 @@ int do_main(int ac, char** av)
         ("hotel-generate", "do hotel matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
+        ("b5mo-check", "check b5mo uuid")
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
         ("b5ma-generate", "generate b5ma scd from b5mo mirror")
+        ("b5mr-generate", "generate b5mr scd from ordered o scd")
         ("logserver-update", "update logserver")
         ("match-test", "b5m matching test")
         ("isbn-test", "b5m isbn pid test")
@@ -1095,6 +1099,27 @@ int do_main(int ac, char** av)
         }
         LOG(INFO)<<"b5mo processor successfully"<<std::endl;
     }
+    if(vm.count("b5mo-check"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        b5mm.Show();
+        LOG(INFO)<<"b5mo check on "<<mdb_instance<<std::endl;
+        B5moChecker processor(b5mm);
+        if(!processor.Check(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"b5mo check successfully"<<std::endl;
+    }
     if(vm.count("b5mp-generate"))
     {
         if( mdb_instance.empty() )
@@ -1152,6 +1177,18 @@ int do_main(int ac, char** av)
 
         B5maScdGenerator generator(b5mm);
         if(!generator.Generate(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("b5mr-generate"))
+    {
+        if(scd_path.empty()||output.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mrScdGenerator generator;
+        if(!generator.Generate(scd_path, output, thread_num))
         {
             return EXIT_FAILURE;
         }

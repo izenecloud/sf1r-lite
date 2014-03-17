@@ -76,7 +76,11 @@ bool HotelProcessor::Generate(const std::string& mdb_instance)
     pwriter_.reset(new ScdWriter(b5mp_path, UPDATE_SCD));
     LOG(INFO)<<"reader size "<<reader.Count()<<std::endl;
     std::size_t p=0;
-    B5mThreadPool<Documents> pool(b5mm_.thread_num, boost::bind(&HotelProcessor::DoClustering_, this, _1));
+    int thread_num = b5mm_.thread_num;
+#ifdef HOTEL_DEBUG
+    thread_num = 1;
+#endif
+    B5mThreadPool<Documents> pool(thread_num, boost::bind(&HotelProcessor::DoClustering_, this, _1));
     Documents* docs = new Documents;
     Document doc;
     while(reader.Next(key, doc))
@@ -729,9 +733,9 @@ void HotelProcessor::FindSimilar_(const std::vector<Item>& items, ForwardMap& fm
             const Item& item = items[v[i]];
             item.doc.getString("Address", addr_list[i]);
 #ifdef HOTEL_DEBUG
-            std::string name;
-            item.doc.getString("Name", name);
-            std::cerr<<"[A"<<i<<"]"<<addr_list[i]<<"\t"<<name<<"\t"<<item.index<<std::endl;
+            //std::string name;
+            //item.doc.getString("Name", name);
+            //std::cerr<<"[A"<<i<<"]"<<addr_list[i]<<"\t"<<name<<"\t"<<item.index<<std::endl;
 #endif
         }
         std::vector<std::pair<std::size_t, std::size_t> > r;
@@ -746,7 +750,7 @@ void HotelProcessor::FindSimilar_(const std::vector<Item>& items, ForwardMap& fm
 //            std::size_t b = v[r[i].second];
 //            std::size_t t = a;
 #ifdef HOTEL_DEBUG
-            std::cerr<<"[AR"<<i<<"]"<<r[i].first<<","<<r[i].second<<std::endl;
+            //std::cerr<<"[AR"<<i<<"]"<<r[i].first<<","<<r[i].second<<std::endl;
 #endif
 //            IdMap::const_iterator idit = idmap.find(a);
 //            if(idit!=idmap.end()) t = idit->second;
@@ -784,7 +788,8 @@ void HotelProcessor::ProcessDoc_(ScdDocument& doc)
     //if(img.empty()) return;
     std::size_t key=izenelib::util::HashFunction<std::string>::generateHash64(city);
     const Document& d = doc;
-    boost::unique_lock<boost::mutex> lock(omutex_);
+    //always use 1 thread, no need.
+    //boost::unique_lock<boost::mutex> lock(omutex_);
     writer_->Append(key, d);
 }
 

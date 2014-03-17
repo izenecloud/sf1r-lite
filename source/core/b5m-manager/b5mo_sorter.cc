@@ -59,7 +59,7 @@ bool B5moSorter::StageTwo(const std::string& last_m, int thread_num)
     if(!boost::filesystem::exists(block_file))
     {
         LOG(ERROR)<<"block file not exists"<<std::endl;
-        return false;
+        return true;
     }
     {
         std::string line;

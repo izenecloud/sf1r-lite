@@ -73,6 +73,13 @@ void B5moProcessor::Process(ScdDocument& doc)
         }
     }
     if(type==NOT_SCD) return;
+    std::string sdocid;
+    doc.getString("DOCID", sdocid);
+    if(sdocid.length()!=32)
+    {
+        type = NOT_SCD;
+        return;
+    }
 
     //format Price property
     Document::doc_prop_value_strtype uprice;
@@ -111,8 +118,6 @@ void B5moProcessor::Process(ScdDocument& doc)
 
     //set pid(uuid) tag
 
-    std::string sdocid;
-    doc.getString("DOCID", sdocid);
     uint128_t oid = B5MHelper::StringToUint128(sdocid);
     sdocid = B5MHelper::Uint128ToString(oid); //to avoid DOCID error;
     std::string spid;
@@ -346,6 +351,11 @@ void B5moProcessor::ProcessIU_(ScdDocument& doc, bool force_match)
     //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
     std::string sdocid;
     doc.getString("DOCID", sdocid);
+    //bool debug = false;
+    //if(sdocid=="418e05ac51300093a5175aa74d231f6f")
+    //{
+    //    debug = true;
+    //}
     std::string spid;
     std::string old_spid;
     bool is_human_edit = false;
@@ -353,15 +363,19 @@ void B5moProcessor::ProcessIU_(ScdDocument& doc, bool force_match)
         //boost::shared_lock<boost::shared_mutex> lock(mutex_);
         if(odb_->get(sdocid, spid)) 
         {
-            OfferDb::FlagType flag = 0;
-            odb_->get_flag(sdocid, flag);
-            if(flag==1)
-            {
-                is_human_edit = true;
-            }
+            //OfferDb::FlagType flag = 0;
+            //odb_->get_flag(sdocid, flag);
+            //if(flag==1)
+            //{
+            //    is_human_edit = true;
+            //}
         }
     }
     old_spid = spid;
+    //if(debug)
+    //{
+    //    std::cerr<<"[DEBUG]"<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
+    //}
     bool need_do_match = force_match? true:false;
     if(is_human_edit)
     {
@@ -407,6 +421,12 @@ void B5moProcessor::ProcessIU_(ScdDocument& doc, bool force_match)
         matcher_->GetProduct(spid, product);
     }
     ProcessIUProduct_(doc, product, old_spid);
+    //if(debug)
+    //{
+    //    spid.clear();
+    //    doc.getString("uuid", spid);
+    //    std::cerr<<"[DEBUG2]"<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
+    //}
 }
 
 void B5moProcessor::OMapperChange_(LastOMapperItem& item)
@@ -435,6 +455,7 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
     }
     const std::string& scd_path = b5mm_.scd_path;
     int thread_num = b5mm_.thread_num;
+    //thread_num = 1;
     const std::string& knowledge = b5mm_.knowledge;
     matcher_ = new ProductMatcher;
     matcher_->SetCmaPath(b5mm_.cma_path);
@@ -478,6 +499,7 @@ bool B5moProcessor::Generate(const std::string& mdb_instance, const std::string&
         LOG(INFO)<<"copy finished"<<std::endl;
     }
     odb_ = new OfferDb(odb_path);
+    odb_->set_lazy_mode();
     if(!odb_->is_open())
     {
         LOG(INFO)<<"open odb..."<<std::endl;
