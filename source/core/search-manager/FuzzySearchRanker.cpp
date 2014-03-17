@@ -98,9 +98,9 @@ void FuzzySearchRanker::rankByProductScore(
                 continue;
             }
 
-            fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         }
 
+        fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         resultList[i].first = fuzzyScore + productScore;
         //cout << "fuzzyScore:" << fuzzyScore << " productScore" << productScore<< endl;
         resultList[current++] = resultList[i];
