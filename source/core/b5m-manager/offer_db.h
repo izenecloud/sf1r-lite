@@ -27,10 +27,10 @@ public:
     typedef izenelib::am::succinct::fujimap::Fujimap<KeyType, FlagType> FlagDbType;
     OfferDb(const std::string& path)
     : path_(path)
-      , db_path_(path+"/db"), text_path_(path+"/text"), tmp_path_(path+"/tmp")
+      , db_path_(path+"/db"), text_path_(path+"/text"), tmp_path_(path+"/tmp"), buffer_path_(path+"/buffer")
       , flag_db_path_(path+"/flag_db"), flag_tmp_path_(path+"/flag_tmp")
       , db_(NULL), flag_db_(NULL)
-      , is_open_(false), has_modify_(false)
+      , is_open_(false), has_modify_(false), lazy_(false)
     {
     }
 
@@ -47,6 +47,11 @@ public:
         text_.close();
     }
 
+    void set_lazy_mode()
+    {
+        lazy_ = true;
+    }
+
     bool is_open() const
     {
         return is_open_;
@@ -59,6 +64,10 @@ public:
         if(boost::filesystem::exists(tmp_path_))
         {
             boost::filesystem::remove_all(tmp_path_);
+        }
+        if(boost::filesystem::exists(buffer_path_))
+        {
+            boost::filesystem::remove_all(buffer_path_);
         }
         db_ = new DbType(tmp_path_.c_str());
         db_->initFP(32);
@@ -154,8 +163,16 @@ public:
 
     bool insert(const KeyType& key, const ValueType& value)
     {
-        boost::unique_lock<boost::shared_mutex> lock(mutex_);
-        return insert_(key, value, false);
+        if(!lazy_)
+        {
+            boost::unique_lock<boost::shared_mutex> lock(mutex_);
+            return insert_(key, value, false);
+        }
+        else
+        {
+            boost::unique_lock<boost::mutex> lock(lazy_mutex_);
+            return lazy_insert_(key, value);
+        }
     }
 
     bool insert(const std::string& soid, const std::string& spid)
@@ -193,8 +210,9 @@ public:
 
     bool get(const KeyType& key, ValueType& value)
     {
-        boost::unique_lock<boost::shared_mutex> lock(mutex_);
-        //boost::shared_lock<boost::shared_mutex> lock(mutex_);
+        //boost::unique_lock<boost::shared_mutex> lock(mutex_);
+        boost::shared_lock<boost::shared_mutex> lock(mutex_, boost::defer_lock_t());
+        if(!lazy_) lock.lock();
         value = db_->getInteger(key);
         if(value==(ValueType)izenelib::am::succinct::fujimap::NOTFOUND)
         {
@@ -208,6 +226,10 @@ public:
         uint128_t pid;
         if(!get(B5MHelper::StringToUint128(soid), pid)) return false;
         spid = B5MHelper::Uint128ToString(pid);
+        //if(soid=="418e05ac51300093a5175aa74d231f6f"||soid=="013a1fa3904e7f72a250b4ed8c9b2c68")
+        //{
+        //    std::cerr<<"[ODEBUG]"<<soid<<","<<spid<<std::endl;
+        //}
         return true;
     }
 
@@ -236,6 +258,7 @@ public:
     bool flush()
     {
         boost::unique_lock<boost::shared_mutex> lock(mutex_);
+        boost::unique_lock<boost::mutex> lock2(lazy_mutex_);
         LOG(INFO)<<"try flush odb.."<<std::endl;
         if(text_.is_open())
         {
@@ -243,6 +266,33 @@ public:
         }
         if(has_modify_)
         {
+            if(lazy_)
+            {
+                LOG(INFO)<<"lazy mode"<<std::endl;
+                if(buffer_ofs_.is_open())
+                {
+                    LOG(INFO)<<"try insert buffer"<<std::endl;
+                    buffer_ofs_.close();
+                    std::ifstream ifs(buffer_path_.c_str());
+                    std::string line;
+                    std::size_t count=0;
+                    while(getline(ifs, line))
+                    {
+                        if(line.length()<64) continue;
+                        std::string skey = line.substr(0, 32);
+                        std::string svalue = line.substr(32, 32);
+                        insert_(B5MHelper::StringToUint128(skey), B5MHelper::StringToUint128(svalue), false);
+                        ++count;
+                    }
+                    ifs.close();
+                    has_modify_ = false;
+                    LOG(INFO)<<"inserted "<<count<<" buffer into odb"<<std::endl;
+                }
+                if(boost::filesystem::exists(buffer_path_))
+                {
+                    boost::filesystem::remove_all(buffer_path_);
+                }
+            }
             LOG(INFO)<<"building fujimap.."<<std::endl;
             if(db_->build()==-1)
             {
@@ -283,6 +333,20 @@ private:
         }
         return true;
     }
+    bool lazy_insert_(const KeyType& key, const ValueType& value)
+    {
+        std::string skey = B5MHelper::Uint128ToString(key);
+        std::string svalue = B5MHelper::Uint128ToString(value);
+        std::string line = skey+svalue;
+        if(!buffer_ofs_.is_open())
+        {
+            buffer_ofs_.open(buffer_path_.c_str());
+        }
+        buffer_ofs_<<line<<std::endl;
+        if(buffer_ofs_.fail()) return false;
+        has_modify_ = true;
+        return true;
+    }
 
 private:
 
@@ -290,14 +354,18 @@ private:
     std::string db_path_;
     std::string text_path_;
     std::string tmp_path_;
+    std::string buffer_path_;
     std::string flag_db_path_;
     std::string flag_tmp_path_;
     DbType* db_;
     FlagDbType* flag_db_;
     std::ofstream text_;
+    std::ofstream buffer_ofs_;
     bool is_open_;
     bool has_modify_;
+    bool lazy_;
     boost::shared_mutex mutex_;
+    boost::mutex lazy_mutex_;
 };
 NS_SF1R_B5M_END
 
