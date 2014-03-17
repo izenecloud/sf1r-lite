@@ -128,9 +128,9 @@ bool SelectParser::parse(const Value& select)
             {
                 if (!getPropertyConfig(indexSchema_, propertyConfig))
                     continue;
-                if (propertyConfig.getIsSubDoc())
-                    properties_[i].isSubDocPropertyValue_ = true;
             }
+            if (propertyConfig.getIsSubDoc())
+                properties_[i].isSubDocPropertyValue_ = true;
         }
 
         return true;
