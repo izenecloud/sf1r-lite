@@ -64,7 +64,8 @@ void PcaProductTokenizer::tokenize(ProductTokenParam& param)
         param.minorTokens.push_back(tokenScore);
     }
 
-    param.rankBoundary = 0.5;
+    //param.rankBoundary = 0.5;
+    param.rankBoundary = 0.0;
 
     if (param.isRefineResult)
     {
