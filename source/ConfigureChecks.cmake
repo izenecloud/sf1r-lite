@@ -41,7 +41,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   msgpack
   zookeeper
   udt
-  snappy
+  compressor
   cassandra
   sf1r
   NUMA
