@@ -11,7 +11,7 @@
 namespace sf1r
 {
 
-const static int CACHE_THRESHOLD = 200;
+const static int CACHE_THRESHOLD = 20;
 
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
     : bundleConfig_(config)
@@ -118,7 +118,7 @@ bool IndexSearchService::getSearchResult(
         int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
         interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
-        if (interval_ms > CACHE_THRESHOLD*5)
+        if (interval_ms > CACHE_THRESHOLD*50)
         {
             LOG(INFO) << "get search result cost too long: " << interval_ms;
         }
@@ -191,23 +191,26 @@ bool IndexSearchService::getSearchResult(
 
         LOG(INFO) << "result.count: " << resultItem.count_ << ", is disableGetDocs_:" << actionItem.disableGetDocs_;
 
-        ResultMapT resultMap;
-        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-        if (resultMap.empty())
+        if (!resultItem.distSearchInfo_.include_summary_data_)
         {
-            LOG(INFO) << "empty worker map after split.";
-        }
-        else
-        {
-            RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-            for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+            ResultMapT resultMap;
+            searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
+            if (resultMap.empty())
             {
-                workerid_t workerid = it->first;
-                KeywordSearchResult& subResultItem = it->second;
-                requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+                LOG(INFO) << "empty worker map after split.";
             }
-            ret = ro_searchAggregator_->distributeRequest(
-                actionItem.collectionName_, request_index, "getSummaryResult", requestGroup, resultItem);
+            else
+            {
+                RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+                for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
+                {
+                    workerid_t workerid = it->first;
+                    KeywordSearchResult& subResultItem = it->second;
+                    requestGroup.addRequest(workerid, &actionItem, &subResultItem);
+                }
+                ret = ro_searchAggregator_->distributeRequest(
+                  actionItem.collectionName_, request_index, "getSummaryResult", requestGroup, resultItem);
+            }
         }
     }
 

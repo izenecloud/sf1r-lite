@@ -11,6 +11,7 @@
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <cache/IzeneCache.h>
+#include <cache/concurrent_cache.hpp>
 
 #include <vector>
 #include <deque>
@@ -23,16 +24,17 @@ class SearchCache
 public:
     typedef QueryIdentity key_type;
     typedef KeywordSearchResult value_type;
-    typedef izenelib::cache::IzeneCache<
-        key_type,
-        value_type,
-        izenelib::util::ReadWriteLock,
-        izenelib::cache::RDE_HASH,
-        izenelib::cache::LRLFU
-    > cache_type;
+    //typedef izenelib::cache::IzeneCache<
+    //    key_type,
+    //    value_type,
+    //    izenelib::util::ReadWriteLock,
+    //    izenelib::cache::RDE_HASH,
+    //    izenelib::cache::LRLFU
+    //> cache_type;
+    typedef izenelib::concurrent_cache::ConcurrentCache<key_type, value_type> cache_type;
 
     explicit SearchCache(unsigned cacheSize, time_t refreshInterval = 60*60, bool refreshAll = false)
-        : cache_(cacheSize), special_cache_(cacheSize)
+        : cache_(cacheSize, izenelib::cache::LRLFU), special_cache_(cacheSize, izenelib::cache::LRLFU)
         , refreshInterval_(refreshInterval)
         , refreshAll_(refreshAll)
     {
@@ -53,7 +55,7 @@ public:
         {
             pcache = &special_cache_;
         }
-        if ((*pcache).getValueNoInsert(key, value))
+        if ((*pcache).get(key, value))
         {
             if (!needRefresh(key, value.timeStamp_))
             {
@@ -77,21 +79,26 @@ public:
         // Temporarily store the summary results to keep them out of cache
         std::vector<std::vector<PropertyValue::PropertyValueStrType> > fullText, snippetText, rawText;
 
-        fullText.swap(result.fullTextOfDocumentInPage_);
-        snippetText.swap(result.snippetTextOfDocumentInPage_);
-        rawText.swap(result.rawTextOfSummaryInPage_);
-
+        if (!result.distSearchInfo_.include_summary_data_)
+        {
+            fullText.swap(result.fullTextOfDocumentInPage_);
+            snippetText.swap(result.snippetTextOfDocumentInPage_);
+            rawText.swap(result.rawTextOfSummaryInPage_);
+        }
         cache_type* pcache = &cache_;
         if (IsSpecialSearch(key))
         {
             pcache = &special_cache_;
         }
 
-        (*pcache).updateValue(key, result);
+        (*pcache).insert(key, result);
 
-        fullText.swap(result.fullTextOfDocumentInPage_);
-        snippetText.swap(result.snippetTextOfDocumentInPage_);
-        rawText.swap(result.rawTextOfSummaryInPage_);
+        if (!result.distSearchInfo_.include_summary_data_)
+        {
+            fullText.swap(result.fullTextOfDocumentInPage_);
+            snippetText.swap(result.snippetTextOfDocumentInPage_);
+            rawText.swap(result.rawTextOfSummaryInPage_);
+        }
     }
 
     void clear()
