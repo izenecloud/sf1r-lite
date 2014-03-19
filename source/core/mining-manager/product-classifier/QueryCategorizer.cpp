@@ -1,8 +1,5 @@
 #include "QueryCategorizer.hpp"
-#include "SPUProductClassifier.hpp"
-#include <mining-manager/suffix-match-manager/SuffixMatchManager.hpp>
 #include <mining-manager/util/split_ustr.h>
-#include <document-manager/DocumentManager.h>
 #include <b5m-manager/product_matcher.h>
 #include <query-manager/ActionItem.h>
 

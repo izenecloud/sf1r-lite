@@ -69,7 +69,6 @@
 
 #include "ad-index-manager/AdIndexManager.h"
 
-#include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
 
