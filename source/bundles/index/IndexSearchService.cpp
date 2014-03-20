@@ -219,6 +219,16 @@ bool IndexSearchService::getSearchResult(
     LOG(INFO) << "Page Count: " << resultItem.count_ << endl;
     LOG(INFO) << "Search Finished " << endl;
 
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
+    interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
+
+    if (interval_ms > CACHE_THRESHOLD*50)
+    {
+        LOG(INFO) << "get search result cost too long: " << interval_ms;
+    }
+
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
     return true;

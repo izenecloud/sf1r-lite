@@ -186,7 +186,7 @@
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
                         <xs:minInclusive value="100"/>
-                        <xs:maxInclusive value="100000"/>
+                        <xs:maxInclusive value="1000000"/>
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
