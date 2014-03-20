@@ -75,5 +75,3 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericExponentScorer_(
     LOG(INFO) << "createNumericExponentScorer_(), propName: " << propName;
     return new NumericExponentScorer(scoreConfig, numericTable, normalizer);
 }
-
-

@@ -6,7 +6,7 @@ using namespace sf1r;
 
 namespace
 {
-	const char* kScoreName = "mscore";
+const char* kScoreName = "mscore";
 }
 
 MerchantScoreEvaluator::MerchantScoreEvaluator(
@@ -44,4 +44,3 @@ score_t MerchantScoreEvaluator::evaluate(ProductScore& productScore)
 
     return merchantScoreManager_.getIdScore(singleMerchantId, parentIds_);
 }
-

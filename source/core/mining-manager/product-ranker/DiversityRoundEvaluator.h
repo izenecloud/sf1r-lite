@@ -43,4 +43,3 @@ private:
 } // namespace sf1r
 
 #endif // SF1R_DIVERSITY_ROUND_EVALUATOR_H
-

@@ -61,5 +61,7 @@ struct ProductScoreParam
         , searchMode_(searchMode)
     {}
 };
+
 } // namespace sf1r
+
 #endif // SF1R_PRODUCT_SCORE_PARAM_H

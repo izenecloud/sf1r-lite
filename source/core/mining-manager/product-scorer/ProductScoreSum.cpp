@@ -2,7 +2,7 @@
 using namespace sf1r;
 
 ProductScoreSum::ProductScoreSum(const ProductScoreConfig& config)
-    : ProductSco=rer(config)
+    : ProductScorer(config)
 {
 }
 
@@ -38,4 +38,3 @@ std::size_t ProductScoreSum::scorerNum_() const
 {
     return scorers_.size();
 }
-
