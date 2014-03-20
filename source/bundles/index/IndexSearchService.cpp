@@ -11,7 +11,7 @@
 namespace sf1r
 {
 
-const static int CACHE_THRESHOLD = 20;
+const static int CACHE_THRESHOLD = 100;
 
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
     : bundleConfig_(config)
@@ -118,7 +118,7 @@ bool IndexSearchService::getSearchResult(
         int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
         interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
-        if (interval_ms > CACHE_THRESHOLD*50)
+        if (interval_ms > CACHE_THRESHOLD*10)
         {
             LOG(INFO) << "get search result cost too long: " << interval_ms;
         }
@@ -224,7 +224,7 @@ bool IndexSearchService::getSearchResult(
     int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
     interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
-    if (interval_ms > CACHE_THRESHOLD*50)
+    if (interval_ms > CACHE_THRESHOLD*10)
     {
         LOG(INFO) << "get search result cost too long: " << interval_ms;
     }
