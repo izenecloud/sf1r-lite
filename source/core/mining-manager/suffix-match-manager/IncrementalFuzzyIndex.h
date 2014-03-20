@@ -34,7 +34,6 @@ class DocumentManager;
 class LAManager;
 using izenelib::ir::idmanager::IDManager;
 namespace bfs = boost::filesystem;
-
 /**
     @brife use this 24 bit data to mark if is this position is hit or not;
     postion 0-23;
@@ -218,7 +217,6 @@ private:
     cma::Analyzer* analyzer_;
 };
 
-
 class IncrementalFuzzyIndex
 {
 public:
@@ -280,6 +278,6 @@ private:
     unsigned int Max_Doc_Num_;
     cma::Analyzer* analyzer_;
 };
-
 }
 #endif
+

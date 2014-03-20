@@ -121,6 +121,5 @@ void ProductRanker::printScore_(const std::string& banner) const
         std::cout << productScore.singleMerchantId_ << "\t"
                   << productScore.topKScore_ << std::endl;
     }
-
     std::cout << std::endl;
 }

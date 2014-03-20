@@ -14,7 +14,6 @@ TitleRelevanceScorer::TitleRelevanceScorer(
     , titleScoreList_(titleScoreList)
     , thisScore_(thisScore)
 {
-
 }
 
 score_t TitleRelevanceScorer::score(docid_t docId)

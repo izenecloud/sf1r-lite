@@ -172,7 +172,7 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
         LOG(ERROR) << "failed to create offline scorer for " << typeName;
         return false;
     }
-
+	
     const docid_t startDocId = 1;
     const docid_t endDocId = documentManager_.getMaxDocId();
 

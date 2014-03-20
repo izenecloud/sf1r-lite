@@ -33,7 +33,6 @@ private:
 
     PropSharedLock::ScopedReadLock lock_;
 };
-
 } // namespace sf1r
 
 #endif // SF1R_OFFER_ITEM_COUNT_EVALUATOR_H

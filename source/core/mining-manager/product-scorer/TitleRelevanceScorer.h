@@ -8,7 +8,6 @@
 #define SF1R_TITLE_RELEVANCE_SCORER_H
 
 #include "ProductScorer.h"
-
 #include <map>
 
 namespace sf1r

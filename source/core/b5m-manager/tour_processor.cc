@@ -8,7 +8,7 @@
 #include <document-manager/ScdDocument.h>
 #include <assert.h>
 
-#define _TOUR_DEBUG
+//#define _TOUR_DEBUG
 
 using namespace sf1r;
 using namespace sf1r::b5m;
@@ -178,8 +178,8 @@ void TourProcessor::Finish_()
 				{
 					LOG(INFO) << "Create new group:" << group_index << std::endl;
 				}
-				++group_index;
 #endif
+				++group_index;
             }
             else
             {
