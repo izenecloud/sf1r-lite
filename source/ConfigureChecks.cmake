@@ -25,7 +25,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   index_manager
   mock_index_manager
   febird
-  udt3
   izene_log
   bigint
   procmeminfo
@@ -42,7 +41,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   msgpack
   zookeeper
   udt
-  snappy
+  compressor
   cassandra
   sf1r
   NUMA
@@ -54,6 +53,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
 FIND_PACKAGE(ilplib REQUIRED)
 FIND_PACKAGE(idmlib REQUIRED)
 FIND_PACKAGE(imllib REQUIRED)
+FIND_PACKAGE(addrlib REQUIRED)
 
 IF( USE_WISEKMA )
   FIND_PACKAGE(wisekma REQUIRED)

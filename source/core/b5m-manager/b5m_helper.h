@@ -61,7 +61,7 @@ public:
 
     static std::string Uint128ToString(const uint128_t& val)
     {
-        static char tmpstr[33];
+        char tmpstr[33];
         sprintf(tmpstr, "%016llx%016llx", (unsigned long long) (val >> 64), (unsigned long long) val);
         return std::string(reinterpret_cast<const char *>(tmpstr), 32);
     }
@@ -179,6 +179,11 @@ public:
     static std::string GetOMapperPath(const std::string& mdb_instance)
     {
         return mdb_instance+"/omapper";
+    }
+
+    static std::string GetPsmPath(const std::string& mdb_instance)
+    {
+        return mdb_instance+"/psm";
     }
 
     static std::string GetBrandPropertyName()

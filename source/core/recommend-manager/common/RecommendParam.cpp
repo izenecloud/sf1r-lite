@@ -103,7 +103,7 @@ void RecommendParam::enableItemCondition(
 )
 {
     condition.itemManager_ = itemManager;
-    condition.createBitVector(queryBuilder);
+    condition.createBitset(queryBuilder);
 
     inputParam.itemFilter.setItemCondition(&condition);
 }

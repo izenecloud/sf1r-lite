@@ -7,6 +7,9 @@
 
 using namespace sf1r;
 
+
+// @brief: here SchemaMap is just for normal search, and
+// zambeziSearch perparefilter;
 SearchManager::SearchManager(
     const IndexBundleConfiguration& config,
     const SearchFactory& searchFactory)

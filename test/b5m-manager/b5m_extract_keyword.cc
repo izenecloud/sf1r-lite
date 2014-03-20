@@ -1,16 +1,15 @@
-#include <b5m-manager/product_matcher.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/network/protocol/http/server.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/product_matcher.h>
 
 
 using namespace sf1r;
 using namespace sf1r::b5m;
 namespace po = boost::program_options;
-namespace pbds = __gnu_pbds;
 namespace http = boost::network::http;
 namespace uri = boost::network::uri;
 

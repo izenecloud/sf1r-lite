@@ -184,6 +184,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             boost::apply_visitor(converter, (*property_value).getVariant());
             invertedIndexManager_->getDocsByPropertyValue(actionItem.propertyName_, value, idList);
         }
+        LOG(INFO) << "after get docs from property, ids idlist: " << idList.size();
     }
 
     // get query terms
@@ -346,6 +347,19 @@ void SearchWorker::makeQueryIdentity(
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
         identity.isAnalyzeResult = item.isAnalyzeResult_;
+        break;
+    case SearchingMode::ZAMBEZI:
+        identity.query = item.env_.queryString_;
+        identity.properties = item.searchPropertyList_;
+        identity.filterTree_ = item.filterTree_;
+        identity.sortInfo = item.sortPriorityList_;
+        identity.strExp = item.strExp_;
+        identity.paramConstValueMap = item.paramConstValueMap_;
+        identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+        identity.groupParam = item.groupParam_;
+        identity.isRandomRank = item.isRandomRank_;
+        identity.querySource = item.env_.querySource_;
+        identity.distActionType = distActionType;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -1028,7 +1042,9 @@ uint32_t SearchWorker::getDocNum()
 
 uint32_t SearchWorker::getKeyCount(const std::string& property_name)
 {
-    return invertedIndexManager_->getBTreeIndexer()->count(property_name);
+    if (bundleConfig_->isNormalSchemaEnable_)
+        return invertedIndexManager_->getBTreeIndexer()->count(property_name);
+    return 0;
 }
 
 }

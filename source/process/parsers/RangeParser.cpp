@@ -37,6 +37,7 @@ bool RangeParser::parse(const Value& rangeValue)
 
     PropertyConfig propertyConfig;
     propertyConfig.setName(property);
+
     if (!getPropertyConfig(indexSchema_, propertyConfig))
     {
         error() = "Unknown property in range[property]: " + property;

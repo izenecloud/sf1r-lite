@@ -101,6 +101,11 @@ public:
         valueIdTable_.getIdList(docId, valueIdList);
     }
 
+    size_t getValueIdCount(docid_t docId) const
+    {
+        return valueIdTable_.getIdCount(docId);
+    }
+
     const izenelib::util::UString& nameStr(nid_t nameId) const { return nameStrVec_[nameId]; }
 
     const izenelib::util::UString& valueStr(vid_t valueId) const { return valueStrVec_[valueId]; }

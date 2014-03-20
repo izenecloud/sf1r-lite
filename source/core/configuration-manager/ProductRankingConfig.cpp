@@ -51,11 +51,18 @@ bool isNumericFilter(
     const IndexBundleSchema& indexSchema =
         collectionMeta.indexBundleConfig_->indexSchema_;
 
+    const IndexBundleSchema& zambeziIndexSchema =
+        collectionMeta.indexBundleConfig_->zambeziConfig_.zambeziIndexSchema;
+
     PropertyConfig propConfig;
     propConfig.setName(propName);
 
     IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
     if (propIt != indexSchema.end() && propIt->isRTypeNumeric())
+        return true;
+
+    IndexBundleSchema::const_iterator propZIt = zambeziIndexSchema.find(propConfig);
+    if (propZIt != zambeziIndexSchema.end() && propZIt->isRTypeNumeric())
         return true;
 
     error = "Property [" + propName +

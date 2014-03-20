@@ -64,6 +64,11 @@ public:
         item_list.swap(rep.item_list);
     }
 
+    void clear()
+    {
+        item_list.clear();
+    }
+
     /* -----------------------------------*/
     /**
      * @Brief  merge the OntologyRep and keep the top topGroupNum number by doc_count.

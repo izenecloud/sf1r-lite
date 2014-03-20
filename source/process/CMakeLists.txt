@@ -202,7 +202,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   aggregator
   msgpack
   zookeeper
-  snappy
+  compressor
   sf1r
   procmeminfo
   )

@@ -65,11 +65,10 @@
 #include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
-#include "zambezi-manager/ZambeziManager.h"
+#include <index-manager/zambezi-manager/ZambeziManager.h>
 
 #include "ad-index-manager/AdIndexManager.h"
 
-#include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
 #include "query-intent/QueryIntentManager.h"
 
@@ -163,6 +162,8 @@ double topAverageScore(const std::vector<ScoreDocId>& resultList)
     }
     return sum / num;
 }
+
+const uint32_t kFuzzySearchMinLucky = 500;
 
 }
 
@@ -809,11 +810,11 @@ bool MiningManager::open()
         }
 
         /** zambezi */
-        if (!initZambeziManager_(mining_schema_.zambezi_config))
+        /*if (!initZambeziManager_(mining_schema_.zambezi_config))
         {
             LOG(ERROR) << "init ZambeziManager fail";
             return false;
-        }
+        }*/
 
         if(!initAdIndexManager_(mining_schema_.ad_index_config))
         {
@@ -2483,7 +2484,8 @@ bool MiningManager::GetSuffixMatch(
 
         if (isOrSearch)
         {
-            LOG(INFO) << "for long query or short AND result is empty, try OR search";
+            LOG(INFO) << "for long query or short AND result is empty, "
+                      << "try OR search, lucky: " << max_docs;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 useSynonym,
                 tokenParam.majorTokens,
@@ -2496,15 +2498,18 @@ bool MiningManager::GetSuffixMatch(
                 res_list,
                 tokenParam.rankBoundary);
 
-            if (res_list.empty() && !tokenParam.majorTokens.empty())
+            while (res_list.empty() && !tokenParam.majorTokens.empty())
             {
                 const ProductTokenParam::TokenScore& tokenScore(
                     tokenParam.majorTokens.back());
                 std::string token;
                 tokenScore.first.convertString(token, kEncodeType);
 
+                max_docs /= 2;
+                max_docs = std::max(max_docs, kFuzzySearchMinLucky);
+
                 LOG(INFO) << "try OR search again after removing one major token: "
-                          << token;
+                          << token << ", lucky: " << max_docs;
 
                 tokenParam.minorTokens.push_back(tokenScore);
                 tokenParam.majorTokens.pop_back();
@@ -2522,6 +2527,8 @@ bool MiningManager::GetSuffixMatch(
                     tokenParam.rankBoundary);
             }
         }
+
+        distSearchInfo.majorTokenNum_ = tokenParam.majorTokens.size();
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -3181,6 +3188,7 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
 bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
 {
+    /*
     if (!zambeziConfig.isEnable)
         return true;
 
@@ -3201,10 +3209,7 @@ bool MiningManager::initZambeziManager_(ZambeziConfig& zambeziConfig)
     {
         LOG(ERROR) << "open " << filePath << " failed";
         return false;
-    }
-
-    miningTaskBuilder_->addTask(
-        zambeziManager_->createMiningTask(*document_manager_));
+    }*/
 
     return true;
 }

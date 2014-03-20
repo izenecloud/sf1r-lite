@@ -1,12 +1,18 @@
 #ifndef SF1V5_INDEX_MANAGER_IINCSUPPORTEDINDEX_H
 #define SF1V5_INDEX_MANAGER_IINCSUPPORTEDINDEX_H
 
+#include <common/inttypes.h>
+#include <ctime>
+
 namespace sf1r
 {
 class Document;
 // Define the interface for the index which will support increment build.
 // This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.
+
+const unsigned int MAX_API_INDEXDOC = 10000;
+
 class IIncSupportedIndex
 {
 public:
@@ -15,7 +21,7 @@ public:
     virtual void flush(bool force) = 0;
     virtual void optimize(bool wait) = 0;
 
-    virtual void preBuildFromSCD(size_t total_filesize) = 0;
+    virtual void preBuildFromSCD(std::size_t total_filesize) = 0;
     virtual void postBuildFromSCD(time_t timestamp) = 0;
 
     virtual void preMining() = 0;

@@ -132,7 +132,7 @@ public:
     virtual bool isRealTime();
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
-    virtual void preBuildFromSCD(size_t total_filesize);
+    virtual void preBuildFromSCD(std::size_t total_filesize);
     virtual void postBuildFromSCD(time_t timestamp);
     virtual void preMining();
     virtual void postMining();

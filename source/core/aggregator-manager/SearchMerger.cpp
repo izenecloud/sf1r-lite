@@ -7,6 +7,7 @@
 #include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
+#include <node-manager/sharding/ShardingStrategy.h>
 
 #include <algorithm> // min
 #include <vector>
@@ -21,8 +22,8 @@ static bool IsGreaterGPScoreInfo(const GroupPathScoreInfo& left, const GroupPath
 {
     if (std::fabs(left.score - right.score) <= std::numeric_limits<double>::epsilon())
     {
-        LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
-            << ", docid : " << left.wdocid << " VS " << right.wdocid;
+        //LOG(INFO) << "top group score is the same: " << left.score << " VS " << right.score
+        //    << ", docid : " << left.wdocid << " VS " << right.wdocid;
         return net::aggregator::Util::IsNewerDocId(left.wdocid, right.wdocid);
     }
     return left.score > right.score;
@@ -32,6 +33,47 @@ static bool IsGreaterGroup(const std::pair<GroupParam::GroupPath, GroupPathScore
     const std::pair<GroupParam::GroupPath, GroupPathScoreInfo>& right)
 {
     return IsGreaterGPScoreInfo(left.second, right.second);
+}
+
+static void emptyWorkerResult(KeywordSearchResult& wresult)
+{
+    wresult.totalCount_ = 0;
+    wresult.counterResults_.clear();
+    wresult.docsInPage_.clear();
+    wresult.topKDocs_.clear();
+    wresult.topKWorkerIds_.clear();
+    wresult.topKtids_.clear();
+    wresult.topKRankScoreList_.clear();
+    wresult.topKCustomRankScoreList_.clear();
+    wresult.pageOffsetList_.clear();
+
+    for(size_t i = 0; i < wresult.fullTextOfDocumentInPage_.size(); ++i)
+    {
+        wresult.fullTextOfDocumentInPage_[i].clear();
+    }
+    for(size_t i = 0; i < wresult.snippetTextOfDocumentInPage_.size(); ++i)
+        wresult.snippetTextOfDocumentInPage_[i].clear();
+    for(size_t i = 0; i < wresult.rawTextOfSummaryInPage_.size(); ++i)
+        wresult.rawTextOfSummaryInPage_[i].clear();
+
+    wresult.numberOfDuplicatedDocs_.clear();
+    wresult.numberOfSimilarDocs_.clear();
+    wresult.docCategories_.clear();
+    wresult.onto_rep_.clear();
+    wresult.groupRep_.clear();
+    wresult.attrRep_.clear();
+    wresult.autoSelectGroupLabels_.clear();
+    wresult.relatedQueryList_.clear();
+    wresult.rqScore_.clear();
+    wresult.distSearchInfo_.dfmap_.clear();
+    wresult.distSearchInfo_.ctfmap_.clear();
+    wresult.distSearchInfo_.maxtfmap_.clear();
+    wresult.distSearchInfo_.sortPropertyList_.clear();
+    wresult.distSearchInfo_.sortPropertyInt32DataList_.clear();
+    wresult.distSearchInfo_.sortPropertyInt64DataList_.clear();
+    wresult.distSearchInfo_.sortPropertyFloatDataList_.clear();
+    wresult.distSearchInfo_.sortPropertyStrDataList_.clear();
+
 }
 
 void SearchMerger::mergeScoreGroupLabel(GroupParam::GroupLabelScoreMap& mergeto,
@@ -180,6 +222,35 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.totalCount_ = 0;
     mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
     mergeResult.distSearchInfo_.isDistributed_ = result0.distSearchInfo_.isDistributed_;
+
+    // check for the fuzzy major token num. Only need the results with the largest token num.
+    int largest_major_token_num = result0.distSearchInfo_.majorTokenNum_;
+    bool is_token_num_diff = false;
+    for (size_t i = 1; i < workerNum; i++)
+    {
+        int cur_token_num = workerResults.result(i).distSearchInfo_.majorTokenNum_;
+        if (cur_token_num != largest_major_token_num)
+        {
+            is_token_num_diff = true;
+        }
+        if (cur_token_num > largest_major_token_num)
+        {
+            LOG(INFO) << "worker: " << i << "  has larger token num: " << cur_token_num;
+            largest_major_token_num = cur_token_num;
+        }
+    }
+    if (is_token_num_diff)
+    {
+        for (size_t i = 0; i < workerNum; i++)
+        {
+            int cur_token_num = workerResults.result(i).distSearchInfo_.majorTokenNum_;
+            if (cur_token_num < largest_major_token_num)
+            {
+                LOG(INFO) << "worker:" << i << " result was empty since the token num is less than largest : " << cur_token_num;
+                emptyWorkerResult(const_cast<KeywordSearchResult&>(workerResults.result(i)));
+            }
+        }
+    }
 
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
@@ -401,8 +472,8 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
             LOG(ERROR) << "!!! getSummaryResult error for worker: " << workerId << ", error: " << mergeResult.error_;
             return;
         }
-        LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
-        LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
+        //LOG(INFO) << "displayNum: " << workerResults.result(workerId).snippetTextOfDocumentInPage_.size();
+        //LOG(INFO) << "displayNum 2: " << workerResults.result(workerId).fullTextOfDocumentInPage_.size();
     }
 
     size_t pageCount = mergeResult.count_;
@@ -606,7 +677,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
         workerid_t workerid = workerResults.workerId(w);
         const RawTextResultFromSIA& wResult = workerResults.result(w);
 
-        LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
+        //LOG(INFO) << "docs from worker :" << workerid << ", num: " << wResult.idList_.size();
         for (size_t i = 0; i < wResult.idList_.size(); i++)
         {
             if (mergeResult.idList_.empty())
@@ -712,13 +783,14 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     const GetDocumentsByIdsActionItem& actionItem,
     std::map<workerid_t, GetDocumentsByIdsActionItem>& actionItemMap)
 {
-    if (actionItem.idList_.empty())
+    // idList_ store the combination of internal id and worker id
+    // docIdList_ store the real MD5 value of DOCID.
+    if (actionItem.idList_.empty() && actionItem.docIdList_.empty())
         return false;
 
     std::vector<sf1r::docid_t> idList;
     std::vector<sf1r::workerid_t> workeridList;
     actionItem.getDocWorkerIdLists(idList, workeridList);
-
     // split
     for (size_t i = 0; i < workeridList.size(); i++)
     {
@@ -728,13 +800,35 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
         if (subActionItem.idList_.empty())
         {
             subActionItem = actionItem;
+            subActionItem.docIdList_.clear();
             subActionItem.idList_.clear();
         }
 
         subActionItem.idList_.push_back(actionItem.idList_[i]);
     }
+    ShardingStrategy::ShardFieldListT kv_list;
+    kv_list[sharding_strategy_->shard_cfg_.unique_shardkey_] = "";
+    for (std::vector<std::string>::const_iterator it = actionItem.docIdList_.begin();
+      it != actionItem.docIdList_.end(); ++it)
+    {
+        kv_list[sharding_strategy_->shard_cfg_.unique_shardkey_] = *it;;
+        ShardingStrategy::ShardIDListT wid_list = sharding_strategy_->sharding_for_get(kv_list);
+        for (size_t i = 0; i < wid_list.size(); ++i)
+        {
+            workerid_t wid = (workerid_t)wid_list[i];
+            GetDocumentsByIdsActionItem& subActionItem = actionItemMap[wid];
+            if (subActionItem.idList_.empty() && subActionItem.docIdList_.empty())
+            {
+                subActionItem = actionItem;
+                subActionItem.docIdList_.clear();
+                subActionItem.idList_.clear();
+            }
+            subActionItem.docIdList_.push_back(*it);
+        }
+    }
 
-    return true;
+    LOG(INFO) << "split get docs worker num: " << actionItemMap.size();
+    return !actionItemMap.empty();
 }
 
 void SearchMerger::getDistDocNum(const net::aggregator::WorkerResults<uint32_t>& workerResults, uint32_t& mergeResult)

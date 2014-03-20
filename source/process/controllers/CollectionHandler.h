@@ -116,6 +116,11 @@ public:
         miningSchema_ = schema;
     }
 
+    void setBundleSchema(ZambeziConfig& schema)
+    {
+        zambeziConfig_ = schema;
+    }
+
     void setBundleSchema(RecommendSchema& schema)
     {
         recommendSchema_ = schema;
@@ -152,6 +157,8 @@ public:
     DocumentSchema documentSchema_;
 
     IndexBundleSchema indexSchema_;
+
+    ZambeziConfig zambeziConfig_;
 
     MiningSchema miningSchema_;
 

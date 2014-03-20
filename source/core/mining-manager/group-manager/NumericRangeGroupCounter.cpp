@@ -39,8 +39,8 @@ void NumericRangeGroupCounter::addDoc(docid_t doc)
 
 void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
 {
-    vector<unsigned int>::const_iterator it = segmentTree_.begin();
-    vector<unsigned int>::iterator it0 = segmentTree_.begin() + 100 * LEVEL_1_OF_SEGMENT_TREE;
+    std::vector<unsigned int>::const_iterator it = segmentTree_.begin();
+    std::vector<unsigned int>::iterator it0 = segmentTree_.begin() + 100 * LEVEL_1_OF_SEGMENT_TREE;
 
     for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE * 11; i++)
     {
@@ -52,7 +52,7 @@ void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
     for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         *it0 += *(it++);
 
-    groupRep.numericRangeGroupRep_.push_back(make_pair(property_, vector<unsigned int>()));
+    groupRep.numericRangeGroupRep_.push_back(make_pair(property_, std::vector<unsigned int>()));
     segmentTree_.swap(groupRep.numericRangeGroupRep_.back().second);
 }
 
@@ -66,13 +66,13 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
         izenelib::util::UString propName(it->first, izenelib::util::UString::UTF_8);
         itemList.push_back(faceted::OntologyRepItem(0, propName, 0, it->second.back()));
 
-        vector<unsigned int>::const_iterator level3 = it->second.begin();
-        vector<unsigned int>::const_iterator level2 = level3 + 100 * LEVEL_1_OF_SEGMENT_TREE;
-        vector<unsigned int>::const_iterator level1 = level2 + 10 * LEVEL_1_OF_SEGMENT_TREE;
+        std::vector<unsigned int>::const_iterator level3 = it->second.begin();
+        std::vector<unsigned int>::const_iterator level2 = level3 + 100 * LEVEL_1_OF_SEGMENT_TREE;
+        std::vector<unsigned int>::const_iterator level1 = level2 + 10 * LEVEL_1_OF_SEGMENT_TREE;
         unsigned int split[LEVEL_1_OF_SEGMENT_TREE];
         int rangeNumber = MAX_RANGE_NUMBER;
 
-        vector<unsigned int>::const_iterator vit = level3;
+        std::vector<unsigned int>::const_iterator vit = level3;
 
         for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         {
@@ -121,7 +121,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
                 continue;
             }
 
-            pair<int, int> stop(0, 0), end(9, 9);
+            std::pair<int, int> stop(0, 0), end(9, 9);
             unsigned int tempCount = 0, oldCount = 0;
             int atom = bound_[i + 1] / 100;
 
@@ -148,7 +148,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
             for (unsigned int j = 0; j < split[i] - 1; j++)
             {
                 int difference = tempCount - ((j + 1) * (*level1) - 1) / split[i] - 1;
-                pair<int, int> tempStop, oldStop(stop);
+                std::pair<int, int> tempStop, oldStop(stop);
 
                 while (true)
                 {
@@ -181,7 +181,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 
                 if (oldCount != tempCount)
                 {
-                    stringstream ss;
+                    std::stringstream ss;
                     ss << atom * (10 * oldStop.first + oldStop.second)
                         << "-"
                         << atom * (10 * tempStop.first + tempStop.second + 1) - 1;
@@ -196,7 +196,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
 
             if (tempCount != *level1)
             {
-                stringstream ss;
+                std::stringstream ss;
                 ss << atom * (10 * stop.first + stop.second)
                     << "-"
                     << atom * (10 * end.first + end.second + 1) - 1;

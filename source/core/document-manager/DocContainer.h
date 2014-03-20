@@ -7,8 +7,6 @@
 #include <util/izene_serialization.h>
 #include <util/bzip.h>
 
-#include <ir/index_manager/utility/BitVector.h>
-
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/archive/xml_oarchive.hpp>

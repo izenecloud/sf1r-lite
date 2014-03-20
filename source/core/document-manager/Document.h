@@ -216,9 +216,9 @@ public:
         }
         return modified;
     }
-    void merge(const Document& doc)
+    void merge(const Document& doc, bool override = true)
     {
-        copyPropertiesFromDocument(doc, true);
+        copyPropertiesFromDocument(doc, override);
     }
 
     void diff(const Document& doc, Document& diff_doc) const

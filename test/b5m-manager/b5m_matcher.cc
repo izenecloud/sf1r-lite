@@ -1,7 +1,8 @@
-#include <b5m-manager/product_matcher.h>
-#include <b5m-manager/product_discover.h>
+#include <types.h>
+#include <boost/network/protocol/http/server.hpp>
 #include <b5m-manager/category_mapper.h>
 #include <b5m-manager/b5mo_processor.h>
+#include <b5m-manager/b5mo_checker.h>
 #include <b5m-manager/image_server_client.h>
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/tuan_processor.h>
@@ -9,23 +10,29 @@
 #include <b5m-manager/b5mp_processor2.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
+#include <b5m-manager/b5ma_scd_generator.h>
+#include <b5m-manager/b5mr_scd_generator.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
-#include <b5m-manager/brand_db.h>
 #include <b5m-manager/comment_db.h>
 #include <b5m-manager/psm_indexer.h>
+#include <b5m-manager/bmn_tester.hpp>
+#include <b5m-manager/hotel_processor.h>
+#include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 #include "../TestResources.h"
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/trie_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
 #include <stack>
-#include <boost/network/protocol/http/server.hpp>
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
+#include <b5m-manager/product_matcher.h>
+#include <b5m-manager/product_discover.h>
 
 
 using namespace sf1r;
@@ -112,14 +119,29 @@ private:
 
 int main(int ac, char** av)
 {
+    std::string port = "18190";
     if(ac>1)
     {
-        return do_main(ac, av);
+        bool bdomain = true;
+        if(ac==3)
+        {
+            std::string f = av[1];
+            if(f=="-P")
+            {
+                port = av[2];
+                std::cerr<<"port set to "<<port<<std::endl;
+                bdomain = false;
+            }
+        }
+        if(bdomain)
+        {
+            return do_main(ac, av);
+        }
     }
     std::string program_path(av[0]);
 
     ServerHandler handler(program_path);
-    Server server("0.0.0.0", "18190", handler);
+    Server server("0.0.0.0", port, handler);
     static const uint32_t thread_count = 2;
     std::vector<boost::thread*> threads;
     for(uint32_t i=0;i<thread_count;i++)
@@ -272,16 +294,21 @@ int do_main(int ac, char** av)
         ("b5m-match", "make b5m matching")
         ("psm-index", "psm index")
         ("psm-match", "psm match")
+        ("bmn-test", "bmn tester")
         ("complete-match", "attribute complete matching")
         ("similarity-match", "title based similarity matching")
         ("ticket-generate", "do directly ticket matching")
         ("tuan-generate", "do directly tuan matching")
         ("tour-generate", "do directly tour matching")
+        ("hotel-generate", "do hotel matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
+        ("b5mo-check", "check b5mo uuid")
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
+        ("b5ma-generate", "generate b5ma scd from b5mo mirror")
+        ("b5mr-generate", "generate b5mr scd from ordered o scd")
         ("logserver-update", "update logserver")
         ("match-test", "b5m matching test")
         ("isbn-test", "b5m isbn pid test")
@@ -289,7 +316,8 @@ int do_main(int ac, char** av)
         ("search-keyword", "get search keywords")
         ("scd-merge", "merge scd")
         ("imc", po::value<uint32_t>(), "specify in memory doc count of scd merger")
-        ("mdb-instance", po::value<std::string>(), "specify mdb instance")
+        ("doc-limit", po::value<std::size_t>(), "specify doc limit number")
+        ("mdb-instance,M", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
         ("thread-num", po::value<int>(), "specify thread num")
@@ -354,7 +382,6 @@ int do_main(int ac, char** av)
     std::string output;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
-    boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<CommentDb> cdb;
 
     boost::shared_ptr<sf1r::RpcServerConnectionConfig> imgserver_config;
@@ -376,6 +403,7 @@ int do_main(int ac, char** av)
     uint16_t max_depth = 0;
     int thread_num = 1;
     uint32_t imc = 0;
+    std::size_t doc_limit=0;
     std::string buffer_size;
     std::string sorter_bin;
     if (vm.count("mdb-instance")) {
@@ -441,11 +469,6 @@ int do_main(int ac, char** av)
         std::string odb_path = vm["odb"].as<std::string>();
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
-    } 
-    if (vm.count("bdb")) {
-        std::string bdb_path = vm["bdb"].as<std::string>();
-        std::cout << "bdb path: " << bdb_path <<std::endl;
-        bdb.reset(new BrandDb(bdb_path));
     } 
     if (vm.count("cdb")) {
         std::string cdb_path = vm["cdb"].as<std::string>();
@@ -544,6 +567,11 @@ int do_main(int ac, char** av)
         imc = vm["imc"].as<uint32_t>();
         LOG(INFO)<<"set imc to "<<imc<<std::endl;
     }
+    if(vm.count("doc-limit"))
+    {
+        doc_limit = vm["doc-limit"].as<std::size_t>();
+        LOG(INFO)<<"set doc-limit to "<<doc_limit<<std::endl;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("odb-test"))
@@ -568,6 +596,19 @@ int do_main(int ac, char** av)
         name = "9787532744237";
         std::string pid = B5MHelper::GetPidByIsbn(name);
         std::cout<<"pid:"<<pid<<std::endl;
+    }
+    if(vm.count("bmn-test"))
+    {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        BmnTester bt;
+        if(doc_limit>0)
+        {
+            bt.SetDocLimit(doc_limit);
+        }
+        bt.Process(knowledge_dir, scd_path);
     }
 
     if(vm.count("scd-merge"))
@@ -1016,6 +1057,27 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
+    if(vm.count("hotel-generate"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        b5mm.Show();
+        HotelProcessor processor(b5mm);
+        if(doc_limit>0) processor.SetDocLimit(doc_limit);
+        if(!processor.Generate(mdb_instance))
+        {
+            std::cout<<"hotel generator fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
     if(vm.count("b5mo-generate"))
     {
         if( mdb_instance.empty())
@@ -1036,6 +1098,27 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"b5mo processor successfully"<<std::endl;
+    }
+    if(vm.count("b5mo-check"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        b5mm.Show();
+        LOG(INFO)<<"b5mo check on "<<mdb_instance<<std::endl;
+        B5moChecker processor(b5mm);
+        if(!processor.Check(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"b5mo check successfully"<<std::endl;
     }
     if(vm.count("b5mp-generate"))
     {
@@ -1074,6 +1157,38 @@ int do_main(int ac, char** av)
         //boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
         B5mcScdGenerator generator(b5mm);
         if(!generator.Generate(mdb_instance, last_mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("b5ma-generate"))
+    {
+        if( mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mM b5mm;
+        if(!b5mm.Load(mdb_instance))
+        {
+            LOG(ERROR)<<"B5mM load "<<mdb_instance<<" failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        b5mm.Show();
+
+        B5maScdGenerator generator(b5mm);
+        if(!generator.Generate(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("b5mr-generate"))
+    {
+        if(scd_path.empty()||output.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        B5mrScdGenerator generator;
+        if(!generator.Generate(scd_path, output, thread_num))
         {
             return EXIT_FAILURE;
         }

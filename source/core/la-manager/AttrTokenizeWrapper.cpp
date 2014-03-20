@@ -1,3 +1,4 @@
+
 #include "AttrTokenizeWrapper.h"
 #include <knlp/attr_tokenize.h>
 #include <knlp/dictionary.h>
@@ -67,17 +68,9 @@ void AttrTokenizeWrapper::attr_tokenize_index(
 
 void AttrTokenizeWrapper::attr_tokenize(
     const std::string& Q, 
-    std::vector<std::pair<std::string, int> >& tokenList)
+    std::vector<std::pair<std::string, int> >& tokenList, bool do_subtok)
 {
-    attr_tokenizer_->tokenize(Q, tokenList);
-}
-
-bool AttrTokenizeWrapper::attr_subtokenize(
-        const std::vector<std::pair<std::string, int> >& tks,
-        std::vector<std::pair<std::string, int> >& tokenList)
-{
-    attr_tokenizer_->subtokenize(tks, tokenList);
-    return tokenList != tks;
+    attr_tokenizer_->tokenize(Q, tokenList, do_subtok);
 }
 
 double AttrTokenizeWrapper::att_name_weight(
@@ -97,5 +90,7 @@ double AttrTokenizeWrapper::att_value_weight(
 
 std::vector<char*>** AttrTokenizeWrapper::get_TermCategory(const std::string& query)
 {
+    if (!queryMultiCatesDict_)
+        return NULL;
     return queryMultiCatesDict_->value(KString(query), true);
 }

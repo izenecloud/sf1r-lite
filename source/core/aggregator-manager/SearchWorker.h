@@ -183,7 +183,7 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<InvertedIndexManager> invertedIndexManager_;
+    boost::shared_ptr<InvertedIndexManager> invertedIndexManager_; // not used from search
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<MiningManager> miningManager_;
     boost::shared_ptr<SearchCache> searchCache_;

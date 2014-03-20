@@ -8,7 +8,6 @@
 #define SF1R_PRODUCT_CLASSIFIER_H
 
 #include "Classifier.h"
-#include "../product-classifier/SPUProductClassifier.hpp"
 
 namespace sf1r
 {

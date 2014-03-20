@@ -1,8 +1,5 @@
 #include "QueryCategorizer.hpp"
-#include "SPUProductClassifier.hpp"
-#include <mining-manager/suffix-match-manager/SuffixMatchManager.hpp>
 #include <mining-manager/util/split_ustr.h>
-#include <document-manager/DocumentManager.h>
 #include <b5m-manager/product_matcher.h>
 #include <query-manager/ActionItem.h>
 
@@ -112,7 +109,7 @@ bool QueryCategorizer::GetProductCategory(
     if (cache_.getValue(query, pathVec)) return !pathVec.empty();
 
     std::vector<UString> frontCategories;
-    assert(spu_classifier_);
+    //assert(spu_classifier_);
 
     GetCategoryByMatcher_(query, limit, frontCategories);
     if(frontCategories.size() >= (unsigned)limit)

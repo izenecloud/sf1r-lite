@@ -199,57 +199,6 @@ bool SearchParser::parse(const Value& search)
     isRandomRank_ = asBoolOr(search[Keys::is_random_rank], false);
     requireRelatedQueries_ = asBoolOr(search[Keys::is_require_related], false);
 
-    // properties
-    const Value& propertiesNode = search[Keys::in];
-    if (nullValue(propertiesNode))
-    {
-        getDefaultSearchPropertyNames(indexSchema_, properties_);
-    }
-    else if (propertiesNode.type() == Value::kArrayType)
-    {
-        properties_.resize(propertiesNode.size());
-        for (std::size_t i = 0; i < properties_.size(); ++i)
-        {
-            const Value& currentProperty = propertiesNode(i);
-            if (currentProperty.type() == Value::kObjectType)
-            {
-                properties_[i] = asString(currentProperty[Keys::property]);
-            }
-            else
-            {
-                properties_[i] = asString(currentProperty);
-            }
-
-            if (properties_[i].empty())
-            {
-                error() = "Failed to parse properties in search.";
-                return false;
-            }
-
-            // validation
-            PropertyConfig propertyConfig;
-            propertyConfig.setName(properties_[i]);
-            if (!getPropertyConfig(indexSchema_,propertyConfig))
-            {
-                error() = "Unknown property in search/in: " +
-                          propertyConfig.getName();
-                return false;
-            }
-
-            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
-            {
-                warning() = "Property is not indexed, ignore it: " +
-                            propertyConfig.getName();
-            }
-        }
-    }
-
-    if (properties_.empty())
-    {
-        error() = "Require list of properties in which search is performed.";
-        return false;
-    }
-
     // counter list properties
     const Value& countNode = search[Keys::count];
     if (! nullValue(countNode))
@@ -278,7 +227,7 @@ bool SearchParser::parse(const Value& search)
                 // validation
                 PropertyConfig propertyConfig;
                 propertyConfig.setName(countList_[i]);
-                if (!getPropertyConfig(indexSchema_,propertyConfig))
+                if (!getPropertyConfig(indexSchema_, propertyConfig))
                 {
                     error() = "Unknown property in count/in: " +
                               propertyConfig.getName();
@@ -375,6 +324,39 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "zambezi")
         {
             searchingModeInfo_.mode_ = SearchingMode::ZAMBEZI;
+
+            // add Zambezi Algorithm
+
+            if (searching_mode.hasKey(Keys::algorithm) )
+            {
+                Value::StringType algorithm = asString(searching_mode[Keys::algorithm]);
+                boost::to_lower(algorithm);
+                if (algorithm == "svs")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::SVS;
+                }
+                else if (algorithm == "wand")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::WAND;
+                }
+                else if (algorithm == "bwand_and")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::BWAND_AND;
+                }
+                else if (algorithm == "bwand_or")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::BWAND_OR;
+                }
+                else if (algorithm == "mbwand")
+                {
+                    searchingModeInfo_.algorithm_ = izenelib::ir::Zambezi::MBWAND;
+                }
+                else
+                {
+                    error() = "The Zambezi search algorithm:" + algorithm + " is wrong";
+                    return false;
+                }
+            }
         }
         else if (mode == "ad_index")
         {
@@ -383,6 +365,12 @@ bool SearchParser::parse(const Value& search)
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
+        }
+
+        if (indexSchema_.empty() && searchingModeInfo_.mode_ !=SearchingMode::ZAMBEZI)
+        {
+            error() = "IndexSchema is not in xml config, the search mode is wrong";
+            return false;
         }
 
         if (searching_mode.hasKey(Keys::threshold))
@@ -438,6 +426,72 @@ bool SearchParser::parse(const Value& search)
             }
         }
 
+    }
+
+    // properties
+    const Value& propertiesNode = search[Keys::in];
+    if (nullValue(propertiesNode))
+    {
+        if (searchingModeInfo_.mode_ != SearchingMode::ZAMBEZI)
+            getDefaultSearchPropertyNames(indexSchema_, properties_);
+        else
+            getDefaultZambeziSearchPropertyNames(zambeziConfig_, properties_);
+
+    }
+    else if (propertiesNode.type() == Value::kArrayType)
+    {
+        properties_.resize(propertiesNode.size());
+        for (std::size_t i = 0; i < properties_.size(); ++i)
+        {
+            const Value& currentProperty = propertiesNode(i);
+            if (currentProperty.type() == Value::kObjectType)
+            {
+                properties_[i] = asString(currentProperty[Keys::property]);
+            }
+            else
+            {
+                properties_[i] = asString(currentProperty);
+            }
+
+            if (properties_[i].empty())
+            {
+                error() = "Failed to parse properties in search.";
+                return false;
+            }
+
+            // validation
+            PropertyConfig propertyConfig;
+            propertyConfig.setName(properties_[i]);
+
+            if (searchingModeInfo_.mode_ == SearchingMode::ZAMBEZI)
+            {
+                if (!zambeziConfig_.checkValidationIndexConfig(properties_[i]))
+                {
+                    error() = "Unknown property in search/in Using zambezi: " +
+                      propertyConfig.getName();
+                    return false;
+                }
+                continue;
+            }
+            else if (!getPropertyConfig(indexSchema_, propertyConfig) )
+            {
+                error() = "Unknown property in search/in: " +
+                      propertyConfig.getName();
+                return false;
+            }
+
+            if (!(propertyConfig.bIndex_||propertyConfig.bSuffixIndex_))
+            {
+                warning() = "Property is not indexed, ignore it: " +
+                            propertyConfig.getName();
+            }
+        }
+    }
+
+    if (properties_.empty())
+    {
+        error() = "Require list of properties in which search is performed.";
+        return false;
     }
 
     return true;
