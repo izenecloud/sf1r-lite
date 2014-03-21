@@ -1393,20 +1393,6 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
         );
         get_kvHandler.release();
 
-        handler_ptr load_licenseHandler(
-            new handler_type(
-                collection,
-                &CollectionController::load_license
-            )
-        );
-
-        router.map(
-            controllerName,
-            "load_license",
-            load_licenseHandler.get()
-        );
-        load_licenseHandler.release();
-
         handler_ptr rebuild_collectionHandler(
             new handler_type(
                 collection,

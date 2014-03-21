@@ -51,8 +51,6 @@ public:
     void set_kv();
     void get_kv();
 
-    void load_license();
-
     void update_sharding_conf();
     void add_sharding_nodes();
 

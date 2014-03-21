@@ -20,7 +20,6 @@ INCLUDE_DIRECTORIES(
 
 FILE(GLOB_RECURSE configuration_SRC "configuration-manager/*.cpp")
 FILE(GLOB_RECURSE la_SRC "la-manager/*.cpp")
-FILE(GLOB_RECURSE license_SRC "license-manager/*.cpp")
 FILE(GLOB_RECURSE ranking_SRC "ranking-manager/*.cpp")
 FILE(GLOB_RECURSE common_SRC "common/*.cpp")
 FILE(GLOB_RECURSE log_SRC "log-manager/*.cpp")
@@ -62,9 +61,6 @@ FILE(GLOB mining_SRC
   "mining-manager/duplicate-detection-submanager/*.cc"
   "mining-manager/query-recommend-submanager/*.cpp"
   "mining-manager/similarity-detection-submanager/*.cpp"
-#  "mining-manager/classification-submanager/*.cc"
-#  "mining-manager/classification-submanager/*.cpp"
-#  "mining-manager/ise-submanager/*.cpp"
   "mining-manager/query-correction-submanager/*.cpp"
   "mining-manager/auto-fill-submanager/*.cpp"
   "mining-manager/faceted-submanager/*.cc"
@@ -100,7 +96,6 @@ FILE(GLOB mining_SRC
 ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_LIBRARY(sf1r_configuration_manager ${configuration_SRC})
 ADD_LIBRARY(sf1r_la_manager ${la_SRC})
-ADD_LIBRARY(sf1r_license_manager ${license_SRC})
 ADD_LIBRARY(sf1r_ranking_manager ${ranking_SRC})
 ADD_LIBRARY(sf1r_common ${common_SRC})
 ADD_LIBRARY(sf1r_index_manager ${index_SRC} )
@@ -121,7 +116,6 @@ ADD_LIBRARY(sf1r_image_manager ${image_SRC})
 INSTALL(TARGETS
     sf1r_configuration_manager
     sf1r_la_manager
-    sf1r_license_manager
     sf1r_ranking_manager
     sf1r_common
     sf1r_index_manager

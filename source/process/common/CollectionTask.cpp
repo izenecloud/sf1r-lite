@@ -7,7 +7,6 @@
 
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/product/ProductBundleActivator.h>
-#include <core/license-manager/LicenseCustManager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
@@ -530,44 +529,6 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
     }
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
     return true;
-}
-
-void ExpirationCheckTask::doTask()
-{
-    LOG(INFO) << "## start ExpirationCheckTask for " << collectionName_;
-    //isRunning_ = true;
-
-    std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
-    uint32_t currentDate = license_module::license_tool::getCurrentDate();
-    if (currentDate >= startDate_ && endDate_ >= currentDate)
-    {
-    	// Check collection handler
-        if (!checkCollectionHandler(collectionName_))
-        {
-        	CollectionManager::get()->startCollection(collectionName_, configFile);
-        }
-    }
-    // Check if the time is expired
-    if (endDate_ < currentDate)
-    {
-    	CollectionManager::get()->stopCollection(collectionName_);
-    	LOG(INFO) << "## deleteCollectionInfo: " << collectionName_;
-    	LicenseCustManager::get()->deleteCollection(collectionName_);
-    	setIsCronTask(false);
-    }
-    LOG(INFO) << "## end ExpirationCheckTask for " << collectionName_;
-    //isRunning_ = false;
-}
-
-bool ExpirationCheckTask::checkCollectionHandler(const std::string& collectionName) const
-{
-	CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName);
-	CollectionManager::ScopedReadLock collLock(*collMutex);
-
-	CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName);
-	if (collectionHandler != NULL)
-		return true;
-	return false;
 }
 
 }

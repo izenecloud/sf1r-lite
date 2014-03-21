@@ -25,8 +25,6 @@ private:
 
     bool initLogManager();
 
-    bool initLicenseManager();
-
     bool initLAManager();
 
     void initQuery();

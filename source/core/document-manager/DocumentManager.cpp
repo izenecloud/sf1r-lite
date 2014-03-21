@@ -13,7 +13,6 @@
 
 #include <configuration-manager/ConfigurationTool.h>
 #include <util/profiler/ProfilerGroup.h>
-#include <license-manager/LicenseManager.h>
 #include <common/SFLogger.h>
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
@@ -157,15 +156,6 @@ bool DocumentManager::insertDocument(const Document& document)
         }
     }
 
-    if (LicenseManager::continueIndex_)
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LICENSE_MAX_DOC, 0 );
-    }
-    else
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LicenseManager::TRIAL_MAX_DOC, 0 );
-    }
-
     if (!propertyValueTable_->insert(document.getId(), document))
     {
         return false;
@@ -176,17 +166,6 @@ bool DocumentManager::insertDocument(const Document& document)
 
 bool DocumentManager::updateDocument(const Document& document)
 {
-    //if (acl_) aclTable_.update(document.getId(), document);
-
-    if (LicenseManager::continueIndex_)
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LICENSE_MAX_DOC, 0 );
-    }
-    else
-    {
-        COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LicenseManager::TRIAL_MAX_DOC, 0 );
-    }
-
     if (propertyValueTable_->update(document.getId(), document))
     {
         documentCache_.del(document.getId());

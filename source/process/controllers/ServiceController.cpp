@@ -19,26 +19,6 @@ namespace sf1r {
  */
 void ServiceController::process_overdue()
 {
-#ifdef  EXIST_LICENSE
-    char* home = getenv("HOME");
-    std::string licenseDir = home; licenseDir += "/sf1-license/";
-
-    /// Write token file
-    std::string path = licenseDir + LicenseManager::TOKEN_FILENAME;
-    std::string tokenCodeStr = LicenseManager::STOP_SERVICE_TOKEN;
-    LicenseManager::write_token_to(path, tokenCodeStr);
-
-    ///Insert the "@@ALL@@" token into the deny control lists for all collections
-    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
-
-    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-    {
-        CollectionMeta& collectionMeta = collectionIter->second;
-        collectionMeta.deleteTokenFromAclDeny(LicenseManager::START_SERVICE_TOKEN);
-        collectionMeta.aclDeny(LicenseManager::STOP_SERVICE_TOKEN);
-    }
-#endif
 }
 
 /**
@@ -47,26 +27,6 @@ void ServiceController::process_overdue()
  */
 void ServiceController::renew()
 {
-#ifdef  EXIST_LICENSE
-    char* home = getenv("HOME");
-    std::string licenseDir = home; licenseDir += "/sf1-license/";
-
-    // Write token file
-    std::string path = licenseDir + LicenseManager::TOKEN_FILENAME;
-    std::string tokenCodeStr = LicenseManager::START_SERVICE_TOKEN;
-    LicenseManager::write_token_to(path, tokenCodeStr);
-
-    /// Insert the "@@NONE@@"token into the deny control lists of all collections
-    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
-
-    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-    {
-        CollectionMeta& collectionMeta = collectionIter->second;
-        collectionMeta.deleteTokenFromAclDeny(LicenseManager::STOP_SERVICE_TOKEN);
-        collectionMeta.aclDeny(LicenseManager::START_SERVICE_TOKEN);
-    }
-#endif
 }
 
 }

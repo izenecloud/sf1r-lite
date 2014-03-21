@@ -32,8 +32,6 @@ public:
 
     bool schedule(const CollectionHandler* collectionHandler);
 
-    bool scheduleLicenseTask(const std::string collectionName);
-
 private:
     typedef std::vector<boost::shared_ptr<CollectionTask> > TaskListType;
     TaskListType taskList_;

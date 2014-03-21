@@ -75,34 +75,6 @@ ENDIF( ${UPPER_MODE} STREQUAL "CN" )
 #
 # Put this section just under PROJECT
 #####
-
-# License Check
-IF (LICENSE_LEVEL)
-    STRING(TOUPPER ${LICENSE_LEVEL} UPPER_LICENSE_LEVEL)
-ENDIF (LICENSE_LEVEL)
-
-IF (LICENSE_LEVEL)
-    ADD_DEFINITIONS( -DEXIST_LICENSE )
-ENDIF (LICENSE_LEVEL)
-
-IF (UPPER_LICENSE_LEVEL STREQUAL "COBRA")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=10000"   "-DLICENSE_MAX_SIZE=1"   CACHE STRING "Flags of cobra license." FORCE)
-ELSEIF (UPPER_LICENSE_LEVEL STREQUAL "SILVER")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=100000"  "-DLICENSE_MAX_SIZE=10"  CACHE STRING "Flags of silver license." FORCE)
-ELSEIF (UPPER_LICENSE_LEVEL STREQUAL "GOLD")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=1000000" "-DLICENSE_MAX_SIZE=100" CACHE STRING "Flags of gold license." FORCE)
-ELSEIF (UPPER_LICENSE_LEVEL STREQUAL "PLATINUM")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=500000000" "-DLICENSE_MAX_SIZE=50000" CACHE STRING "Flags of platinum license." FORCE)
-ELSEIF (UPPER_LICENSE_LEVEL STREQUAL "MAX_SIZE_TEST")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=500000000" "-DLICENSE_MAX_SIZE=1" CACHE STRING "Flags of max_size_test license." FORCE)
-ELSEIF (UPPER_LICENSE_LEVEL STREQUAL "MAX_DOC_TEST")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=1000" "-DLICENSE_MAX_SIZE=5000" CACHE STRING "Flags of max_doc_test license." FORCE)
-ELSE (UPPER_LICENSE_LEVEL STREQUAL "COBRA")
-    SET(UPPER_LICENSE_LEVEL "DEV-LICENSE")
-    SET(LICENSE_FLAGS "-DLICENSE_MAX_DOC=500000000" "-DLICENSE_MAX_SIZE=50000" CACHE STRING "Flags of development license." FORCE)
-ENDIF (UPPER_LICENSE_LEVEL STREQUAL "COBRA")
-ADD_DEFINITIONS( ${LICENSE_FLAGS} )
-
 # Use BUILD_FLAGS_HAS_BEEN_CUSTOMIZED as guard.
 #
 # The options are only customized in first run. User can edit cache to
@@ -133,40 +105,8 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
     "-march=native -mtune=native -fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
     "Profile build type"
 
-    SF1DEBUG
-    "-march=native -mtune=native -fopenmp -O3 -g -Wno-deprecated -DSF1_DEBUG"
-    "Sf1 Debug build type"
-
     SF1TIMECHECK
     "-march=native -mtune=native -fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
-    "Sf1 time check build type"
-
-    SF1PCHECK
-    "-march=native -mtune=native -fopenmp -O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
-    "Sf1 performance check build type"
-
-    COBRARELWITHDEBINFO
-    "-march=native -mtune=native -O2 -g -Wno-deprecated -DNDEBUG"
-    "Flags used by the compiler during Release with Debug Info builds for Cobra."
-
-    COBRARELEASE
-    "-march=native -mtune=native -O3 -Wno-deprecated -DNDEBUG"
-    "Flags used by the compiler during release builds [CORBAR]"
-
-    COBRADEBUG
-    "-march=native -mtune=native -O0 -DDEBUG -g -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
-    "Flags used by the compiler during debug builds.[CORBAR]"
-
-    COBRARESTRICTRELEASE
-    "-march=native -mtune=native -O3 -g -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
-    "Flags used by the compiler during debug builds.[CORBAR]"
-
-    COBRARESTRICT
-    "-march=native -mtune=native -O2 -g -Wno-deprecated -DCOBRA_RESTRICT "
-    "Flags used by the compiler during debug builds.[CORBAR]"
-
-    COBRASF1TIMECHECK
-    "-march=native -mtune=native -O3 -DDEBUG -g  -Wno-deprecated -DSF1_TIME_CHECK "
     "Sf1 time check build type"
     )
 ENDIF (CMAKE_COMPILER_IS_GNUCXX)
@@ -215,10 +155,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SF1RENGINE_ROOT}/bin")
 ADD_SUBDIRECTORY(core)
 ADD_SUBDIRECTORY(bundles)
 ADD_SUBDIRECTORY(process)
-ADD_SUBDIRECTORY(tools)
 
 IF(ENABLE_TEST)
-  ADD_SUBDIRECTORY("${SF1RENGINE_ROOT}/test" test)
+#  ADD_SUBDIRECTORY("${SF1RENGINE_ROOT}/test" test)
 ENDIF(ENABLE_TEST)
 
 

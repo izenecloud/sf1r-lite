@@ -6,8 +6,6 @@
 
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
-#include <license-manager/LicenseManager.h>
-#include <license-manager/LicenseCustManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SuperNodeManager.h>
@@ -87,8 +85,6 @@ bool CobraProcess::initialize(const std::string& configFileDir)
     if(!initLogManager()) return false;
 
     if(!initFireWall()) return false;
-
-    if(!initLicenseManager()) return false;
 
     initDriverServer();
 
@@ -180,45 +176,6 @@ void CobraProcess::initQuery()
     //QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
     OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
-}
-
-bool CobraProcess::initLicenseManager()
-{
-#ifdef COBRA_RESTRICT
-    boost::shared_ptr<LicenseManager> licenseManager;
-    // license manager initialization.
-    char* home = getenv("HOME");
-    std::string licenseDir = home; licenseDir += "/sf1-license/";
-    try { // If license directory is not exist, create it.
-        if ( !boost::filesystem::exists(licenseDir) ) {
-            std::cout << "[Warning] : " << licenseDir << " is Created." << std::endl;
-            boost::filesystem::create_directories(licenseDir);
-        }
-    } catch (boost::filesystem::filesystem_error& e) {
-        std::cerr << "Error : " << e.what() << std::endl;
-        return false;
-    }
-    std::string path = licenseDir + LicenseManager::LICENSE_KEY_FILENAME;
-    LicenseCustManager::get()->setLicenseFilePath(path);
-    LicenseCustManager::get()->setCollectionInfo();
-    licenseManager.reset( new LicenseManager("1.0.0", path, false) );
-
-    path = licenseDir + LicenseManager::LICENSE_REQUEST_FILENAME;
-    if ( !licenseManager->createLicenseRequestFile(path) )
-    {
-        DLOG(ERROR) <<"License Request File is failed to generated. Please check if you're a sudoer" <<endl;
-        return false;
-    }
-
-  //  if ( !licenseManager->validateLicenseFile() )
-  //  {
-  //      std::cerr << "[Warning] : license is invalid. Now sf1 will be worked on trial mode." << std::endl;
-  //      LicenseManager::continueIndex_ = false;
-  //     std::cout<<"[Warning]: LicenseManager:: continueIndex = false"<<std::endl;
-  //  }
-
-#endif // COBRA_RESTRICT
-    return true;
 }
 
 bool CobraProcess::initFireWall()

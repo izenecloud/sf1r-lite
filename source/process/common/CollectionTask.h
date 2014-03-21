@@ -87,33 +87,6 @@ private:
     std::string rebuildCollectionName_;
 };
 
-class ExpirationCheckTask : public CollectionTask
-{
-public:
-	ExpirationCheckTask(const std::string collectionName,
-						std::pair<uint32_t, uint32_t> licenseDate)
-		: CollectionTask(collectionName)
-	{
-        taskName_ = collectionName + "-expiration";
-		startDate_ = licenseDate.first;
-		endDate_ = licenseDate.second;
-	}
-
-    virtual std::string getTaskName() const
-    {
-        return taskName_;
-    }
-    virtual void doTask();
-
-private:
-	bool checkCollectionHandler(const std::string& collectionName) const;
-
-private:
-    std::string taskName_;
-	uint32_t startDate_;
-	uint32_t endDate_;
-};
-
 }
 
 #endif /* SF1R_PROCESS_COMMON_COLLECTION_TASK_H_ */
