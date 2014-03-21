@@ -79,12 +79,9 @@ public:
         // Temporarily store the summary results to keep them out of cache
         std::vector<std::vector<PropertyValue::PropertyValueStrType> > fullText, snippetText, rawText;
 
-        if (!result.distSearchInfo_.include_summary_data_)
-        {
-            fullText.swap(result.fullTextOfDocumentInPage_);
-            snippetText.swap(result.snippetTextOfDocumentInPage_);
-            rawText.swap(result.rawTextOfSummaryInPage_);
-        }
+        fullText.swap(result.fullTextOfDocumentInPage_);
+        snippetText.swap(result.snippetTextOfDocumentInPage_);
+        rawText.swap(result.rawTextOfSummaryInPage_);
         cache_type* pcache = &cache_;
         if (IsSpecialSearch(key))
         {
@@ -93,12 +90,9 @@ public:
 
         (*pcache).insert(key, result);
 
-        if (!result.distSearchInfo_.include_summary_data_)
-        {
-            fullText.swap(result.fullTextOfDocumentInPage_);
-            snippetText.swap(result.snippetTextOfDocumentInPage_);
-            rawText.swap(result.rawTextOfSummaryInPage_);
-        }
+        fullText.swap(result.fullTextOfDocumentInPage_);
+        snippetText.swap(result.snippetTextOfDocumentInPage_);
+        rawText.swap(result.rawTextOfSummaryInPage_);
     }
 
     void clear()

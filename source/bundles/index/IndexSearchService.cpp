@@ -191,26 +191,33 @@ bool IndexSearchService::getSearchResult(
 
         LOG(INFO) << "result.count: " << resultItem.count_ << ", is disableGetDocs_:" << actionItem.disableGetDocs_;
 
-        if (!resultItem.distSearchInfo_.include_summary_data_)
+        ResultMapT resultMap;
+        searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
+        if (resultMap.empty())
         {
-            ResultMapT resultMap;
-            searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
-            if (resultMap.empty())
+            LOG(INFO) << "empty worker map after split.";
+        }
+        else
+        {
+            RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
+            for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
             {
-                LOG(INFO) << "empty worker map after split.";
+                workerid_t workerid = it->first;
+                KeywordSearchResult& subResultItem = it->second;
+                requestGroup.addRequest(workerid, &actionItem, &subResultItem);
             }
-            else
-            {
-                RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
-                for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
-                {
-                    workerid_t workerid = it->first;
-                    KeywordSearchResult& subResultItem = it->second;
-                    requestGroup.addRequest(workerid, &actionItem, &subResultItem);
-                }
-                ret = ro_searchAggregator_->distributeRequest(
-                  actionItem.collectionName_, request_index, "getSummaryResult", requestGroup, resultItem);
-            }
+            ret = ro_searchAggregator_->distributeRequest(
+              actionItem.collectionName_, request_index, "getSummaryResult", requestGroup, resultItem);
+        }
+
+        struct timespec end_time;
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+        int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
+        interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
+
+        if (interval_ms > CACHE_THRESHOLD*5)
+        {
+            LOG(INFO) << "get cached search result cost too long: " << interval_ms;
         }
     }
 
@@ -218,16 +225,6 @@ bool IndexSearchService::getSearchResult(
     LOG(INFO) << "Top K count: " << resultItem.topKDocs_.size() << endl;
     LOG(INFO) << "Page Count: " << resultItem.count_ << endl;
     LOG(INFO) << "Search Finished " << endl;
-
-    struct timespec end_time;
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    int interval_ms = (end_time.tv_sec - start_time.tv_sec) * 1000;
-    interval_ms += (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
-
-    if (interval_ms > CACHE_THRESHOLD*10)
-    {
-        LOG(INFO) << "get search result cost too long: " << interval_ms;
-    }
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
