@@ -47,21 +47,6 @@ public:
     void renderRelatedQueries(const KeywordSearchResult& miaResult,
                               izenelib::driver::Value& relatedQueries);
 
-//     void renderPopularQueries(const KeywordSearchResult& miaResult,
-//                               izenelib::driver::Value& popularQueries);
-//
-//     void renderRealTimeQueries(const KeywordSearchResult& miaResult,
-//                                izenelib::driver::Value& realTimeQueries);
-
-    void renderTaxonomy(const KeywordSearchResult& miaResult,
-                        izenelib::driver::Value& taxonomy);
-
-    void renderNameEntity(const KeywordSearchResult& miaResult,
-                          izenelib::driver::Value& nameEntity);
-
-    void renderFaceted(const KeywordSearchResult& miaResult,
-                          izenelib::driver::Value& facetedEntity);
-
     void renderGroup(const KeywordSearchResult& miaResult,
                           izenelib::driver::Value& groupResult);
 

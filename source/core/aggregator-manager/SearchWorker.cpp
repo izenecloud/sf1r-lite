@@ -42,25 +42,6 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-void SearchWorker::GetSummarizationByRawKey(const std::string& rawKey, Summarization& result)
-{
-    miningManager_->GetSummarizationByRawKey(rawKey, result);
-}
-
-void SearchWorker::getLabelListByDocId(const uint32_t& docId,
-    LabelListT& result)
-{
-    miningManager_->getLabelListByDocId(docId, result);
-}
-
-bool SearchWorker::getLabelListWithSimByDocId(
-    uint32_t docId,
-    LabelListWithSimT& label_list
-    )
-{
-    return miningManager_->getLabelListWithSimByDocId(docId, label_list);
-}
-
 void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result)
 {
     MasterManagerBase::get()->pushWriteReq(reqdata, "api_from_shard");
@@ -91,11 +72,6 @@ void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem
 
     if (!resultItem.topKDocs_.empty())
         searchManager_->topKReranker_.rerank(actionItem, resultItem);
-
-    if (miningManager_)
-    {
-        miningManager_->getMiningResult(actionItem, resultItem);
-    }
 
     if (!actionItem.disableGetDocs_)
     {
@@ -132,11 +108,6 @@ void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, K
       << ", query: " << actionItem.env_.queryString_ << endl;
 
     getSummaryResult_(actionItem, resultItem);
-}
-
-void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-{
-    getSummaryMiningResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
@@ -240,17 +211,9 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (!resultItem.topKDocs_.empty() && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
             searchManager_->topKReranker_.rerank(actionItem, resultItem);
 
-        if (miningManager_ && actionItem.searchingMode_.mode_ != SearchingMode::AD_INDEX)
-        {
-            miningManager_->getMiningResult(actionItem, resultItem);
-        }
-
         if (resultItem.topKDocs_.empty())
             return true;
 
-
-        if (! getSummaryMiningResult_(actionItem, resultItem, false))
-            return false;
 
         START_PROFILER( cacheoverhead )
         if (searchCache_)
@@ -279,29 +242,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     }
 
     return true;
-}
-
-/// Mining Search
-
-void SearchWorker::getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result)
-{
-    // todo get all similar docs in global space?
-    //return miningManager_->getSimilarDocIdList(documentId, maxNum, result);
-
-    std::pair<sf1r::workerid_t, sf1r::docid_t> wd = net::aggregator::Util::GetWorkerAndDocId(documentId);
-    sf1r::workerid_t workerId = wd.first;
-    sf1r::docid_t docId = wd.second;
-
-    std::vector<std::pair<uint32_t, float> > simDocList;
-    if (!miningManager_->getSimilarDocIdList(docId, maxNum, simDocList)) //get similar docs in current machine.
-        return;
-
-    result.resize(simDocList.size());
-    for (size_t i = 0; i < simDocList.size(); i ++)
-    {
-        uint64_t wdocid = net::aggregator::Util::GetWDocId(workerId, simDocList[i].first);
-        result[i] = std::make_pair(wdocid, simDocList[i].second);
-    }
 }
 
 void SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& result)
@@ -339,9 +279,6 @@ void SearchWorker::makeQueryIdentity(
     identity.isSynonym = item.languageAnalyzerInfo_.synonymExtension_;
     switch (item.searchingMode_.mode_)
     {
-    case SearchingMode::KNN:
-        miningManager_->GetSignatureForQuery(item, identity.simHash);
-        break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
@@ -471,8 +408,6 @@ bool SearchWorker::getSearchResult_(
 
     uint32_t topKStart = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
-    uint32_t KNN_DIST = bundleConfig_->kNNDist_;
     uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
     uint32_t search_limit = TOP_K_NUM;
@@ -505,22 +440,6 @@ bool SearchWorker::getSearchResult_(
 
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
-    case SearchingMode::KNN:
-        resultItem.TOP_K_NUM = KNN_TOP_K_NUM;
-        if (identity.simHash.empty())
-            miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
-        if (!miningManager_->GetKNNListBySignature(identity.simHash,
-                                                   resultItem.topKDocs_,
-                                                   resultItem.topKRankScoreList_,
-                                                   resultItem.totalCount_,
-                                                   KNN_TOP_K_NUM,
-                                                   KNN_DIST,
-                                                   topKStart))
-        {
-            return true;
-        }
-        break;
-
     case SearchingMode::SUFFIX_MATCH:
         resultItem.TOP_K_NUM = fuzzy_lucky;
         if (!miningManager_->GetSuffixMatch(actionOperation,
@@ -644,13 +563,6 @@ bool SearchWorker::getSearchResult_(
         LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
         actionOperation.actionItem_.print();
     }
-    // todo, remove duplication globally over all nodes?
-    // Remove duplicated docs from the result if the option is on.
-    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN
-            /*&& actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH */)
-    {
-        removeDuplicateDocs(actionItem, resultItem);
-    }
 
     // For non-distributed search, it's necessary to adjust "start_" and "count_"
     // For distributed search, they would be adjusted in IndexSearchService::getSearchResult()
@@ -715,18 +627,6 @@ bool SearchWorker::getSummaryResult_(
     return true;
 }
 
-bool SearchWorker::getSummaryMiningResult_(
-        const KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem,
-        bool isDistributedSearch)
-{
-    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
-
-    getSummaryResult_(actionItem, resultItem, isDistributedSearch);
-    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] finished.";
-    return true;
-}
-
 void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA)
 {
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
@@ -767,8 +667,7 @@ bool SearchWorker::buildQuery(
         PersonalSearchInfo& personalSearchInfo)
 {
     SearchingMode::SearchingModeType mode = actionOperation.actionItem_.searchingMode_.mode_;
-    if (mode == SearchingMode::KNN ||
-        mode == SearchingMode::SUFFIX_MATCH ||
+    if (mode == SearchingMode::SUFFIX_MATCH ||
         mode == SearchingMode::ZAMBEZI)
     {
         return true;
@@ -978,33 +877,6 @@ bool  SearchWorker::getResultItem(
         resultItem.error_ = "Error : Cannot get document data";
 
     return ret;
-}
-
-bool SearchWorker::removeDuplicateDocs(
-        const KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem)
-{
-    // Remove duplicated docs from the result if the option is on.
-    if (miningManager_ &&
-        actionItem.removeDuplicatedDocs_ &&
-        resultItem.topKDocs_.size() != 0)
-    {
-        std::vector<std::size_t> uniquePosList;
-        if (miningManager_->getUniquePosList(resultItem.topKDocs_,
-                                             uniquePosList))
-        {
-            const std::size_t uniqueNum = uniquePosList.size();
-            for (std::size_t i = 0; i < uniqueNum; ++i)
-            {
-                std::size_t pos = uniquePosList[i];
-                resultItem.topKDocs_[i] = resultItem.topKDocs_[pos];
-                resultItem.topKRankScoreList_[i] = resultItem.topKRankScoreList_[pos];
-            }
-            resultItem.topKDocs_.resize(uniqueNum);
-            resultItem.topKRankScoreList_.resize(uniqueNum);
-        }
-    }
-    return true;
 }
 
 void SearchWorker::reset_all_property_cache()

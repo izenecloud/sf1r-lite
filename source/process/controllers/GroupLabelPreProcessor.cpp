@@ -47,12 +47,6 @@ void GroupLabelPreProcessor::pushTopLabels_(
                    << propName << ", query: " << query;
     }
 
-    if (pathVec.empty())
-    {
-        //if(limit <3) limit = 3;
-        miningSearchService_->GetProductCategory(query, limit, pathVec);
-    }
-
     GroupParam::GroupPathScoreVec pathScoreVec;
     pathScoreVec.reserve(pathVec.size());
     for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();

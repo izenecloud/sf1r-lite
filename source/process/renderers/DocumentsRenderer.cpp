@@ -165,20 +165,6 @@ void DocumentsRenderer::renderDocuments(
         renderPropertyList(splitRenderer_, propertyList,
             searchResult, i, newResource);
 
-        if (searchResult.numberOfDuplicatedDocs_.size()
-            == searchResult.topKDocs_.size())
-        {
-            newResource[Keys::_duplicated_document_count] =
-                searchResult.numberOfDuplicatedDocs_[indexInTopK];
-        }
-
-        if (searchResult.numberOfSimilarDocs_.size()
-            == searchResult.topKDocs_.size())
-        {
-            newResource[Keys::_similar_document_count] =
-                searchResult.numberOfSimilarDocs_[indexInTopK];
-        }
-
         if (searchResult.topKtids_.size()
             == searchResult.topKDocs_.size())
         {
@@ -211,105 +197,6 @@ void DocumentsRenderer::renderRelatedQueries(
         miaResult.relatedQueryList_[i].convertString(tmpstr, kEncoding);
         relatedQueries() = tmpstr;
     }
-}
-
-void DocumentsRenderer::renderTaxonomy(
-    const KeywordSearchResult& miaResult,
-    izenelib::driver::Value& taxonomy
-)
-{
-    if (miaResult.tg_info_.taxonomyString_.empty())
-    {
-        return;
-    }
-
-    BOOST_ASSERT(miaResult.tg_info_.taxonomyString_.size() == miaResult.tg_info_.taxonomyLevel_.size());
-    BOOST_ASSERT(miaResult.tg_info_.taxonomyString_.size() == miaResult.tg_info_.numOfTGDocs_.size());
-    std::vector<Value*> taxonomyParents;
-    taxonomyParents.push_back(&taxonomy[Keys::labels]);
-    for (std::size_t i = 0; i < miaResult.tg_info_.taxonomyString_.size(); ++i)
-    {
-        std::size_t currentLevel = miaResult.tg_info_.taxonomyLevel_[i];
-        BOOST_ASSERT(currentLevel < taxonomyParents.size());
-
-        Value& parent = *(taxonomyParents[currentLevel]);
-        Value& newLabel = parent();
-        newLabel[Keys::label] = propstr_to_str(miaResult.tg_info_.taxonomyString_[i], kEncoding);
-        newLabel[Keys::document_count] = miaResult.tg_info_.numOfTGDocs_[i];
-
-        // alternative for the parent of next level
-        std::size_t nextLevel = currentLevel + 1;
-        taxonomyParents.resize(nextLevel + 1);
-        taxonomyParents[nextLevel] = &newLabel[Keys::sub_labels];
-    }
-}
-
-void DocumentsRenderer::renderNameEntity(
-    const KeywordSearchResult& miaResult,
-    izenelib::driver::Value& nameEntity
-)
-{
-    const NEResultList& nelist = miaResult.tg_info_.neList_;
-    std::string tmpstr;
-    for (std::size_t i = 0; i < nelist.size(); ++i)
-    {
-        Value& newNameEntity = nameEntity();
-        nelist[i].type.convertString(tmpstr, kEncoding);
-        newNameEntity[Keys::type] = tmpstr;
-
-        Value& nameEntityList = newNameEntity[Keys::name_entity_list];
-        typedef std::vector<NEItem>::const_iterator const_iterator;
-        for (const_iterator item = nelist[i].item_list.begin(),
-                         itemEnd = nelist[i].item_list.end();
-             item != itemEnd; ++item)
-        {
-            Value& newNameEntityItem = nameEntityList();
-            item->text.convertString(tmpstr, kEncoding);
-            newNameEntityItem[Keys::name_entity_item] = tmpstr;
-            newNameEntityItem[Keys::document_support_count] = item->doc_list.size();
-        }
-    }
-}
-
-void DocumentsRenderer::renderFaceted(
-    const KeywordSearchResult& miaResult,
-    izenelib::driver::Value& faceted)
-{
-  const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.onto_rep_.item_list;
-  if( item_list.empty())
-  {
-      return;
-  }
-
-  std::vector<Value*> parents;
-  parents.push_back(&faceted[Keys::labels]);
-  std::list<sf1r::faceted::OntologyRepItem>::const_iterator it = item_list.begin();
-  while(it!=item_list.end())
-  {
-      const sf1r::faceted::OntologyRepItem& item = *it;
-      std::size_t currentLevel = item.level-1;
-      BOOST_ASSERT(currentLevel < parents.size());
-
-      std::string tmpstr;
-      Value& parent = *(parents[currentLevel]);
-      Value& newLabel = parent();
-      item.text.convertString(tmpstr, kEncoding);
-      newLabel[Keys::label] = tmpstr;
-      newLabel[Keys::id] = item.id;
-      newLabel[Keys::document_count] = item.doc_count;
-#ifdef ONTOLOGY
-      cout<<"currentLevel is "<<currentLevel<<endl;
-      cout<<"parents.size() is "<<parents.size()<<endl;
-      //cout<<"convertBuffer is "<<convertBuffer<<endl;
-      cout<<"itemid is "<<item.id<<endl;
-      cout<<"item.doc_count is "<<item.doc_count<<endl;
-#endif
-      // alternative for the parent of next level
-      std::size_t nextLevel = currentLevel + 1;
-      parents.resize(nextLevel + 1);
-      parents[nextLevel] = &newLabel[Keys::sub_labels];
-      ++it;
-  }
 }
 
 void DocumentsRenderer::renderGroup(

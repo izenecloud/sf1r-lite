@@ -13,7 +13,6 @@
 #include <bundles/mining/MiningTaskService.h>
 #include <core/mining-manager/MiningManager.h>
 #include <aggregator-manager/SearchAggregator.h>
-#include <mining-manager/MiningQueryLogHandler.h>
 #include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
@@ -98,35 +97,6 @@ void CommandsController::indexSearch_()
             }
         }
     }
-}
-
-/**
- * @brief Action \b index_query_log. Sends command "index_query_log" to rebuild all query related features.
- *
- * @section request
- *
- *
- * @section response
- *
- * No extra fields.
- *
- **/
-void CommandsController::index_query_log()
-{
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    TimestampReqLog reqlog;
-    reqlog.timestamp = Utilities::createTimeStamp();
-    if(!DistributeRequestHooker::get()->prepare(Req_WithTimestamp, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return;
-    }
-
-    MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
-
-    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 void CommandsController::mining()

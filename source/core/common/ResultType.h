@@ -18,7 +18,6 @@
 #include <common/PropertyValue.h>
 #include <common/sf1_msgpack_serialization_types.h>
 #include <query-manager/ConditionInfo.h>
-#include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <mining-manager/group-manager/GroupParam.h>
@@ -86,68 +85,6 @@ typedef ErrorInfo ResultBase;
 // Definition of divided search results
 #include "DistributeResultType.h"
 
-struct TGResultInfo
-{
-    // --------------------------------[ Taxonomy List ]
-
-    idmlib::cc::CCInput32 tg_input;
-
-    /// Taxonomy string list.
-    std::vector<PropertyValue::PropertyValueStrType> taxonomyString_;
-
-    /// A list which stores the number of documents which are related to the specific TG item.
-    std::vector<count_t> numOfTGDocs_;
-
-    /// A list which stores the id list of documents which are related to the specific TG item.
-    std::vector<std::vector<uint64_t> > tgDocIdList_;
-
-    /// TaxnomyLevel is used for displaying hierarchical taxonomy result. It will start from 0.
-    ///
-    /// (ex)
-    /// <TgLabel name=”finantial” num=”2”>
-    ///     <TgLabel name=”target2” num”3”>
-    ///         <TgLabel name=”target3” num=”2”/>
-    ///     </TgLabel>
-    /// </TgLabel>
-    /// <TgLabel name=”bank” num=”4”/>
-    ///
-    /// numOfTGDocs_ = { 0 , 1 , 2 , 0 };
-    std::vector<uint32_t> taxonomyLevel_; // Start From 0
-
-    NEResultList neList_;
-
-    void swap(TGResultInfo& other)
-    {
-        tg_input.swap(other.tg_input);
-        taxonomyString_.swap(other.taxonomyString_);
-        numOfTGDocs_.swap(other.numOfTGDocs_);
-        tgDocIdList_.swap(other.tgDocIdList_);
-        taxonomyLevel_.swap(other.taxonomyLevel_);
-        neList_.swap(other.neList_);
-    }
-
-    void print(std::ostream& out = std::cout) const
-    {
-        stringstream ss;
-        ss << "taxonomyString_    : " << taxonomyString_.size() << endl;
-        for (size_t i = 0; i < taxonomyString_.size(); i++)
-        {
-            string s;
-            s = propstr_to_str(taxonomyString_[i]);
-            ss << s << ", ";
-        }
-        ss << endl;
-
-        ss << "numOfTGDocs_    : " << numOfTGDocs_.size() << endl;
-        for (size_t i = 0; i < numOfTGDocs_.size(); i++)
-        {
-            ss << numOfTGDocs_[i] << ", ";
-        }
-        ss << endl;
-    }
-
-    MSGPACK_DEFINE(tg_input, taxonomyString_, numOfTGDocs_, tgDocIdList_, taxonomyLevel_, neList_);
-};
 
 class KeywordSearchResult : public ErrorInfo
 {
@@ -294,11 +231,7 @@ public:
             ss << endl;
         }
 
-        tg_info_.print(out);
-
         ss << endl;
-        ss << "onto_rep_ : " <<endl;
-        ss << onto_rep_.ToString();
         ss << "groupRep_ : " <<endl;
         ss << groupRep_.ToString();
         ss << "attrRep_ : " <<endl;
@@ -412,10 +345,6 @@ public:
 
     std::vector<std::vector<PropertyValue::PropertyValueStrType> > docCategories_;
 
-    TGResultInfo  tg_info_;
-    // --------------------------------[ Related Query ]
-
-    sf1r::faceted::OntologyRep onto_rep_;
 
     // a list, each element is a label tree for a property
     sf1r::faceted::GroupRep groupRep_;
@@ -504,8 +433,6 @@ public:
         numberOfDuplicatedDocs_.swap(other.numberOfDuplicatedDocs_);
         numberOfSimilarDocs_.swap(other.numberOfSimilarDocs_);
         docCategories_.swap(other.docCategories_);
-        tg_info_.swap(other.tg_info_);
-        onto_rep_.swap(other.onto_rep_);
         groupRep_.swap(other.groupRep_);
         attrRep_.swap(other.attrRep_);
         autoSelectGroupLabels_.swap(other.autoSelectGroupLabels_);
@@ -515,23 +442,13 @@ public:
         TOP_K_NUM = other.TOP_K_NUM;
     }
 
-//  DATA_IO_LOAD_SAVE(KeywordSearchResult,
-//          &rawQueryString_&encodingType_&collectionName_&analyzedQuery_
-//          &queryTermIdList_&totalCount_
-//          &docsInPage_&topKDocs_&topKWorkerIds_&topKRankScoreList_&topKCustomRankScoreList_
-//          &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
-//          &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
-//          &errno_&error_
-//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
-
     MSGPACK_DEFINE(
             rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
             queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, adCachedTopKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
-            tg_info_,
-            onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
+            groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
 };
 
 
@@ -619,43 +536,6 @@ public:
     MSGPACK_DEFINE(fullTextOfDocumentInPage_, snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             idList_, numberOfDuplicatedDocs_, numberOfSimilarDocs_, errno_, error_);
 }; // end - class RawTextResultFromMIA
-
-/// @brief similar document id list and accompanying image id list.
-class SimilarImageDocIdList
-{
-public:
-    std::vector<uint32_t> imageIdList_;
-    std::vector<docid_t>  docIdList_;
-
-    void print(std::ostream& out = std::cout) const
-    {
-        std::stringstream ss;
-        ss << std::endl;
-        ss << "SimilarImageDocIdList class" << endl;
-        ss << "-------------------------------------" << endl;
-        ss << "imageIdList_ : ";
-        std::copy(imageIdList_.begin(),
-                imageIdList_.end(),
-                std::ostream_iterator<uint32_t>(ss, " "));
-        ss << std::endl;
-        ss << "docIdList_ : ";
-        std::copy(docIdList_.begin(),
-                docIdList_.end(),
-                std::ostream_iterator<docid_t>(ss, " "));
-        ss << std::endl;
-        out << ss.str();
-    } // end - print()
-
-    void clear(void)
-    {
-        imageIdList_.clear();
-        docIdList_.clear();
-    } // end - clear()
-
-    DATA_IO_LOAD_SAVE(SimilarImageDocIdList,&imageIdList_&docIdList_);
-
-    MSGPACK_DEFINE(imageIdList_, docIdList_);
-};
 
 } // end - namespace sf1r
 

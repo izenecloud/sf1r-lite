@@ -154,7 +154,6 @@ void DocumentsSearchHandler::search()
         }
         else
         {
-            // search label/ne in result
 
             // Page Info is used to get raw text for documents with the
             // specified label.
@@ -173,30 +172,6 @@ void DocumentsSearchHandler::search()
                 GetDocumentsByIdsActionItem getActionItem;
                 RawTextResultFromMIA rawTextResult;
                 std::size_t totalCount = 0;
-
-                if (!actionItem_.env_.taxonomyLabel_.empty())
-                {
-                    totalCount = getDocumentIdListInLabel(
-                                     searchResult,
-                                     start,
-                                     count,
-                                     getActionItem.idList_
-                                 );
-                }
-                else if (!actionItem_.env_.nameEntityItem_.empty())
-                {
-                    totalCount = getDocumentIdListInNameEntityItem(
-                                     searchResult,
-                                     start,
-                                     count,
-                                     getActionItem.idList_
-                                 );
-                }
-                else
-                {
-                    response_.addError("Invalid search in label.");
-                    return;
-                }
 
                 bool isSuccess = true;
                 if (!getActionItem.idList_.empty())
@@ -231,89 +206,6 @@ void DocumentsSearchHandler::search()
             }
         }
     }
-}
-
-std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
-    const KeywordSearchResult& miaResult,
-    unsigned start,
-    unsigned count,
-    std::vector<sf1r::wdocid_t>& idListInPage
-)
-{
-    typedef std::vector<PropertyValue::PropertyValueStrType>::const_iterator iterator;
-    std::size_t taxonomyIndex =
-        std::find(
-            miaResult.tg_info_.taxonomyString_.begin(),
-            miaResult.tg_info_.taxonomyString_.end(),
-            str_to_propstr(actionItem_.env_.taxonomyLabel_)
-        ) - miaResult.tg_info_.taxonomyString_.begin();
-
-    std::size_t totalCount = 0;
-    if (taxonomyIndex < miaResult.tg_info_.tgDocIdList_.size())
-    {
-        const std::vector<sf1r::wdocid_t>& tgDocIdList =
-            miaResult.tg_info_.tgDocIdList_[taxonomyIndex];
-        totalCount = tgDocIdList.size();
-
-        std::size_t end = start + count;
-        if (end > tgDocIdList.size())
-        {
-            end = tgDocIdList.size();
-        }
-        for (std::size_t i = start; i < end; ++i)
-        {
-            idListInPage.push_back(tgDocIdList[i]);
-        }
-    }
-
-    return totalCount;
-}
-
-std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
-    const KeywordSearchResult& miaResult,
-    unsigned start,
-    unsigned count,
-    std::vector<sf1r::wdocid_t>& idListInPage
-)
-{
-    izenelib::util::UString type(
-        actionItem_.env_.nameEntityType_,
-        izenelib::util::UString::UTF_8
-    );
-    izenelib::util::UString name(
-        actionItem_.env_.nameEntityItem_,
-        izenelib::util::UString::UTF_8
-    );
-
-    std::size_t totalCount = 0;
-    typedef NEResultList::const_iterator ne_result_list_iterator;
-    ne_result_list_iterator resultOfType =
-        std::find_if (miaResult.tg_info_.neList_.begin(), miaResult.tg_info_.neList_.end(),
-                     boost::bind(&NEResult::type, _1) == type);
-    if (resultOfType != miaResult.tg_info_.neList_.end())
-    {
-        typedef std::vector<NEItem>::const_iterator item_iterator;
-        item_iterator foundItem =
-            std::find_if (resultOfType->item_list.begin(),
-                         resultOfType->item_list.end(),
-                         boost::bind(&NEItem::text, _1) == name);
-
-        if (foundItem != resultOfType->item_list.end())
-        {
-            totalCount = foundItem->doc_list.size();
-            std::size_t end = start + count;
-            if (end > totalCount)
-            {
-                end = totalCount;
-            }
-            for (std::size_t i = start; i < end; ++i)
-            {
-                idListInPage.push_back(foundItem->doc_list[i]);
-            }
-        }
-    }
-
-    return totalCount;
 }
 
 void DocumentsSearchHandler::filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result)
@@ -828,19 +720,6 @@ bool DocumentsSearchHandler::validateTextList(
     return true;
 }
 
-// bool DocumentsSearchHandler::validateMiningResult(
-//     const KeywordSearchResult& miaResult
-// )
-// {
-//     if (!miaResult.error_.empty())
-//     {
-//         response_.addWarning(miaResult.error_);
-//         return false;
-//     }
-//
-//     return true;
-// }
-
 void DocumentsSearchHandler::renderDocuments(
     const RawTextResultFromMIA& rawTextResult
 )
@@ -872,31 +751,6 @@ void DocumentsSearchHandler::renderMiningResult(
         renderer_.renderRelatedQueries(
             miaResult,
             response_[Keys::related_queries]
-        );
-
-//         renderer_.renderPopularQueries(
-//             miaResult,
-//             response_[Keys::popular_queries]
-//         );
-//
-//         renderer_.renderRealTimeQueries(
-//             miaResult,
-//             response_[Keys::realtime_queries]
-//         );
-
-        renderer_.renderTaxonomy(
-            miaResult,
-            response_[Keys::taxonomy]
-        );
-
-        renderer_.renderNameEntity(
-            miaResult,
-            response_[Keys::name_entity]
-        );
-
-        renderer_.renderFaceted(
-            miaResult,
-            response_[Keys::faceted]
         );
 
         renderer_.renderGroup(

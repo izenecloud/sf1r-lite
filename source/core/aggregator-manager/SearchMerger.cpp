@@ -4,9 +4,6 @@
 #include <common/ResultType.h>
 #include <common/Utilities.h>
 #include <mining-manager/MiningManager.h>
-#include <mining-manager/summarization-submanager/Summarization.h>
-#include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
-#include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 
 #include <algorithm> // min
@@ -56,10 +53,6 @@ static void emptyWorkerResult(KeywordSearchResult& wresult)
     for(size_t i = 0; i < wresult.rawTextOfSummaryInPage_.size(); ++i)
         wresult.rawTextOfSummaryInPage_[i].clear();
 
-    wresult.numberOfDuplicatedDocs_.clear();
-    wresult.numberOfSimilarDocs_.clear();
-    wresult.docCategories_.clear();
-    wresult.onto_rep_.clear();
     wresult.groupRep_.clear();
     wresult.attrRep_.clear();
     wresult.autoSelectGroupLabels_.clear();
@@ -390,8 +383,6 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     delete[] docComparators;
     LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
 
-    getMiningResult(workerResults, mergeResult);
-
     mergeResult.distSearchInfo_.include_summary_data_ = !is_need_get_docs;
     if (!is_need_get_docs)
     {
@@ -542,102 +533,6 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         ++workerOffset;
     }
     LOG(INFO) << "#[SearchMerger::getSummaryResult] end";
-}
-
-void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
-{
-    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
-
-    getSummaryResult(workerResults, mergeResult);
-    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] end";
-}
-
-void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
-{
-    if(!miningManager_) return;
-    LOG(INFO) <<"call mergeMiningResult"<<std::endl;
-    if (workerResults.size() == 0)
-        return;
-
-    size_t workerNum = workerResults.size();
-    for(size_t i = 0; i < workerNum; ++i)
-    {
-        if(!workerResults.result(i).error_.empty())
-        {
-            mergeResult.error_ = workerResults.result(i).error_;
-            LOG(ERROR) << "getMiningResult error for worker: " << i << ", error :" << mergeResult.error_;
-            return;
-        }
-    }
-    // note : the QrResult, TgResult, FacetedResult using any single result is enough.
-    // the DupResult, SimilarityResult need to be re-design to get the right result.
-    
-    // OrResult
-    mergeResult.relatedQueryList_ = workerResults.result(0).relatedQueryList_;
-    mergeResult.rqScore_ = workerResults.result(0).rqScore_;
-    // DupResult and SimilarityResult
-    mergeResult.numberOfDuplicatedDocs_.resize(mergeResult.topKDocs_.size(), 0);
-    mergeResult.numberOfSimilarDocs_.resize(mergeResult.topKDocs_.size(), 0);
-    // the merge of duplicate and SimilarityResult should be the same as merge of rawtext.
-    //
-    //size_t dup_actual_size = 0;
-    //size_t sim_actual_size = 0;
-    //for (size_t doc_i = 0; doc_i < mergeResult.topKDocs_.size(); ++doc_i)
-    //{
-    //    for (size_t i = 0; i < workerResults.size(); ++i)
-    //    {
-    //        const KeywordSearchResult& result = workerResults.result(i);
-    //        if (result.numberOfDuplicatedDocs_.size() > doc_i)
-    //        {
-    //            mergeResult.numberOfDuplicatedDocs_[doc_i] += result.numberOfDuplicatedDocs_[doc_i];
-    //            dup_actual_size = doc_i + 1;
-    //        }
-    //        if (result.numberOfSimilarDocs_.size() > doc_i)
-    //        {
-    //            mergeResult.numberOfSimilarDocs_[doc_i] += result.numberOfSimilarDocs_[doc_i];
-    //            sim_actual_size = doc_i + 1;
-    //        }
-    //    }
-    //}
-    //mergeResult.numberOfDuplicatedDocs_.resize(dup_actual_size);
-    //mergeResult.numberOfSimilarDocs_.resize(sim_actual_size);
-    // FacetedResult
-    mergeResult.onto_rep_ = workerResults.result(0).onto_rep_;
-    std::list<const faceted::OntologyRep*> other_onto_reps;
-    for (size_t i = 1; i < workerResults.size(); ++i)
-    {
-        other_onto_reps.push_back(&workerResults.result(i).onto_rep_);
-    }
-    mergeResult.onto_rep_.merge(0, other_onto_reps);
-
-    // TgResult.
-    boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
-    if(tg_manager)
-    {
-        std::vector<std::pair<uint32_t, idmlib::cc::CCInput32> > input_list;
-        for(uint32_t i=0;i<workerResults.size();i++)
-        {
-            const idmlib::cc::CCInput32& tg_input = workerResults.result(i).tg_info_.tg_input;
-            if(tg_input.concept_list.size()>0)
-            {
-                input_list.push_back(std::make_pair(workerResults.workerId(i), tg_input) );
-            }
-        }
-        if( input_list.size()>0)
-        {
-            std::vector<sf1r::wdocid_t> top_wdoclist;
-            mergeResult.getTopKWDocs(top_wdoclist);
-            idmlib::cc::CCInput64 input;
-            LOG(INFO)<<"before merging, size : "<<input_list.size()<<std::endl;
-            tg_manager->AggregateInput(top_wdoclist, input_list, input);
-            LOG(INFO)<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
-            TaxonomyRep taxonomyRep;
-            if( tg_manager->GetResult(input, taxonomyRep, mergeResult.tg_info_.neList_) )
-            {
-                taxonomyRep.fill(mergeResult);
-            }
-        }
-    }
 }
 
 void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTextResultFromSIA>& workerResults, RawTextResultFromSIA& mergeResult)
@@ -848,21 +743,6 @@ void SearchMerger::getDistKeyCount(const net::aggregator::WorkerResults<uint32_t
     for (size_t w = 0; w < workerNum; w++)
     {
         mergeResult += workerResults.result(w);
-    }
-}
-
-void SearchMerger::GetSummarizationByRawKey(const net::aggregator::WorkerResults<Summarization>& workerResults, Summarization& mergeResult)
-{
-    mergeResult.clear();
-    size_t workerNum = workerResults.size();
-    for (size_t w = 0; w < workerNum; w++)
-    {
-        // Assume and DOCID should be unique in global space
-        mergeResult = workerResults.result(w);
-        if (!mergeResult.isEmpty())
-        {
-            return;
-        }
     }
 }
 

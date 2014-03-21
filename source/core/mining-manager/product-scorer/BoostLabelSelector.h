@@ -62,10 +62,6 @@ private:
         std::size_t limit,
         std::vector<category_id_t>& boostLabels);
 
-    bool classifyQueryToLabel_(
-        const std::string& query,
-        std::vector<category_id_t>& boostLabels);
-
     bool getKnowledgeLabel_(
         const std::string& querySource,
         std::vector<category_id_t>& boostLabels);

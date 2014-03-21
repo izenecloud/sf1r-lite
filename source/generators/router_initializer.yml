@@ -9,7 +9,6 @@ controllers:
     actions:
       - index
       - optimize_index
-      - index_query_log
       - mining
       - train_ctr_model
 
@@ -26,7 +25,6 @@ controllers:
       - get_freq_group_labels
       - set_top_group_label
       - visit
-      - get_summarization
       - get_doc_count
       - get_key_count
 

@@ -12,7 +12,6 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <la-manager/AnalysisInformation.h>
 #include <common/ResultType.h>
-#include <mining-manager/summarization-submanager/Summarization.h>
 
 #include <util/get.h>
 #include <net/aggregator/Typedef.h>
@@ -52,16 +51,11 @@ public:
         BIND_CALL_PROXY_2(getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
         BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
-        BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
         BIND_CALL_PROXY_2(getInternalDocumentId, uint128_t, uint64_t)
-        BIND_CALL_PROXY_3(getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
         BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
         BIND_CALL_PROXY_3(HookDistributeRequestForSearch, int, std::string, bool)
-        BIND_CALL_PROXY_2(GetSummarizationByRawKey, std::string, Summarization)
-        BIND_CALL_PROXY_2(getLabelListByDocId, uint32_t, LabelListT)
-        BIND_CALL_PROXY_2(getLabelListWithSimByDocId, uint32_t, LabelListWithSimT)
         BIND_CALL_PROXY_1(getDistDocNum, uint32_t)
         BIND_CALL_PROXY_2(getDistKeyCount, std::string, uint32_t)
         BIND_CALL_PROXY_END()
@@ -81,32 +75,16 @@ public:
 
     void getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    void getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
-
     /// documents
     void getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
 
     void getInternalDocumentId(const uint128_t& actionItem, uint64_t& resultItem);
-
-    /// mining
-    void getSimilarDocIdList(uint64_t documentId, uint32_t maxNum, SimilarDocIdListType& result);
 
     void clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& result);
 
     void visitDoc(const uint32_t& docId, bool& result);
 
     void HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result);
-
-    void GetSummarizationByRawKey(const std::string& rawKey, Summarization& result);
-
-    void getLabelListByDocId(const uint32_t& docId,
-        LabelListT& result);
-
-    bool getLabelListWithSimByDocId(
-        uint32_t docId,
-        LabelListWithSimT& label_list
-        );
-    /** @} */
 
     void makeQueryIdentity(
             QueryIdentity& identity,
@@ -146,11 +124,6 @@ private:
             QueryIdentity& identity,
             bool isDistributedSearch = true);
 
-    bool getSummaryMiningResult_(
-            const KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem,
-            bool isDistributedSearch = true);
-
     bool getSummaryResult_(
             const KeywordSearchActionItem& actionItem,
             KeywordSearchResult& resultItem,
@@ -170,10 +143,6 @@ private:
             const std::vector<sf1r::docid_t>& docsInPage,
             const vector<vector<izenelib::util::UString> >& propertyQueryTermList,
             ResultItemT& resultItem);
-
-    bool removeDuplicateDocs(
-            const KeywordSearchActionItem& actionItem,
-            KeywordSearchResult& resultItem);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

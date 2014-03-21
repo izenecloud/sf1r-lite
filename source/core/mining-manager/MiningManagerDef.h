@@ -26,6 +26,5 @@
 #include <boost/shared_ptr.hpp>
 #include "util/TermUtil.hpp"
 #include <limits>
-#include "taxonomy-generation-submanager/TgTypes.h"
 #include "MiningException.hpp"
 #endif

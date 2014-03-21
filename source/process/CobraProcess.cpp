@@ -19,12 +19,7 @@
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <node-manager/DistributeFileSys.h>
 
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <mining-manager/query-recommendation/CorrectionEngineWrapper.h>
-#include <mining-manager/query-recommendation/RecommendEngineWrapper.h>
 #include <mining-manager/query-abbreviation/AbbrEngine.h>
-#include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
 #include <common/CollectionManager.h>
@@ -163,19 +158,8 @@ void CobraProcess::initQuery()
     {
         pQA->load(qaPath);
     }
-    //QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
-    CorrectionEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
-    CorrectionEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
-    CorrectionEngineWrapper::getInstance();
-    RecommendEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
-    RecommendEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
-    RecommendEngineWrapper::getInstance();
     QA::AbbrEngine::get()->init(SF1Config::get()->getWorkingDir(), SF1Config::get()->getResourceDir());
 
-    //QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
-    //QueryCorrectionSubmanager::getInstance();
-    AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
-    OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
 }
 
 bool CobraProcess::initFireWall()

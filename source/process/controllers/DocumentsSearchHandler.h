@@ -68,36 +68,6 @@ private:
         RawTextResultFromMIA& rawTextResult
     );
 
-    /// @internal
-    /// @brief Get document id list in label from MIA result.
-    /// @param smiaResult Result form MIA
-    /// @param start Page start offset
-    /// @param count Limit of the result in page
-    /// @param[out] idListInPage Id list of documents with the label and in the
-    ///                          page.
-    /// @return total documents count in result
-    std::size_t getDocumentIdListInLabel(
-        const KeywordSearchResult& miaResult,
-        unsigned start,
-        unsigned count,
-        std::vector<wdocid_t>& idListInPage
-    );
-
-    /// @internal
-    /// @brief Get document id list in name entity item from MIA result.
-    /// @param miaResult Result form MIA
-    /// @param start Page start offset
-    /// @param count Limit of the result in page
-    /// @param[out] idListInPage Id list of documents with the label and in the
-    ///                          page.
-    /// @return total documents count in result
-    std::size_t getDocumentIdListInNameEntityItem(
-        const KeywordSearchResult& miaResult,
-        unsigned start,
-        unsigned count,
-        std::vector<wdocid_t>& idListInPage
-    );
-
     void filterDocIdList(const KeywordSearchResult& origin, const std::vector<sf1r::docid_t>& id_list, KeywordSearchResult& new_result);
 
     void renderDocuments(const RawTextResultFromMIA& rawTextResult);

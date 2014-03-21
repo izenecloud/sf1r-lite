@@ -10,11 +10,8 @@
 
 #include <aggregator-manager/SearchAggregator.h>
 #include <query-manager/ActionItem.h>
-#include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
-#include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/custom-rank-manager/CustomRankValue.h>
 #include <mining-manager/merchant-score-manager/MerchantScore.h>
-#include <idmlib/tdt/tdt_types.h>
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
@@ -33,59 +30,11 @@ public:
 
 public:
     /// distributed search
-    bool getSimilarDocIdList(
-            const std::string& collectionName,
-            uint64_t documentId,
-            uint32_t maxNum,
-            std::vector<std::pair<uint64_t, float> >& result);
-
     bool visitDoc(
             const std::string& collectionName,
             uint64_t wdocId);
 
-    bool getLabelListByDocId(
-            const std::string& collectionName,
-            uint64_t wdocId,
-            std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
-
-    bool getLabelListWithSimByDocId(
-            const std::string& collectionName,
-            uint64_t wdocId,
-            std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
-
-public:
     bool getSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
-
-    bool getSimilarDocIdList(uint32_t documentId, uint32_t maxNum, std::vector<std::pair<uint32_t, float> >& result);
-
-    bool getDuplicateDocIdList(uint32_t docId, std::vector<uint32_t>& docIdList);
-
-    bool getSimilarImageDocIdList(const std::string& targetImageURI, SimilarImageDocIdList& imageDocIdList);
-
-    bool getReminderQuery(std::vector<izenelib::util::UString>& popularQueries, std::vector<izenelib::util::UString>& realtimeQueries);
-
-    bool getLabelListByDocId(uint32_t docid, std::vector<std::pair<uint32_t, izenelib::util::UString> >& label_list );
-
-    bool getSimilarLabelStringList(uint32_t label_id, std::vector<izenelib::util::UString>& label_list );
-
-    bool getLabelListWithSimByDocId(uint32_t docid,  std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
-
-    bool getUniqueDocIdList(const std::vector<uint32_t>& docIdList, std::vector<uint32_t>& cleanDocs);
-
-    ///faceted api
-    bool SetOntology(const std::string& xml);
-
-    bool GetOntology(std::string& xml);
-
-    bool GetStaticOntologyRepresentation(faceted::OntologyRep& rep);
-
-    bool OntologyStaticClick(uint32_t cid, std::list<uint32_t>& docid_list);
-
-    bool GetOntologyRepresentation(const std::vector<uint32_t>& search_result, faceted::OntologyRep& rep);
-
-    bool OntologyClick(const std::vector<uint32_t>& search_result, uint32_t cid, std::list<uint32_t>& docid_list);
-
-    bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
     bool visitDoc(const uint128_t& scdDocId);
 
@@ -165,32 +114,10 @@ public:
             const std::vector<std::string>& merchantNames,
             MerchantStrScoreMap& merchantScoreMap) const;
 
-    bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
-    bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
-    bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
-
     boost::shared_ptr<MiningManager> GetMiningManager() const
     {
         return miningManager_;
     }
-
-    void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
-
-    void InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result);
-
-    void FinishQueryCorrectionInject();
-
-    void InjectQueryRecommend(const izenelib::util::UString& query, const izenelib::util::UString& result);
-
-    void FinishQueryRecommendInject();
-
-    bool GetSummarizationByRawKey(
-            const std::string& collection,
-            const std::string& rawKey,
-            Summarization& result);
-
-    bool SetKV(const std::string& key, const std::string& value);
-    bool GetKV(const std::string& key, std::string& value);
 
     bool GetProductScore(
             const std::string& docIdStr,

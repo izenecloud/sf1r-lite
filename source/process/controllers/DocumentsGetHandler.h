@@ -38,18 +38,6 @@ public:
     /// @brief Handle documents/get
     void get();
 
-    /// @internal
-    /// @brief Handle documents/similar_to
-    void similar_to();
-
-    /// @internal
-    /// @brief Handle documents/duplicate_with
-    void duplicate_with();
-
-    /// @internal
-    /// @brief Handle documents/similar_to_image
-    void similar_to_image();
-
     bool parseSelect();
     bool parseSearchSession();
     bool parsePageInfo();

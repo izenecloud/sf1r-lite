@@ -24,8 +24,6 @@
 #include <sstream>
 
 #include <boost/asio.hpp>
-#include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
-#include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <configuration-manager/FuzzyNormalizerConfig.h>
 
 using namespace std;
@@ -1455,18 +1453,6 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get<uint32_t>("TaxonomyPara/maxlocnum", mining_config.taxonomy_param.max_locnum);
     params.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
 
-    //for autofill
-    params.GetString("AutofillPara/cron", mining_config.autofill_param.cron);
-    bool enableUpdateHitnumget=params.Get("AutofillPara/enableUpdateHitnum", mining_config.autofill_param.enableUpdateHitnum);
-    if(!enableUpdateHitnumget)
-    {
-        AutoFillChildManager::enableUpdateHitnum_=false;
-        mining_config.autofill_param.enableUpdateHitnum=false;
-    }
-    else
-    {
-        AutoFillChildManager::enableUpdateHitnum_= mining_config.autofill_param.enableUpdateHitnum;
-    }
     //for fuzzy search
     params.GetString("FuzzyIndexMergePara/cron", mining_config.fuzzyIndexMerge_param.cron);
 
@@ -1485,21 +1471,6 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     downCase(encoding_str);
     params.GetString("ClassificationPara/trainingencoding", encoding_str);
     mining_config.dc_param.encoding_type = parseEncodingType(encoding_str);
-
-    //for query correction
-    params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
-    params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
-    bool fromDbget=params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
-    if(!fromDbget)
-    {
-        mining_config.query_correction_param.fromDb=false;
-        QueryCorrectionSubmanager::system_fromDb_=false;
-    }
-    else
-    {
-        QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
-    }
-    QueryCorrectionSubmanager::getInstance();
 
     // for product ranking
     params.GetString("ProductRankingPara/cron",

@@ -6,7 +6,6 @@
 #include "../group-label-logger/GroupLabelKnowledge.h"
 #include "../util/split_ustr.h"
 #include "../util/convert_ustr.h"
-#include <b5m-manager/product_matcher.h>
 #include <la-manager/AttrTokenizeWrapper.h>
 #include <util/ustring/UString.h>
 #include <glog/logging.h>
@@ -41,7 +40,6 @@ bool BoostLabelSelector::selectLabel(
 
     if (convertLabelIds_(scoreParam.groupParam_.boostGroupLabels_, boostLabels) ||
         getFreqLabel_(scoreParam.query_, limit, boostLabels) ||
-        classifyQueryToLabel_(scoreParam.query_, boostLabels) ||
         getKnowledgeLabel_(scoreParam.querySource_, boostLabels))
     {
         if (boostLabels.size() > limit)
@@ -122,35 +120,6 @@ bool BoostLabelSelector::getFreqLabel_(
     }
 
     return !boostLabels.empty();
-}
-
-bool BoostLabelSelector::classifyQueryToLabel_(
-    const std::string& query,
-    std::vector<category_id_t>& boostLabels)
-{
-    const izenelib::util::UString ustrQuery(query, kEncodingType);
-    izenelib::util::UString backendCategory;
-    if (!miningManager_.GetProductCategory(ustrQuery, backendCategory))
-        return false;
-
-    izenelib::util::UString frontendCategory;
-    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
-
-    if (!matcher->GetFrontendCategory(backendCategory, frontendCategory))
-        return false;
-
-    std::vector<std::vector<izenelib::util::UString> > groupPaths;
-    split_group_path(frontendCategory, groupPaths);
-    if (groupPaths.empty())
-        return false;
-
-    faceted::PropValueTable::pvid_t topLabel =
-        propValueTable_.propValueId(groupPaths[0], false);
-    if (topLabel == 0)
-        return false;
-
-    boostLabels.push_back(topLabel);
-    return true;
 }
 
 bool BoostLabelSelector::getKnowledgeLabel_(

@@ -44,15 +44,11 @@ public:
     void update();
     void update_inplace();
     void destroy();
-    void get_topic();
-    void get_topic_with_sim();
-
     void log_group_label();
     void get_freq_group_labels();
     void set_top_group_label();
 
     void visit();
-    void get_summarization();
     void get_doc_count();
     void get_key_count();
 

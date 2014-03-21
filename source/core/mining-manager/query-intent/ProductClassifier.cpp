@@ -17,7 +17,7 @@ bool ProductClassifier::classify(WMVContainer& wmvs, std::string& query)
     if (query.empty())
         return false;
     std::vector<std::vector<std::string> > pathVec;
-    context_->miningManager_->GetProductCategory(query, 1, pathVec);
+    //context_->miningManager_->GetProductCategory(query, 1, pathVec);
 
     if (pathVec.empty())
         return false;

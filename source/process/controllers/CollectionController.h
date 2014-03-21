@@ -48,9 +48,6 @@ public:
 
     void delete_collection();
 
-    void set_kv();
-    void get_kv();
-
     void update_sharding_conf();
     void add_sharding_nodes();
 
