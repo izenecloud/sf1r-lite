@@ -24,14 +24,17 @@ class AdMiningTask : public MiningTask
 public:
     typedef boost::shared_lock<boost::shared_mutex> readLock;
     typedef boost::unique_lock<boost::shared_mutex> writeLock;
+    typedef boost::function<void(docid_t, docid_t)> PostCBType_;
+    typedef izenelib::ir::be_index::DNFInvIndex AdDNFIndexType;
 
     AdMiningTask(
             const std::string& path,
-            boost::shared_ptr<DocumentManager>& dm);
+            boost::shared_ptr<DocumentManager>& dm,
+            boost::shared_ptr<AdDNFIndexType>& ad_dnf_index,
+            boost::shared_mutex& ad_dnf_mutex);
 
     ~AdMiningTask();
 
-    typedef izenelib::ir::be_index::DNFInvIndex AdIndexType;
    // typedef DNFInvIndex AdIndexType;
 
     bool buildDocument(docid_t docID, const Document& doc);
@@ -49,26 +52,24 @@ public:
             const std::vector<std::pair<std::string, std::string> >& info,
             boost::unordered_set<uint32_t>& dnfIDs)
     {
-        readLock lock(rwMutex_);
-        adIndex_->retrieve(info, dnfIDs);
     }
 
-    void save();
-    bool load();
+    void setPostProcessFunc(PostCBType_ cb)
+    {
+        postCB_ = cb;
+    }
 
 private:
-
-    boost::shared_mutex rwMutex_;
-
     std::string indexPath_;
 
     boost::shared_ptr<DocumentManager>& documentManager_;
+    boost::shared_ptr<AdDNFIndexType>& ad_dnf_index_;
+    boost::shared_mutex& rwDNFMutex_;
 
-    boost::shared_ptr<AdIndexType> adIndex_;
-
-    boost::shared_ptr<AdIndexType> incrementalAdIndex_;
+    boost::shared_ptr<AdDNFIndexType> incrementalAdIndex_;
 
     docid_t startDocId_;
+    PostCBType_ postCB_;
 };
 
 } //namespace sf1r

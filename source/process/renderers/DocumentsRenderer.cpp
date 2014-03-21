@@ -218,24 +218,24 @@ void DocumentsRenderer::renderTaxonomy(
     izenelib::driver::Value& taxonomy
 )
 {
-    if (miaResult.taxonomyString_.empty())
+    if (miaResult.tg_info_.taxonomyString_.empty())
     {
         return;
     }
 
-    BOOST_ASSERT(miaResult.taxonomyString_.size() == miaResult.taxonomyLevel_.size());
-    BOOST_ASSERT(miaResult.taxonomyString_.size() == miaResult.numOfTGDocs_.size());
+    BOOST_ASSERT(miaResult.tg_info_.taxonomyString_.size() == miaResult.tg_info_.taxonomyLevel_.size());
+    BOOST_ASSERT(miaResult.tg_info_.taxonomyString_.size() == miaResult.tg_info_.numOfTGDocs_.size());
     std::vector<Value*> taxonomyParents;
     taxonomyParents.push_back(&taxonomy[Keys::labels]);
-    for (std::size_t i = 0; i < miaResult.taxonomyString_.size(); ++i)
+    for (std::size_t i = 0; i < miaResult.tg_info_.taxonomyString_.size(); ++i)
     {
-        std::size_t currentLevel = miaResult.taxonomyLevel_[i];
+        std::size_t currentLevel = miaResult.tg_info_.taxonomyLevel_[i];
         BOOST_ASSERT(currentLevel < taxonomyParents.size());
 
         Value& parent = *(taxonomyParents[currentLevel]);
         Value& newLabel = parent();
-        newLabel[Keys::label] = propstr_to_str(miaResult.taxonomyString_[i], kEncoding);
-        newLabel[Keys::document_count] = miaResult.numOfTGDocs_[i];
+        newLabel[Keys::label] = propstr_to_str(miaResult.tg_info_.taxonomyString_[i], kEncoding);
+        newLabel[Keys::document_count] = miaResult.tg_info_.numOfTGDocs_[i];
 
         // alternative for the parent of next level
         std::size_t nextLevel = currentLevel + 1;
@@ -249,17 +249,18 @@ void DocumentsRenderer::renderNameEntity(
     izenelib::driver::Value& nameEntity
 )
 {
+    const NEResultList& nelist = miaResult.tg_info_.neList_;
     std::string tmpstr;
-    for (std::size_t i = 0; i < miaResult.neList_.size(); ++i)
+    for (std::size_t i = 0; i < nelist.size(); ++i)
     {
         Value& newNameEntity = nameEntity();
-        miaResult.neList_[i].type.convertString(tmpstr, kEncoding);
+        nelist[i].type.convertString(tmpstr, kEncoding);
         newNameEntity[Keys::type] = tmpstr;
 
         Value& nameEntityList = newNameEntity[Keys::name_entity_list];
         typedef std::vector<NEItem>::const_iterator const_iterator;
-        for (const_iterator item = miaResult.neList_[i].item_list.begin(),
-                         itemEnd = miaResult.neList_[i].item_list.end();
+        for (const_iterator item = nelist[i].item_list.begin(),
+                         itemEnd = nelist[i].item_list.end();
              item != itemEnd; ++item)
         {
             Value& newNameEntityItem = nameEntityList();

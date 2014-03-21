@@ -1,8 +1,14 @@
 #include <mining-manager/ad-index-manager/AdClickPredictor.h>
 #include <mining-manager/ad-index-manager/AdStreamSubscriber.h>
+#include <mining-manager/ad-index-manager/AdSelector.h>
+#include <mining-manager/ad-index-manager/AdRecommender.h>
+#include <mining-manager/ad-index-manager/AdFeedbackMgr.h>
+#include <node-manager/SuperNodeManager.h>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <glog/logging.h>
+#include <la-manager/TitlePCAWrapper.h>
 
 namespace bfs=boost::filesystem;
 using namespace sf1r;
@@ -10,8 +16,8 @@ static std::vector<std::vector<std::pair<std::string, std::string> > > predict_t
 const int thread_num = 8;
 const size_t attr_name_size = 100;
 const size_t attr_value_size = 1000;
-const size_t train_num = 500000000;
-const size_t test_num = 1000000;
+const size_t train_num = 5000;
+const size_t test_num = 10000;
 
 void predict_func(AdClickPredictor* pad)
 {
@@ -43,6 +49,23 @@ void training_func(AdClickPredictor* pad, std::vector<std::string>* attr_name_li
     LOG(INFO) << "update finished.";
 }
 
+void training_func_2(AdClickPredictor* pad, std::vector<std::vector<std::pair<std::string, std::string
+> > >* training_data, std::vector<bool>* clicked_list_data )
+{
+    LOG(INFO) << "training size: " << (*training_data).size() << "," << (*clicked_list_data).size();
+    {
+        for(size_t k = 0; k < (*training_data).size(); ++k)
+        {
+            const std::vector<std::pair<std::string, std::string> >& item = (*training_data)[k];
+            pad->update(item, (*clicked_list_data)[k]);
+            if (k % 10000 == 0)
+                LOG(INFO) << "updated : " << k;
+            usleep(100);
+        }
+    }
+    LOG(INFO) << "update finished.";
+}
+
 std::string gen_rand_str()
 {
     size_t rand_len = rand() % 100 + 3;
@@ -70,7 +93,52 @@ void stream_update_func()
         AdStreamSubscriber::get()->onAdMessage(msglist);
     }
     LOG(INFO) << "stream update finished.";
-    //AdStreamSubscriber::get()->stop();
+}
+
+void select_ad_func(const std::vector<docid_t>& cand_docs,
+    const std::vector<AdSelector::FeatureMapT> cand_ad_info,
+    const AdSelector::FeatureT& userinfo)
+{
+    std::vector<double> score_list;
+    for (size_t i = 0; i < 10000; ++i)
+    {
+        std::vector<docid_t> results = cand_docs;
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list);
+
+        if (i % 1000 == 0)
+        {
+            LOG(INFO) << "selected ads are :";
+            for (size_t j = 0; j < results.size(); ++j)
+            {
+                std::cout << results[j] << ", ";
+            }
+            std::cout << std::endl;
+        }
+    }
+}
+
+void recommend_ad_func(const AdSelector::FeatureT& old_male_userinfo,
+    const AdSelector::FeatureT& young_female_userinfo, AdRecommender* test_ad_rec)
+{
+    for(size_t i = 0; i < 200000; ++i)
+    {
+        std::vector<double> score_list;
+        std::vector<std::string> rec_doclist;
+        test_ad_rec->recommend("", old_male_userinfo, 10, rec_doclist, score_list);
+        rec_doclist.clear();
+        score_list.clear();
+        test_ad_rec->recommend("", young_female_userinfo, 10, rec_doclist, score_list);
+        if (i % 100000 == 0)
+        {
+            LOG(INFO) << "recommended ads are :";
+            for (size_t j = 0; j < rec_doclist.size(); ++j)
+            {
+                std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    LOG(INFO) << "recommender thread finished.";
 }
 
 int main()
@@ -79,8 +147,8 @@ int main()
     srand(time(NULL));
     if (!bfs::exists("/opt/mine/ad_ctr_test"))
         return 0;
-    bfs::remove_all("/opt/mine/ad_ctr_test/data");
-    bfs::create_directories("/opt/mine/ad_ctr_test/data");
+
+    TitlePCAWrapper::get()->loadDictFiles("/home/vincentlee/workspace/sf1/sf1r-engine/package/resource/dict/title_pca");
 
     LOG(INFO) << "begin generate training test data.";
     std::ifstream ifs("/opt/mine/track2/training.txt");
@@ -120,8 +188,15 @@ int main()
     attr_name_list.push_back("TitleID");
     attr_name_list.push_back("DescriptionID");
     attr_name_list.push_back("UserID");
+
+    std::vector<std::vector<std::pair<std::string, std::string> > > stream_train_testdata;
+    std::vector<bool> clicked_list;
+    stream_train_testdata.reserve(train_num);
+    clicked_list.reserve(train_num);
+
     while(ifs.good() && training_readed < train_num)
     {
+        std::vector<std::pair<std::string, std::string> > tmp;
         std::vector<std::string> attr_value_list(attr_name_list.size());
         uint32_t clicked = 0;
         uint32_t impressioned = 0;
@@ -135,16 +210,23 @@ int main()
             for(size_t j = 0; j < attr_name_list.size(); ++j)
             {
                 ofs << attr_name_list[j] << ":" << attr_value_list[j] << " ";
+                tmp.push_back(std::make_pair(attr_name_list[j], attr_value_list[j]));
             }
             ofs << "1" << std::endl;
+
+            stream_train_testdata.push_back(tmp);
+            clicked_list.push_back(true);
         }
         for (size_t click_num = 0; click_num < impressioned; ++click_num)
         {
             for(size_t j = 0; j < attr_name_list.size(); ++j)
             {
                 ofs << attr_name_list[j] << ":" << attr_value_list[j] << " ";
+                tmp.push_back(std::make_pair(attr_name_list[j], attr_value_list[j]));
             }
             ofs << "0" << std::endl;
+            stream_train_testdata.push_back(tmp);
+            clicked_list.push_back(false);
         }
         ++training_readed;
         if (training_readed % 1000000 == 0)
@@ -156,15 +238,18 @@ int main()
     ofs.close();
     ifs.close();
 
+    DistributedCommonConfig config;
+    config.localHost_ = "localhost";
+    SuperNodeManager::get()->init(config);
 
-    //AdStreamSubscriber::get()->init("localhost", 9998);
+    //AdStreamSubscriber::get()->init("172.16.5.30", 19850);
 
     AdClickPredictor ad;
     ad.init("/opt/mine/ad_ctr_test");
     LOG(INFO) << "begin training data.";
-    ad.preProcess();
-    ad.train();
-    ad.postProcess();
+    //ad.preProcess();
+    //ad.train();
+    //ad.postProcess();
 
     LOG(INFO) << "begin generate predict test data.";
     // load test data from file.
@@ -195,15 +280,255 @@ int main()
         ++cnt;
     }
 
-    //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
+    std::string selector_base_path("/opt/mine/ad_ctr_test/selector/");
+    bfs::remove_all(selector_base_path);
+    bfs::create_directories(selector_base_path);
+    std::ofstream ofs_selector(std::string(selector_base_path + "/all_ad_feature_name.txt").c_str());
+    ofs_selector << "Category" << std::endl;
+    ofs_selector << "Topic" << std::endl;
+    ofs_selector.close();
+    ofs_selector.open(std::string(selector_base_path + "/all_user_feature_name.txt").c_str());
+    ofs_selector << "Age" << std::endl;
+    ofs_selector << "Gender" << std::endl;
+    ofs_selector.close();
+    AdSelector::get()->init(selector_base_path, selector_base_path,
+        selector_base_path + "/rec", &ad, NULL, NULL);
+    bfs::remove(selector_base_path + "/clicked_ad.data");
 
-    LOG(INFO) << "begin do predict test.";
-    boost::thread_group test_threads;
-    for(int i = 0; i < thread_num; ++i)
+    static const int total_ad_num = 7000000;
+    static const int clicked_rate = 901;
+    static const int view_rate = 91;
+    static const int sponsor_searched_rate = 99;
+    for (size_t i = 0; i < total_ad_num; ++i)
     {
-        test_threads.add_thread(new boost::thread(boost::bind(&predict_func, &ad)));
+        if (i % clicked_rate == 0)
+            AdSelector::get()->updateClicked(i);
     }
-    test_threads.join_all();
+    AdSelector::FeatureT new_ad_segs;
+    new_ad_segs.push_back(std::make_pair("Category", "Computer"));
+    new_ad_segs.push_back(std::make_pair("Category", "Cloth"));
+    new_ad_segs.push_back(std::make_pair("Topic", "iPhone"));
+    new_ad_segs.push_back(std::make_pair("Topic", "Android"));
+    for (size_t i = 0; i < 100; ++i)
+    {
+        new_ad_segs.push_back(std::make_pair("Category", gen_rand_str()));
+    }
+    for (size_t i = 0; i < 1000; ++i)
+    {
+        new_ad_segs.push_back(std::make_pair("Topic", gen_rand_str()));
+    }
+    AdSelector::get()->updateSegments(new_ad_segs, AdSelector::AdSeg);
+
+    AdSelector::FeatureT new_user_segs;
+    new_user_segs.push_back(std::make_pair("Age", "18"));
+    new_user_segs.push_back(std::make_pair("Age", "28"));
+    new_user_segs.push_back(std::make_pair("Age", "30"));
+    new_user_segs.push_back(std::make_pair("Age", "38"));
+    for (size_t i = 0; i < 1000; i += 5)
+    {
+        new_user_segs.push_back(std::make_pair("Age", boost::lexical_cast<std::string>(i)));
+    }
+    new_user_segs.push_back(std::make_pair("Gender", "male"));
+    new_user_segs.push_back(std::make_pair("Gender", "female"));
+    AdSelector::get()->updateSegments(new_user_segs, AdSelector::UserSeg);
+    AdSelector::FeatureT userinfo;
+    userinfo.push_back(std::make_pair("Age", "28"));
+    userinfo.push_back(std::make_pair("Age", "38"));
+    userinfo.push_back(std::make_pair("Gender", "male"));
+    AdSelector::FeatureMapT adinfo[4];
+    adinfo[0]["Topic"].push_back("iPhone");
+    adinfo[0]["Topic"].push_back("Android");
+    adinfo[1]["Topic"].push_back("Android");
+    adinfo[2]["Category"].push_back("Cloth");
+    adinfo[3]["Category"].push_back("Computer");
+    adinfo[3]["Topic"].push_back("iPhone");
+    std::vector<AdSelector::FeatureMapT> rand_ad_info;
+    rand_ad_info.resize(10000);
+    for(size_t i = 0; i < rand_ad_info.size(); ++i)
+    {
+        const std::pair<std::string, std::string>& tmp = new_ad_segs[rand()%new_ad_segs.size()];
+        rand_ad_info[i][tmp.first].push_back(tmp.second);
+    }
+    std::vector<docid_t> cand_docs;
+    std::vector<AdSelector::FeatureMapT> cand_ad_info;
+    AdRecommender test_ad_rec;
+    test_ad_rec.init("/opt/mine/ad_ctr_test/rec", true);
+    AdSelector::FeatureT old_male_userinfo;
+    old_male_userinfo.push_back(std::make_pair("Age", "38"));
+    old_male_userinfo.push_back(std::make_pair("Gender", "male"));
+    AdSelector::FeatureT young_female_userinfo;
+    young_female_userinfo.push_back(std::make_pair("Age", "28"));
+    young_female_userinfo.push_back(std::make_pair("Gender", "female"));
+    //AdRecommender::get()->setMaxAdDocId(total_ad_num);
+    std::vector<std::string>  female_liked_feature;
+    female_liked_feature.push_back("iPhone");
+    female_liked_feature.push_back("Cloth");
+    std::vector<std::string>  male_liked_feature;
+    male_liked_feature.push_back("Android");
+    male_liked_feature.push_back("Computer");
+    std::vector<std::string>  unliked_feature;
+    unliked_feature.push_back("Android");
+    std::vector<AdSelector::SegIdT> tmp_segids;
+    for (size_t i = 1; i < total_ad_num; ++i)
+    {
+        if (i % sponsor_searched_rate == 0)
+        {
+            cand_docs.push_back(i);
+            cand_ad_info.push_back(adinfo[rand()%4]);
+        }
+        else
+        {
+            AdSelector::get()->updateAdSegmentStr(i, rand_ad_info[rand()%rand_ad_info.size()], tmp_segids);
+        }
+        if (i % clicked_rate == 0)
+        {
+            if (rand() % 2 == 0)
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), female_liked_feature);
+                test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+            else
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), male_liked_feature);
+                test_ad_rec.update("", old_male_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+        }
+        else if (i % view_rate == 0)
+        {
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
+            test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
+        }
+        else
+        {
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
+        }
+    }
+    LOG(INFO) << "begin update ad segment string.";
+    AdSelector::get()->updateAdSegmentStr(cand_docs, cand_ad_info);
+    LOG(INFO) << "end update ad segment string.";
+
+    LOG(INFO) << "begin test ad log parser";
+    AdFeedbackMgr::get()->init("172.16.11.60", 8091);
+    std::ifstream ifs_adlog("/home/vincentlee/workspace/ad-clicked-log.json");
+    std::size_t ad_impression = 0;
+    std::size_t ad_clicked = 0;
+    while (ifs_adlog.good())
+    {
+        std::string line;
+        AdFeedbackMgr::FeedbackInfo feedback_info;
+        std::getline(ifs_adlog, line);
+        bool ret = AdFeedbackMgr::get()->parserFeedbackLog(line, feedback_info);
+        if (ret)
+        {
+            ++ad_impression;
+            if (feedback_info.action == AdFeedbackMgr::Click)
+            {
+                ad_clicked++;
+                LOG(INFO) << "clicked log : " << feedback_info.user_id << ", "
+                    << feedback_info.ad_id;
+            }
+        }
+    }
+
+    LOG(INFO) << "end test ad log parser. impression: " << ad_impression << " , clicked: " << ad_clicked;
+    sleep(30);
+    LOG(INFO) << "begin test ad select.";
+    //boost::thread_group test_ad_selector_threads;
+    //for(int i = 0; i < thread_num; ++i)
+    //{
+    //    test_ad_selector_threads.add_thread(new boost::thread(boost::bind(&select_ad_func, cand_docs, cand_ad_info, userinfo)));
+    //}
+    //test_ad_selector_threads.join_all();
+
+    std::vector<double> score_list;
+    for (size_t i = 0; i < 100; ++i)
+    {
+        std::vector<docid_t> results = cand_docs;
+        AdSelector::get()->selectForTest(userinfo, 10, results, score_list);
+        //if (i % 1000 == 0)
+        //{
+        //    LOG(INFO) << "selected ads are :";
+        //    for (size_t j = 0; j < results.size(); ++j)
+        //    {
+        //        std::cout << results[j] << ", ";
+        //    }
+        //    std::cout << std::endl;
+        //}
+    }
+    LOG(INFO) << "end test for ad select.";
+    sleep(3);
+
+    std::vector<std::string> rec_doclist;
+    test_ad_rec.recommend("", old_male_userinfo, 10, rec_doclist, score_list);
+    LOG(INFO) << "recommended ads for old male are :";
+    for (size_t j = 0; j < rec_doclist.size(); ++j)
+    {
+        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    }
+    std::cout << std::endl;
+
+    rec_doclist.clear();
+    score_list.clear();
+    test_ad_rec.recommend("", young_female_userinfo, 10, rec_doclist, score_list);
+    LOG(INFO) << "recommended ads for young female are :";
+    for (size_t j = 0; j < rec_doclist.size(); ++j)
+    {
+        std::cout << rec_doclist[j] << ", score: " << score_list[j] << " ; ";
+    }
+    std::cout << std::endl;
+
+    test_ad_rec.dumpUserLatent();
+    boost::thread_group test_ad_rec_threads;
+    for(int i = 0; i < 8; ++i)
+    {
+        test_ad_rec_threads.add_thread(new boost::thread(boost::bind(&recommend_ad_func, old_male_userinfo,
+                    young_female_userinfo, &test_ad_rec)));
+    }
+
+    for (size_t i = 1; i < total_ad_num; ++i)
+    {
+        if (i % clicked_rate == 0)
+        {
+            if (rand() % 2 == 0)
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), female_liked_feature);
+                test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+            else
+            {
+                test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), male_liked_feature);
+                test_ad_rec.update("", old_male_userinfo, boost::lexical_cast<std::string>(i), true);
+            }
+        }
+        else if (i % view_rate == 0)
+        {
+            test_ad_rec.updateAdFeatures(boost::lexical_cast<std::string>(i), rand_ad_info[rand()%rand_ad_info.size()].begin()->second);
+            test_ad_rec.update("", young_female_userinfo, boost::lexical_cast<std::string>(i), false);
+        }
+        if (i % 10000 == 0)
+        {
+            usleep(100);
+            if (i % 100000 == 0)
+                LOG(INFO) << "training : " << i;
+        }
+    }
+    LOG(INFO) << "recommender training finished.";
+
+    test_ad_rec_threads.join_all();
+    test_ad_rec.save();
+
+    //boost::thread* write_thread = new boost::thread(boost::bind(&training_func, &ad, &attr_name_list, &attr_value_list));
+    //boost::thread* write_thread = new boost::thread(boost::bind(&training_func_2, &ad, &stream_train_testdata, &clicked_list));
+    //
+    //LOG(INFO) << "begin do predict test.";
+    //boost::thread_group test_threads;
+    //for(int i = 0; i < thread_num; ++i)
+    //{
+    //    test_threads.add_thread(new boost::thread(boost::bind(&predict_func, &ad)));
+    //}
+    //test_threads.join_all();
+    //sleep(100);
+    //AdStreamSubscriber::get()->stop();
     //write_thread->join();
     //delete write_thread;
     //test_threads.clear();

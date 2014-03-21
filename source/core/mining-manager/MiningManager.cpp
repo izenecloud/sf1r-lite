@@ -250,6 +250,7 @@ MiningManager::MiningManager(
 
 MiningManager::~MiningManager()
 {
+    if (adIndexManager_) delete adIndexManager_;
     if (multiThreadMiningTaskBuilder_) delete multiThreadMiningTaskBuilder_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
@@ -280,7 +281,6 @@ MiningManager::~MiningManager()
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (zambeziManager_) delete zambeziManager_;
-    if (adIndexManager_) delete adIndexManager_;
 
     close();
 }
@@ -1810,7 +1810,7 @@ bool MiningManager::addTgResult_(KeywordSearchResult& miaInput)
 
     izenelib::util::UString query(miaInput.rawQueryString_, miaInput.encodingType_);
 
-    bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_input);
+    bool ret = tgManager_->GetConceptsByDocidList(miaInput.topKDocs_, query, miaInput.totalCount_, miaInput.tg_info_.tg_input);
     return ret;
 
 }
@@ -3242,10 +3242,11 @@ bool MiningManager::initAdIndexManager_(AdIndexConfig& adIndexConfig)
 
     if (adIndexManager_) delete adIndexManager_;
 
-    const bfs::path filePath(adIndexDir / "index.bin");
-    adIndexConfig.indexFilePath = filePath.string();
-
-    adIndexManager_ = new AdIndexManager(adIndexConfig.indexFilePath, adIndexConfig.clickPredictorWorkingPath, document_manager_, numericTableBuilder_);
+    adIndexManager_ = new AdIndexManager(
+        system_resource_path_ + "/ad_resource",
+        adIndexDir.string(),
+        document_manager_, numericTableBuilder_,
+        searchManager_->normalSearch_.get(), groupManager_);
     adIndexManager_->buildMiningTask();
 
     miningTaskBuilder_->addTask(

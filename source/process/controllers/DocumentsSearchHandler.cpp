@@ -243,16 +243,16 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInLabel(
     typedef std::vector<PropertyValue::PropertyValueStrType>::const_iterator iterator;
     std::size_t taxonomyIndex =
         std::find(
-            miaResult.taxonomyString_.begin(),
-            miaResult.taxonomyString_.end(),
+            miaResult.tg_info_.taxonomyString_.begin(),
+            miaResult.tg_info_.taxonomyString_.end(),
             str_to_propstr(actionItem_.env_.taxonomyLabel_)
-        ) - miaResult.taxonomyString_.begin();
+        ) - miaResult.tg_info_.taxonomyString_.begin();
 
     std::size_t totalCount = 0;
-    if (taxonomyIndex < miaResult.tgDocIdList_.size())
+    if (taxonomyIndex < miaResult.tg_info_.tgDocIdList_.size())
     {
         const std::vector<sf1r::wdocid_t>& tgDocIdList =
-            miaResult.tgDocIdList_[taxonomyIndex];
+            miaResult.tg_info_.tgDocIdList_[taxonomyIndex];
         totalCount = tgDocIdList.size();
 
         std::size_t end = start + count;
@@ -288,9 +288,9 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     std::size_t totalCount = 0;
     typedef NEResultList::const_iterator ne_result_list_iterator;
     ne_result_list_iterator resultOfType =
-        std::find_if (miaResult.neList_.begin(), miaResult.neList_.end(),
+        std::find_if (miaResult.tg_info_.neList_.begin(), miaResult.tg_info_.neList_.end(),
                      boost::bind(&NEResult::type, _1) == type);
-    if (resultOfType != miaResult.neList_.end())
+    if (resultOfType != miaResult.tg_info_.neList_.end())
     {
         typedef std::vector<NEItem>::const_iterator item_iterator;
         item_iterator foundItem =

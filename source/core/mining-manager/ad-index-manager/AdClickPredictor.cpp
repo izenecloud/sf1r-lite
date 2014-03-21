@@ -3,17 +3,17 @@
  */
 
 #include "AdClickPredictor.h"
-#include "AdStreamSubscriber.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <fstream>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
+#include <glog/logging.h>
+#include <boost/filesystem.hpp>
 
 
 namespace sf1r
 {
-static const std::string adlog_topic = "b5manlog";
 
 void AdClickPredictor::init(const std::string& path)
 {
@@ -26,39 +26,10 @@ void AdClickPredictor::init(const std::string& path)
     boost::filesystem::create_directories(dataPath_ + "backup");
 
     load();
-
-    bool ret = AdStreamSubscriber::get()->subscribe(adlog_topic, boost::bind(&AdClickPredictor::onAdStreamMessage, this, _1));
-    if (!ret)
-    {
-        LOG(ERROR) << "subscribe the click log failed !!!!!!";
-    }
 }
 
 void AdClickPredictor::stop()
 {
-    // unsubscribe should make sure all callback finished and 
-    // no any callback will be send later.
-    AdStreamSubscriber::get()->unsubscribe(adlog_topic);
-}
-
-void AdClickPredictor::onAdStreamMessage(const std::vector<AdMessage>& msg_list)
-{
-    std::vector<std::pair<AssignmentT, bool> > assignment_list;
-    static int cnt = 0;
-    if (cnt % 10000 == 0)
-    {
-        for (size_t i = 0; i < msg_list.size(); ++i)
-        {
-            LOG(INFO) << "stream data: " << msg_list[i].body;
-        }
-        LOG(INFO) << "got ad stream data. size: " << msg_list.size() << ", total " << cnt;
-    }
-    cnt += msg_list.size();
-    // read from stream msg
-    for(size_t i = 0; i < assignment_list.size(); ++i)
-    {
-        update(assignment_list[i].first, assignment_list[i].second);
-    }
 }
 
 bool AdClickPredictor::preProcess()
