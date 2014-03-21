@@ -9,6 +9,7 @@
 #include <b5m-manager/product_matcher.h>
 #include <la-manager/AttrTokenizeWrapper.h>
 #include <util/ustring/UString.h>
+#include <glog/logging.h>
 
 using namespace sf1r;
 
@@ -59,11 +60,12 @@ bool BoostLabelSelector::convertZambeziLabelIds_(
 {
     const std::string& query = scoreParam.rawQuery_;
     std::vector<char*>** cateinfo = AttrTokenizeWrapper::get()->get_TermCategory(query);
+    LOG(INFO) << "raw Query cateinfo: " << query << endl;
 
     if (cateinfo)
         for(uint32_t i = 0; i < (*cateinfo)->size(); ++i)
         {
-            std::cout << std::string((*cateinfo)->at(i)) << std::endl;
+            LOG(INFO) << std::string((*cateinfo)->at(i));
 
             izenelib::util::UString UCategory(std::string((*cateinfo)->at(i)),izenelib::util::UString::UTF_8);
 

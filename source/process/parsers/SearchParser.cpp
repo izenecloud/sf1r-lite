@@ -320,6 +320,53 @@ bool SearchParser::parse(const Value& search)
             {
                 searchingModeInfo_.useQueryPrune_ = false;
             }
+
+            if (searching_mode.hasKey(Keys::use_fuzzyThreshold) && asBool(searching_mode[Keys::use_fuzzyThreshold]))
+            {
+                searchingModeInfo_.useFuzzyThreshold_ = true;
+                if (searching_mode.hasKey(Keys::fuzzy_threshold))
+                {
+                    float threshold = (float)asDouble(searching_mode[Keys::fuzzy_threshold]);
+                    if (threshold >= 0.1F && threshold <= 1.0F)
+                    {
+                        searchingModeInfo_.fuzzyThreshold_ = threshold;
+                    }
+                    else
+                        warning() = "fuzzy threshold is invalid, must between 0.1 and 1.0, now set as Default 0.5";
+                }
+
+                if (searching_mode.hasKey(Keys::tokens_threshold))
+                {
+                    float threshold = (float)asDouble(searching_mode[Keys::tokens_threshold]);
+                    if (threshold >= 0.1F && threshold <= 1.0F)
+                    {
+                        searchingModeInfo_.tokensThreshold_ = threshold;
+                    }
+                    else
+                        warning() = "tokensThreshold_ is invalid, must between 0.1 and 1.0, now set as Default 0.5";
+                }
+            }
+
+            if (searching_mode.hasKey(Keys::use_pivilegeQuery) && asBool(searching_mode[Keys::use_pivilegeQuery]))
+            {
+                searchingModeInfo_.usePivilegeQuery_ = true;
+                if (searching_mode.hasKey(Keys::privilege_Query))
+                {
+                    std::string privilegeQuery = asString(searching_mode[Keys::privilege_Query]);
+                    searchingModeInfo_.privilegeQuery_ =  privilegeQuery;
+                }
+
+                if (searching_mode.hasKey(Keys::privilege_Weight))
+                {
+                    float privilege_Weight = (float)asDouble(searching_mode[Keys::privilege_Weight]);
+                    if (privilege_Weight >= 0.1F && privilege_Weight <= 1.0F)
+                    {
+                        searchingModeInfo_.privilegeWeight_ = privilege_Weight;
+                    }
+                    else
+                        warning() = "privilegeWeight is invalid, must between 0.1 and 1.0, now set as Default 0.1";
+                }
+            }      
         }
         else if (mode == "zambezi")
         {

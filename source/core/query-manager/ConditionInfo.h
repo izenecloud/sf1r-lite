@@ -143,6 +143,14 @@ public:
 
     float threshold_;
 
+    ///
+    /// @brief: fuzzy search rank threshold for major tokens and minor tokens
+    /// @brief: fuzzyThreshold_, if fuzzyThreshold is bigger than tokensThreshold_, the left part will put int minortokens;
+    /// @brief: tokensThreshold_, the highest value into majortokens;
+    bool useFuzzyThreshold_;
+    float fuzzyThreshold_;
+    float tokensThreshold_;
+
     uint32_t lucky_;
 
     bool useOriginalQuery_;
@@ -155,15 +163,24 @@ public:
 
     int algorithm_;
 
+    ///
+    /// @brief PrivilegeQuery can get a extra high Rank Weight beyond original Query;
+    ///
+    bool usePivilegeQuery_;
+    std::string privilegeQuery_;
+    float privilegeWeight_;
+
     /// @brief a constructor
     SearchingModeInfo(void);
 
     /// @brief clear member variables
     void clear(void);
 
-    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_ & usefuzzy_ & filtermode_ & useQueryPrune_ & algorithm_);
+    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & useFuzzyThreshold_ & fuzzyThreshold_ & tokensThreshold_
+                     & lucky_ & useOriginalQuery_ & usefuzzy_ & filtermode_ & useQueryPrune_ & algorithm_ & usePivilegeQuery_ & privilegeQuery_ & privilegeWeight_);
 
-    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_, usefuzzy_, filtermode_, useQueryPrune_, algorithm_);
+    MSGPACK_DEFINE(mode_, threshold_, useFuzzyThreshold_, fuzzyThreshold_, tokensThreshold_, lucky_, useOriginalQuery_,
+                 usefuzzy_, filtermode_, useQueryPrune_, algorithm_, usePivilegeQuery_, privilegeQuery_, privilegeWeight_);
 
 private:
     // Log : 2009.09.08
@@ -174,12 +191,18 @@ private:
     {
         ar & mode_;
         ar & threshold_;
+        ar & useFuzzyThreshold_;
+        ar & fuzzyThreshold_;
+        ar & tokensThreshold_;
         ar & lucky_;
         ar & useOriginalQuery_;
         ar & usefuzzy_;
         ar & filtermode_;
         ar & useQueryPrune_;
         ar & algorithm_;
+        ar & usePivilegeQuery_;
+        ar & privilegeQuery_;
+        ar & privilegeWeight_;
     }
 };
 
@@ -188,12 +211,18 @@ inline bool operator==(const SearchingModeInfo& a,
 {
     return a.mode_ == b.mode_
         && a.threshold_ == b.threshold_
+        && a.useFuzzyThreshold_ == b.useFuzzyThreshold_
+        && a.fuzzyThreshold_ == b.fuzzyThreshold_
+        && a.tokensThreshold_ == b.tokensThreshold_
         && a.lucky_ == b.lucky_
         && a.useOriginalQuery_ == b.useOriginalQuery_
         && a.usefuzzy_ == b.usefuzzy_ 
         && a.filtermode_ == b.filtermode_ 
         && a.useQueryPrune_ == b.useQueryPrune_
-        && a.algorithm_ == b.algorithm_ ;
+        && a.algorithm_ == b.algorithm_ 
+        && a.usePivilegeQuery_ == b.usePivilegeQuery_
+        && a.privilegeQuery_ == b.privilegeQuery_
+        && a.privilegeWeight_ == b.privilegeWeight_;
 }
 
 } // end - namespace sf1r

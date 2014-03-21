@@ -2405,6 +2405,23 @@ bool MiningManager::GetSuffixMatch(
         LOG(INFO) << "clear stop word for long query: " << pattern;
 
         ProductTokenParam tokenParam(pattern, isAnalyzeQuery);
+
+        // use Fuzzy Search Threshold 
+        if (actionOperation.actionItem_.searchingMode_.useFuzzyThreshold_)
+        {
+            tokenParam.useFuzzyThreshold = true;
+            tokenParam.fuzzyThreshold = actionOperation.actionItem_.searchingMode_.fuzzyThreshold_;
+            tokenParam.tokensThreshold = actionOperation.actionItem_.searchingMode_.tokensThreshold_;
+        }
+
+        // use Privilege Query
+        if (actionOperation.actionItem_.searchingMode_.usePivilegeQuery_)
+        {
+            tokenParam.usePrivilegeQuery = true;
+            tokenParam.privilegeQuery = actionOperation.actionItem_.searchingMode_.privilegeQuery_;
+            tokenParam.privilegeWeight = actionOperation.actionItem_.searchingMode_.privilegeWeight_;
+        }
+
         productTokenizer_->tokenize(tokenParam);
         analyzedQuery.swap(tokenParam.refinedResult);
 
@@ -2498,34 +2515,34 @@ bool MiningManager::GetSuffixMatch(
                 res_list,
                 tokenParam.rankBoundary);
 
-            while (res_list.empty() && !tokenParam.majorTokens.empty())
-            {
-                const ProductTokenParam::TokenScore& tokenScore(
-                    tokenParam.majorTokens.back());
-                std::string token;
-                tokenScore.first.convertString(token, kEncodeType);
+            // while (res_list.empty() && !tokenParam.majorTokens.empty())
+            // {
+            //     const ProductTokenParam::TokenScore& tokenScore(
+            //         tokenParam.majorTokens.back());
+            //     std::string token;
+            //     tokenScore.first.convertString(token, kEncodeType);
 
-                max_docs /= 2;
-                max_docs = std::max(max_docs, kFuzzySearchMinLucky);
+            //     max_docs /= 2;
+            //     max_docs = std::max(max_docs, kFuzzySearchMinLucky);
 
-                LOG(INFO) << "try OR search again after removing one major token: "
-                          << token << ", lucky: " << max_docs;
+            //     LOG(INFO) << "try OR search again after removing one major token: "
+            //               << token << ", lucky: " << max_docs;
 
-                tokenParam.minorTokens.push_back(tokenScore);
-                tokenParam.majorTokens.pop_back();
+            //     tokenParam.minorTokens.push_back(tokenScore);
+            //     tokenParam.majorTokens.pop_back();
 
-                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                    useSynonym,
-                    tokenParam.majorTokens,
-                    tokenParam.minorTokens,
-                    search_in_properties,
-                    max_docs,
-                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                    filter_param,
-                    actionOperation.actionItem_.groupParam_,
-                    res_list,
-                    tokenParam.rankBoundary);
-            }
+            //     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+            //         useSynonym,
+            //         tokenParam.majorTokens,
+            //         tokenParam.minorTokens,
+            //         search_in_properties,
+            //         max_docs,
+            //         actionOperation.actionItem_.searchingMode_.filtermode_,
+            //         filter_param,
+            //         actionOperation.actionItem_.groupParam_,
+            //         res_list,
+            //         tokenParam.rankBoundary);
+            // }
         }
 
         distSearchInfo.majorTokenNum_ = tokenParam.majorTokens.size();

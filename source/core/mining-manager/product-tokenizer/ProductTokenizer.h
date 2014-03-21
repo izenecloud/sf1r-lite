@@ -30,10 +30,25 @@ struct ProductTokenParam
 
     double rankBoundary;
 
+    // use Fuzzy Threshold 
+    bool useFuzzyThreshold;
+    float fuzzyThreshold;
+    float tokensThreshold;
+
+    // use Privilege Query
+    bool usePrivilegeQuery;
+    std::string privilegeQuery;
+    float privilegeWeight;
+
     ProductTokenParam(const std::string& queryParam, bool isRefineParam)
             : query(queryParam)
             , isRefineResult(isRefineParam)
-            , rankBoundary(0)
+            , rankBoundary(0.0F)
+            , useFuzzyThreshold(false)
+            , fuzzyThreshold(0.5F)
+            , tokensThreshold(0.5F)
+            , usePrivilegeQuery(false)
+            , privilegeWeight(0.0F)
     {}
 };
 

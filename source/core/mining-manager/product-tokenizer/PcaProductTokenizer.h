@@ -26,6 +26,10 @@ private:
     void getRefinedResult_(
         const ProductTokenParam::TokenScoreList& majorTokens,
         izenelib::util::UString& refinedResult);
+
+    void normalize_(
+        const TokenScoreVec& tokens,
+        TokenScoreVec& sortTokens);
 };
 
 }

@@ -30,12 +30,17 @@ void LanguageAnalyzerInfo::clear(void)
 SearchingModeInfo::SearchingModeInfo(void):
     mode_(SearchingMode::DefaultSearchingMode),
     threshold_(0.0F),
+    useFuzzyThreshold_(false),
+    fuzzyThreshold_(0.5F),
+    tokensThreshold_(0.5F),
     lucky_(1),
     useOriginalQuery_(true),
     usefuzzy_(false),
     filtermode_(SearchingMode::DefaultFilterMode),
     useQueryPrune_(true),
-    algorithm_(0)
+    algorithm_(0),
+    usePivilegeQuery_(false),
+    privilegeWeight_(0.1F)
 {
 }
 
