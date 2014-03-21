@@ -15,7 +15,6 @@ INCLUDE_DIRECTORIES(
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   ${Thrift_INCLUDE_DIR}
-  ${ImageMagick_INCLUDE_DIRS}
 )
 
 FILE(GLOB_RECURSE configuration_SRC "configuration-manager/*.cpp")
@@ -26,7 +25,6 @@ FILE(GLOB_RECURSE log_SRC "log-manager/*.cpp")
 FILE(GLOB_RECURSE directory_SRC "directory-manager/*.cpp")
 FILE(GLOB_RECURSE search_SRC "search-manager/*.cpp")
 FILE(GLOB_RECURSE query_SRC "query-manager/*.cpp")
-FILE(GLOB_RECURSE recommend_SRC "recommend-manager/*.cpp")
 FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
@@ -105,13 +103,11 @@ ADD_LIBRARY(sf1r_query_manager ${query_SRC})
 ADD_LIBRARY(sf1r_search_manager ${search_SRC})
 ADD_LIBRARY(sf1r_mining_manager ${mining_SRC})
 ADD_LIBRARY(sf1r_document_manager ${document_SRC})
-ADD_LIBRARY(sf1r_recommend_manager ${recommend_SRC})
 ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 ADD_LIBRARY(sf1r_node_manager ${node_SRC})
 ADD_LIBRARY(sf1r_product_manager ${product_SRC})
 ADD_LIBRARY(sf1r_b5m_manager ${b5m_SRC})
 ADD_LIBRARY(sf1r_net ${sf1r_net_SRC})
-ADD_LIBRARY(sf1r_image_manager ${image_SRC})
 
 INSTALL(TARGETS
     sf1r_configuration_manager
@@ -125,13 +121,11 @@ INSTALL(TARGETS
     sf1r_search_manager
     sf1r_mining_manager
     sf1r_document_manager
-    sf1r_recommend_manager
     sf1r_aggregator_manager
     sf1r_node_manager
     sf1r_product_manager
     sf1r_b5m_manager
     sf1r_net
-    sf1r_image_manager
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)

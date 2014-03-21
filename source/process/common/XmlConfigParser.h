@@ -800,17 +800,10 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <ProductBundle> <Parameter>
-    /// @param product          Pointer to the Element
-    void parseProductBundleParam(const ticpp::Element * product, CollectionMeta & collectionMeta);
-
     /// @brief                  Parse <CassandraStorage>
     /// @param params           Params containing <CassandraStorage>
     void parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig);
 
-    /// @brief                  Parse <ProductBundle> <Schema>
-    /// @param product           Pointer to the Element
-    void parseProductBundleSchema(const ticpp::Element * product, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <MiningBundle> <Parameter>
     /// @param mining           Pointer to the Element
@@ -854,17 +847,6 @@ private:
     void parseAdIndexNode(
             const ticpp::Element* adIndexNode,
             CollectionMeta& collectionMeta) const;
-
-    /// @brief                  Parse <RecommendBundle> <Parameter>
-    /// @param recParamNode     Pointer to the Element
-    void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);
-
-    /// @brief                  Parse <RecommendBundle> <Schema>
-    /// @param recSchemaNode    Pointer to the Element
-    void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
-
-    /// @brief                  Parse <SF1Config><Deployment><DistributedTopology> for recommend bundle
-    void parseRecommendDistribConfig(CollectionMeta& collectionMeta);
 
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element

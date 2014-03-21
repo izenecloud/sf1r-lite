@@ -2,7 +2,6 @@
 #define LOG_SERVER_REQUEST_DATA_H_
 
 #include <3rdparty/msgpack/msgpack.hpp>
-#include <recommend-manager/common/RecTypes.h>
 
 #include <string>
 #include <vector>
@@ -207,20 +206,6 @@ struct StrIdToItemIdRequestData
     {}
 
     MSGPACK_DEFINE(collection_, strId_)
-};
-
-struct ItemIdToStrIdRequestData
-{
-    std::string collection_;
-    itemid_t itemId_;
-
-    ItemIdToStrIdRequestData() : itemId_(0) {}
-
-    ItemIdToStrIdRequestData(const std::string& collection, itemid_t itemId)
-        : collection_(collection), itemId_(itemId)
-    {}
-
-    MSGPACK_DEFINE(collection_, itemId_)
 };
 
 struct OldUUIDData : public LogServerRequestData

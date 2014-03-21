@@ -11,7 +11,6 @@ INCLUDE_DIRECTORIES(
   ${izenecma_INCLUDE_DIRS}
   ${izenejma_INCLUDE_DIRS}
   ${izenelib_INCLUDE_DIRS}
-  ${iise_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -21,10 +20,6 @@ INCLUDE_DIRECTORIES(
   )
 
 MESSAGE(STATUE "include path: ${INCLUDE_DIRECTORIES}")
-
-SET(POSCharExtractor_SRC tools/POSCharExtractor.cpp)
-SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
-SET(TGTrainer_SRC tools/TGTrainer.cpp)
 
 FILE(GLOB_RECURSE common_SRC "common/*.cpp")
 FILE(GLOB_RECURSE controller_SRC "controllers/*.cpp")
@@ -57,18 +52,14 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_index_manager
   sf1r_directory_manager
   sf1r_common
-  sf1r_recommend_manager
   sf1r_aggregator_manager
   sf1r_node_manager
   sf1r_product_manager
   sf1r_b5m_manager
-  sf1r_image_manager
   sf1r_net
 
   sf1r_bundle_index
-  sf1r_bundle_product
   sf1r_bundle_mining
-  sf1r_bundle_recommend
 
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}

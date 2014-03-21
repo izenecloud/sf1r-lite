@@ -2,7 +2,6 @@
 #include "WorkerHelper.h"
 
 #include <bundles/index/IndexBundleConfiguration.h>
-#include <bundles/recommend/RecommendSearchService.h>
 
 #include <common/SearchCache.h>
 #include <common/Utilities.h>
@@ -28,7 +27,6 @@ namespace sf1r
 
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
-    , recommendSearchService_(NULL)
     , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_,
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
@@ -462,14 +460,6 @@ bool SearchWorker::getSearchResult_(
     personalSearchInfo.enabled = false;
     User& user = personalSearchInfo.user;
     user.idStr_ = actionItem.env_.userID_;
-    if (recommendSearchService_  && (!user.idStr_.empty()))
-    {
-        personalSearchInfo.enabled = recommendSearchService_->getUser(user.idStr_, user);
-    }
-    else
-    {
-        // Recommend Search Service is not available, xxx
-    }
 
     resultItem.propertyQueryTermList_.clear();
     if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))

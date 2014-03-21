@@ -12,7 +12,6 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/mining/MiningTaskService.h>
 #include <core/mining-manager/MiningManager.h>
-#include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
 #include <mining-manager/ad-index-manager/AdClickPredictor.h>
@@ -65,12 +64,6 @@ void CommandsController::index()
     indexSearch_();
 }
 
-void CommandsController::index_recommend()
-{
-    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
-    indexRecommend_();
-}
-
 void CommandsController::indexSearch_()
 {
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;
@@ -103,31 +96,7 @@ void CommandsController::indexSearch_()
                     LOG(INFO) << "not primary no need to send recommend";
                 }
             }
-            else
-            {
-                // call recommend directly if not distributed.
-                indexRecommend_();
-            }
         }
-    }
-}
-
-void CommandsController::indexRecommend_()
-{
-    RecommendTaskService* taskService = collectionHandler_->recommendTaskService_;
-    if (taskService)
-    {
-        if (request().callType() != Request::FromAPI)
-        {
-            bool ret = taskService->buildCollection();
-            if (!ret)
-            {
-                response().addError("index in recommend failed.");
-            }
-            return;
-        }
-        task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-        JobScheduler::get()->addTask(task, collectionName_);
     }
 }
 

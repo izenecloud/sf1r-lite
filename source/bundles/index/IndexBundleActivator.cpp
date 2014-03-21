@@ -1,7 +1,5 @@
 #include "IndexBundleActivator.h"
 #include <bundles/mining/MiningSearchService.h>
-#include <bundles/product/ProductSearchService.h>
-#include <bundles/product/ProductTaskService.h>
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
@@ -40,10 +38,6 @@ using namespace izenelib::osgi;
 IndexBundleActivator::IndexBundleActivator()
     : miningSearchTracker_(0)
     , miningTaskTracker_(0)
-    , recommendSearchTracker_(0)
-    , recommendTaskTracker_(0)
-    , productSearchTracker_(0)
-    , productTaskTracker_(0)
     , context_(0)
     , searchService_(0)
     , searchServiceReg_(0)
@@ -74,16 +68,6 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
     miningSearchTracker_->startTracking();
     miningTaskTracker_ = new ServiceTracker( context, "MiningTaskService", this );
     miningTaskTracker_->startTracking();
-
-    productSearchTracker_ = new ServiceTracker( context, "ProductSearchService", this );
-    productSearchTracker_->startTracking();
-    productTaskTracker_ = new ServiceTracker( context, "ProductTaskService", this );
-    productTaskTracker_->startTracking();
-
-    recommendSearchTracker_ = new ServiceTracker( context, "RecommendSearchService", this );
-    recommendSearchTracker_->startTracking();
-    recommendTaskTracker_ = new ServiceTracker( context, "RecommendTaskService", this );
-    recommendTaskTracker_->startTracking();
 }
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
@@ -109,32 +93,6 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
         miningTaskTracker_->stopTracking();
         delete miningTaskTracker_;
         miningTaskTracker_ = 0;
-    }
-
-    if(productSearchTracker_)
-    {
-        productSearchTracker_->stopTracking();
-        delete productSearchTracker_;
-        productSearchTracker_ = 0;
-    }
-    if(productTaskTracker_)
-    {
-        productTaskTracker_->stopTracking();
-        delete productTaskTracker_;
-        productTaskTracker_ = 0;
-    }
-
-    if(recommendSearchTracker_)
-    {
-        recommendSearchTracker_->stopTracking();
-        delete recommendSearchTracker_;
-        recommendSearchTracker_ = 0;
-    }
-    if(recommendTaskTracker_)
-    {
-        recommendTaskTracker_->stopTracking();
-        delete recommendTaskTracker_;
-        recommendTaskTracker_ = 0;
     }
 
     if(searchServiceReg_)
@@ -226,36 +184,6 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
             //ProductTaskService* service = reinterpret_cast<ProductTaskService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling ProductTaskService..." << endl;
             ///TODO
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if ( ref.getServiceName() == "RecommendSearchService" )
-    {
-        Properties props = ref.getServiceProperties();
-        if ( props.get( "collection" ) == config_->collectionName_)
-        {
-            RecommendSearchService* service = reinterpret_cast<RecommendSearchService*> ( const_cast<IService*>(ref.getService()) );
-            cout << "[IndexBundleActivator#addingService] Calling RecommendSearchService..." << endl;
-            searchService_->searchWorker_->recommendSearchService_ = service;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if ( ref.getServiceName() == "RecommendTaskService" )
-    {
-        Properties props = ref.getServiceProperties();
-        if ( props.get( "collection" ) == config_->collectionName_)
-        {
-            RecommendTaskService* service = reinterpret_cast<RecommendTaskService*> ( const_cast<IService*>(ref.getService()) );
-            cout << "[IndexBundleActivator#addingService] Calling RecommendTaskService..." << endl;
-            taskService_->indexWorker_->recommendTaskService_= service;
             return true;
         }
         else

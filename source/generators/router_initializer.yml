@@ -1,49 +1,17 @@
 headers:
-  - controllers/AutoFillController.h
   - controllers/CommandsController.h
-  - controllers/KeywordsController.h
   - controllers/DocumentsController.h
-  - controllers/TestController.h
   - controllers/StatusController.h
-  - controllers/LogAnalysisController.h
-  - controllers/FacetedController.h
-  - controllers/QueryCorrectionController.h
-  - controllers/TopicController.h
-  - controllers/RecommendController.h
-  - controllers/ServiceController.h
-  - controllers/ProductController.h
-  - controllers/SynonymController.h
   - controllers/CollectionController.h
-  - controllers/QueryNormalizeController.h
 
 controllers:
-  AutoFillController:
-    actions:
-      - index
-
-  QueryCorrectionController:
-    actions:
-      - index
-
-  QueryNormalizeController:
-    actions:
-      - add_Query
-      - delete_Query
-
   CommandsController:
     actions:
       - index
-      - index_recommend
       - optimize_index
       - index_query_log
       - mining
       - train_ctr_model
-
-  KeywordsController:
-    actions:
-      - index
-      - inject_query_correction
-      - inject_query_recommend
 
   DocumentsController:
     actions:
@@ -54,11 +22,6 @@ controllers:
       - update
       - update_inplace      
       - destroy
-      - similar_to
-      - duplicate_with
-      - similar_to_image
-      - get_topic
-      - get_topic_with_sim
       - log_group_label
       - get_freq_group_labels
       - set_top_group_label
@@ -71,80 +34,6 @@ controllers:
     actions:
       - index
       - get_distribute_status
-
-  TestController:
-    test: true
-    actions:
-      - echo
-      - sleep
-
-  LogAnalysisController:
-    actions:
-      - system_events
-      - user_queries
-      - merchant_count
-      - product_count
-      - product_update_info
-      - inject_user_queries
-      - delete_record_from_system_events
-      - delete_record_from_user_queries
-      - delete_database
-      - inject_user_queries_to_logserver
-      - get_freq_user_queries_from_logserver
-
-  FacetedController:
-    actions:
-      - set_ontology
-      - get_ontology
-      - get_static_rep
-      - static_click
-      - get_rep
-      - click
-      - manmade
-      - set_merchant_score
-      - get_merchant_score
-      - set_custom_rank
-      - get_custom_rank
-      - get_custom_query
-      - get_product_score
-
-  TopicController:
-    actions:
-      - get_similar
-      - get_in_date_range
-      - get_temporal_similar
-      - get_topics
-
-  RecommendController:
-    actions:
-      - add_user
-      - get_user
-      - update_user
-      - remove_user
-      - visit_item
-      - purchase_item
-      - update_shopping_cart
-      - track_event
-      - rate_item
-      - do_recommend
-      - top_item_bundle
-
-  ServiceController:
-    actions:
-      - process_overdue
-      - renew
-
-  ProductController:
-    actions:
-      - get_multi_price_history
-      - get_top_price_cut_list
-      - migrate_price_history
-
-  SynonymController:
-    actions:
-      - add_synonym
-      - update_synonym
-      - delete_synonym
 
   CollectionController:
     actions:
@@ -159,7 +48,4 @@ controllers:
       - backup_all
       - create_collection
       - delete_collection
-      - set_kv
-      - get_kv
-      - load_license
 

@@ -8,7 +8,6 @@
 
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/mining/MiningBundleConfiguration.h>
-#include <bundles/recommend/RecommendSchema.h>
 
 #include <util/driver/Request.h>
 #include <util/driver/Response.h>
@@ -17,16 +16,10 @@
 
 namespace sf1r
 {
-class RecommendTaskService;
-class RecommendSearchService;
 class IndexTaskService;
 class IndexSearchService;
 class MiningSearchService;
 class MiningTaskService;
-class ProductTaskService;
-class ProductSearchService;
-class GetRecommendWorker;
-class UpdateRecommendWorker;
 
 /**
  * @brief CollectionHandler
@@ -46,9 +39,6 @@ public:
     //////////////////////////////////////////
     void search(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     void get(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
-    void similar_to(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
-    void duplicate_with(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
-    void similar_to_image(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     bool create(const ::izenelib::driver::Value& document);
     bool update(const ::izenelib::driver::Value& document);
     bool update_inplace(const ::izenelib::driver::Value& request);
@@ -67,16 +57,6 @@ public:
         indexTaskService_ = service;
     }
 
-    void registerService(ProductSearchService* service)
-    {
-        productSearchService_ = service;
-    }
-
-    void registerService(ProductTaskService* service)
-    {
-        productTaskService_ = service;
-    }
-
     void registerService(MiningSearchService* service)
     {
         miningSearchService_ = service;
@@ -85,25 +65,6 @@ public:
     void registerService(MiningTaskService* service)
     {
         miningTaskService_ = service;
-    }
-    void registerService(RecommendTaskService* service)
-    {
-        recommendTaskService_ = service;
-    }
-
-    void registerService(RecommendSearchService* service)
-    {
-        recommendSearchService_ = service;
-    }
-
-    void registerWorker(GetRecommendWorker* worker)
-    {
-        getRecommendWorker_ = worker;
-    }
-
-    void registerWorker(UpdateRecommendWorker* worker)
-    {
-        updateRecommendWorker_ = worker;
     }
 
     void setBundleSchema(IndexBundleSchema& schema)
@@ -121,11 +82,6 @@ public:
         zambeziConfig_ = schema;
     }
 
-    void setBundleSchema(RecommendSchema& schema)
-    {
-        recommendSchema_ = schema;
-    }
-
     void setDocumentSchema(const DocumentSchema& schema)
     {
         documentSchema_ = schema;
@@ -138,21 +94,9 @@ public:
 
     IndexTaskService* indexTaskService_;
 
-    ProductSearchService* productSearchService_;
-
-    ProductTaskService* productTaskService_;
-
     MiningSearchService* miningSearchService_;
 
     MiningTaskService* miningTaskService_;
-
-    RecommendTaskService* recommendTaskService_;
-
-    RecommendSearchService* recommendSearchService_;
-
-    GetRecommendWorker* getRecommendWorker_;
-
-    UpdateRecommendWorker* updateRecommendWorker_;
 
     DocumentSchema documentSchema_;
 
@@ -161,8 +105,6 @@ public:
     ZambeziConfig zambeziConfig_;
 
     MiningSchema miningSchema_;
-
-    RecommendSchema recommendSchema_;
 };
 
 } // namespace sf1r

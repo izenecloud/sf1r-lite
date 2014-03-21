@@ -934,17 +934,6 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
         indexBundleConfig.isWorkerNode_ = SF1Config::get()->checkSearchWorker(collectionName);
     }
 
-    // ProductBundle
-    Element* productBundle = getUniqChildElement(collection, "ProductBundle", false);
-    if (productBundle)
-    {
-        Element* product_schema = getUniqChildElement(productBundle, "Schema", false);
-        parseProductBundleSchema(product_schema, collectionMeta);
-
-        Element* productParam = getUniqChildElement(productBundle, "Parameter", false);
-        parseProductBundleParam(productParam, collectionMeta);
-    }
-
     // MiningBundle
     Element* miningBundle = getUniqChildElement(collection, "MiningBundle" , false);
     if (miningBundle)
@@ -956,19 +945,6 @@ void CollectionConfig::parseCollectionSettings(const ticpp::Element * collection
 
         Element* miningParam = getUniqChildElement(miningBundle, "Parameter", false);
         parseMiningBundleParam(miningParam, collectionMeta);
-    }
-
-    // RecommendBundle
-    Element* recommendBundle = getUniqChildElement(collection, "RecommendBundle" , false);
-    if (recommendBundle)
-    {
-        Element* recommendSchema = getUniqChildElement(recommendBundle, "Schema", false);
-        parseRecommendBundleSchema(recommendSchema, collectionMeta);
-
-        Element* recommendParam = getUniqChildElement(recommendBundle, "Parameter", false);
-        parseRecommendBundleParam(recommendParam, collectionMeta);
-
-        parseRecommendDistribConfig(collectionMeta);
     }
 }
 
@@ -1008,7 +984,6 @@ void CollectionConfig::parseCollectionPath(const ticpp::Element * path, Collecti
     collectionMeta.setCollectionPath(collPath);
     collectionMeta.indexBundleConfig_->collPath_ = collPath;
     collectionMeta.miningBundleConfig_->collPath_ = collPath;
-    collectionMeta.recommendBundleConfig_->collPath_ = collPath;
 }
 
 void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSchema, CollectionMeta & collectionMeta)
@@ -1341,11 +1316,6 @@ void CollectionConfig::parseServiceMaster(const ticpp::Element * service, Collec
         IndexBundleConfiguration& indexBundleConfig = *(collectionMeta.indexBundleConfig_);
         indexBundleConfig.col_shard_info_ = masterCollection;
     }
-    else if (service_type == Sf1rTopology::getServiceName(Sf1rTopology::RecommendService))
-    {
-        RecommendBundleConfiguration& recommendConfig = *(collectionMeta.recommendBundleConfig_);
-        recommendConfig.col_shard_info_ = masterCollection;
-    }
     else
     {
         throw XmlConfigParserException("Unsupported distributed service type: " + service_type);
@@ -1460,88 +1430,10 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
     }
 }
 
-void CollectionConfig::parseProductBundleParam(const ticpp::Element * product_param, CollectionMeta & collectionMeta)
-{
-    CollectionParameterConfig params(SF1Config::get()->defaultProductBundleParam_);
-    if (product_param)
-    {
-        params.LoadXML(product_param, true);
-    }
-
-    std::set<std::string> directories;
-    params.Get("CollectionDataDirectory", directories);
-    if (!directories.empty())
-    {
-        collectionMeta.productBundleConfig_->collectionDataDirectories_.assign(directories.begin(), directories.end());
-    }
-    params.Get("CronPara/value", collectionMeta.productBundleConfig_->cron_);
-
-    CassandraStorageConfig& cassandraConfig = collectionMeta.productBundleConfig_->cassandraConfig_;
-    parseCassandraStorageParam(params, cassandraConfig);
-
-    LOG(INFO) << "ProductPundle [" << collectionMeta.productBundleConfig_->collectionName_
-              << "][CassandraStorage] enable: " << cassandraConfig.enable
-              << ", keyspace: " << cassandraConfig.keyspace;
-}
-
 void CollectionConfig::parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig)
 {
     params.Get("CassandraStorage/enable", cassandraConfig.enable);
     params.Get("CassandraStorage/keyspace", cassandraConfig.keyspace);
-}
-
-void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_schema, CollectionMeta & collectionMeta)
-{
-    if (!product_schema)
-        return;
-
-    ProductBundleConfiguration& productBundleConfig = *(collectionMeta.productBundleConfig_);
-    productBundleConfig.collPath_ = collectionMeta.collPath_;
-    productBundleConfig.mode_ = "";
-    productBundleConfig.setSchema(collectionMeta.indexBundleConfig_->indexSchema_);
-
-    getAttribute(product_schema, "mode", productBundleConfig.mode_);
-    getAttribute(product_schema, "id", productBundleConfig.productId_);
-    getAttribute(product_schema, "callback", productBundleConfig.callback_, false);
-
-    PMConfig& pm_config = productBundleConfig.pm_config_;
-    ticpp::Element* property_node = 0;
-
-    property_node = getUniqChildElement(product_schema, "PriceProperty", false);
-    getAttribute(property_node, "name", pm_config.price_property_name);
-
-    property_node = getUniqChildElement(product_schema, "DateProperty", false);
-    getAttribute(property_node, "name", pm_config.date_property_name);
-
-    property_node = getUniqChildElement(product_schema, "DOCIDProperty", false);
-    getAttribute(property_node, "name", pm_config.docid_property_name);
-
-    property_node = getUniqChildElement(product_schema, "UuidProperty", false);
-    getAttribute(property_node, "name", pm_config.uuid_property_name);
-
-    property_node = getUniqChildElement(product_schema, "ItemCountProperty", false);
-    getAttribute(property_node, "name", pm_config.itemcount_property_name);
-
-    ticpp::Element* price_trend_node = getUniqChildElement(product_schema, "PriceTrend", false);
-    if (price_trend_node)
-    {
-        pm_config.enable_price_trend = true;
-
-        Iterator<Element> group_it("GroupProperty");
-        for (group_it = group_it.begin(price_trend_node); group_it != group_it.end(); ++group_it)
-        {
-            pm_config.group_property_names.push_back(std::string());
-            getAttribute(group_it.Get(), "name", pm_config.group_property_names.back());
-        }
-
-        Iterator<Element> time_it("TimeInterval");
-        for (time_it = time_it.begin(price_trend_node); time_it != time_it.end(); ++time_it)
-        {
-            pm_config.time_interval_days.push_back(0);
-            getAttribute(time_it.Get(), "days", pm_config.time_interval_days.back());
-        }
-        std::sort(pm_config.time_interval_days.begin(), pm_config.time_interval_days.end());
-    }
 }
 
 void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, CollectionMeta & collectionMeta)
@@ -2666,133 +2558,6 @@ void CollectionConfig::parseScoreAttr(
     if (scoreConfig.logBase < 0 || scoreConfig.logBase == 1)
     {
         throw XmlConfigParserException("Require positive value for <Score logbase>");
-    }
-}
-
-void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)
-{
-    CollectionParameterConfig params(SF1Config::get()->defaultRecommendBundleParam_);
-    if (recParamNode)
-    {
-        params.LoadXML(recParamNode, true);
-    }
-
-    boost::shared_ptr<RecommendBundleConfiguration> recBundleConfig = collectionMeta.recommendBundleConfig_;
-    std::set<std::string> directories;
-    params.Get("CollectionDataDirectory", directories);
-    if (directories.empty())
-    {
-        throw XmlConfigParserException("Require configure <RecommendBundle> <Parameter> <CollectionDataDirectory>");
-    }
-    else
-    {
-        recBundleConfig->collectionDataDirectories_.assign(directories.begin(), directories.end());
-    }
-
-    params.Get("CronPara/value", recBundleConfig->cronStr_);
-    params.Get("CacheSize/purchase", recBundleConfig->purchaseCacheSize_);
-    params.Get("CacheSize/visit", recBundleConfig->visitCacheSize_);
-    params.Get("CacheSize/index", recBundleConfig->indexCacheSize_);
-    params.Get("FreqItemSet/enable", recBundleConfig->freqItemSetEnable_);
-    params.Get("FreqItemSet/minfreq", recBundleConfig->itemSetMinFreq_);
-
-    CassandraStorageConfig& cassandraConfig = recBundleConfig->cassandraConfig_;
-    parseCassandraStorageParam(params, cassandraConfig);
-
-    LOG(INFO) << "RecommendBundle " << *recBundleConfig;
-}
-
-void CollectionConfig::parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta)
-{
-    if (!recSchemaNode)
-        return;
-
-    //** PARSE RECOMMEND SCHEMA BEGIN
-    RecommendBundleConfiguration& recommendBundleConfig = *collectionMeta.recommendBundleConfig_;
-    recommendBundleConfig.isSchemaEnable_ = true;
-    RecommendSchema& recommendSchema = recommendBundleConfig.recommendSchema_;
-
-    // get user schema
-    Element* userSchemaNode = getUniqChildElement(recSchemaNode, "User", false);
-    if (userSchemaNode)
-    {
-        Iterator<Element> property("Property");
-
-        for (property = property.begin(userSchemaNode); property != property.end(); ++property)
-        {
-            try
-            {
-                string propName;
-                getAttribute(property.Get(), "name", propName);
-
-                // ignore default property
-                if (propName != "USERID")
-                {
-                    RecommendProperty recommendProperty;
-                    recommendProperty.propertyName_ = propName;
-                    recommendSchema.userSchema_.push_back(recommendProperty);
-                }
-            }
-            catch (XmlConfigParserException & e)
-            {
-                throw e;
-            }
-        } //property iteration
-    }
-
-    // get track schema
-    Element* trackSchemaNode = getUniqChildElement(recSchemaNode, "Track", false);
-    if (trackSchemaNode)
-    {
-        Iterator<Element> event("Event");
-
-        for (event = event.begin(trackSchemaNode); event != event.end(); ++event)
-        {
-            try
-            {
-                string eventName;
-                getAttribute(event.Get(), "name", eventName);
-                recommendSchema.eventSet_.insert(eventName);
-            }
-            catch (XmlConfigParserException & e)
-            {
-                throw e;
-            }
-        } //event iteration
-    }
-}
-
-void CollectionConfig::parseRecommendDistribConfig(CollectionMeta& collectionMeta)
-{
-    RecommendBundleConfiguration& recommendBundleConfig = *collectionMeta.recommendBundleConfig_;
-    const std::string& collectionName = recommendBundleConfig.collectionName_;
-    SF1Config* sf1Config = SF1Config::get();
-
-    DistributedNodeConfig& recommendNode = recommendBundleConfig.recommendNodeConfig_;
-    if (recommendBundleConfig.isSchemaEnable_)
-    {
-        recommendNode.isMasterNode_ = sf1Config->checkRecommendMasterAggregator(collectionName);
-        recommendNode.isWorkerNode_ = sf1Config->checkRecommendWorker(collectionName);
-        recommendNode.isSingleNode_ = !(recommendNode.isMasterNode_ || recommendNode.isWorkerNode_);
-    }
-
-    IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
-    DistributedNodeConfig& searchNode = recommendBundleConfig.searchNodeConfig_;
-    if (indexBundleConfig.isSchemaEnable_)
-    {
-        searchNode.isMasterNode_ = sf1Config->checkSearchMasterAggregator(collectionName);
-        searchNode.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);
-        searchNode.isSingleNode_ = !(searchNode.isMasterNode_ || searchNode.isWorkerNode_);
-    }
-
-    if (recommendNode.isSingleNode_ && !searchNode.isServiceNode())
-    {
-        ostringstream message;
-        message << "the recommendation bundle for collection \"" << collectionName << "\" is configured as single node without search service," << endl
-                << "you should either configure it as distributed recommendation node in <SF1Config><Deployment><DistributedTopology>," << endl
-                << "or configure it as single or master node for search service.";
-
-        throw XmlConfigParserException(message.str());
     }
 }
 

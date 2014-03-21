@@ -40,9 +40,6 @@ public:
 
     void search();
     void get();
-    void similar_to();
-    void duplicate_with();
-    void similar_to_image();
     void create();
     void update();
     void update_inplace();

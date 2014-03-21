@@ -27,8 +27,6 @@ public:
 
     void index();
 
-    void index_recommend();
-
     void index_query_log();
 
     void mining();
@@ -39,8 +37,6 @@ public:
 
 private:
     void indexSearch_();
-
-    void indexRecommend_();
 };
 
 /// @}

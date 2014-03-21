@@ -438,13 +438,9 @@ static bool modifyShardingCfg(const std::string& coll,
         CollectionMeta collectionMeta;
         collectionMeta.setName(coll);
         boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(coll));
-        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(coll));
         boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(coll));
-        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(coll));
         collectionMeta.indexBundleConfig_ = indexBundleConfig;
-        collectionMeta.productBundleConfig_ = productBundleConfig;
         collectionMeta.miningBundleConfig_ = miningBundleConfig;
-        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
 
         std::string bak_cfg_file = collection_config + ".bak";

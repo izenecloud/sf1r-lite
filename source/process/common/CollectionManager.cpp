@@ -4,11 +4,7 @@
 #include <controllers/CollectionHandler.h>
 
 #include <bundles/index/IndexBundleActivator.h>
-#include <bundles/product/ProductBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
-#include <bundles/recommend/RecommendBundleActivator.h>
-#include <aggregator-manager/GetRecommendWorker.h>
-#include <aggregator-manager/UpdateRecommendWorker.h>
 #include <common/JobScheduler.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
@@ -76,15 +72,11 @@ bool CollectionManager::checkConfig(const string& collectionName,
         }
         std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
         boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
-        boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
         boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
-        boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
 
         CollectionMeta collectionMeta;
         collectionMeta.indexBundleConfig_ = indexBundleConfig;
-        collectionMeta.productBundleConfig_ = productBundleConfig;
         collectionMeta.miningBundleConfig_ = miningBundleConfig;
-        collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
         if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
         {
@@ -114,15 +106,11 @@ bool CollectionManager::startCollection(const string& collectionName,
     std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
-    boost::shared_ptr<ProductBundleConfiguration> productBundleConfig(new ProductBundleConfiguration(collectionName));
     boost::shared_ptr<MiningBundleConfiguration> miningBundleConfig(new MiningBundleConfiguration(collectionName));
-    boost::shared_ptr<RecommendBundleConfiguration> recommendBundleConfig(new RecommendBundleConfiguration(collectionName));
 
     CollectionMeta collectionMeta;
     collectionMeta.indexBundleConfig_ = indexBundleConfig;
-    collectionMeta.productBundleConfig_ = productBundleConfig;
     collectionMeta.miningBundleConfig_ = miningBundleConfig;
-    collectionMeta.recommendBundleConfig_ = recommendBundleConfig;
 
     if (!CollectionConfig::get()->parseConfigFile(collectionName, configFileName, collectionMeta))
     {
@@ -161,9 +149,7 @@ bool CollectionManager::startCollection(const string& collectionName,
         else
             basePath = basePath.parent_path();
         indexBundleConfig->collPath_.resetBasePath((basePath/collectionName).string());
-        productBundleConfig->collPath_ =  indexBundleConfig->collPath_;
         miningBundleConfig->collPath_ =  indexBundleConfig->collPath_;
-        recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
     if (SF1Config::get()->isDistributedNode())
@@ -192,18 +178,6 @@ bool CollectionManager::startCollection(const string& collectionName,
             collectionHandler->setBundleSchema(indexBundleConfig->zambeziConfig_);
     }
 
-    ///createProductBundle
-    if (!productBundleConfig->mode_.empty())
-    {
-        std::string bundleName = "ProductBundle-" + collectionName;
-        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, ProductBundleActivator);
-        osgiLauncher_.start(productBundleConfig);
-        ProductSearchService* productSearchService = static_cast<ProductSearchService*>(osgiLauncher_.getService(bundleName, "ProductSearchService"));
-        collectionHandler->registerService(productSearchService);
-        ProductTaskService* productTaskService = static_cast<ProductTaskService*>(osgiLauncher_.getService(bundleName, "ProductTaskService"));
-        collectionHandler->registerService(productTaskService);
-    }
-
     ///createMiningBundle
     if (miningBundleConfig->isSchemaEnable_)
     {
@@ -215,29 +189,6 @@ bool CollectionManager::startCollection(const string& collectionName,
         MiningTaskService* miningTaskService = static_cast<MiningTaskService*>(osgiLauncher_.getService(bundleName, "MiningTaskService"));
         collectionHandler->registerService(miningTaskService);
         collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
-    }
-
-    ///createRecommendBundle
-    if (recommendBundleConfig->isSchemaEnable_)
-    {
-        std::string bundleName = "RecommendBundle-" + collectionName;
-
-        DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);
-        osgiLauncher_.start(recommendBundleConfig);
-
-        RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
-        collectionHandler->registerService(recommendTaskService);
-
-        RecommendSearchService* recommendSearchService = static_cast<RecommendSearchService*>(osgiLauncher_.getService(bundleName, "RecommendSearchService"));
-        collectionHandler->registerService(recommendSearchService);
-
-        GetRecommendWorker* getRecommendWorker = static_cast<GetRecommendWorker*>(osgiLauncher_.getService(bundleName, "GetRecommendWorker"));
-        collectionHandler->registerWorker(getRecommendWorker);
-
-        UpdateRecommendWorker* updateRecommendWorker = static_cast<UpdateRecommendWorker*>(osgiLauncher_.getService(bundleName, "UpdateRecommendWorker"));
-        collectionHandler->registerWorker(updateRecommendWorker);
-
-        collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
     }
 
     CollectionTaskScheduler::get()->schedule(collectionHandler.get());
@@ -295,20 +246,6 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     }
 
     bundleName = "MiningBundle-" + collectionName;
-    bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if (bundleInfo)
-    {
-        osgiLauncher_.stopBundle(bundleName);
-    }
-
-    bundleName = "ProductBundle-" + collectionName;
-    bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if (bundleInfo)
-    {
-        osgiLauncher_.stopBundle(bundleName);
-    }
-
-    bundleName = "RecommendBundle-" + collectionName;
     bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
     if (bundleInfo)
     {
@@ -377,8 +314,6 @@ void CollectionManager::flushCollection(const std::string& collectionName)
     {
         if (iter->second->indexTaskService_)
             iter->second->indexTaskService_->flush();
-        if (iter->second->recommendTaskService_)
-            iter->second->recommendTaskService_->flush();
         if (iter->second->miningTaskService_)
             iter->second->miningTaskService_->flush();
         // other service need to add flush interface.

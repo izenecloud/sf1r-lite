@@ -8,6 +8,8 @@
 #include <3rdparty/msgpack/rpc/client.h>
 #include <3rdparty/msgpack/rpc/session_pool.h>
 
+#include <glog/logging.h>
+
 #include <boost/scoped_ptr.hpp>
 
 namespace sf1r

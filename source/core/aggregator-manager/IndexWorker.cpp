@@ -27,7 +27,6 @@
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/mining/MiningTaskService.h>
-#include <bundles/recommend/RecommendTaskService.h>
 #include <node-manager/synchro/SynchroFactory.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <util/scheduler.h>
@@ -65,7 +64,6 @@ IndexWorker::IndexWorker(
         DirectoryRotator& directoryRotator)
     : bundleConfig_(bundleConfig)
     , miningTaskService_(NULL)
-    , recommendTaskService_(NULL)
     , directoryRotator_(directoryRotator)
     , scd_writer_(new ScdWriterController(bundleConfig_->logSCDPath()))
     , indexProgress_()

@@ -46,12 +46,6 @@ private:
     ServiceTracker* miningSearchTracker_;
     ServiceTracker* miningTaskTracker_;
 
-    ServiceTracker* recommendSearchTracker_;
-    ServiceTracker* recommendTaskTracker_;
-
-    ServiceTracker* productSearchTracker_;
-    ServiceTracker* productTaskTracker_;
-
     IBundleContext* context_;
     IndexSearchService* searchService_;
     IServiceRegistration* searchServiceReg_;

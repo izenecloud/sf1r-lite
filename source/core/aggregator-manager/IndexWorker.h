@@ -250,7 +250,6 @@ private:
 private:
     IndexBundleConfiguration* bundleConfig_;
     MiningTaskService* miningTaskService_;
-    RecommendTaskService* recommendTaskService_;
 
     IncSupportedIndexManager inc_supported_index_manager_;
 
