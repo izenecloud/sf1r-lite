@@ -8,9 +8,6 @@ INCLUDE_DIRECTORIES(
   ${izenejma_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
-  ${imllib_INCLUDE_DIRS}
-  ${iise_INCLUDE_DIRS}
-  ${addrlib_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
@@ -35,11 +32,6 @@ FILE(GLOB index_SRC
   "index-manager/zambezi-manager/*.cpp"
   "index-manager/*.cpp"
   "index-manager/zambezi-tokenizer/*.cpp")
-
-FILE(GLOB image_SRC
-    "image-manager/*.cc"
-    "image-manager/*.cpp")
-
 
 FILE(GLOB document_SRC
   "document-manager/*.cpp"

@@ -9,7 +9,6 @@
 #include <common/NumericRangePropertyTable.h>
 #include <common/RTypeStringPropTable.h>
 #include <document-manager/DocumentManager.h>
-#include <log-manager/ProductCount.h>
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 #include <common/JobScheduler.h>
@@ -1261,8 +1260,6 @@ bool IndexWorker::doBuildCollection_(
 
     clearMasterCache_();
 
-    saveSourceCount_(scdType);
-
     return true;
 }
 
@@ -1818,29 +1815,6 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
         return true;
     }
     return false;
-}
-
-void IndexWorker::savePriceHistory_(int op)
-{
-}
-
-void IndexWorker::saveSourceCount_(SCD_TYPE scdType)
-{
-    if (bundleConfig_->productSourceField_.empty())
-        return;
-
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-    for (map<std::string, uint32_t>::const_iterator iter = productSourceCount_.begin();
-            iter != productSourceCount_.end(); ++iter)
-    {
-        ProductCount productCount;
-        productCount.setSource(iter->first);
-        productCount.setCollection(bundleConfig_->collectionName_);
-        productCount.setNum(iter->second);
-        productCount.setFlag(ScdParser::SCD_TYPE_NAMES[scdType]);
-        productCount.setTimeStamp(now);
-        productCount.save();
-    }
 }
 
 bool IndexWorker::prepareDocIdAndUpdateType_(const izenelib::util::UString& scdDocIdUStr,

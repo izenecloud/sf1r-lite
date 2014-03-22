@@ -184,10 +184,6 @@ private:
 
     bool deleteDoc_(docid_t docid, time_t timestamp);
 
-    void savePriceHistory_(int op);
-
-    void saveSourceCount_(SCD_TYPE scdType);
-
     bool prepareDocIdAndUpdateType_(const izenelib::util::UString& scdDocIdUStr,
         const SCDDoc& scddoc, SCD_TYPE scdType,
         docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType);

@@ -4,10 +4,8 @@
 #include "SystemEvent.h"
 #include "UserQuery.h"
 #include "PropertyLabel.h"
-#include "ProductCount.h"
 
 #include "CassandraConnection.h"
-#include "PriceHistory.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -45,7 +43,6 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
     SystemEvent::createTable();
     UserQuery::createTable();
     PropertyLabel::createTable();
-    ProductCount::createTable();
 
     return true;
 }
