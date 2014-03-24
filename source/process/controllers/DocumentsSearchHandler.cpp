@@ -30,7 +30,6 @@
 #include <common/QueryNormalizer.h>
 
 #include <mining-manager/MiningManager.h>
-#include <mining-manager/query-intent/QueryIntentManager.h>
 
 #include <log-manager/UserQuery.h>
 
@@ -253,10 +252,6 @@ bool DocumentsSearchHandler::doGet(
 
 bool DocumentsSearchHandler::parse()
 {
-    QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager();
-    if (queryIntentManager)
-        queryIntentManager->queryIntent(request_, response_);
-
     std::vector<Parser*> parsers;
     std::vector<const Value*> values;
     

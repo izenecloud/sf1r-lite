@@ -67,7 +67,6 @@ namespace sf1r
 {
 
 class GroupLabelLogger;
-class QueryCorrectionSubmanager;
 class Document;
 class DocumentManager;
 class LAManager;
@@ -91,7 +90,6 @@ class MultiThreadMiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
-class QueryIntentManager;
 class ZambeziManager;
 class AdIndexManager;
 class ProductTokenizer;
@@ -361,11 +359,6 @@ public:
         return suffixMatchManager_;
     }
 
-    QueryIntentManager* getQueryIntentManager()
-    {
-        return queryIntentManager_;
-    }
-
     AdIndexManager* getAdIndexManager()
     {
         return adIndexManager_;
@@ -512,9 +505,6 @@ private:
 
     /** For Merchant Diversity */
     ProductRankerFactory* productRankerFactory_;
-
-    /** For Query Intent */
-    QueryIntentManager* queryIntentManager_;
 
 
     /** Suffix Match */

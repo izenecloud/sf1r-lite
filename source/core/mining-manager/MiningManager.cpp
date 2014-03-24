@@ -45,8 +45,6 @@
 
 #include "ad-index-manager/AdIndexManager.h"
 
-#include "query-intent/QueryIntentManager.h"
-
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <search-manager/RTypeStringPropTableBuilder.h>
@@ -191,7 +189,6 @@ MiningManager::MiningManager(
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
-    , queryIntentManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
     , productTokenizer_(NULL)
@@ -208,7 +205,6 @@ MiningManager::~MiningManager()
     if (multiThreadMiningTaskBuilder_) delete multiThreadMiningTaskBuilder_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (productRankerFactory_) delete productRankerFactory_;
-    if (queryIntentManager_) delete queryIntentManager_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (categoryClassifyTable_) delete categoryClassifyTable_;
@@ -380,12 +376,6 @@ bool MiningManager::open()
 
         if (customDocIdConverter_) delete customDocIdConverter_;
         customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
-
-        if (mining_schema_.query_intent_enable)
-        {
-            if (queryIntentManager_) delete queryIntentManager_;
-            queryIntentManager_ = new QueryIntentManager(&(mining_schema_.query_intent_config), system_resource_path_, this);
-        }
 
         /** Suffix Match */
         if (mining_schema_.suffixmatch_schema.suffix_match_enable)

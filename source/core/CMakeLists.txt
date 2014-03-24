@@ -56,7 +56,6 @@ FILE(GLOB mining_SRC
   "mining-manager/product-tokenizer/*.cpp"
   "mining-manager/custom-rank-manager/*.cpp"
   "mining-manager/suffix-match-manager/*.cpp"
-  "mining-manager/query-intent/*.cpp"
   "mining-manager/query-abbreviation/*.cpp"
   "mining-manager/query-recommendation/*.cpp"
   "mining-manager/query-recommendation/pinyin/*.cpp"
