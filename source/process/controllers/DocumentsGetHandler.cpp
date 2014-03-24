@@ -20,11 +20,23 @@
 #include <common/Utilities.h>
 
 #include <configuration-manager/Acl.h>
-#include <b5m-manager/b5m_helper.h>
 #include <util/swap.h>
 
 namespace sf1r
 {
+
+static std::string GetPidByIsbn(const std::string& isbn)
+{
+    //static const int MD5_DIGEST_LENGTH = 32;
+    std::string url = "http://www.b5m.com/spuid/isbn/"+isbn;
+    return Utilities::generateMD5(url);
+}
+
+static std::string GetPidByUrl(const std::string& url)
+{
+    return Utilities::generateMD5(url);
+}
+
 
 using driver::Keys;
 
@@ -216,13 +228,13 @@ bool DocumentsGetHandler::getIdListFromConditions()
             cout<<"DOCID"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
             if(theOnlyCondition.id_type()=="isbn")
             {
-                std::string originid=b5m::B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                std::string originid=GetPidByIsbn(asString(theOnlyCondition(i)));
                 cout<<"originid"<<originid<<endl;
                 actionItem_.docIdList_.push_back(originid);
             }
             else  if(theOnlyCondition.id_type()=="url")
             {
-                std::string originid=b5m::B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                std::string originid=GetPidByUrl(asString(theOnlyCondition(i)));
                 actionItem_.docIdList_.push_back(originid);
             }
             else
@@ -249,12 +261,12 @@ bool DocumentsGetHandler::getIdListFromConditions()
             {
                 if(theOnlyCondition.id_type()=="isbn")
                 {
-                    std::string originid=b5m::B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                    std::string originid=GetPidByIsbn(asString(theOnlyCondition(i)));
                     ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
                 }
                 else  if(theOnlyCondition.id_type()=="url")
                 {
-                    std::string originid=b5m::B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                    std::string originid=GetPidByUrl(asString(theOnlyCondition(i)));
                     ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
                 }
                 else

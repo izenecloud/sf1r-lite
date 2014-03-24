@@ -24,7 +24,6 @@ FILE(GLOB_RECURSE search_SRC "search-manager/*.cpp")
 FILE(GLOB_RECURSE query_SRC "query-manager/*.cpp")
 FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
-FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
 FILE(GLOB sf1r_net_SRC "sf1r-net/*.cpp")
 
 FILE(GLOB index_SRC
@@ -83,7 +82,6 @@ ADD_LIBRARY(sf1r_mining_manager ${mining_SRC})
 ADD_LIBRARY(sf1r_document_manager ${document_SRC})
 ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 ADD_LIBRARY(sf1r_node_manager ${node_SRC})
-ADD_LIBRARY(sf1r_product_manager ${product_SRC})
 ADD_LIBRARY(sf1r_net ${sf1r_net_SRC})
 
 INSTALL(TARGETS
@@ -100,7 +98,6 @@ INSTALL(TARGETS
     sf1r_document_manager
     sf1r_aggregator_manager
     sf1r_node_manager
-    sf1r_product_manager
     sf1r_net
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

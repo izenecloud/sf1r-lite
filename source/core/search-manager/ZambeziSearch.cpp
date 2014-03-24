@@ -19,7 +19,6 @@
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <mining-manager/util/convert_ustr.h>
-#include <b5m-manager/product_matcher.h>
 #include <ir/index_manager/utility/Bitset.h>
 #include <util/ClockTimer.h>
 #include <glog/logging.h>
