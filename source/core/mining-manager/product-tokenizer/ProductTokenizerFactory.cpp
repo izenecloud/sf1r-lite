@@ -1,7 +1,6 @@
 #include "ProductTokenizerFactory.h"
 #include "CMAProductTokenizer.h"
 #include "TrieProductTokenizer.h"
-#include "MatcherProductTokenizer.h"
 #include "KNlpProductTokenizer.h"
 #include "PcaProductTokenizer.h"
 #include <la-manager/TitlePCAWrapper.h>
@@ -15,7 +14,6 @@ ProductTokenizerFactory::ProductTokenizerFactory(const std::string& resourcePath
 {
     typeMap_["fmindex_dic"] = CMA_TOKENIZER;
     typeMap_["product"] = TRIE_TOKENIZER;
-    typeMap_["product-matcher"] = MATCHER_TOKENIZER;
     typeMap_["term_category"] = KNLP_TOKENIZER;
     typeMap_["title_pca"] = PCA_TOKENIZER;
 }
@@ -32,9 +30,6 @@ ProductTokenizer* ProductTokenizerFactory::createProductTokenizer(const std::str
 
     case TRIE_TOKENIZER:
         return createTrieTokenizer_(dictPath);
-
-    case MATCHER_TOKENIZER:
-        return createMatcherTokenizer_();
 
     case KNLP_TOKENIZER:
         return createKNlpTokenizer_();
@@ -66,11 +61,6 @@ ProductTokenizer* ProductTokenizerFactory::createCMATokenizer_(const std::string
 ProductTokenizer* ProductTokenizerFactory::createTrieTokenizer_(const std::string& dictPath)
 {
     return new TrieProductTokenizer(dictPath);
-}
-
-ProductTokenizer* ProductTokenizerFactory::createMatcherTokenizer_()
-{
-    return new MatcherProductTokenizer;
 }
 
 ProductTokenizer* ProductTokenizerFactory::createKNlpTokenizer_()

@@ -483,11 +483,7 @@ void ZambeziSearch::getAnalyzedQuery_(
     const std::string& rawQuery,
     izenelib::util::UString& analyzedQuery)
 {
-    b5m::ProductMatcher* matcher = b5m::ProductMatcherInstance::get();
-
-    if (!matcher->IsOpen())
-        return;
-
+    //TODO 2014-03-24
     typedef std::pair<izenelib::util::UString, double> TokenScore;
     typedef std::list<TokenScore> TokenScoreList;
     TokenScoreList majorTokens;
@@ -495,7 +491,7 @@ void ZambeziSearch::getAnalyzedQuery_(
     std::list<izenelib::util::UString> leftTokens;
     izenelib::util::UString queryUStr(rawQuery, izenelib::util::UString::UTF_8);
 
-    matcher->GetSearchKeywords(queryUStr, majorTokens, minorTokens, leftTokens);
+    //matcher->GetSearchKeywords(queryUStr, majorTokens, minorTokens, leftTokens);
 
     for (TokenScoreList::const_iterator it = majorTokens.begin();
          it != majorTokens.end(); ++it)

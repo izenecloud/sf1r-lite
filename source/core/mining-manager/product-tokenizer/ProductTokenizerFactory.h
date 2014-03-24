@@ -29,7 +29,6 @@ private:
     {
         CMA_TOKENIZER = 0,
         TRIE_TOKENIZER,
-        MATCHER_TOKENIZER,
         KNLP_TOKENIZER,
         PCA_TOKENIZER,
         TOKENIZER_NUM
@@ -40,8 +39,6 @@ private:
     ProductTokenizer* createCMATokenizer_(const std::string& dictPath);
 
     ProductTokenizer* createTrieTokenizer_(const std::string& dictPath);
-
-    ProductTokenizer* createMatcherTokenizer_();
 
     ProductTokenizer* createKNlpTokenizer_();
 

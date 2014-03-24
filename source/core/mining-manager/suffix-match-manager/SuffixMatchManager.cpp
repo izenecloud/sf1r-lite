@@ -8,7 +8,6 @@
 #include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
-#include <b5m-manager/product_matcher.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
 #include "../product-tokenizer/FuzzyAlphaNumNormalizer.h"
@@ -34,7 +33,6 @@ SuffixMatchManager::SuffixMatchManager(
         FuzzyNormalizer* fuzzyNormalizer)
     : data_root_path_(homePath)
     , document_manager_(document_manager)
-    , matcher_(NULL)
     , suffixMatchTask_(NULL)
     , fuzzyNormalizer_(fuzzyNormalizer)
 {
@@ -53,11 +51,6 @@ SuffixMatchManager::~SuffixMatchManager()
 {
     //if (knowledge_) delete knowledge_;
     delete fuzzyNormalizer_;
-}
-
-void SuffixMatchManager::setProductMatcher(b5m::ProductMatcher* matcher)
-{
-    matcher_ = matcher;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -144,22 +137,12 @@ size_t SuffixMatchManager::longestSuffixMatch(
 
 bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
 {
-    if (!matcher_)
-    {
-        LOG(INFO)<<"matcher_ = NULL";
-        return false;
-    }
-    return matcher_->GetSynonymSet(pattern, synonym_set, setid);
+    return false;
 }
 
 bool SuffixMatchManager::GetSynonymId_(const UString& pattern, int& setid)
 {
-    if (!matcher_)
-    {
-        LOG(INFO)<<"matcher_ = NULL";
-        return false;
-    }
-    return matcher_->GetSynonymId(pattern, setid);
+    return false;
 }
 
 void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)

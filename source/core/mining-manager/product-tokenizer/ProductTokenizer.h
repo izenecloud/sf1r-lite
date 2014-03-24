@@ -12,7 +12,6 @@
 
 namespace sf1r
 {
-namespace b5m { class ProductMatcher; }
 
 struct ProductTokenParam
 {
@@ -58,8 +57,6 @@ public:
     virtual ~ProductTokenizer() {}
 
     virtual void tokenize(ProductTokenParam& param) = 0;
-
-    virtual void setProductMatcher(b5m::ProductMatcher* matcher) {}
 
     virtual double sumQueryScore(const std::string& query)
     {

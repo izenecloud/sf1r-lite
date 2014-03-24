@@ -110,7 +110,6 @@ double KNlpProductTokenizer::tokenizeImpl_(ProductTokenParam& param)
     }
 
     getRankBoundary_(param);
-    getRefinedResult_(param);
 
     return scoreSum;
 }
@@ -214,13 +213,3 @@ void KNlpProductTokenizer::getRankBoundary_(ProductTokenParam& param)
     }
 }
 
-void KNlpProductTokenizer::getRefinedResult_(ProductTokenParam& param)
-{
-    if (!param.isRefineResult)
-        return;
-
-    ProductTokenParam tempParam(param.query, true);
-    matcherTokenizer_.tokenize(tempParam);
-
-    param.refinedResult.swap(tempParam.refinedResult);
-}

@@ -44,7 +44,6 @@ public:
 
     ~SuffixMatchManager();
 
-    void setProductMatcher(b5m::ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
     bool isStartFromLocalFM() const;
@@ -98,8 +97,6 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
-
-    b5m::ProductMatcher* matcher_;
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
