@@ -34,15 +34,6 @@ using driver::Keys;
  *   can be an Object or an String. If it is an Object, the \b property field is
  *   used as the property name, otherwise, the String itself is used as property
  *   name. Valid properties should have numeric type.
- * - @b taxonomy_label (@c String): Only get documents in the specified
- *   label. It cannot be used with @b name_entity_type and @b name_entity_item
- *   together.
- * - @b name_entity_type (@c String): Only get documents in the specified name
- *   entity item. Must be used with @b name_entity_item together and cannot be
- *   used with @b taxonomy_label.
- * - @b name_entity_item (@c Object): Only get documents in the specified name
- *   entity item. Must be used with @b name_entity_type together and cannot be
- *   used with @b taxonomy_label.
  * - @b group_label (@c Array): Get documents in the specified group labels. Each label consists of a property name and value.@n
  *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
  *   If the property name of label "A1" and "A2" is "A", while the property name of label "B1" and "B2" is "B",@n
@@ -178,17 +169,6 @@ bool SearchParser::parse(const Value& search)
         return false;
     }
 
-    taxonomyLabel_ = asString(search[Keys::taxonomy_label]);
-    nameEntityItem_ = asString(search[Keys::name_entity_item]);
-    nameEntityType_ = asString(search[Keys::name_entity_type]);
-
-    if ((nameEntityType_.empty() && !nameEntityItem_.empty()) ||
-        (!nameEntityType_.empty() && nameEntityItem_.empty()))
-    {
-        error() = "Name entity type and name entity item must be used together";
-        return false;
-    }
-
     if (!parseGroupLabel_(search) ||
         !parseAttrLabel_(search) ||
         !parseAdSearch_(search) ||
@@ -308,10 +288,6 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "verbose")
         {
             searchingModeInfo_.mode_ = SearchingMode::VERBOSE;
-        }
-        else if (mode == "knn")
-        {
-            searchingModeInfo_.mode_ = SearchingMode::KNN;
         }
         else if (mode == "suffix")
         {

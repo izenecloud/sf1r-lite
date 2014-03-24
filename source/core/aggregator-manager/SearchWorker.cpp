@@ -772,13 +772,6 @@ bool  SearchWorker::getResultItem(
     if(isRequireHighlight)
         analyze_(actionItem.env_.queryString_, queryTerms, false);
 
-    // propertyOption
-    if (!actionItem.env_.taxonomyLabel_.empty())
-        queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType));
-
-    if (!actionItem.env_.nameEntityItem_.empty())
-        queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
-
     ///get documents at first, so that those documents will all exist in cache.
     ///To be optimized !!!:
     ///summary/snipet/highlight should utlize the extracted documents object, instead of get once more

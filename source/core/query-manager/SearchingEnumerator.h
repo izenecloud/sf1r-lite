@@ -19,7 +19,6 @@ struct SearchingMode
         OR,
         WAND,
         VERBOSE,
-        KNN,
         SUFFIX_MATCH,
         ZAMBEZI,
         AD_INDEX,

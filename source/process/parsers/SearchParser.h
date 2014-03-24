@@ -67,33 +67,6 @@ public:
         return sessionID_;
     }
 
-    std::string& mutableTaxonomyLabel()
-    {
-        return taxonomyLabel_;
-    }
-    const std::string& taxonomyLabel() const
-    {
-        return taxonomyLabel_;
-    }
-
-    std::string& mutableNameEntityItem()
-    {
-        return nameEntityItem_;
-    }
-    const std::string& nameEntityItem() const
-    {
-        return nameEntityItem_;
-    }
-
-    std::string& mutableNameEntityType()
-    {
-        return nameEntityType_;
-    }
-    const std::string& nameEntityType() const
-    {
-        return nameEntityType_;
-    }
-
     faceted::GroupParam::GroupLabelMap& mutableGroupLabels()
     {
         return groupLabels_;
@@ -194,9 +167,6 @@ private:
     std::string keywords_;
     std::string userID_;
     std::string sessionID_;
-    std::string taxonomyLabel_;
-    std::string nameEntityType_;
-    std::string nameEntityItem_;
 
     std::vector<std::pair<std::string, std::string> > adSearch_;
     faceted::GroupParam::GroupLabelMap groupLabels_;

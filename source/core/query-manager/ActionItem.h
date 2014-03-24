@@ -184,9 +184,6 @@ public:
         ss << "isLogging        : " << isLogging_       << endl;
         ss << "encodingType_    : " << encodingType_    << endl;
         ss << "queryString_     : " << queryString_     << endl;
-        ss << "taxonomyLabel_   : " << taxonomyLabel_   << endl;
-        ss << "nameEntityItem_  : " << nameEntityItem_  << endl;
-        ss << "nameEntityType_  : " << nameEntityType_  << endl;
         ss << "ipAddress_       : " << ipAddress_       << endl;
         ss << "querySource      : " << querySource_     << endl;
         out << ss.str();
@@ -225,18 +222,6 @@ public:
     std::string userID_;
 
     ///
-    /// @brief a string value of selected taxonomy label. It is used
-    ///        only in Label Click Query.
-    ///
-    std::string taxonomyLabel_;
-
-    /// @brief Name entity item name
-    std::string nameEntityItem_;
-
-    /// @brief Name entity item type
-    std::string nameEntityType_;
-
-    ///
     /// @brief ip address of requester.
     ///
     std::string ipAddress_;
@@ -250,13 +235,11 @@ public:
     DATA_IO_LOAD_SAVE(RequesterEnvironment,
             & isLogging_ & encodingType_
             & queryString_ & expandedQueryString_ & normalizedQueryString_
-            & userID_ & taxonomyLabel_ & nameEntityItem_ & nameEntityType_
-            & ipAddress_ & querySource_);
+            & userID_ & ipAddress_ & querySource_);
 
     MSGPACK_DEFINE(isLogging_, encodingType_,
             queryString_, expandedQueryString_, normalizedQueryString_,
-            userID_, taxonomyLabel_, nameEntityItem_, nameEntityItem_, nameEntityType_,
-            ipAddress_, querySource_);
+            userID_, ipAddress_, querySource_);
 
 private:
     // Log : 2009.09.08
@@ -271,9 +254,6 @@ private:
         ar & expandedQueryString_;
         ar & normalizedQueryString_;
         ar & userID_;
-        ar & taxonomyLabel_;
-        ar & nameEntityItem_;
-        ar & nameEntityType_;
         ar & ipAddress_;
         ar & querySource_;
     }
@@ -287,7 +267,6 @@ inline bool operator==(
     return a.isLogging_ == b.isLogging_
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
-        && a.taxonomyLabel_ == b.taxonomyLabel_
         && a.ipAddress_ == b.ipAddress_
         && a.querySource_ == b.querySource_;
 }

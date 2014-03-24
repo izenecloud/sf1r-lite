@@ -363,16 +363,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
 bool SearchManagerPreProcessor::isProductRanking_(
     const KeywordSearchActionItem& actionItem) const
 {
-    if (productScorerFactory_ == NULL)
-        return false;
-
-    SearchingMode::SearchingModeType searchMode =
-        actionItem.searchingMode_.mode_;
-
-    if (searchMode == SearchingMode::KNN)
-        return false;
-
-    return true;
+    return  (productScorerFactory_ != NULL);
 }
 
 bool SearchManagerPreProcessor::isNeedCustomDocIterator(

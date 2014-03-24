@@ -101,10 +101,6 @@ void DocumentsSearchHandler::search()
         {
             searchResult.TOP_K_NUM = actionItem_.searchingMode_.lucky_;
         }
-        else if (actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
-        {
-            searchResult.TOP_K_NUM = indexSearchService_->getBundleConfig()->kNNTopKNum_;
-        }
         else if (actionItem_.searchingMode_.mode_ == SearchingMode::AD_INDEX)
         {
             std::vector<std::pair<std::string, std::string> >::iterator it;
@@ -118,8 +114,6 @@ void DocumentsSearchHandler::search()
 
         int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem_));
 
-        if (actionItem_.env_.taxonomyLabel_.empty()
-            && actionItem_.env_.nameEntityItem_.empty())
         {
             // initialize before search to record start time.
             detail::DocumentsSearchKeywordsLogger keywordsLogger;
@@ -149,59 +143,6 @@ void DocumentsSearchHandler::search()
             {
                 DLOG(ERROR) << "[documents/search] Failed to log keywords: "
                 << e.what() << std::endl;
-            }
-        }
-        else
-        {
-
-            // Page Info is used to get raw text for documents with the
-            // specified label.
-
-            //unsigned start = actionItem_.pageInfo_.start_ - topKStart;
-            //unsigned count = actionItem_.pageInfo_.count_;
-
-            // DO NOT get raw text.
-            //actionItem_.pageInfo_.start_ = topKStart;
-            //actionItem_.pageInfo_.count_ = 0;
-
-            actionItem_.disableGetDocs_ = true;
-
-            if (doSearch(searchResult))
-            {
-                GetDocumentsByIdsActionItem getActionItem;
-                RawTextResultFromMIA rawTextResult;
-                std::size_t totalCount = 0;
-
-                bool isSuccess = true;
-                if (!getActionItem.idList_.empty())
-                {
-                    getActionItem.env_ = actionItem_.env_;
-                    getActionItem.languageAnalyzerInfo_ =
-                        actionItem_.languageAnalyzerInfo_;
-                    getActionItem.collectionName_ = actionItem_.collectionName_;
-                    getActionItem.displayPropertyList_
-                    = actionItem_.displayPropertyList_;
-
-                    if (doGet(getActionItem, searchResult, rawTextResult))
-                    {
-                        renderDocuments(rawTextResult);
-                        renderMiningResult(searchResult);
-                        renderRangeResult(searchResult);
-                        renderCountResult(searchResult);
-                        renderRefinedQuery();
-                    }
-                    else
-                    {
-                        isSuccess = false;
-                    }
-                }
-
-                if (isSuccess)
-                {
-                    // top_k_count equals to total_count when search in label/ne
-                    response_[Keys::total_count] = totalCount;
-                    response_[Keys::top_k_count] = totalCount;
-                }
             }
         }
     }
@@ -334,18 +275,6 @@ bool DocumentsSearchHandler::parse()
     swap(
         actionItem_.env_.userID_,
         searchParser.mutableUserID()
-    );
-    swap(
-        actionItem_.env_.taxonomyLabel_,
-        searchParser.mutableTaxonomyLabel()
-    );
-    swap(
-        actionItem_.env_.nameEntityItem_,
-        searchParser.mutableNameEntityItem()
-    );
-    swap(
-        actionItem_.env_.nameEntityType_,
-        searchParser.mutableNameEntityType()
     );
     swap(
         actionItem_.env_.querySource_,
@@ -604,30 +533,6 @@ bool DocumentsSearchHandler::doSearch(
     {
         return false;
     }
-
-// QueryCorrection should be called seperatedly
-//    if (kRefinedQueryThreshold <=0 || searchResult.totalCount_ < std::size_t(kRefinedQueryThreshold))
-//    {
-//        izenelib::util::UString queryUString(
-//            actionItem_.env_.queryString_,
-//            izenelib::util::UString::UTF_8
-//        );
-//        QueryCorrectionSubmanager::getInstance().getRefinedQuery(
-//            actionItem_.collectionName_,
-//            queryUString,
-//            actionItem_.refinedQueryString_
-//        );
-//    }
-
-//    if (miningSearchService_)
-//    {
-//        if (!miningSearchService_->getSearchResult(searchResult))
-//        {
-//            response_.addWarning("Failed to get mining result.");
-//            // render without mining result
-//            return false;
-//        }
-//    }
 
     return true;
 }
