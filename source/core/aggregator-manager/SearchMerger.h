@@ -37,6 +37,7 @@ public:
         BIND_CALL_PROXY_2(getDistSearchInfo, net::aggregator::WorkerResults<DistKeywordSearchInfo>, DistKeywordSearchInfo)
         BIND_CALL_PROXY_2(getDistSearchResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
+        BIND_CALL_PROXY_2(getSummaryMiningResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, net::aggregator::WorkerResults<RawTextResultFromSIA>, RawTextResultFromSIA)
         BIND_CALL_PROXY_2(getInternalDocumentId, net::aggregator::WorkerResults<uint64_t>, uint64_t)
         BIND_CALL_PROXY_2(clickGroupLabel, net::aggregator::WorkerResults<bool>, bool)
@@ -49,6 +50,7 @@ public:
     void getDistSearchInfo(const net::aggregator::WorkerResults<DistKeywordSearchInfo>& workerResults, DistKeywordSearchInfo& mergeResult);
     void getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
     void getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
+    void getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
     void getDocumentsByIds(const net::aggregator::WorkerResults<RawTextResultFromSIA>& workerResults, RawTextResultFromSIA& mergeResult);
     void getInternalDocumentId(const net::aggregator::WorkerResults<uint64_t>& workerResults, uint64_t& mergeResult);
     void clickGroupLabel(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);

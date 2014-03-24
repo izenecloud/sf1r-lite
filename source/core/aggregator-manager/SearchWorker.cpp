@@ -110,6 +110,11 @@ void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, K
     getSummaryResult_(actionItem, resultItem);
 }
 
+void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+{
+    getSummaryMiningResult_(actionItem, resultItem);
+}
+
 void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
     const izenelib::util::UString::EncodingType kEncodingType =
@@ -214,6 +219,9 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (resultItem.topKDocs_.empty())
             return true;
 
+
+        if (! getSummaryMiningResult_(actionItem, resultItem, false))
+            return false;
 
         START_PROFILER( cacheoverhead )
         if (searchCache_)
@@ -624,6 +632,18 @@ bool SearchWorker::getSummaryResult_(
 
     LOG(INFO) << "getSummaryResult_ done." << endl; // XXX
 
+    return true;
+}
+
+bool SearchWorker::getSummaryMiningResult_(
+        const KeywordSearchActionItem& actionItem,
+        KeywordSearchResult& resultItem,
+        bool isDistributedSearch)
+{
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+
+    getSummaryResult_(actionItem, resultItem, isDistributedSearch);
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] finished.";
     return true;
 }
 

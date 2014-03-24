@@ -535,6 +535,14 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     LOG(INFO) << "#[SearchMerger::getSummaryResult] end";
 }
 
+void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
+{
+    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
+
+    getSummaryResult(workerResults, mergeResult);
+    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] end";
+}
+
 void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTextResultFromSIA>& workerResults, RawTextResultFromSIA& mergeResult)
 {
     LOG(INFO) << "#[SearchMerger::getDocumentsByIds] " << workerResults.size() << endl;

@@ -26,6 +26,7 @@ public:
         ADD_WORKER_HANDLER(getDistSearchInfo)
         ADD_WORKER_HANDLER(getDistSearchResult)
         ADD_WORKER_HANDLER(getSummaryResult)
+        ADD_WORKER_HANDLER(getSummaryMiningResult)
         ADD_WORKER_HANDLER(getDocumentsByIds)
         ADD_WORKER_HANDLER(getInternalDocumentId)
         ADD_WORKER_HANDLER(clickGroupLabel)
@@ -42,6 +43,8 @@ public:
     WORKER_CONTROLLER_METHOD_2(getDistSearchResult, searchWorker_->getDistSearchResult, KeywordSearchActionItem, KeywordSearchResult)
 
     WORKER_CONTROLLER_METHOD_2(getSummaryResult, searchWorker_->getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
+
+    WORKER_CONTROLLER_METHOD_2(getSummaryMiningResult, searchWorker_->getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
 
     WORKER_CONTROLLER_METHOD_2(getDocumentsByIds, searchWorker_->getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
 

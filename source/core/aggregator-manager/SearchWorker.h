@@ -51,6 +51,7 @@ public:
         BIND_CALL_PROXY_2(getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
         BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
+        BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
         BIND_CALL_PROXY_2(getInternalDocumentId, uint128_t, uint64_t)
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
@@ -74,6 +75,8 @@ public:
     void getDistSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     void getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
+
+    void getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     /// documents
     void getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem);
@@ -122,6 +125,11 @@ private:
             const KeywordSearchActionItem& actionItem,
             KeywordSearchResult& resultItem,
             QueryIdentity& identity,
+            bool isDistributedSearch = true);
+
+    bool getSummaryMiningResult_(
+            const KeywordSearchActionItem& actionItem,
+            KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);
 
     bool getSummaryResult_(

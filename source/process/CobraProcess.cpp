@@ -373,27 +373,6 @@ void CobraProcess::startCollections()
     {
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     }
-#ifdef  EXIST_LICENSE
-    char* home = getenv("HOME");
-    std::string licenseDir = home; licenseDir += "/sf1-license/";
-
-    std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
-    if( boost::filesystem::exists(filePath) )
-    {
-        std::string token("");
-        LicenseManager::extract_token_from(filePath, token);
-
-        ///Insert the extracted token into the deny control lists for all collections
-        SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-        SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
-
-        for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-        {
-            CollectionMeta& collectionMeta = collectionIter->second;
-            collectionMeta.aclDeny(token);
-        }
-    }
-#endif
 }
 
 void CobraProcess::stopCollections()
