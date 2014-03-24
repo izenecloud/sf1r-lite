@@ -5,8 +5,6 @@
 #include "UserQuery.h"
 #include "PropertyLabel.h"
 
-#include "CassandraConnection.h"
-
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
@@ -45,11 +43,6 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
     PropertyLabel::createTable();
 
     return true;
-}
-
-bool LogManager::initCassandra(const std::string& logPath)
-{
-    return CassandraConnection::instance().init(logPath);
 }
 
 LogManager::~LogManager()

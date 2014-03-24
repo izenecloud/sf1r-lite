@@ -158,8 +158,8 @@ void DocumentsSearchHandler::search()
             // Page Info is used to get raw text for documents with the
             // specified label.
 
-            unsigned start = actionItem_.pageInfo_.start_ - topKStart;
-            unsigned count = actionItem_.pageInfo_.count_;
+            //unsigned start = actionItem_.pageInfo_.start_ - topKStart;
+            //unsigned count = actionItem_.pageInfo_.count_;
 
             // DO NOT get raw text.
             //actionItem_.pageInfo_.start_ = topKStart;

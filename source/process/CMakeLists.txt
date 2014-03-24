@@ -74,7 +74,6 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Glog_LIBRARIES}
   ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
-  ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )

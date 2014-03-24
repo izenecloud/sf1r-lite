@@ -99,15 +99,10 @@ bool CobraProcess::initKNlpWrapper()
 bool CobraProcess::initLogManager()
 {
     std::string log_conn = SF1Config::get()->getLogConnString();
-    std::string cassandra_conn = SF1Config::get()->getCassandraConnString();
     if (!sflog->init(log_conn))
     {
         std::cerr << "Init LogManager with " << log_conn << " failed!" << std::endl;
         return false;
-    }
-    if (!sflog->initCassandra(cassandra_conn))
-    {
-        std::cerr << "warning: Init CassandraConnection with " << cassandra_conn << " failed!" << std::endl;
     }
     const LogServerConnectionConfig& logServerConfig = SF1Config::get()->getLogServerConfig();
     if (!LogServerConnection::instance().init(logServerConfig))

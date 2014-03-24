@@ -41,8 +41,6 @@ public:
      **/
     bool init(const std::string& logPath, const std::string& language = "english");
 
-    bool initCassandra(const std::string& logPath);
-
     /// delete whole database file
     bool del_database();
 };

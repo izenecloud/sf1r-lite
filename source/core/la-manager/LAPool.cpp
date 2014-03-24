@@ -270,48 +270,6 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
     }
 }
 
-// std::map<char, char> parse_lasetting_options(const std::string& option)
-// {
-//   std::map<char, char> result;
-//   result['R'] = "";
-//   result['S'] = "";
-//   result['T'] = "";
-//   const char* o = option.c_str();
-//   set<char> hisSet;
-//   while (*o)
-//   {
-//       char origChar = *o;
-//       char upperType = toupper( origChar );
-//
-//       bool checkDupl = true;
-//       bool errorVal = false;
-//       switch (upperType)
-//       {
-//           case 'R':
-//             ++o;
-//             result['R'] = *o;
-//             break;
-//           case 'S':
-//             ++o;
-//             result['S'] = *o;
-//             break;
-//           case 'T':
-//             ++o;
-//             result['T'] = *o;
-//             break;
-//
-//           default:
-//               if( outputLog )
-//                   sflog->warn(SFL_LA, "SF-070105: Invalid LanguageLA Option \"%c\"", *o );
-//               break;
-//       }
-//       if( *o == 0 )
-//           break;
-//       o++;
-//   }
-//   return result;
-// }
-
 void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog = true )
 {
     const char* o = option.c_str();
@@ -1144,46 +1102,6 @@ namespace sf1r
                 }
 
                 ++laitr;
-//
-//                if( language != MultiLanguageAnalyzer::OTHER)
-//                {
-//                    if( laitr == langop.end() )
-//                    {
-//                        stringstream message;
-//                        message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, requires process mode " <<
-//                                "(ma/char/string/none) after language "<< langname << ".";
-//                        if( outputLog )
-//                            sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
-//                        throw std::logic_error( message.str() );
-//                    }
-//
-//                    string pmname = *laitr;
-//
-//                    if( pmname == "ma" )
-//                        processMode = MultiLanguageAnalyzer::MA_PM;
-//                    else if( pmname == "char" )
-//                        processMode = MultiLanguageAnalyzer::CHARACTER_PM;
-//                    else if( pmname == "string" )
-//                        processMode = MultiLanguageAnalyzer::STRING_PM;
-//                    else if( pmname == "none" )
-//                        processMode = MultiLanguageAnalyzer::NONE_PM;
-//                    else
-//                    {
-//                        stringstream message;
-//                        message << "LAPool::createLA() analysis \"" << analysis << "\"'s option, the process mode is invalid: "<< pmname <<
-//                                " (include ma/char/string/none ).";
-//                        if( outputLog )
-//                            sflog->error(SFL_LA, "SF-070103: Analysis option is invalid: %s\n", (message.str()).c_str());
-//                        throw std::logic_error( message.str() );
-//                    }
-//
-//                    // set the process mode, it will be fail to set MA_PM as associated Analyzer isn't created
-//                    mla->setProcessMode( language, processMode );
-//                    ++laitr;
-//                }
-
-//                if( language == MultiLanguageAnalyzer::OTHER ||
-//                        processMode == MultiLanguageAnalyzer::MA_PM )
                 {
                     if( laitr == langop.end() )
                     {
