@@ -26,7 +26,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   mock_index_manager
   febird
   izene_log
-  bigint
   procmeminfo
   ticpp
   luxio
@@ -40,20 +39,16 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   distribute
   msgpack
   zookeeper
-  udt
   compressor
-  cassandra
   sf1r
   NUMA
   re2
   zambezi
-  yaml
   )
 
 FIND_PACKAGE(ilplib REQUIRED)
 FIND_PACKAGE(idmlib REQUIRED)
 FIND_PACKAGE(imllib REQUIRED)
-FIND_PACKAGE(addrlib REQUIRED)
 
 IF( USE_WISEKMA )
   FIND_PACKAGE(wisekma REQUIRED)
@@ -132,6 +127,6 @@ IF(USE_DOT)
 ENDIF(USE_DOT)
 
 set(SYS_LIBS
-  m rt dl z
+  m rt dl z crypto ssl
 )
 

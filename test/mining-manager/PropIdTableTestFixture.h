@@ -10,7 +10,7 @@
 
 #include <mining-manager/group-manager/PropIdTable.h>
 #include <mining-manager/MiningException.hpp>
-#include "../recommend-manager/test_util.h"
+#include "test_util.h"
 #include <boost/test/unit_test.hpp>
 
 namespace sf1r

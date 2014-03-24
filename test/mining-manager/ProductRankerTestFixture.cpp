@@ -1,5 +1,5 @@
 #include "ProductRankerTestFixture.h"
-#include "../recommend-manager/test_util.h"
+#include "test_util.h"
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRankParam.h>
 #include <mining-manager/product-ranker/ProductRanker.h>

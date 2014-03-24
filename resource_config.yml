@@ -4,27 +4,8 @@ local_path: ./package/resource
 branch: kite-2
 branch_suffix: resource
 sub_modules:
-    - ise
-    - kpe
-    - nec
-    - opinion
-    - product-matcher
-    - qa
-    - qn
-    - sim
-    - speller-support
-    - wikigraph
     - dict
-    - query-intent
-    - query_correction
     - query_abbreviation
 push_sub_modules:
-    - ise
-    - kpe
-    - query-intent
-    - nec
-    - opinion
-    - qa
     - dict
-    - query_correction
     - query_abbreviation

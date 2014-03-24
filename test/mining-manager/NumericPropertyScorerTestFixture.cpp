@@ -1,5 +1,5 @@
 #include "NumericPropertyScorerTestFixture.h"
-#include "../recommend-manager/test_util.h"
+#include "test_util.h"
 #include <common/NumericPropertyTable.h>
 #include <boost/test/unit_test.hpp>
 

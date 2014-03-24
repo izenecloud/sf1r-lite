@@ -46,6 +46,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       #external
       ${Boost_LIBRARIES}
       ${Glog_LIBRARIES}
+      ${SYS_LIBS}
       )
       
   ADD_EXECUTABLE(t_scd_sharding
@@ -59,6 +60,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       #external
       ${Boost_LIBRARIES}
       ${Glog_LIBRARIES}
+      ${SYS_LIBS}
       )
 
   ADD_EXECUTABLE(t_request_log
@@ -73,6 +75,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       #external
       ${Boost_LIBRARIES}
       ${Glog_LIBRARIES}
+      ${SYS_LIBS}
       )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

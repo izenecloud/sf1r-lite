@@ -11,6 +11,7 @@ SET(libs
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
+  ${SYS_LIBS}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)

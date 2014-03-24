@@ -26,23 +26,16 @@ SET(libs
   sf1r_directory_manager
 
   sf1r_log_manager
-  sf1r_license_manager
   sf1r_la_manager
   sf1r_configuration_manager
   sf1r_index_manager
-  sf1r_product_manager
   sf1r_node_manager
   sf1r_common
-  sf1r_b5m_manager
-  sf1r_image_manager
   sf1r_aggregator_manager
-  sf1r_recommend_manager
   sf1r_net
 
   sf1r_bundle_index
-  sf1r_bundle_product
   sf1r_bundle_mining
-  sf1r_bundle_recommend
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
@@ -50,7 +43,6 @@ SET(libs
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
-  ${iise_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   #external

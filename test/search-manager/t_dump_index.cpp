@@ -43,9 +43,7 @@ TestDumpIndex::TestDumpIndex(const std::string& path, int64_t memorySize)
     indexCollectionMeta.setName(collname);
 
     collmeta_.indexBundleConfig_.reset(new IndexBundleConfiguration(collname));
-    collmeta_.productBundleConfig_.reset(new ProductBundleConfiguration(collname));
     collmeta_.miningBundleConfig_.reset(new MiningBundleConfiguration(collname));
-    collmeta_.recommendBundleConfig_.reset(new RecommendBundleConfiguration(collname));
     bool ret = CollectionConfig::get()->parseConfigFile(collname, path + "/" + collname + ".xml", collmeta_);
     if (!ret)
     {

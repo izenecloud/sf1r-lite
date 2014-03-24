@@ -157,7 +157,7 @@ ADD_SUBDIRECTORY(bundles)
 ADD_SUBDIRECTORY(process)
 
 IF(ENABLE_TEST)
-#  ADD_SUBDIRECTORY("${SF1RENGINE_ROOT}/test" test)
+  ADD_SUBDIRECTORY("${SF1RENGINE_ROOT}/test" test)
 ENDIF(ENABLE_TEST)
 
 
@@ -310,14 +310,6 @@ IF(VERBOSE)
     MESSAGE(STATUS "imllib: not found")
   ENDIF(imllib_FOUND)
 
-  IF(addrlib_FOUND)
-    MESSAGE(STATUS "addrlib:")
-    MESSAGE(STATUS "  header: ${addrlib_INCLUDE_DIRS}")
-    MESSAGE(STATUS "  lib: ${addrlib_LIBRARIES}")
-  ELSE(addrlib_FOUND)
-    MESSAGE(STATUS "addrlib: not found")
-  ENDIF(addrlib_FOUND)
-
   IF(XML2_FOUND)
     MESSAGE(STATUS "XML2:")
     MESSAGE(STATUS " header: ${XML2_INCLUDE_DIR}")
@@ -364,13 +356,6 @@ IF(VERBOSE)
   ELSE(Glog_FOUND)
     MESSAGE(STATUS "Google-glog: not found")
   ENDIF(Glog_FOUND)
-
-  IF(Thrift_FOUND)
-    MESSAGE(STATUS "Apache Thrift:")
-    MESSAGE(STATUS "  header: ${Thrift_INCLUDE_DIR}")
-  ELSE(Thrift_FOUND)
-    MESSAGE(STATUS "Apache Thrift: not found")
-  ENDIF(Thrift_FOUND)
 
   IF(Threads_FOUND)
     MESSAGE(STATUS "Threads Library: ${CMAKE_THREAD_LIBS_INIT}")

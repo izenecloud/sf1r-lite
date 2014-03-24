@@ -9,7 +9,6 @@
 #include <mining-manager/group-manager/DateStrParser.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include "../recommend-manager/test_util.h"
 
 using namespace sf1r::faceted;
 namespace bfs = boost::filesystem;

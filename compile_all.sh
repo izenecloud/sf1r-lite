@@ -33,7 +33,7 @@ else
   exit 1
 fi
 
-dependencie=(izenelib icma ijma ilplib imllib idmlib addrlib $SF1R_DIR)
+dependencie=(izenelib icma ijma ilplib imllib idmlib $SF1R_DIR)
 
 element_count=${#dependencie[@]}
 index=0

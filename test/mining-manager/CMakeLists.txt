@@ -19,26 +19,20 @@ SET(libs
   sf1r_mining_manager
   sf1r_query_manager
   sf1r_log_manager
-  sf1r_product_manager
   sf1r_search_manager
   sf1r_document_manager
   sf1r_ranking_manager
   sf1r_la_manager
   sf1r_directory_manager
 
-  sf1r_license_manager
   sf1r_configuration_manager
   sf1r_index_manager
   sf1r_node_manager
   sf1r_common
-  sf1r_b5m_manager
-  sf1r_image_manager
   sf1r_net
   sf1r_aggregator_manager
-  sf1r_recommend_manager
   sf1r_bundle_index
   sf1r_bundle_mining
-  sf1r_bundle_recommend
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
@@ -46,7 +40,6 @@ SET(libs
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
-  ${iise_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   #external
@@ -100,48 +93,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_AttrManager")
 
-  ADD_EXECUTABLE(t_AutofillManager
-    Runner.cpp
-    t_AutofillManager.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_AutofillManager ${libs})
-  SET_TARGET_PROPERTIES(t_AutofillManager PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_AutofillManager")
-
-  ADD_EXECUTABLE(t_GroupLabelLogger
-    Runner.cpp
-    t_GroupLabelLogger.cpp
-    GroupLabelLoggerTestFixture.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_GroupLabelLogger ${libs})
-  SET_TARGET_PROPERTIES(t_GroupLabelLogger PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_GroupLabelLogger")
-
-  ADD_EXECUTABLE(t_ec_manager
-    Runner.cpp
-    t_ec_manager.cc
-  )
-  TARGET_LINK_LIBRARIES(t_ec_manager ${libs})
-  SET_TARGET_PROPERTIES(t_ec_manager PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ec_manager")
-
-  ADD_EXECUTABLE(t_MerchantScoreManager
-    Runner.cpp
-    t_MerchantScoreManager.cpp
-    MerchantScoreManagerTestFixture.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_MerchantScoreManager ${libs})
-  SET_TARGET_PROPERTIES(t_MerchantScoreManager PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_MerchantScoreManager")
-
   ADD_EXECUTABLE(t_PropIdTable
     Runner.cpp
     t_PropIdTable.cpp
@@ -152,17 +103,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_PropIdTable")
 
-  ADD_EXECUTABLE(t_fcontainer_febird
-    Runner.cpp
-    t_fcontainer_febird.cpp
-    FContainerTestFixture.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_fcontainer_febird ${libs})
-  SET_TARGET_PROPERTIES(t_fcontainer_febird PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_fcontainer_febird")
-
   ADD_EXECUTABLE(t_DateStrParser
     Runner.cpp
     t_DateStrParser.cpp
@@ -172,26 +112,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_DateStrParser")
-
-  ADD_EXECUTABLE(t_DateGroupTable
-    Runner.cpp
-    t_DateGroupTable.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_DateGroupTable ${libs})
-  SET_TARGET_PROPERTIES(t_DateGroupTable PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_DateGroupTable")
-
-  ADD_EXECUTABLE(t_CustomRankManager
-    Runner.cpp
-    t_CustomRankManager.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_CustomRankManager ${libs})
-  SET_TARGET_PROPERTIES(t_CustomRankManager PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_CustomRankManager")
 
   ADD_EXECUTABLE(t_ProductScoreManager
     Runner.cpp
@@ -216,17 +136,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_ProductScoreAverage")
-
-  ADD_EXECUTABLE(t_NumericPropertyScorer
-    Runner.cpp
-    t_NumericPropertyScorer.cpp
-    NumericPropertyScorerTestFixture.cpp
-  )
-  TARGET_LINK_LIBRARIES(t_NumericPropertyScorer ${libs})
-  SET_TARGET_PROPERTIES(t_NumericPropertyScorer PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_NumericPropertyScorer")
 
   ADD_EXECUTABLE(t_ProductRanker
     Runner.cpp
@@ -254,13 +163,3 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
-INCLUDE_DIRECTORIES(
-${Boost_INCLUDE_DIRS}
-)
-ADD_EXECUTABLE(dd_group_gen
-dd_group_gen.cc
-)
-TARGET_LINK_LIBRARIES(dd_group_gen ${libs})
-SET_TARGET_PROPERTIES(dd_group_gen PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-)

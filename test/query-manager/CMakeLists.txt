@@ -27,10 +27,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
       sf1r_configuration_manager
       sf1r_mining_manager
-      sf1r_b5m_manager
-      sf1r_product_manager
       sf1r_log_manager
-      sf1r_license_manager
       sf1r_query_manager
       sf1r_la_manager
       sf1r_common
@@ -40,7 +37,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       sf1r_search_manager
       sf1r_ranking_manager
       sf1r_index_manager
-      sf1r_image_manager
       sf1r_net
       ${ilplib_LIBRARIES}
       ${wisekma_LIBRARIES}
@@ -50,7 +46,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${idmlib_LIBRARIES}
       ${imllib_LIBRARIES}
       ${XML2_LIBRARIES}
-      ${iise_LIBRARIES}
       #external
       ${Boost_LIBRARIES}
       ${TokyoCabinet_LIBRARIES}

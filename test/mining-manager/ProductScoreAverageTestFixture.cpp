@@ -1,6 +1,6 @@
 #include "ProductScoreAverageTestFixture.h"
 #include "ProductScorerStub.h"
-#include "../recommend-manager/test_util.h"
+#include "test_util.h"
 
 using namespace sf1r;
 
