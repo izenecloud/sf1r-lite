@@ -596,12 +596,12 @@ bool RecoveryChecker::backupColl(const CollectionPath& colpath, const bfs::path&
     }
 
     bfs::path coldata_path(colpath.getCollectionDataPath());
-    bfs::path querydata_path(colpath.getQueryDataPath());
+    //bfs::path querydata_path(colpath.getQueryDataPath());
 
     try
     {
         copy_dir(coldata_path, dest_coldata_backup);
-        copy_dir(querydata_path, dest_coldata_backup);
+        //copy_dir(querydata_path, dest_coldata_backup);
     }
     catch(const std::exception& e)
     {
@@ -674,10 +674,10 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
                 colpath.getCollectionDataPath() << ", backup id: " << last_backup_id;
 
             bfs::path coldata_path(colpath.getCollectionDataPath());
-            bfs::path querydata_path(colpath.getQueryDataPath());
+            //bfs::path querydata_path(colpath.getQueryDataPath());
 
             copy_dir(dest_coldata_backup/coldata_path, coldata_path);
-            copy_dir(dest_coldata_backup/querydata_path, querydata_path);
+            //copy_dir(dest_coldata_backup/querydata_path, querydata_path);
         }
         catch(const std::exception& e)
         {
