@@ -60,7 +60,7 @@
         <SuffixMatch>
           <Property name="Title"/>
           <TokenizeDictionary path="@SF1RENGINE_ROOT@/icma/db/icwb/utf8/fmindex_dic" />
-        </SuffixMatch>-->
+        </SuffixMatch>
       </Schema>
     </MiningBundle>
 </Collection>
