@@ -73,60 +73,15 @@
         </Parameter>
       </IndexBundle>
 
-      <ProductBundle>
-        <Parameter>
-          <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
-          <CronPara value="0 1 * * *"/>
-          <!-- Specify the keyspace name for price trend feature.
-            Example: <CassandraStorage enable="yes" keyspace="B5M"/>
-            Notes:
-            - if "enable" is "no", the price trend feature would be disabled, that is, <ProductBundle><Schema><PriceTrend> would be ignored
-            - the default value of "keyspace" is "SF1R"
-          -->
-          <CassandraStorage enable="yes" keyspace="B5MO"/>
-        </Parameter>
-      </ProductBundle>
-
       <MiningBundle>
         <Parameter>
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
-          <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20"/>
-          <AutofillPara cron="30 2 * * *" enableUpdateHitnum="n"/>
-          <FuzzyIndexMergePara cron="30 3 * * *"/>
-          <RecommendPara recommendnum="9" cron="0 2 * * *"/>
-          <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n"/>
-          <ClassificationPara customizetraining="n" trainingencoding="UTF-8"/>
-          <!-- index mode for image search
-               enableise: whether enable ise.
-               buildimageindex: whether build the image representation in indexing.
-               storeimagelocally: whether the image will be copied and stored locally in the server.
-          -->
-          <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
-          <QueryCorrectionPara enableEK="y" enableCN="y" fromDb="n"/>
           <ProductRankingPara cron="0 23 * * *"/>
           <MiningTaskPara threadnum="1"/>
         </Parameter>
       </MiningBundle>
 
-      <RecommendBundle>
-        <Parameter>
-          <!-- Specify multiple index directory to support backup and directory rotating -->
-          <CollectionDataDirectory>default-recommend-dir</CollectionDataDirectory>
-          <CronPara value="0 0 * * *"/>
-          <!-- 1G for purchase matrix, 512M for visit matrix, 100M for index buffer -->
-          <CacheSize purchase="1073741824" visit="536870912" index="104857600"/>
-          <!-- Speicfy "enable" to "yes" if recommend API top_item_bundle() is called -->
-          <FreqItemSet enable="no" minfreq="10"/>
-          <!-- Specify the keyspace name for recommendation data stored in cassandra.
-            Example: <CassandraStorage enable="yes" keyspace="recommend_001"/>
-            Notes:
-            - the default value of "enable" is "no", in which case the recommendation data would be stored in local files
-            - the default value of "keyspace" is "SF1R"
-          -->
-          <CassandraStorage enable="no" keyspace="recommend_001"/>
-        </Parameter>
-      </RecommendBundle>
     </BundlesDefault>
 
     <!-- NOT IMPLEMENTED FOR CURRENT VERSION

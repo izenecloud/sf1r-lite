@@ -44,7 +44,6 @@
                 <xs:element ref="WorkingDir"/>
                 <xs:element ref="LogConnection"/>
                 <xs:element ref="LogServerConnection"/>
-                <xs:element ref="CassandraConnection"/>
                 <xs:element ref="BundlesDefault"/>
                 <xs:element ref="Firewall"/>
                 <xs:element ref="Tokenizing"/>
@@ -80,19 +79,11 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="CassandraConnection">
-        <xs:complexType>
-            <xs:attribute name="str" use="required"/>
-        </xs:complexType>
-    </xs:element>
-
     <xs:element name="BundlesDefault">
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="IndexBundle"/>
-                <xs:element ref="ProductBundle"/>
                 <xs:element ref="MiningBundle"/>
-                <xs:element ref="RecommendBundle"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

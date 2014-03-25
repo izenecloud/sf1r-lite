@@ -84,7 +84,6 @@ class TitleScoreList;
 class ProductForwardManager;
 class ProductRankerFactory;
 class SuffixMatchManager;
-class IncrementalFuzzyManager;
 class MiningTaskBuilder;
 class MultiThreadMiningTaskBuilder;
 class GroupLabelKnowledge;
@@ -510,7 +509,6 @@ private:
     /** Suffix Match */
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
-    IncrementalFuzzyManager* incrementalManager_;
     ProductTokenizer* productTokenizer_;
 
     /** AdIndexManager */

@@ -17,7 +17,6 @@
 #include <configuration-manager/DistributedUtilConfig.h>
 #include <configuration-manager/FirewallConfig.h>
 #include <configuration-manager/CollectionParameterConfig.h>
-#include <configuration-manager/CassandraStorageConfig.h>
 #include <configuration-manager/LogServerConnectionConfig.h>
 #include <configuration-manager/GroupConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
@@ -412,11 +411,6 @@ public:
         return log_conn_str_;
     }
 
-    const std::string& getCassandraConnString() const
-    {
-        return cassandra_conn_str_;
-    }
-
     const LogServerConnectionConfig& getLogServerConfig() const
     {
         return logServerConnectionConfig_;
@@ -704,8 +698,6 @@ public:
 
     std::string log_conn_str_;
 
-    std::string cassandra_conn_str_;
-
     /// @brief Log server network address
     LogServerConnectionConfig logServerConnectionConfig_;
 
@@ -722,14 +714,8 @@ public:
     /// @brief default IndexBundleConfig
     CollectionParameterConfig defaultIndexBundleParam_;
 
-    /// @brief default ProductBundleConfig
-    CollectionParameterConfig defaultProductBundleParam_;
-
     /// @brief default MiningBundleConfig
     CollectionParameterConfig defaultMiningBundleParam_;
-
-    /// @brief default RecommendBundleConfig
-    CollectionParameterConfig defaultRecommendBundleParam_;
 
     /// @brief  Configurations for FireWall
     FirewallConfig firewallConfig_;
@@ -788,10 +774,6 @@ private:
     /// @param index           Pointer to the Element
     void parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <IndexBundle> <EcSchema>
-    /// @param index           Pointer to the Element
-    void parseIndexEcSchema(const ticpp::Element * index, CollectionMeta & collectionMeta);
-
     /// @brief                  Parse <IndexBundle> <ShardSchema>
     /// @param shardSchema      Pointer to the Element
     void parseIndexShardSchema(const ticpp::Element * shardSchema, CollectionMeta & collectionMeta);
@@ -799,10 +781,6 @@ private:
     /// @brief                 Parse <IndexBundle> <Schema>
     /// @param index           Pointer to the Element
     void parseIndexBundleSchema(const ticpp::Element * indexSchemaNode, CollectionMeta & collectionMeta);
-
-    /// @brief                  Parse <CassandraStorage>
-    /// @param params           Params containing <CassandraStorage>
-    void parseCassandraStorageParam(CollectionParameterConfig& params, CassandraStorageConfig& cassandraConfig);
 
 
     /// @brief                  Parse <MiningBundle> <Parameter>

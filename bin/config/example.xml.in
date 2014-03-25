@@ -30,7 +30,6 @@
       <!--ShardSchema>
         <ShardKey name="DOCID" />
         <DistributedService type="search" shardids="1,2" />
-        <DistributedService type="recommend" shardids="1,2" />
       </ShardSchema-->
       <Schema>
         <Property name="Title">
@@ -58,54 +57,10 @@
 
     <MiningBundle>
       <Schema>
-        <TaxonomyGeneration kpe_only="n">
-          <Property name="Title"/>
-          <Property name="Content"/>
-        </TaxonomyGeneration>
-        <DuplicateDetection>
-          <Property name="Title"/>
-          <Property name="Content"/>
-        </DuplicateDetection>
-        <QueryRecommend>
-          <TG/>
-          <QueryLog/>
-        </QueryRecommend>
-        <Similarity>
-          <Property name="Title"/>
-          <Property name="Content"/>
-        </Similarity>
-        <Faceted>
-          <Property name="Title"/>
-          <Property name="Content"/>
-        </Faceted>
-        <!--Summarization>
-          <DocidProperty name="DOCID"/>
-          <UuidProperty name="uuid"/>
-          <ContentProperty name="Content"/>
-          <ScoreProperty name="Score"/>
-          <CommentCountProperty name="CommentCount"/> 
-          <ScoreSCDPath path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/score"/>
-        </Summarization
         <SuffixMatch>
           <Property name="Title"/>
           <TokenizeDictionary path="@SF1RENGINE_ROOT@/icma/db/icwb/utf8/fmindex_dic" />
         </SuffixMatch>-->
       </Schema>
     </MiningBundle>
-
-    <RecommendBundle>
-      <Schema>
-        <User>
-          <Property name="gender"/>
-          <Property name="age"/>
-          <Property name="area"/>
-        </User>
-        <Track>
-          <Event name="wish_list"/>
-          <Event name="own"/>
-          <Event name="like"/>
-          <Event name="favorite"/>
-        </Track>
-      </Schema>
-    </RecommendBundle>
 </Collection>

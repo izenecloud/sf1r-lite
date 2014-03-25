@@ -38,7 +38,6 @@
 #include "product-tokenizer/FuzzyNormalizerFactory.h"
 #include "product-tokenizer/FuzzyNormalizer.h"
 #include "suffix-match-manager/FilterManager.h"
-#include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include <index-manager/zambezi-manager/ZambeziManager.h>
@@ -190,7 +189,6 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , suffixMatchManager_(NULL)
-    , incrementalManager_(NULL)
     , productTokenizer_(NULL)
     , adIndexManager_(NULL)
     , miningTaskBuilder_(NULL)
@@ -221,7 +219,6 @@ MiningManager::~MiningManager()
     if (numericTableBuilder_) delete numericTableBuilder_;
     if (rtypeStringPropTableBuilder_) delete rtypeStringPropTableBuilder_;
     if (suffixMatchManager_) delete suffixMatchManager_;
-    if (incrementalManager_) delete incrementalManager_;
     if (productTokenizer_) delete productTokenizer_;
 
     close();
@@ -429,51 +426,11 @@ bool MiningManager::open()
             filter_manager->setNumFilterProperties(number_props, number_amp_list);
             filter_manager->loadFilterId();
 
-            if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-            {
-                incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
-                        mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties,
-                        document_manager_, idManager_, laManager_, indexSchema_,
-                        groupManager_, attrManager_, numericTableBuilder_);
-                incrementalManager_->Init();
-                boost::shared_ptr<FilterManager>& filter_manager_inc = incrementalManager_->getFilterManager();
-                filter_manager_inc->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
-
-                filter_manager_inc->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
-                filter_manager_inc->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
-                filter_manager_inc->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
-
-                filter_manager_inc->setNumFilterProperties(number_props, number_amp_list);
-                filter_manager_inc->loadFilterId();
-                if (!filter_manager_inc->loadFilterList())
-                    filter_manager_inc->generatePropertyId();
-            }
-
             if (mining_schema_.suffixmatch_schema.suffix_match_enable)
             {
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-
-                if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-                {
-                    if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
-                    {
-                        string cronJobName = "fuzzy_index_merge";
-
-                        bool result = izenelib::util::Scheduler::addJob(cronJobName,
-                        60*1000, // each minute
-                        0, // start from now
-                        boost::bind(&MiningManager::updateMergeFuzzyIndex, this, _1));
-                        if (result)
-                        {
-                            LOG (INFO) << "ADD cron job for fuzzy_index_merge ......";
-                        }
-                        else
-                            return false;
-                    }
-                }
             }
 
             if (mining_schema_.suffixmatch_schema.product_forward_enable)
@@ -616,124 +573,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
         productScoreManager_->buildCollection();
     }
 
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-        {
-            uint32_t last_docid = 0;
-            uint32_t docNum = 0;
-            uint32_t maxDoc = 0;
-            incrementalManager_->getLastDocid(last_docid);
-            incrementalManager_->getDocNum(docNum);
-            incrementalManager_->getMaxNum(maxDoc);
-            /**
-            @brief: if there is -D SCD, the fuzzy index will merge and rebuid;
-            @for incremental is for -U and -R scd;
-            **/
-            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD
-            {
-                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
-                {
-                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    bool isIncre = false;
-                    miningTask->setTaskStatus(isIncre);
-                }
-                else if (document_manager_->isThereRtypePro())
-                {
-                    std::vector<string> unchangedProperties;
-                    const std::vector<std::pair<int32_t, std::string> >& prop_list
-                    = suffixMatchManager_->getFilterManager()->getProp_list();
-
-                    for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin()
-                        ; i != prop_list.end(); ++i)
-                    {
-                        std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
-                        if (iter == document_manager_->RtypeDocidPros_.end())
-                        {
-                            unchangedProperties.push_back((*i).second);
-                        }
-                    }
-                    /// all just rebuid filter ...
-                    if (suffixMatchManager_->getMiningTask()->getLastDocId() - 1 == document_manager_->getMaxDocId()) /// only fm-index;
-                    {
-                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                        bool isIncre = false;
-                        miningTask->setTaskStatus(isIncre);
-                    }
-                    else /// each just update it's filter;
-                    {
-                        /*
-                        @brief: because the fm-index will not rebuild, so even the filter docid num is
-                        more than fm-index docid num, there is no effect.
-                        */
-                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                        bool isIncre = false;
-                        miningTask->isRtypeIncremental_ = true;
-                        miningTask->setTaskStatus(isIncre);//
-
-                        incrementalManager_->updateFilterForRtype(); // use extra filter update for incre;
-                    }
-                }
-            }
-            else // -U SCD or continue
-            {
-                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-
-                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
-                {
-                    bool isIncre = true;
-                    miningTask->setTaskStatus(isIncre);
-                }
-                else // merge
-                {
-                    incrementalManager_->reset();
-                    bool isIncre = false;
-                    miningTask->setTaskStatus(isIncre);
-                }
-            }
-        }
-    }
-
     DOMiningTask(timestamp);
-
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-        {
-            uint32_t last_docid = 0;
-            uint32_t docNum = 0;
-            uint32_t maxDoc = 0;
-            incrementalManager_->getLastDocid(last_docid);
-            incrementalManager_->getDocNum(docNum);
-            incrementalManager_->getMaxNum(maxDoc);
-            if (last_docid == document_manager_->getMaxDocId())
-            {
-                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
-                {
-                    incrementalManager_->reset();
-                }
-                else if (document_manager_->isThereRtypePro())
-                {
-                    // do nothing
-                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    miningTask->isRtypeIncremental_ = false;
-                }
-            }
-            else
-            {
-                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
-                {
-                    LOG(INFO) << "Build incrmental index ..." <<endl;
-                    incrementalManager_->doCreateIndex();
-                    incrementalManager_->updateFilterForRtype();//this is in case there is Rtype docid in -U scd;
-                }
-                else // merge
-                {
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());//right
-                }
-            }
-        }
-    }
 
     hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
@@ -1826,21 +1666,7 @@ void MiningManager::updateMergeFuzzyIndex(int calltype)
             LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName << std::endl;
             return;
         }
-
-        if (!incrementalManager_->isEmpty())
-        {
-            LOG (INFO) << "update cron-job with fm-index";
-            SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-            bool isIncre = false;
-            miningTask->setTaskStatus(isIncre);
-
-            suffixMatchManager_->updateFmindex();
-            incrementalManager_->reset();
-
-            docid_t docid;
-            docid = miningTask->getLastDocId();
-            incrementalManager_->setLastDocid(docid);
-        }
+        
         DISTRIBUTE_WRITE_FINISH(true);
     }
 }

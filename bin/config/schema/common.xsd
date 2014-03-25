@@ -7,19 +7,11 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="TdtStorage">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="WavletMatrix"/>
-            <xs:enumeration value="NonWavletTree"/>
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="YesNoType">
         <xs:restriction base="xs:string">
             <xs:pattern value="yes|no|y|n"/>
         </xs:restriction>
     </xs:simpleType>
-
 
     <xs:complexType name="PropertyType">
         <xs:attribute name="name" type="xs:string" use="required"/>
@@ -52,11 +44,6 @@
 
     <xs:complexType name="PathType">
         <xs:attribute name="name" type="xs:string" use="required"/>
-    </xs:complexType>
-
-    <xs:complexType name="CassandraStorage">
-        <xs:attribute name="enable" type="YesNoType"/>
-        <xs:attribute name="keyspace" type="xs:string"/>
     </xs:complexType>
 
 </xs:schema>
