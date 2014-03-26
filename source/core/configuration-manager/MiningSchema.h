@@ -5,7 +5,6 @@
 #include "AttrConfig.h"
 #include "ProductRankingConfig.h"
 #include "SuffixMatchConfig.h"
-#include "QueryIntentConfig.h"
 #include "ZambeziConfig.h"
 #include "AdIndexConfig.h"
 
