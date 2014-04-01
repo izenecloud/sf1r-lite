@@ -1522,7 +1522,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
 
         Iterator<Element> excludeIt("Exclude");
-        std::set<std::string>& excludeAttrNames = mining_schema.attr_property.excludeAttrNames;
+        std::set<std::string,AttrConfig::caseInSensitiveLess >& excludeAttrNames = mining_schema.attr_property.excludeAttrNames;
         for (excludeIt = excludeIt.begin(task_node); excludeIt != excludeIt.end(); ++excludeIt)
         {
             std::string attrName;

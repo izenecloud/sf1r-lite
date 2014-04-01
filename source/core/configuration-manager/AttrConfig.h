@@ -16,6 +16,7 @@ namespace sf1r
  */
 class AttrConfig
 {
+public:
     struct caseInSensitiveLess : std::binary_function<std::string, std::string, bool>
     {
         bool operator() (const std::string & s1, const std::string & s2) const 
@@ -23,7 +24,6 @@ class AttrConfig
             return boost::algorithm::lexicographical_compare(s1, s2, boost::algorithm::is_iless());
         }
     };
-public:
     /// property name
     std::string propName;
 
