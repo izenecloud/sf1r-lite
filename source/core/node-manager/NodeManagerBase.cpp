@@ -470,6 +470,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     znode.setValue(ZNode::KEY_FILESYNC_RPCPORT, (uint32_t)SuperNodeManager::get()->getFileSyncRpcPort());
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
+    znode.setValue(ZNode::KEY_NODE_BUSY_STATE, "");
 
     if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
@@ -2413,6 +2414,25 @@ void NodeManagerBase::updateNodeState()
     ZNode nodedata;
     setSf1rNodeData(nodedata);
     updateNodeState(nodedata);
+}
+
+void NodeManagerBase::setWorkerBusyState(const std::string& coll, bool isbusy)
+{
+    LOG(INFO) << "setting the worker busystate: " << isbusy;
+    ZNode nodedata;
+    std::string olddata;
+    if(zookeeper_->getZNodeData(nodePath_, olddata, ZooKeeper::WATCH))
+    {
+        nodedata.loadKvString(olddata);
+    }
+    else
+    {
+        LOG(ERROR) << "setting worker busy state failed.";
+        return;
+    }
+
+    nodedata.setValue(ZNode::KEY_NODE_BUSY_STATE, isbusy?coll:"");
+    zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
 }
 
 void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)

@@ -41,6 +41,7 @@ const char* ZNode::KEY_REQ_STEP = "req_step";
 const char* ZNode::KEY_SERVICE_STATE = "service_state";
 const char* ZNode::KEY_SERVICE_NAMES = "service_names";
 const char* ZNode::KEY_NEW_SHARDING_NODEIDS = "new_sharding_nodeids";
+const char* ZNode::KEY_NODE_BUSY_STATE = "node_busy_state";
 
 const char* ZNode::KEY_FILE = "file";
 const char* ZNode::KEY_DIR = "dir";

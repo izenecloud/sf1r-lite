@@ -1189,11 +1189,6 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
         }
         else
         {
-            if (exist && node_it->second->worker_.isGood_)
-            {
-                LOG(INFO) << "this read only node is already exist and in good.";
-                return;
-            }
             std::string data;
             if (!zookeeper_->getZNodeData(nodepath, data, ZooKeeper::WATCH))
             {
@@ -1207,12 +1202,19 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
                 LOG(ERROR) << "the node has no worker port.";
                 return;
             }
+
             boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
             sf1rNode->worker_.isGood_ = true;
             sf1rNode->nodeId_ = nodeid;
             updateWorkerNode(sf1rNode, znode);
             sf1rNode->replicaId_ = replicaId;
             readonly_workerMap_[nodeid][replicaId] = sf1rNode;
+
+            if (exist && node_it->second->worker_.isGood_)
+            {
+                LOG(INFO) << "this read only node is already exist and in good.";
+            }
+
         }
         resetReadOnlyAggregatorConfig();
         return;
@@ -1267,6 +1269,7 @@ void MasterManagerBase::detectReadOnlyWorkers(const std::string& nodepath, bool 
     }
     else
     {
+        resetAggregatorBusyState();
         LOG(INFO) << "the read only workers has no change.";
     }
 }
@@ -1324,6 +1327,7 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
 {
     workerNode->replicaId_ = sf1rTopology_.curNode_.replicaId_;
     workerNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
+    workerNode->worker_.busyState_ = znode.getStrValue(ZNode::KEY_NODE_BUSY_STATE);
     //workerNode->port_ = znode.getUInt32Value(ZNode::KEY_WORKER_PORT);
 
     try
@@ -1814,6 +1818,34 @@ void MasterManagerBase::registerServiceServer()
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
 }
 
+void MasterManagerBase::resetAggregatorBusyState()
+{
+    std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
+    for (agg_it = readonly_aggregatorList_.begin(); agg_it != readonly_aggregatorList_.end(); ++agg_it)
+    {
+        std::string coll = (*agg_it)->collection();
+        if (coll.empty())
+            continue;
+        std::vector<ServerInfo> busy_list;
+        ROWorkerMapT::const_iterator it = readonly_workerMap_.begin();
+        for(; it != readonly_workerMap_.end(); ++it)
+        {
+            std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::const_iterator nit = it->second.begin();
+            for(; nit != it->second.end(); ++nit)
+            {
+                LOG(INFO) << "adding busy node for: " << coll << " , worker busy state: " << nit->second->worker_.busyState_;
+                if (nit->second->worker_.busyState_ == coll)
+                {
+                    busy_list.push_back(ServerInfo(nit->second->host_, nit->second->worker_.port_));
+                    LOG(INFO) << "adding busy node for: " << coll << ", "
+                        << nit->second->host_ << ":" << nit->second->worker_.port_;
+                }
+            }
+        }
+        (*agg_it)->setBusyAggregatorList(busy_list);
+    }
+}
+
 void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator, bool readonly)
 {
     LOG(INFO) << "resetting aggregator...";
@@ -1831,6 +1863,28 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
 
     if (readonly)
     {
+        std::string coll = aggregator->collection();
+        if (!coll.empty())
+        {
+            std::vector<ServerInfo> busy_list;
+            ROWorkerMapT::const_iterator it = readonly_workerMap_.begin();
+            for(; it != readonly_workerMap_.end(); ++it)
+            {
+                std::map<replicaid_t, boost::shared_ptr<Sf1rNode> >::const_iterator nit = it->second.begin();
+                for(; nit != it->second.end(); ++nit)
+                {
+                    LOG(INFO) << "adding busy node for: " << coll << " , worker busy state: " << nit->second->worker_.busyState_;
+                    if (nit->second->worker_.busyState_ == coll)
+                    {
+                        busy_list.push_back(ServerInfo(nit->second->host_, nit->second->worker_.port_));
+                        LOG(INFO) << "adding busy node for: " << coll << ", "
+                            << nit->second->host_ << ":" << nit->second->worker_.port_;
+                    }
+                }
+            }
+            aggregator->setBusyAggregatorList(busy_list);
+        }
+
         aggregatorConfig.setReadyOnly();
         for (size_t i = 0; i < shardidList.size(); i++)
         {

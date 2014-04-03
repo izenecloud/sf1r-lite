@@ -371,6 +371,7 @@ public:
     bool enabled_;
     bool isGood_;
     port_t port_;
+    std::string busyState_;
 
 private:
     WorkerServiceMapT workerServices_;

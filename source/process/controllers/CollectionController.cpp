@@ -362,10 +362,16 @@ void CollectionController::update_collection_conf()
         return;
     }
 
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        NodeManagerBase::get()->setWorkerBusyState(collection, true);
+    }
+
     if(!CollectionManager::get()->stopCollection(collection, false))
     {
         LOG(ERROR) << "failed to stop collection while update config." << collection;
         response().addError("failed to stop collection while update config.");
+        NodeManagerBase::get()->setWorkerBusyState(collection, false);
         return;
     }
 
@@ -383,6 +389,7 @@ void CollectionController::update_collection_conf()
     if (!ret)
     {
         response().addError("Update Config failed.");
+        NodeManagerBase::get()->setWorkerBusyState(collection, false);
         return;
     }
 
@@ -391,11 +398,13 @@ void CollectionController::update_collection_conf()
     {
         LOG(ERROR) << "start collection failed after config updated." << collection;
         response().addError("start collection failed after config updated.");
+        NodeManagerBase::get()->setWorkerBusyState(collection, false);
         return;
     }
 
     if (SF1Config::get()->isDistributedNode())
     {
+        NodeManagerBase::get()->setWorkerBusyState(collection, false);
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     }
 

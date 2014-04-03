@@ -273,6 +273,7 @@ protected:
     void updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self);
     bool isWriteQueueEmpty(const std::vector<shardid_t>& shardids);
     bool getNodeState(const std::string& nodepath, uint32_t& state);
+    void resetAggregatorBusyState();
 
 protected:
     Sf1rTopology sf1rTopology_;

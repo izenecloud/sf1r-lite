@@ -141,6 +141,10 @@ void RebuildTask::doTask()
 
         DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
     }
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        NodeManagerBase::get()->setWorkerBusyState(collectionName_, true);
+    }
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
@@ -175,6 +179,7 @@ void RebuildTask::doTask()
     //
     if (NodeManagerBase::get()->isDistributed())
     {
+        NodeManagerBase::get()->setWorkerBusyState(collectionName_, false);
         clearMasterCache();
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     }
@@ -414,6 +419,11 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
 
         DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
     }
+
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        NodeManagerBase::get()->setWorkerBusyState(collectionName_, true);
+    }
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
@@ -437,6 +447,8 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
     catch (const std::exception& e)
     {
         LOG(ERROR) << e.what();
+        if (NodeManagerBase::get()->isDistributed())
+            NodeManagerBase::get()->setWorkerBusyState(collectionName_, false);
         return false;
     }
 
@@ -446,6 +458,7 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
 
     if (NodeManagerBase::get()->isDistributed())
     {
+        NodeManagerBase::get()->setWorkerBusyState(collectionName_, false);
         clearMasterCache();
         NodeManagerBase::get()->updateTopologyCfg(SF1Config::get()->topologyConfig_.sf1rTopology_);
     }

@@ -205,6 +205,7 @@ public:
     const static char* KEY_SERVICE_STATE;
     const static char* KEY_SERVICE_NAMES;
     const static char* KEY_NEW_SHARDING_NODEIDS;
+    const static char* KEY_NODE_BUSY_STATE;
 
     const static char* KEY_FILE;
     const static char* KEY_DIR;

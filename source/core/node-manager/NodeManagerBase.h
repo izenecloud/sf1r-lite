@@ -183,6 +183,7 @@ public:
         return mutex_;
     }
 
+    void setWorkerBusyState(const std::string& coll, bool isbusy);
     void updateLastWriteReqId(uint32_t req_id);
     uint32_t getLastWriteReqId();
     bool checkElectingInAsyncMode(uint32_t newest_logid);
