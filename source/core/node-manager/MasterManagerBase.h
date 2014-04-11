@@ -184,6 +184,7 @@ public:
     bool isMineNewSharding();
     std::string getShardNodeIP(shardid_t shardid);
     bool isOnlyMaster();
+    bool isMasterEnabled();
     bool isShardingNodeOK(const std::vector<shardid_t>& shardids);
 
 public:

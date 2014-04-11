@@ -99,6 +99,11 @@ void MasterManagerBase::updateTopologyCfg(const Sf1rTopology& cfg)
     resetAggregatorConfig();
 }
 
+bool MasterManagerBase::isMasterEnabled()
+{
+    return sf1rTopology_.curNode_.master_.enabled_;
+}
+
 bool MasterManagerBase::isOnlyMaster()
 {
     return (!sf1rTopology_.curNode_.worker_.enabled_ && sf1rTopology_.curNode_.master_.enabled_);

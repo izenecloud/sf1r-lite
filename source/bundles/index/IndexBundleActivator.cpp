@@ -260,9 +260,12 @@ bool IndexBundleActivator::init_()
     searchAggregator_ = createSearchAggregator_(false);
     SF1R_ENSURE_INIT(searchAggregator_);
     
-    ro_searchAggregator_ = createSearchAggregator_(true);
-    SF1R_ENSURE_INIT(ro_searchAggregator_);
-    
+    if (MasterManagerBase::get()->isMasterEnabled())
+    {
+        ro_searchAggregator_ = createSearchAggregator_(true);
+        SF1R_ENSURE_INIT(ro_searchAggregator_);
+    }
+
     indexWorker_ = createIndexWorker_();
     SF1R_ENSURE_INIT(indexWorker_);
 
