@@ -4,13 +4,11 @@
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
 #include "CategoryClassifyScorer.h"
-#include "TitleRelevanceScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../product-score-manager/ProductScoreManager.h"
 #include "../category-classify/CategoryClassifyTable.h"
 #include "../suffix-match-manager/SuffixMatchManager.hpp"
-#include "../title-scorer/TitleScoreList.h"
 #include <common/PropSharedLockSet.h>
 #include <common/QueryNormalizer.h>
 #include <common/ResourceManager.h>
@@ -51,7 +49,6 @@ ProductScorerFactory::ProductScorerFactory(
     , categoryValueTable_(NULL)
     , productScoreManager_(miningManager.GetProductScoreManager())
     , categoryClassifyTable_(miningManager.GetCategoryClassifyTable())
-    , titleScoreList_(miningManager.GetTitleScoreList())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -142,13 +139,6 @@ void ProductScorerFactory::createFuzzyModeScorer_(
         scoreSum.addScorer(scorer);
     }
 
-    scorer = createTitleRelevanceScorer_(config_.scores[TITLE_RELEVANCE_SCORE],
-                                         scoreParam.queryScore_);
-    if (scorer)
-    {
-        scoreSum.addScorer(scorer);
-    }
-
     scorer = createPopularityScorer_(config_.scores[POPULARITY_SCORE]);
     if (scorer)
     {
@@ -218,16 +208,6 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
                               *categoryValueTable_,
                               boostLabels,
                               hasPriority);
-}
-
-ProductScorer* ProductScorerFactory::createTitleRelevanceScorer_(
-    const ProductScoreConfig& scoreConfig,
-    double score)
-{
-    if (titleScoreList_ == NULL)
-        return NULL;
-
-    return new TitleRelevanceScorer(scoreConfig, titleScoreList_, score);
 }
 
 ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(

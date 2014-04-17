@@ -80,7 +80,6 @@ class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
 class CategoryClassifyTable;
-class TitleScoreList;
 class ProductForwardManager;
 class ProductRankerFactory;
 class SuffixMatchManager;
@@ -311,11 +310,6 @@ public:
         return categoryClassifyTable_;
     }
 
-    TitleScoreList* GetTitleScoreList()
-    {
-        return titleScoreList_;
-    }
-
     ProductForwardManager* GetProductForwardManger()
     {
         return productForwardManager_;
@@ -416,7 +410,6 @@ private:
     bool initCategoryClassifyTable_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
-    bool initTitleRelevanceScore_(const ProductRankingConfig& rankConfig);
     bool initProductForwardManager_();
 
     bool initAdIndexManager_(AdIndexConfig& adIndexConfig);
@@ -489,9 +482,6 @@ private:
 
     /** Table stores one classified category for each doc */
     CategoryClassifyTable* categoryClassifyTable_;
-
-    /** list stores all the documents' productTokenizer score*/
-    TitleScoreList* titleScoreList_;
 
     /** The forward index, for B5MA only*/
     ProductForwardManager* productForwardManager_;

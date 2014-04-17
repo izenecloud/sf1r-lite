@@ -26,8 +26,6 @@
 #include "product-ranker/ProductRankerFactory.h"
 #include "category-classify/CategoryClassifyTable.h"
 #include "category-classify/CategoryClassifyMiningTask.h"
-#include "title-scorer/TitleScoreList.h"
-#include "title-scorer/TitleScoreMiningTask.h"
 #include "product-forward/ProductForwardManager.h"
 #include "product-forward/ProductForwardMiningTask.h"
 
@@ -183,7 +181,6 @@ MiningManager::MiningManager(
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
     , categoryClassifyTable_(NULL)
-    , titleScoreList_(NULL)
     , productForwardManager_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
@@ -206,7 +203,6 @@ MiningManager::~MiningManager()
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (categoryClassifyTable_) delete categoryClassifyTable_;
-    if (titleScoreList_) delete titleScoreList_;
     if (productForwardManager_) delete productForwardManager_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
@@ -451,7 +447,6 @@ bool MiningManager::open()
         if (!initMerchantScoreManager_(rankConfig) ||
             !initGroupLabelKnowledge_(rankConfig) ||
             !initCategoryClassifyTable_(rankConfig) ||
-            !initTitleRelevanceScore_(rankConfig) ||
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
@@ -1391,40 +1386,6 @@ bool MiningManager::initGroupLabelKnowledge_(const ProductRankingConfig& rankCon
             LOG(ERROR) << "error in opening " << categoryBoostDir;
         }
     }
-
-    return true;
-}
-
-bool MiningManager::initTitleRelevanceScore_(const ProductRankingConfig& rankConfig)
-{
-    if (!rankConfig.isEnable || suffixMatchManager_ == NULL)
-        return true;
-    const ProductScoreConfig& titleRevelanceConfig =
-        rankConfig.scores[TITLE_RELEVANCE_SCORE];
-
-    if (titleRevelanceConfig.weight ==0)
-        return true;
-
-    if (titleScoreList_) delete titleScoreList_;
-
-    const bfs::path parentDir(collectionDataPath_);
-    const bfs::path TitleScorerDir(parentDir / "title_scorer");
-    bfs::create_directories(TitleScorerDir);
-
-    titleScoreList_ = new TitleScoreList(TitleScorerDir.string(),
-                                        titleRevelanceConfig.propName,
-                                        titleRevelanceConfig.isDebug);
-
-     if (!titleScoreList_->open())
-    {
-        LOG(ERROR) << "open " << TitleScorerDir << " failed";
-        return false;
-    }
-    LOG (INFO) << "USE Title Score ,....";
-    MiningTask* miningTask_score =  new TitleScoreMiningTask(
-        document_manager_, titleScoreList_, productTokenizer_);
-
-    multiThreadMiningTaskBuilder_->addTask(miningTask_score);
 
     return true;
 }
