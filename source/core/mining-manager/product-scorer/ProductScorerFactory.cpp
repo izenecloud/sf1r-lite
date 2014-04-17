@@ -3,11 +3,9 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
-#include "CategoryClassifyScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../product-score-manager/ProductScoreManager.h"
-#include "../category-classify/CategoryClassifyTable.h"
 #include "../suffix-match-manager/SuffixMatchManager.hpp"
 #include <common/PropSharedLockSet.h>
 #include <common/QueryNormalizer.h>
@@ -48,7 +46,6 @@ ProductScorerFactory::ProductScorerFactory(
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryValueTable_(NULL)
     , productScoreManager_(miningManager.GetProductScoreManager())
-    , categoryClassifyTable_(miningManager.GetCategoryClassifyTable())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -124,9 +121,7 @@ void ProductScorerFactory::createFuzzyModeScorer_(
     ProductScoreSum& scoreSum,
     const ProductScoreParam& scoreParam)
 {
-    ProductScorer* scorer = categoryClassifyTable_ ?
-        createCategoryClassifyScorer_(config_.scores[CATEGORY_CLASSIFY_SCORE], scoreParam) :
-        createCategoryScorer_(config_.scores[CATEGORY_SCORE], scoreParam);
+    ProductScorer* scorer = createCategoryScorer_(config_.scores[CATEGORY_SCORE], scoreParam);
     if (scorer)
     {
         scoreSum.addScorer(scorer);
@@ -210,46 +205,6 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
                               hasPriority);
 }
 
-ProductScorer* ProductScorerFactory::createCategoryClassifyScorer_(
-    const ProductScoreConfig& scoreConfig,
-    const ProductScoreParam& scoreParam)
-{
-    if (!categoryClassifyTable_)
-        return NULL;
-
-    const std::string& query = scoreParam.rawQuery_;
-
-    LOG(INFO) << "for query [" << query << "]";
-
-    const bool isLongQuery = QueryNormalizer::get()->isLongQuery(query);
-    boost::shared_ptr<KNlpWrapper> knlpWrapper = KNlpResourceManager::getResource();
-    CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
-        knlpWrapper->classifyToMultiCategories(query, isLongQuery);
-
-    if (categoryScoreMap.empty())
-    {
-        LOG(INFO) << "no classified category";
-        //return NULL;
-    }
-
-    std::ostringstream oss;
-    oss << "classified category:";
-
-    for (CategoryClassifyScorer::CategoryScoreMap::const_iterator it =
-             categoryScoreMap.begin(); it != categoryScoreMap.end(); ++it)
-    {
-        oss << " " << it->first << "/" << std::setprecision(4) << it->second;
-    }
-    LOG(INFO) << oss.str();
-
-    const bool hasGroupLabel = checkGroupLabel(scoreParam.groupParam_);
-
-    scoreParam.propSharedLockSet_.insertSharedLock(categoryClassifyTable_);
-    return new CategoryClassifyScorer(scoreConfig,
-                                      *categoryClassifyTable_,
-                                      categoryScoreMap,
-                                      hasGroupLabel);
-}
 
 ProductScorer* ProductScorerFactory::createRelevanceScorer_(
     const ProductScoreConfig& scoreConfig,

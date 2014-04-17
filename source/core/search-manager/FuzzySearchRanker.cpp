@@ -13,7 +13,6 @@
 #include <common/ResourceManager.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include "mining-manager/custom-rank-manager/CustomRankManager.h"
-#include "mining-manager/product-scorer/CategoryClassifyScorer.h"
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
@@ -25,7 +24,6 @@ using namespace sf1r;
 FuzzySearchRanker::FuzzySearchRanker(SearchManagerPreProcessor& preprocessor)
     : preprocessor_(preprocessor)
     , fuzzyScoreWeight_(0)
-    , isCategoryClassify_(false)
     , customRankManager_(NULL)
 {
 }
@@ -60,10 +58,10 @@ void FuzzySearchRanker::rankByProductScore(
 
     if (isLongQuery)
     {
-        CategoryClassifyScorer::CategoryScoreMap categoryScoreMap =
+        std::map<std::string, double> categoryScoreMap =
             KNlpResourceManager::getResource()->classifyToMultiCategories(pattern, isLongQuery);
 
-        for (CategoryClassifyScorer::CategoryScoreMap::const_iterator it = categoryScoreMap.begin();
+        for (std::map<std::string, double>::const_iterator it = categoryScoreMap.begin();
              it != categoryScoreMap.end(); ++it)
         {
             if (it->second > 0.9)
@@ -85,20 +83,6 @@ void FuzzySearchRanker::rankByProductScore(
         double fuzzyScore = resultList[i].first;
         double productScore = productScorer->score(docId);
 
-        if (isCategoryClassify_)
-        {
-            // ignore the docs with zero category score
-            if (isCompare && productScore < 0.9)
-            {
-                continue;
-            }
-
-            if (isLongQuery && hasConfidentCate && productScore < 0.1)
-            {
-                continue;
-            }
-
-        }
 
         fuzzyScore = static_cast<int>(fuzzyScore * fuzzyScoreWeight_);
         resultList[i].first = fuzzyScore + productScore;

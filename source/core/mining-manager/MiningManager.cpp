@@ -24,8 +24,6 @@
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
 #include "product-ranker/ProductRankerFactory.h"
-#include "category-classify/CategoryClassifyTable.h"
-#include "category-classify/CategoryClassifyMiningTask.h"
 #include "product-forward/ProductForwardManager.h"
 #include "product-forward/ProductForwardMiningTask.h"
 
@@ -180,7 +178,6 @@ MiningManager::MiningManager(
     , customRankManager_(NULL)
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
-    , categoryClassifyTable_(NULL)
     , productForwardManager_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
@@ -202,7 +199,6 @@ MiningManager::~MiningManager()
     if (productRankerFactory_) delete productRankerFactory_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
-    if (categoryClassifyTable_) delete categoryClassifyTable_;
     if (productForwardManager_) delete productForwardManager_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
@@ -446,7 +442,6 @@ bool MiningManager::open()
 
         if (!initMerchantScoreManager_(rankConfig) ||
             !initGroupLabelKnowledge_(rankConfig) ||
-            !initCategoryClassifyTable_(rankConfig) ||
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
@@ -1411,47 +1406,6 @@ bool MiningManager::initProductForwardManager_()
     miningTaskBuilder_->addTask(miningTask_forward);
 
     LOG(INFO)<<"product forward init ok";
-    return true;
-}
-
-
-bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankConfig)
-{
-    if (!rankConfig.isEnable)
-        return true;
-
-    const ProductScoreConfig& classifyConfig =
-        rankConfig.scores[CATEGORY_CLASSIFY_SCORE];
-
-    if (classifyConfig.weight == 0)
-        return true;
-
-    if (categoryClassifyTable_) delete categoryClassifyTable_;
-
-    const bfs::path parentDir(collectionDataPath_);
-    const bfs::path classifyDir(parentDir / "category_classify");
-    bfs::create_directories(classifyDir);
-
-    categoryClassifyTable_ = new CategoryClassifyTable(classifyDir.string(),
-                                                       classifyConfig.propName,
-                                                       classifyConfig.isDebug);
-    if (!categoryClassifyTable_->open())
-    {
-        LOG(ERROR) << "open " << classifyDir << " failed";
-        return false;
-    }
-
-    const std::string& categoryPropName =
-        rankConfig.scores[CATEGORY_SCORE].propName;
-
-    const boost::shared_ptr<const NumericPropertyTableBase>& priceTable =
-        numericTableBuilder_->createPropertyTable("Price");
-
-    multiThreadMiningTaskBuilder_->addTask(
-        new CategoryClassifyMiningTask(*document_manager_,
-                                       *categoryClassifyTable_,
-                                       categoryPropName,
-                                       priceTable));
     return true;
 }
 

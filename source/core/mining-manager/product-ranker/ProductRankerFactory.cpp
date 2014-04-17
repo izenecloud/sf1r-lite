@@ -7,7 +7,6 @@
 #include "MerchantScoreEvaluator.h"
 #include "RandomScoreEvaluator.h"
 #include "../group-manager/PropValueTable.h"
-#include "../product-scorer/CategoryClassifyScorer.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <common/NumericPropertyTableBase.h>
 #include <common/QueryNormalizer.h>
@@ -20,6 +19,7 @@ namespace
 {
 /** in zambezi mode, under the same relevance score, run merchant diversity */
 const score_t kZambeziCategoryScoreWeight = 1;
+const score_t kMinClassifyScore = 0.0001;
 
 score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 {
@@ -95,7 +95,7 @@ void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isD
     }
     else if (searchMode == SearchingMode::SUFFIX_MATCH)
     {
-        weight = CategoryClassifyScorer::kMinClassifyScore;
+        weight = kMinClassifyScore;
     }
     else
     {

@@ -62,10 +62,6 @@ private:
         const ProductScoreConfig& scoreConfig,
         const ProductScoreParam& scoreParam);
 
-    ProductScorer* createCategoryClassifyScorer_(
-        const ProductScoreConfig& scoreConfig,
-        const ProductScoreParam& scoreParam);
-
     ProductScorer* createRelevanceScorer_(
         const ProductScoreConfig& scoreConfig,
         ProductScorer* relevanceScorer);
@@ -83,8 +79,6 @@ private:
     boost::scoped_ptr<BoostLabelSelector> labelSelector_;
 
     ProductScoreManager* productScoreManager_;
-
-    CategoryClassifyTable* categoryClassifyTable_;
 };
 
 } // namespace sf1r
