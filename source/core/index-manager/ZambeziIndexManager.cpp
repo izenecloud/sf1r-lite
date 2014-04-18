@@ -2,11 +2,10 @@
 #include "./zambezi-tokenizer/ZambeziTokenizer.h"
 #include <la-manager/AttrTokenizeWrapper.h>
 #include <configuration-manager/ZambeziConfig.h>
-#include <document-manager/Document.h>
+#include <document-manager/DocumentManager.h>
 #include <glog/logging.h>
 #include <fstream>
 
-#include <document-manager/DocumentManager.h>
 using namespace sf1r;
 
 ZambeziIndexManager::ZambeziIndexManager(

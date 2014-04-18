@@ -20,7 +20,7 @@ template <typename Type> struct Converter;
 /// Converter specialization for the default type std::string.
 template <> struct Converter<std::string> {
     inline std::string operator()(const ScdPropertyValueType& in) const {
-        return sf1r::propstr_to_str(in);
+        return propstr_to_str(in);
     }
 };
 

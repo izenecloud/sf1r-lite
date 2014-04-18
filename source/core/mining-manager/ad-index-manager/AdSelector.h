@@ -7,6 +7,7 @@
 #include <common/PropSharedLockSet.h>
 #include <common/NumericPropertyTable.h>
 #include <ir/id_manager/IDManager.h>
+#include <document-manager/Document.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <boost/unordered_map.hpp>
 #include <bitset>
@@ -17,7 +18,6 @@ namespace sf1r
 {
 
 class AdClickPredictor;
-class Document;
 class DocumentManager;
 class AdRecommender;
 namespace faceted

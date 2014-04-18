@@ -8,6 +8,7 @@
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
 #include <common/RTypeStringPropTable.h>
+#include <common/ScdWriter.h>
 #include <document-manager/DocumentManager.h>
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>

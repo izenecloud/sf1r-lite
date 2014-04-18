@@ -8,20 +8,20 @@
 #ifndef SCD_PARSER_TRAITS_H
 #define SCD_PARSER_TRAITS_H
 
-#include <util/ustring/UString.h>
+#include <sf1common/ScdParserTraits.h>
 
 // We use std::string as propertyName, UString as propertyValue.
-typedef std::string PropertyNameType;
+using izenelib::PropertyNameType;
 //typedef izenelib::util::UString PropertyValueType;
-typedef std::string ScdPropertyValueType;
+using izenelib::ScdPropertyValueType;
 
-typedef std::pair<PropertyNameType, ScdPropertyValueType> FieldPair;
-typedef std::vector<FieldPair> SCDDoc;
-typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
+using izenelib::FieldPair;
+using izenelib::SCDDoc;
+using izenelib::SCDDocPtr;
 
-typedef long offset_type; //< Type of offset values.
-typedef std::vector<offset_type> offset_list;
+using izenelib::offset_type; //< Type of offset values.
+using izenelib::offset_list;
 
-typedef std::pair<ScdPropertyValueType, unsigned> DocIdPair; // should this be long instead of unsigned?
+using izenelib::DocIdPair; // should this be long instead of unsigned?
 
 #endif /* SCD_PARSER_TRAITS_H */

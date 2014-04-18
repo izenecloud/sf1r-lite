@@ -13,6 +13,7 @@
 #include <common/type_defs.h> // PropertyDataType
 #include <common/PropertyValue.h>
 #include <configuration-manager/GroupConfig.h>
+#include <document-manager/Document.h>
 
 #include <vector>
 #include <string>
@@ -20,7 +21,6 @@
 namespace sf1r
 {
 
-class Document;
 class GroupConfig;
 
 class NumericPropertyTableBuilderStub : public NumericPropertyTableBuilder

@@ -142,7 +142,7 @@ bool DocumentManager::insertDocument(const Document& document)
         }
 
         const Document::doc_prop_value_strtype* stringValue =
-            get<Document::doc_prop_value_strtype>(&it->second);
+            izenelib::get<Document::doc_prop_value_strtype>(&it->second);
         if (stringValue)
         {
             if (propertyLengthDb_.size() <= *pid)

@@ -44,12 +44,12 @@ void split_string(const izenelib::util::UString& szText, std::list<PropertyType>
         if (n != izenelib::util::UString::npos)
         {
             if (n != nOld)
-                out.push_back(sf1r::ustr_to_propstr(str.substr(nOld, n - nOld)));
+                out.push_back(ustr_to_propstr(str.substr(nOld, n - nOld)));
             n += sep.length();
             nOld = n;
         }
     }
-    out.push_back(sf1r::ustr_to_propstr(str.substr(nOld)));
+    out.push_back(ustr_to_propstr(str.substr(nOld)));
 }
 
 void split_int32(const std::string& str, std::list<PropertyType>& out, const char* sep)

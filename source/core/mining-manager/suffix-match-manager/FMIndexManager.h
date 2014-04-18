@@ -2,6 +2,7 @@
 #define SF1R_MINING_SUFFIX_FMINDEXMANAGER_H_
 
 #include <common/type_defs.h>
+#include <document-manager/Document.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <am/succinct/fm-index/fm_doc_array_manager.hpp>
 #include <boost/shared_ptr.hpp>
@@ -12,7 +13,6 @@ namespace sf1r
 
 class DocumentManager;
 class FilterManager;
-class Document;
 class FuzzyNormalizer;
 
 class FMIndexManager

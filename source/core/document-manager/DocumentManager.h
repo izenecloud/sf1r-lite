@@ -198,7 +198,7 @@ public:
         PropertyValue value;
         if (getPropertyValue(docId, propertyName, value))
         {
-            T* castValue = get<T>(&value);
+            T* castValue = izenelib::get<T>(&value);
             if (castValue)
             {
                 using std::swap;

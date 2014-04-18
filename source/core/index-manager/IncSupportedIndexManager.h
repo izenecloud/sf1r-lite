@@ -12,7 +12,6 @@ namespace sf1r
 // This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.
 class IIncSupportedIndex;
-class Document;
 class IncSupportedIndexManager
 {
 public:

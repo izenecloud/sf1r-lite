@@ -8,6 +8,7 @@
 
 #include "IIncSupportedIndex.h"
 #include "zambezi-manager/ZambeziManager.h"
+#include <document-manager/Document.h>
 #include <ir/Zambezi/AttrScoreInvertedIndex.hpp>
 #include <process/common/XmlConfigParser.h>
 

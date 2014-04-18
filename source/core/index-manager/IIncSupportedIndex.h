@@ -2,11 +2,11 @@
 #define SF1V5_INDEX_MANAGER_IINCSUPPORTEDINDEX_H
 
 #include <common/inttypes.h>
+#include <document-manager/Document.h>
 #include <ctime>
 
 namespace sf1r
 {
-class Document;
 // Define the interface for the index which will support increment build.
 // This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.

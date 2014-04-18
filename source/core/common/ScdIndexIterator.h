@@ -81,9 +81,9 @@ public:
 private:
     void setDocument(const offset_type offset) {
         DLOG(INFO) << "getting document @ " << offset;
-        if (parser->fs_.eof())
-            parser->fs_.clear();
-        parser->fs_.seekg(offset, ios::beg);
+        if (parser->fs().eof())
+            parser->fs().clear();
+        parser->fs().seekg(offset, ios::beg);
         ParserIterator it(parser, 0);
         document = *it;
         CHECK(document) << "document is NULL (offset=" << offset << ")";

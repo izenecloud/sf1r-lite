@@ -2,6 +2,7 @@
 #define SF1R_MINING_SUFFIX_FILTERMANAGER_H_
 
 #include <common/type_defs.h>
+#include <document-manager/Document.h>
 #include <boost/shared_ptr.hpp>
 
 namespace sf1r
@@ -12,7 +13,6 @@ class GroupManager;
 class AttrManager;
 }
 class NumericPropertyTableBuilder;
-class Document;
 class DocumentManager;
 
 class GroupNode
