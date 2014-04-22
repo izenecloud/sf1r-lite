@@ -24,6 +24,7 @@ public:
     enum MethodId
     {
         Method_getDocumentsByIds_,
+        Method_documentSearch_,
         Method_Number
     };
 

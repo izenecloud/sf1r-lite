@@ -51,19 +51,29 @@ public:
             {
                 getDocumentsByIds(req);
             }
+            else if (method == MasterServerConnector::Methods_[MasterServerConnector::Method_documentSearch_])
+            {
+                documentSearch(req);
+            }
             else if (method == "notify")
             {
                 notify(req);
+            }
+            else
+            {
+                std::string errinfo = "unsupported method : " +  method;
+                LOG(WARNING) << errinfo;
+                req.error(errinfo);
             }
         }
         catch (msgpack::type_error& e)
         {
             req.error(msgpack::rpc::ARGUMENT_ERROR);
-            cout << "#[Master] notified, Argument error!"<<endl;
+            LOG(ERROR) << "#[Master] notified, Argument error!"<< e.what() << endl;
         }
         catch (std::exception& e)
         {
-            cout << "#[Master] notified, "<<e.what()<<endl;
+            LOG(ERROR) << "#[Master] notified, "<< e.what() << endl;
             req.error(std::string(e.what()));
         }
     }
@@ -100,6 +110,35 @@ private:
             std::string error = "No collectionHandler found for " + action.collectionName_;
             req.error(error);
         }
+    }
+
+    void documentSearch(msgpack::rpc::request& req)
+    {
+        msgpack::type::tuple<KeywordSearchActionItem> params;
+        req.params().convert(&params);
+        KeywordSearchActionItem action = params.get<0>();
+
+        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(action.collectionName_);
+        CollectionManager::ScopedReadLock lock(*mutex);
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(action.collectionName_);
+        if (collectionHandler)
+        {
+            KeywordSearchResult resultItem;
+            bool ret = collectionHandler->indexSearchService_->getSearchResult(action, resultItem);
+            if (!ret)
+            {
+                LOG(ERROR) << "search documents failed in master.";
+                action.print();
+            }
+            req.result(resultItem);
+        }
+        else
+        {
+            std::string error = "No collectionHandler found for " + action.collectionName_;
+            LOG(ERROR) << error;
+            req.error(error);
+        }
+
     }
 
     void notify(msgpack::rpc::request& req)
