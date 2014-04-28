@@ -396,8 +396,10 @@ bool MiningManager::open()
                 suffix_match_path_, document_manager_,
                 groupManager_, attrManager_, numericTableBuilder_,
                 fuzzyNormalizer);
-            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
-            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
+            VirtualConfig virtualProperty;
+            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, virtualProperty, FMIndexManager::LESS_DV);
+            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, 
+                                                    mining_schema_.suffixmatch_schema.virtual_property, FMIndexManager::COMMON, true);
 
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
@@ -936,7 +938,8 @@ bool MiningManager::GetSuffixMatch(
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
     std::vector<std::pair<double, uint32_t> > res_list;
 
-    const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
+    const std::vector<string>& search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
+    // const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
 
     size_t orig_max_docs = max_docs;
 

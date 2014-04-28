@@ -1568,6 +1568,43 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
+        //
+        Iterator<Element> itv("VirtualProperty");
+        for (itv = itv.begin(task_node); itv != itv.end(); ++itv)
+        {
+            //SubProperty 
+            bool hasSubPropery = false;
+            Iterator<Element> subproperty("SubProperty");
+            for (subproperty = subproperty.begin(itv.Get()); subproperty != subproperty.end(); subproperty++)
+            {
+                std::string subPropName;
+                getAttribute(subproperty.Get(), "name", subPropName);
+
+                PropertyConfigBase tmpConfig;
+                tmpConfig.propertyName_ = subPropName;
+                PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
+                dataType = collectionMeta.documentSchema_.find(tmpConfig)->propertyType_;
+
+                if (dataType != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("VirtualProperty's subproperty only support STRING type!!!");
+                }
+                mining_schema.suffixmatch_schema.virtual_property.virtual_properties.push_back(subPropName);
+                hasSubPropery = true;
+            }
+            if (!hasSubPropery)
+            {
+                throw XmlConfigParserException("VirtualProperty's subproperty is empty!!!");
+            }
+
+            //Name
+            std::string property_name;
+            getAttribute(itv.Get(), "name", property_name);
+            mining_schema.suffixmatch_schema.virtual_property.virtualName = property_name;
+            mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
+            mining_schema.suffixmatch_schema.suffix_match_enable = true;
+        }
+
         std::sort(mining_schema.suffixmatch_schema.suffix_match_properties.begin(), mining_schema.suffixmatch_schema.suffix_match_properties.end());
 
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);

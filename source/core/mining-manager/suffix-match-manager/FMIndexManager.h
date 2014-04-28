@@ -7,6 +7,7 @@
 #include <am/succinct/fm-index/fm_doc_array_manager.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <configuration-manager/SuffixMatchConfig.h>
 
 namespace sf1r
 {
@@ -24,6 +25,22 @@ public:
     typedef FMIndexType::MatchRangeListT RangeListT;
     typedef FMDocArrayMgrType::FilterRangeT FilterRangeT;
 
+    // enum IndexType
+    // {
+    //     NORMAL,
+    //     COMBINED
+    // };
+
+    // struct IndexProperty
+    // {
+    //     IndexType type;
+    //     std::vector<std::string> properties;
+
+    //     IndexProperty()
+    //     , type(IndexType::NORMAL)
+    //     {
+    //     }
+    // };
 
     enum PropertyFMType
     {
@@ -110,6 +127,16 @@ public:
 
     FuzzyNormalizer* getFuzzyNormalizer() { return fuzzyNormalizer_; }
 
+    void setVirtualProperty(VirtualConfig virtualProperty)
+    {
+        virtualProperty_ = virtualProperty;
+    }
+
+    void getVirtualProperty(VirtualConfig& virtualProperty)
+    {
+        virtualProperty = virtualProperty_;
+    }
+
 private:
     void appendDocs(size_t last_docid);
 
@@ -137,6 +164,7 @@ private:
     boost::shared_ptr<FilterManager> filter_manager_;
     size_t doc_count_;
 
+    VirtualConfig virtualProperty_;
     std::map<std::string, PropertyFMIndex> all_fmi_;
     typedef std::map<std::string, PropertyFMIndex>::iterator FMIndexIter;
     typedef std::map<std::string, PropertyFMIndex>::const_iterator FMIndexConstIter;

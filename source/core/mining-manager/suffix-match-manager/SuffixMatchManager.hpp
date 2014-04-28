@@ -44,7 +44,7 @@ public:
 
     ~SuffixMatchManager();
 
-    void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
+    void addFMIndexProperties(const std::vector<std::string>& property_list, const VirtualConfig& virtualProperty, int type, bool finished = false);
 
     bool isStartFromLocalFM() const;
 

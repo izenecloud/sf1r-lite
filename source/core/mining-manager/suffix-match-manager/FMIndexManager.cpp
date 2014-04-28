@@ -40,6 +40,7 @@ bool FMIndexManager::isStartFromLocalFM() const
 
 void FMIndexManager::addProperties(const std::vector<std::string>& properties, PropertyFMType type)
 {
+    //property
     for (size_t i = 0; i < properties.size(); ++i)
     {
         const std::string& index_prop = properties[i];
@@ -384,25 +385,44 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
             {
                 const std::string& prop_name = it->first;
                 Document::property_const_iterator dit = doc.findProperty(prop_name);
-                if (dit == doc.propertyEnd())
+                if (prop_name != virtualProperty_.virtualName && dit == doc.propertyEnd() ) 
                 {
                     it->second.fmi->addDoc(NULL, 0);
                 }
                 else
                 {
-                    UString text = propstr_to_ustr(dit->second.getPropertyStrValue());
-                    Algorithm<UString>::to_lower(text);
-                    fuzzyNormalizer_->normalizeText(text);
-                    for(size_t c_i = 0; c_i < text.length(); ++c_i)
+                    UString totalText;
+                    UString space(" ", izenelib::util::UString::UTF_8);
+                    if (prop_name == virtualProperty_.virtualName)
                     {
-                        if(text[c_i] == succinct::fm_index::DOC_DELIM)
+                        for (std::vector<std::string>::iterator i = virtualProperty_.virtual_properties.begin();
+                             i != virtualProperty_.virtual_properties.end(); ++i)
+                        {
+                            Document::property_const_iterator vdit = doc.findProperty(*i);
+                            if (vdit != doc.propertyEnd())
+                            {
+                                UString text = propstr_to_ustr(vdit->second.getPropertyStrValue());
+                                totalText += text;
+                                totalText += space;
+                            }
+                        }
+                    }
+                    else
+                        totalText = propstr_to_ustr(dit->second.getPropertyStrValue());
+
+                    Algorithm<UString>::to_lower(totalText);
+                    fuzzyNormalizer_->normalizeText(totalText);
+
+                    for(size_t c_i = 0; c_i < totalText.length(); ++c_i)
+                    {
+                        if(totalText[c_i] == succinct::fm_index::DOC_DELIM)
                         {
                             LOG(WARNING) << "find a DOC_DELIM char in the document data.";
-                            text[c_i] = ' ';
+                            totalText[c_i] = ' ';
                         }
                     }
 
-                    it->second.fmi->addDoc(text.data(), text.length());
+                    it->second.fmi->addDoc(totalText.data(), totalText.length());
                 }
             }
         }

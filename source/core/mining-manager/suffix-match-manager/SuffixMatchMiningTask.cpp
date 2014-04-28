@@ -50,10 +50,13 @@ bool SuffixMatchMiningTask::preProcess(int64_t timestamp)
                                                  fmi_manager_->getFuzzyNormalizer()));
 
         std::vector<std::string> properties;
+        VirtualConfig virtulProperty;
         for (int i = 0; i < FMIndexManager::FM_TYPE_COUNT; ++i)
         {
             fmi_manager_->getProperties(properties, (FMIndexManager::PropertyFMType)i);
+            fmi_manager_->getVirtualProperty(virtulProperty);
             new_fmi_manager->addProperties(properties, (FMIndexManager::PropertyFMType)i);
+            new_fmi_manager->setVirtualProperty(virtulProperty);
             std::vector<std::string>().swap(properties);
         }
 

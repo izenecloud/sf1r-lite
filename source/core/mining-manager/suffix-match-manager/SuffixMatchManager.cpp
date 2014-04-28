@@ -53,8 +53,13 @@ SuffixMatchManager::~SuffixMatchManager()
     delete fuzzyNormalizer_;
 }
 
-void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
+void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, const VirtualConfig& virtualProperty, const int type, bool finished)
 {
+    if (!virtualProperty.virtualName.empty())
+    {
+        fmi_manager_->setVirtualProperty(virtualProperty);
+    }
+
     fmi_manager_->addProperties(property_list, (FMIndexManager::PropertyFMType)type);
     if (finished)
     {
