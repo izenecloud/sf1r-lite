@@ -276,6 +276,8 @@ bool MiningManager::open()
                 document_manager_, miningConfig_.mining_task_param.threadNum);
         }
 
+        if (numericTableBuilder_) delete numericTableBuilder_;
+        numericTableBuilder_ = new NumericPropertyTableBuilderImpl(*document_manager_);
         if (rtypeStringPropTableBuilder_) delete rtypeStringPropTableBuilder_;
         rtypeStringPropTableBuilder_ = new RTypeStringPropTableBuilder(*document_manager_);
 
