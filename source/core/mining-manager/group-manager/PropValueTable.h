@@ -13,7 +13,7 @@
 #include <common/inttypes.h>
 #include <common/PropSharedLock.h>
 #include "PropIdTable.h"
-#include "../faceted-submanager/faceted_types.h"
+#include "faceted_types.h"
 
 #include <util/ustring/UString.h>
 

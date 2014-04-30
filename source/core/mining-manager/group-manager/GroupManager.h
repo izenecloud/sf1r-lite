@@ -10,8 +10,8 @@
 
 #include "PropValueTable.h"
 #include "DateGroupTable.h"
+#include "ontology_rep.h"
 #include "../MiningTask.h"
-#include "../faceted-submanager/ontology_rep.h"
 #include <configuration-manager/GroupConfig.h>
 #include <document-manager/DocumentManager.h>
 

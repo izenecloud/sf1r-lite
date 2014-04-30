@@ -5,7 +5,7 @@
 #include "GroupLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
-#include "../faceted-submanager/ontology_rep.h"
+#include "ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
 #include "../attr-manager/AttrScoreCounter.h"

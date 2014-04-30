@@ -8,7 +8,7 @@
 #ifndef SF1R_DATE_STR_FORMAT_H_
 #define SF1R_DATE_STR_FORMAT_H_
 
-#include "../faceted-submanager/faceted_types.h"
+#include "faceted_types.h"
 #include "DateGroupTable.h"
 
 #include <string>

@@ -11,7 +11,7 @@
 #include "PropValueTable.h"
 #include "DateGroupTable.h"
 #include "DateStrParser.h"
-#include "../faceted-submanager/ontology_rep.h"
+#include "ontology_rep.h"
 #include <document-manager/DocumentManager.h>
 #include <configuration-manager/GroupConfig.h>
 #include <mining-manager/util/split_ustr.h>

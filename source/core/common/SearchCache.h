@@ -8,7 +8,7 @@
  */
 #include "ResultType.h" // KeywordSearchResult
 #include <query-manager/QueryIdentity.h>
-#include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <mining-manager/group-manager/ontology_rep.h>
 #include <cache/IzeneCache.h>
 #include <cache/concurrent_cache.hpp>
 

@@ -14,7 +14,7 @@
 #include <common/inttypes.h>
 #include <common/PropSharedLock.h>
 #include <util/ustring/UString.h>
-#include "../faceted-submanager/faceted_types.h"
+#include "../group-manager/faceted_types.h"
 #include "../group-manager/PropIdTable.h"
 
 #include <vector>

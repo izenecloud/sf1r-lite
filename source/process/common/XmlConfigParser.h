@@ -19,7 +19,7 @@
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <configuration-manager/LogServerConnectionConfig.h>
 #include <configuration-manager/GroupConfig.h>
-#include <mining-manager/faceted-submanager/ontology_rep_item.h>
+#include <mining-manager/group-manager/ontology_rep_item.h>
 #include <core/common/TermTypeDetector.h>
 #include <core/common/ByteSizeParser.h>
 

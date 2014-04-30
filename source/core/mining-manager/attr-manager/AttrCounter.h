@@ -9,8 +9,8 @@
 #define SF1R_ATTR_COUNTER_H
 
 #include "AttrTable.h"
-#include "../faceted-submanager/faceted_types.h"
-#include "../faceted-submanager/ontology_rep.h"
+#include "../group-manager/faceted_types.h"
+#include "../group-manager/ontology_rep.h"
 
 #include <vector>
 #include <map>

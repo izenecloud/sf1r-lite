@@ -8,7 +8,7 @@
 #ifndef SF1R_GROUP_PARAM_H
 #define SF1R_GROUP_PARAM_H
 
-#include "../faceted-submanager/faceted_types.h"
+#include "faceted_types.h"
 #include <configuration-manager/GroupConfig.h>
 
 #include <util/izene_serialization.h>

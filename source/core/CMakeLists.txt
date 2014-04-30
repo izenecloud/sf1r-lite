@@ -44,7 +44,6 @@ FILE(GLOB mining_SRC
   "mining-manager/*.cpp"
   "mining-manager/*.cc"
   "mining-manager/util/*.cpp"
-  "mining-manager/faceted-submanager/*.cc"
   "mining-manager/group-manager/*.cpp"
   "mining-manager/attr-manager/*.cpp"
   "mining-manager/group-label-logger/*.cpp"

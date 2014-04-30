@@ -8,7 +8,7 @@
 #ifndef SF1R_ATTR_MANAGER_H_
 #define SF1R_ATTR_MANAGER_H_
 
-#include "../faceted-submanager/ontology_rep.h"
+#include "../group-manager/ontology_rep.h"
 #include "AttrTable.h"
 #include "AttrMiningTask.h"
 #include <configuration-manager/AttrConfig.h>

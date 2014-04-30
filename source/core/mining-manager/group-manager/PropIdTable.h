@@ -8,7 +8,7 @@
 #ifndef SF1R_PROP_ID_TABLE_H
 #define SF1R_PROP_ID_TABLE_H
 
-#include "../faceted-submanager/faceted_types.h"
+#include "faceted_types.h"
 #include "../MiningException.hpp"
 #include <vector>
 #include <boost/static_assert.hpp>

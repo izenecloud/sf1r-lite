@@ -18,11 +18,11 @@
 #include <common/PropertyValue.h>
 #include <common/sf1_msgpack_serialization_types.h>
 #include <query-manager/ConditionInfo.h>
-#include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <mining-manager/group-manager/ontology_rep.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <mining-manager/group-manager/GroupParam.h>
 #include <idmlib/concept-clustering/cc_types.h>
-// #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
+
 #include <util/ustring/UString.h>
 #include <util/izene_serialization.h>
 

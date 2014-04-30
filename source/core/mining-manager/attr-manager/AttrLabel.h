@@ -9,7 +9,7 @@
 #define SF1R_ATTR_LABEL_H
 
 #include "AttrTable.h"
-#include "../faceted-submanager/faceted_types.h"
+#include "../group-manager/faceted_types.h"
 #include <set>
 
 NS_FACETED_BEGIN

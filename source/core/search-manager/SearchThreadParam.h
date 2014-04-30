@@ -11,7 +11,7 @@
 #include "CustomRanker.h"
 #include <common/ResultType.h>
 #include <mining-manager/group-manager/GroupRep.h>
-#include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <mining-manager/group-manager/ontology_rep.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
 #include <string>
