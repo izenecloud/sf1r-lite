@@ -1,6 +1,5 @@
 #include "ProductRankingConfig.h"
 #include <process/common/CollectionMeta.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <sstream>
 
 using namespace sf1r;
@@ -45,8 +44,6 @@ bool isNumericFilter(
     std::string& error)
 {
     const std::string& propName = scoreConfig.propName;
-    if (propName.empty() || propName == faceted::CTRManager::kCtrPropName)
-        return true;
 
     const IndexBundleSchema& indexSchema =
         collectionMeta.indexBundleConfig_->indexSchema_;

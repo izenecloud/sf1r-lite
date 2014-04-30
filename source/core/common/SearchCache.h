@@ -9,7 +9,6 @@
 #include "ResultType.h" // KeywordSearchResult
 #include <query-manager/QueryIdentity.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <cache/IzeneCache.h>
 #include <cache/concurrent_cache.hpp>
 
@@ -111,25 +110,6 @@ private:
     {
         bool check = refreshAll_ || key.isRandomRank;
 
-        // check "_ctr" sort property
-        if(!check)
-        {
-            const std::vector<std::pair<std::string , bool> >& sortProperties = key.sortInfo;
-            std::vector<std::pair<std::string , bool> >::const_iterator cit;
-            for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
-            {
-                if (cit->first == faceted::CTRManager::kCtrPropName)
-                {
-                    check = true;
-                    break;
-                }
-            }
-            ///Fixme!
-            ///COUNT(Property) will be refreshed from search cache
-            ///This is a temporary solution before we exactly know the rule for evicting search
-            ///cache periodically
-            if(key.counterList.size() > 0 ) check = true;
-        }
         if (check)
             return (std::time(NULL) - timestamp) > refreshInterval_;
         else

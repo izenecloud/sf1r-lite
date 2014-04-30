@@ -6,7 +6,6 @@
 #include "SortParser.h"
 
 #include <common/BundleSchemaHelpers.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -44,11 +43,7 @@ bool SortParser::parse(const Value& orders)
     sortPriorityList_.resize(parsedOrderCount());
     for (std::size_t i = 0; i < parsedOrderCount(); ++i)
     {
-        if (parsedOrders(i).property() == faceted::CTRManager::kCtrPropName)
-        {
-            //nothing
-        }
-        else if (parsedOrders(i).property() == "custom_rank")
+        if (parsedOrders(i).property() == "custom_rank")
         {
             if (!bCustomRank_) {
                 error() = "Please make sure \"custom_rank\" field is available, which is set as a sort property.";

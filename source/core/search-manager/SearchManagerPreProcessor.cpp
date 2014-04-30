@@ -9,7 +9,6 @@
 #include <ranking-manager/PropertyRanker.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <mining-manager/product-scorer/ProductScoreParam.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <common/SFLogger.h>
 #include <util/get.h>
 #include <util/ClockTimer.h>
@@ -103,18 +102,6 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT64_PROPERTY_TYPE,
-                    iter->second);
-                pSorter->addSortProperty(pSortProperty);
-                continue;
-            }
-            // sort by ctr (click through rate)
-            if (fieldNameL == faceted::CTRManager::kCtrPropName)
-            {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
-                SortProperty* pSortProperty = new SortProperty(
-                    iter->first,
-                    INT32_PROPERTY_TYPE,
-                    SortProperty::CTR,
                     iter->second);
                 pSorter->addSortProperty(pSortProperty);
                 continue;

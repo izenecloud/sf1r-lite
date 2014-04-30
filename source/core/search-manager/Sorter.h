@@ -27,11 +27,6 @@ class PropSharedLockSet;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
 
-namespace faceted
-{
-class CTRManager;
-}
-
 /*
 * @brief Sortproperty  indicates a property according to which the query results are sorted
 */

@@ -13,14 +13,12 @@
 namespace sf1r
 {
 class DocumentManager;
-namespace faceted { class CTRManager; }
 
 class NumericPropertyTableBuilderImpl : public NumericPropertyTableBuilder
 {
 public:
     NumericPropertyTableBuilderImpl(
-        DocumentManager& documentManager,
-        const faceted::CTRManager* ctrManager);
+        DocumentManager& documentManager);
 
     virtual boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
         const std::string& propertyName);
