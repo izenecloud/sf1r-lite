@@ -10,6 +10,7 @@
 #include <common/CollectionManager.h>
 #include <controllers/CollectionHandler.h>
 #include <index/IndexSearchService.h>
+#include <boost/threadpool.hpp>
 
 namespace sf1r
 {
@@ -27,8 +28,10 @@ public:
 
     void start(const std::string& host, uint16_t port, unsigned int threadnum = 30)
     {
+        if (!pool_)
+            pool_.reset(new boost::threadpool::pool(threadnum));
         instance.listen(host, port);
-        instance.start(threadnum);
+        instance.start(threadnum/2);
     }
 
     void stop()
@@ -37,6 +40,11 @@ public:
         {
             instance.end();
             instance.join();
+        }
+        if (pool_)
+        {
+            pool_->clear();
+            pool_->wait();
         }
     }
 
@@ -49,15 +57,15 @@ public:
 
             if (method == MasterServerConnector::Methods_[MasterServerConnector::Method_getDocumentsByIds_])
             {
-                getDocumentsByIds(req);
+                pool_->schedule(boost::bind(&MasterServer::getDocumentsByIds, this, req));
             }
             else if (method == MasterServerConnector::Methods_[MasterServerConnector::Method_documentSearch_])
             {
-                documentSearch(req);
+                pool_->schedule(boost::bind(&MasterServer::documentSearch, this, req));
             }
             else if (method == "notify")
             {
-                notify(req);
+                pool_->schedule(boost::bind(&MasterServer::notify, this, req));
             }
             else
             {
@@ -163,6 +171,8 @@ private:
             }
         }
     }
+    typedef boost::shared_ptr<boost::threadpool::pool> thread_ptr_t;
+    thread_ptr_t pool_;
 };
 
 }
