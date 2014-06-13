@@ -6,7 +6,7 @@
 namespace sf1r
 {
 
-namespace
+namespace detail
 {
 
 inline double rad(double d)
@@ -14,7 +14,7 @@ inline double rad(double d)
     return d * M_PI / 180.0;
 }
 
-inline double dist(double lat1, double long1, double lat2, double long2)
+inline double geodist(double lat1, double long1, double lat2, double long2)
 {
     static const double EARTH_RADIUS = 6378.137;
     double radLat1 = rad(lat1);
@@ -42,9 +42,11 @@ GeoLocationRanker::~GeoLocationRanker()
 double GeoLocationRanker::evaluate(docid_t& docid)
 {
     std::pair<double, double> coordinate;
-    propertyTable_->getDoublePairValue(docid, coordinate, false);
+    if (!propertyTable_->getDoublePairValue(docid, coordinate, false)
+            || abs(coordinate.first) > 180.0 || abs(coordinate.second) > 180.0)
+        return __builtin_inf();
 
-    return dist(reference_.first, reference_.second, coordinate.first, coordinate.second);
+    return detail::geodist(reference_.first, reference_.second, coordinate.first, coordinate.second);
 }
 
 }
