@@ -100,7 +100,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     //std::vector<QueryFiltering::FilteringTreeValue>& filtingTreeList =
     //    actionOperation.actionItem_.filteringTreeList_;
 
-    ConditionsNode& filtingTreeList = 
+    ConditionsNode& filtingTreeList =
                     actionOperation.actionItem_.filterTree_;
 
     boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet;
@@ -147,9 +147,10 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
     try
     {
-        preprocessor_.prepareSorterCustomRanker(actionOperation,
-                                                param.pSorter,
-                                                param.customRanker);
+        preprocessor_.prepareSorter(actionOperation,
+                                    param.pSorter,
+                                    param.customRanker,
+                                    param.geoLocationRanker);
     }
     catch (std::exception& e)
     {
@@ -296,7 +297,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     ProductScorer* productScorer = preprocessor_.createProductScorer(
         actionOperation.actionItem_, propSharedLockSet, relevanceScorer);
 
-    ScoreDocEvaluator scoreDocEvaluator(productScorer, param.customRanker);
+    ScoreDocEvaluator scoreDocEvaluator(productScorer, param.customRanker, param.geoLocationRanker);
+
     try
     {
         time_t start_search = time(NULL);

@@ -33,6 +33,7 @@ using    izenelib::VECTOR_VECTOR_UNSIGNED_INT_TYPE;
 using    izenelib::CUSTOM_RANKING_PROPERTY_TYPE;
     //subdocument type
 using    izenelib::SUBDOC_PROPERTY_TYPE;
+using    izenelib::GEOLOCATION_PROPERTY_TYPE;
 
 using izenelib::ID_FREQ_ORDERED_MAP_T;
 using izenelib::ID_FREQ_UNORDERED_MAP_T;

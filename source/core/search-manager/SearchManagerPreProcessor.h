@@ -46,7 +46,7 @@ public:
     {
         numericTableBuilder_ = builder;
     }
-    
+
     void setRTypeStringPropTableBuilder(RTypeStringPropTableBuilder* builder)
     {
         rtypeStringPropTableBuilder_ = builder;
@@ -65,11 +65,12 @@ public:
         DistKeywordSearchInfo& distSearchInfo,
         PropSharedLockSet& propSharedLockSet);
 
-    void prepareSorterCustomRanker(
+    void prepareSorter(
         const SearchKeywordOperation& actionOperation,
         boost::shared_ptr<Sorter>& pSorter,
-        CustomRankerPtr& customRanker);
-    
+        CustomRankerPtr& customRanker,
+        GeoLocationRankerPtr& geoLocationRanker);
+
     template<class UnaryOperator>
     void preparePropertyList(
         std::vector<std::string>& indexPropertyList,
@@ -135,7 +136,7 @@ private:
     ProductScorerFactory* productScorerFactory_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
-    
+
     RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 };
 

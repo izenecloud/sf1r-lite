@@ -29,6 +29,7 @@
 
 #include <ranking-manager/RankingEnumerator.h>
 #include <search-manager/CustomRanker.h>
+#include <search-manager/GeoLocationRanker.h>
 #include <mining-manager/group-manager/GroupParam.h>
 
 #include <util/izene_serialization.h>
@@ -312,6 +313,7 @@ public:
         , paramConstValueMap_(obj.paramConstValueMap_)
         , paramPropertyValueMap_(obj.paramPropertyValueMap_)
         , customRanker_(obj.customRanker_)
+        , geoLocationRanker_(obj.geoLocationRanker_)
         , isRandomRank_(obj.isRandomRank_)
         , requireRelatedQueries_(obj.requireRelatedQueries_)
         , isAnalyzeResult_(obj.isAnalyzeResult_)
@@ -340,6 +342,7 @@ public:
         paramConstValueMap_ = obj.paramConstValueMap_;
         paramPropertyValueMap_ = obj.paramPropertyValueMap_;
         customRanker_ = obj.customRanker_;
+        geoLocationRanker_ = obj.geoLocationRanker_;
         isRandomRank_ = obj.isRandomRank_;
         requireRelatedQueries_ = obj.requireRelatedQueries_;
         isAnalyzeResult_ = obj.isAnalyzeResult_;
@@ -368,6 +371,7 @@ public:
             && paramConstValueMap_ == obj.paramConstValueMap_
             && paramPropertyValueMap_ == obj.paramPropertyValueMap_
             && customRanker_ == obj.customRanker_
+            && geoLocationRanker_ == obj.geoLocationRanker_
             && isRandomRank_ == obj.isRandomRank_
             && requireRelatedQueries_ == obj.requireRelatedQueries_
             && isAnalyzeResult_ == obj.isAnalyzeResult_;
@@ -549,7 +553,11 @@ public:
     /// @brief custom ranking information(2)
     /// Avoid a second parsing by passing a reference to CustomRanker object.
     /// TODO, abandon this, serialization needed for remoted call
-    boost::shared_ptr<CustomRanker> customRanker_;
+    CustomRankerPtr customRanker_;
+
+    std::pair<double, double> geoLocation_;
+    std::string geoLocationProperty_;
+    GeoLocationRankerPtr geoLocationRanker_;
 
     bool isRandomRank_;
 
@@ -638,8 +646,8 @@ public:
     //std::vector<QueryFiltering::FilteringType> filteringList_;
 
 	/// @brief filtering tree-likes options
-    ConditionsNode filterTree_;    
-    
+    ConditionsNode filterTree_;
+
     void print(std::ostream& out = std::cout) const
     {
         stringstream ss;

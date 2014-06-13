@@ -252,6 +252,7 @@ public:
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::vector<float>& customRankScoreList,
+            std::vector<float>& geoDistanceList,
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,

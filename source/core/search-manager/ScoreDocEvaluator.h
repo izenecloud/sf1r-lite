@@ -9,6 +9,7 @@
 #define SF1R_SCORE_DOC_EVALUATOR_H
 
 #include "CustomRanker.h"
+#include "GeoLocationRanker.h"
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <boost/scoped_ptr.hpp>
 
@@ -20,8 +21,9 @@ class ScoreDocEvaluator
 {
 public:
     ScoreDocEvaluator(
-        ProductScorer* productScorer,
-        CustomRankerPtr customRanker);
+            ProductScorer* productScorer,
+            CustomRankerPtr customRanker,
+            GeoLocationRankerPtr geoLocationRanker);
 
     void evaluate(ScoreDoc& scoreDoc);
 
@@ -29,6 +31,8 @@ private:
     boost::scoped_ptr<ProductScorer> productScorer_;
 
     CustomRankerPtr customRanker_;
+
+    GeoLocationRankerPtr geoLocationRanker_;
 };
 
 } // namespace sf1r

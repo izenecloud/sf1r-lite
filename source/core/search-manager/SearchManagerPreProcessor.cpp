@@ -33,10 +33,11 @@ SearchManagerPreProcessor::SearchManagerPreProcessor(const IndexBundleSchema& in
     }
 }
 
-void SearchManagerPreProcessor::prepareSorterCustomRanker(
+void SearchManagerPreProcessor::prepareSorter(
     const SearchKeywordOperation& actionOperation,
     boost::shared_ptr<Sorter>& pSorter,
-    CustomRankerPtr& customRanker)
+    CustomRankerPtr& customRanker,
+    GeoLocationRankerPtr& geoLocationRanker)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
@@ -60,6 +61,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
         {
             std::string fieldNameL = iter->first;
             boost::to_lower(fieldNameL);
+
             // sort by custom ranking
             if (fieldNameL == CUSTOM_RANK_PROPERTY)
             {
@@ -84,7 +86,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
                 continue;
             }
             // sort by rank
-            if (fieldNameL == RANK_PROPERTY)
+            else if (fieldNameL == RANK_PROPERTY)
             {
                 if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
@@ -96,12 +98,35 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
                 continue;
             }
             // sort by date
-            if (fieldNameL == DATE_PROPERTY)
+            else if (fieldNameL == DATE_PROPERTY)
             {
                 if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT64_PROPERTY_TYPE,
+                    iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                continue;
+            }
+            // sort by geo distance
+            else if (fieldNameL == actionOperation.actionItem_.geoLocationProperty_)
+            {
+                geoLocationRanker = actionOperation.actionItem_.geoLocationRanker_;
+                if (!geoLocationRanker)
+                {
+                    std::pair<double, double> reference = actionOperation.actionItem_.geoLocation_;
+                    boost::shared_ptr<NumericPropertyTableBase> propertyTable
+                        = numericTableBuilder_->createPropertyTable(iter->first);
+                    if (!propertyTable) continue;
+
+                    geoLocationRanker.reset(new GeoLocationRanker(reference, propertyTable));
+                }
+
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
+                SortProperty* pSortProperty = new SortProperty(
+                    "GEO_DIST",
+                    GEOLOCATION_PROPERTY_TYPE,
+                    SortProperty::GEODIST,
                     iter->second);
                 pSorter->addSortProperty(pSortProperty);
                 continue;

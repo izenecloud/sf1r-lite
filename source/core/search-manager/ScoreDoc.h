@@ -11,7 +11,7 @@ namespace sf1r
 struct ScoreDoc
 {
     explicit ScoreDoc(docid_t id = 0, double s = 0.0)
-        : docId(id), score(s), custom_score(0)
+        : docId(id), score(s), custom_score(0.0), geo_dist(0.0)
     {}
 
     ~ScoreDoc()
@@ -21,6 +21,7 @@ struct ScoreDoc
     docid_t docId;
     double score;
     double custom_score;
+    double geo_dist;
 };
 } // namespace sf1r
 #endif // SF1R_SEARCH_MANAGER_SCORE_DOC_H

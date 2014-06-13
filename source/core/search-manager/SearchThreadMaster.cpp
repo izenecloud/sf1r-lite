@@ -165,9 +165,11 @@ bool SearchThreadMaster::fetchSearchResult(
     std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
     std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
     std::vector<float>& customRankScoreList = searchResult.topKCustomRankScoreList_;
+    std::vector<float>& geoDistanceList = searchResult.topKGeoDistanceList_;
     boost::shared_ptr<HitQueue> scoreItemQueue(threadParam.scoreItemQueue);
     CustomRankerPtr customRanker = threadParam.customRanker;
-    
+    GeoLocationRankerPtr geoLocationRanker = threadParam.geoLocationRanker;
+
     std::size_t count = 0;
     if (offset < scoreItemQueue->size())
     {
@@ -179,6 +181,11 @@ bool SearchThreadMaster::fetchSearchResult(
     if (customRanker)
     {
         customRankScoreList.resize(count);
+    }
+
+    if (geoLocationRanker)
+    {
+        geoDistanceList.resize(count);
     }
 
     // here PriorityQueue is used to get topK elements, as PriorityQueue::pop()
@@ -193,6 +200,10 @@ bool SearchThreadMaster::fetchSearchResult(
         {
             // should not be normalized
             customRankScoreList[i] = pScoreItem.custom_score;
+        }
+        if (geoLocationRanker)
+        {
+            geoDistanceList[i] = pScoreItem.geo_dist;
         }
     }
 

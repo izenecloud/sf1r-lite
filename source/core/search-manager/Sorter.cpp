@@ -119,6 +119,7 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
         case SortProperty::SCORE:
             pSortProperty->pComparator_= new SortPropertyComparator();
             break;
+
         case SortProperty::AUTO:
         case SortProperty::CTR:
             if (STRING_PROPERTY_TYPE == pSortProperty->getPropertyDataType())
@@ -132,8 +133,13 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
                                                                    propSharedLockSet);
             }
             break;
+
         case SortProperty::CUSTOM:
             pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
+            break;
+
+        case SortProperty::GEODIST:
+            pSortProperty->pComparator_ = new SortPropertyComparator(GEOLOCATION_PROPERTY_TYPE);
             break;
         }
 

@@ -56,6 +56,9 @@ void SortPropertyComparator::initComparator()
     case CUSTOM_RANKING_PROPERTY_TYPE:
         comparator_ = &SortPropertyComparator::compareImplCustomRanking;
         break;
+    case GEOLOCATION_PROPERTY_TYPE:
+        comparator_ = &SortPropertyComparator::compareImplGeoLocation;
+        break;
     default:
         comparator_ = &SortPropertyComparator::compareImplDefault;
         break;
@@ -93,6 +96,13 @@ int SortPropertyComparator::compareImplCustomRanking(const ScoreDoc& doc1, const
 {
     if (doc1.custom_score < doc2.custom_score) return -1;
     if (doc1.custom_score > doc2.custom_score) return 1;
+    return 0;
+}
+
+int SortPropertyComparator::compareImplGeoLocation(const ScoreDoc& doc1, const ScoreDoc& doc2) const
+{
+    if (doc1.geo_dist < doc2.geo_dist) return -1;
+    if (doc1.geo_dist > doc2.geo_dist) return 1;
     return 0;
 }
 

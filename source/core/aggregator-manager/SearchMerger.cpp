@@ -42,6 +42,7 @@ static void emptyWorkerResult(KeywordSearchResult& wresult)
     wresult.topKtids_.clear();
     wresult.topKRankScoreList_.clear();
     wresult.topKCustomRankScoreList_.clear();
+    wresult.topKGeoDistanceList_.clear();
     wresult.pageOffsetList_.clear();
 
     for(size_t i = 0; i < wresult.fullTextOfDocumentInPage_.size(); ++i)
@@ -247,6 +248,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
 
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
+    bool hasGeoDistance = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
     mergeResult.attrRep_ = result0.attrRep_;
     std::list<const faceted::OntologyRep*> otherAttrReps;
@@ -262,8 +264,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         mergeResult.totalCount_ += wResult.totalCount_;
         totalTopKCount += wResult.topKDocs_.size();
 
-        if (wResult.topKCustomRankScoreList_.size() > 0)
-            hasCustomRankScore = true;
+        hasCustomRankScore |= !wResult.topKCustomRankScoreList_.empty();
+        hasGeoDistance |= !wResult.topKGeoDistanceList_.empty();
 
         if (wResult.propertyRange_.lowValue_ < rangeLow)
         {
@@ -313,6 +315,9 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
 
     if (hasCustomRankScore)
         mergeResult.topKCustomRankScoreList_.resize(topKCount);
+
+    if (hasGeoDistance)
+        mergeResult.topKGeoDistanceList_.resize(topKCount);
 
     // Prepare comparator for each sub result (compare by sort properties).
     DocumentComparator** docComparators = new DocumentComparator*[workerNum];
@@ -368,11 +373,15 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         mergeResult.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         mergeResult.topKWorkerIds_[cnt] = workerid;
         mergeResult.topKRankScoreList_[cnt] = wResult.topKRankScoreList_[iter[maxi]];
-        if (hasCustomRankScore && wResult.topKCustomRankScoreList_.size() > 0)
+
+        if (hasCustomRankScore && !wResult.topKCustomRankScoreList_.empty())
             mergeResult.topKCustomRankScoreList_[cnt] = wResult.topKCustomRankScoreList_[iter[maxi]];
 
+        if (hasGeoDistance && !wResult.topKGeoDistanceList_.empty())
+            mergeResult.topKGeoDistanceList_[cnt] = wResult.topKGeoDistanceList_[iter[maxi]];
+
         // next
-        iter[maxi] ++;
+        ++iter[maxi];
     }
 
     delete[] iter;

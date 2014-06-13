@@ -9,6 +9,7 @@
 #define SF1R_SEARCH_THREAD_PARAM_H
 
 #include "CustomRanker.h"
+#include "GeoLocationRanker.h"
 #include <common/ResultType.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <mining-manager/group-manager/ontology_rep.h>
@@ -38,6 +39,7 @@ struct SearchThreadParam
 
     boost::shared_ptr<Sorter> pSorter;
     CustomRankerPtr customRanker;
+    GeoLocationRankerPtr geoLocationRanker;
 
     std::size_t heapSize;
     boost::shared_ptr<HitQueue> scoreItemQueue;

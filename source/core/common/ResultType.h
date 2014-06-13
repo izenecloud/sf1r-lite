@@ -154,6 +154,12 @@ public:
             ss << topKCustomRankScoreList_[i] << ", ";
         }
         ss << endl;
+        ss << "topKGeoDistanceList_: " << endl;
+        for (size_t i = 0; i < topKGeoDistanceList_.size(); i ++)
+        {
+            ss << topKGeoDistanceList_[i] << ", ";
+        }
+        ss << endl;
         ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
         ss << endl;
         ss << "pageOffsetList_          : " << pageOffsetList_.size() << endl;
@@ -286,6 +292,8 @@ public:
 
     /// A list of custom ranking scores. The sequence is following \c topKDocs_.
     std::vector<float> topKCustomRankScoreList_;
+
+    std::vector<float> topKGeoDistanceList_;
 
     PropertyRange propertyRange_;
 
@@ -422,6 +430,7 @@ public:
         topKtids_.swap(other.topKtids_);
         topKRankScoreList_.swap(other.topKRankScoreList_);
         topKCustomRankScoreList_.swap(other.topKCustomRankScoreList_);
+        topKGeoDistanceList_.swap(other.topKGeoDistanceList_);
         propertyRange_.swap(other.propertyRange_);
         swap(start_, other.start_);
         swap(count_, other.count_);
@@ -445,7 +454,7 @@ public:
     MSGPACK_DEFINE(
             rawQueryString_, pruneQueryString_, distSearchInfo_, encodingType_, collectionName_, analyzedQuery_,
             queryTermIdList_, totalCount_, counterResults_, docsInPage_, topKDocs_, adCachedTopKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
-            topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
+            topKCustomRankScoreList_, topKGeoDistanceList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);

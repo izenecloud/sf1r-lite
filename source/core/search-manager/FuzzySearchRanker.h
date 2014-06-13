@@ -48,6 +48,7 @@ public:
             std::vector<uint32_t>& docid_list,
             std::vector<float>& result_score_list,
             std::vector<float>& custom_score_list,
+            std::vector<float>& geo_distance_list,
             DistKeywordSearchInfo& distSearchInfo);
 
 private:

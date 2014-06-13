@@ -29,6 +29,11 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
             dataList = (void*)(distSearchResult.topKCustomRankScoreList_.data());
             pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
         }
+        else if (property == "GEO_DIST")
+        {
+            dataList = (void*)(distSearchResult.topKGeoDistanceList_.data());
+            pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
+        }
         else
         {
             while (1)

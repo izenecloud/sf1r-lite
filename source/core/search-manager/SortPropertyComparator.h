@@ -45,6 +45,7 @@ private:
     int compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplCustomRanking(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplGeoLocation(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 };
 
 }

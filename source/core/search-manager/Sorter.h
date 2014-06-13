@@ -38,8 +38,10 @@ public:
         SCORE,  ///sort by ranking score
         AUTO,   ///sort by ranking score and property
         CUSTOM, ///sort by customized comparator
-        CTR     ///sort by click through rate
+        CTR,    ///sort by click through rate
+        GEODIST ///sort by geographical distance
     };
+
 public:
     SortProperty(const SortProperty& src);
 
@@ -110,7 +112,7 @@ class Sorter
 public:
     // Downward compatibiltiy
     Sorter(NumericPropertyTableBuilder* numericTableBuilder);
-    
+
     Sorter(NumericPropertyTableBuilder* numericTableBuilder,
            RTypeStringPropTableBuilder* rtypeStringPropBuilder);
 
@@ -157,7 +159,7 @@ private:
     SortPropertyComparator* createNumericComparator_(
         const std::string& propName,
         PropSharedLockSet& propSharedLockSet);
-    
+
     SortPropertyComparator* createRTypeStringComparator_(
         const std::string& propName,
         PropSharedLockSet& propSharedLockSet);

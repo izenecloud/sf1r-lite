@@ -150,38 +150,25 @@ void DocumentsRenderer::renderDocuments(
     std::vector<sf1r::wdocid_t> topKWDocs;
     searchResult.getTopKWDocs(topKWDocs);
 
+    bool enableCustomRankScore = searchResult.topKCustomRankScoreList_.size() == searchResult.topKDocs_.size();
+    bool enableGeoDistance = searchResult.topKGeoDistanceList_.size() == searchResult.topKDocs_.size();
+
     for (std::size_t i = 0; i < searchResult.count_; ++i, ++indexInTopK)
     {
         Value& newResource = resources();
         newResource[Keys::_id] = topKWDocs[indexInTopK];
         newResource[Keys::_rank] = searchResult.topKRankScoreList_[indexInTopK];
 
-        if (searchResult.topKCustomRankScoreList_.size()
-                == searchResult.topKDocs_.size())
+        renderPropertyList(splitRenderer_, propertyList, searchResult, i, newResource);
+
+        if (enableCustomRankScore)
         {
             newResource[Keys::_custom_rank] = searchResult.topKCustomRankScoreList_[indexInTopK];
         }
 
-        renderPropertyList(splitRenderer_, propertyList,
-            searchResult, i, newResource);
-
-        if (searchResult.topKtids_.size()
-            == searchResult.topKDocs_.size())
+        if (enableGeoDistance)
         {
-            newResource[Keys::_tid] =
-                searchResult.topKtids_[indexInTopK];
-        }
-
-        if (searchResult.docCategories_.size()
-            == searchResult.topKDocs_.size())
-        {
-            Value& documentCategories = newResource[Keys::_categories];
-            std::string categoryValueBuffer;
-            for(std::size_t c = 0;
-                c < searchResult.docCategories_[indexInTopK].size(); ++c)
-            {
-                documentCategories() = propstr_to_str(searchResult.docCategories_[indexInTopK][c], kEncoding);
-            }
+            newResource[Keys::_geo_dist] = searchResult.topKGeoDistanceList_[indexInTopK];
         }
     }
 }

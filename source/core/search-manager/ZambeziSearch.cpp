@@ -186,7 +186,7 @@ bool ZambeziSearch::search(
 
     if (tokenList.empty())
         return false;
-    
+
     ZambeziFilter filter(documentManager_, groupFilter, filterBitset);
 
     zambeziManager_->search(algorithm, tokenList, search_in_properties,
@@ -236,9 +236,12 @@ bool ZambeziSearch::search(
 
     boost::shared_ptr<Sorter> sorter;
     CustomRankerPtr customRanker;
-    preprocessor_.prepareSorterCustomRanker(actionOperation,
-                                            sorter,
-                                            customRanker);
+    GeoLocationRankerPtr geoLocationRanker;
+
+    preprocessor_.prepareSorter(actionOperation,
+                                sorter,
+                                customRanker,
+                                geoLocationRanker);
 
     boost::scoped_ptr<HitQueue> scoreItemQueue;
     const std::size_t heapSize = limit + offset;
@@ -273,10 +276,17 @@ bool ZambeziSearch::search(
                 continue;
 
             ScoreDoc scoreItem(docId, scores[i]);
+
             if (customRanker)
             {
                 scoreItem.custom_score = customRanker->evaluate(docId);
             }
+
+            if (geoLocationRanker)
+            {
+                scoreItem.geo_dist = geoLocationRanker->evaluate(docId);
+            }
+
             scoreItemQueue->insert(scoreItem);
 
             ++totalCount;
@@ -314,6 +324,7 @@ bool ZambeziSearch::search(
     std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
     std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
     std::vector<float>& customScoreList = searchResult.topKCustomRankScoreList_;
+    std::vector<float>& geoDistanceList = searchResult.topKGeoDistanceList_;
 
     docIdList.resize(topKCount);
     rankScoreList.resize(topKCount);
@@ -321,6 +332,11 @@ bool ZambeziSearch::search(
     if (customRanker)
     {
         customScoreList.resize(topKCount);
+    }
+
+    if (geoLocationRanker)
+    {
+        geoDistanceList.resize(topKCount);
     }
 
     LOG(INFO) << "resultList size: " << resultList.size()
@@ -331,9 +347,15 @@ bool ZambeziSearch::search(
         const ScoreDoc& scoreItem =  resultList[i + offset];
         docIdList[i] = scoreItem.docId;
         rankScoreList[i] = scoreItem.score;
+
         if (customRanker)
         {
             customScoreList[i] = scoreItem.custom_score;
+        }
+
+        if (geoLocationRanker)
+        {
+            geoDistanceList[i] = scoreItem.geo_dist;
         }
     }
 

@@ -135,25 +135,28 @@ void FuzzySearchRanker::rankByPropValue(
         std::vector<uint32_t>& docid_list,
         std::vector<float>& result_score_list,
         std::vector<float>& custom_score_list,
+        std::vector<float>& geo_distance_list,
         DistKeywordSearchInfo& distSearchInfo)
 {
     if (docid_list.size() <= start)
         return;
 
     CustomRankerPtr customRanker;
+    GeoLocationRankerPtr geoLocationRanker;
     boost::shared_ptr<Sorter> pSorter;
     try
     {
-        preprocessor_.prepareSorterCustomRanker(actionOperation,
-                                                pSorter,
-                                                customRanker);
+        preprocessor_.prepareSorter(actionOperation,
+                                    pSorter,
+                                    customRanker,
+                                    geoLocationRanker);
     }
     catch (std::exception& e)
     {
         return;
     }
 
-    if (!customRanker &&
+    if (!customRanker && !geoLocationRanker &&
         preprocessor_.isSortByRankProp(actionOperation.actionItem_.sortPriorityList_))
     {
         LOG(INFO) << "no need to resort, sorting by original fuzzy match order.";
@@ -186,6 +189,11 @@ void FuzzySearchRanker::rankByPropValue(
             tmpdoc.custom_score = customRanker->evaluate(tmpdoc.docId);
         }
 
+        if (geoLocationRanker)
+        {
+            tmpdoc.geo_dist = geoLocationRanker->evaluate(tmpdoc.docId);
+        }
+
         scoreItemQueue->insert(tmpdoc);
         //cout << "doc : " << tmpdoc.docId << ", score is:" << tmpdoc.score << "," << tmpdoc.custom_score << endl;
     }
@@ -199,14 +207,25 @@ void FuzzySearchRanker::rankByPropValue(
         custom_score_list.resize(need_count);
     }
 
+    if (geoLocationRanker)
+    {
+        geo_distance_list.resize(need_count);
+    }
+
     for (size_t i = 0; i < need_count; ++i)
     {
         const ScoreDoc& pScoreItem = scoreItemQueue->pop();
         docid_list[need_count - i - 1] = pScoreItem.docId;
         result_score_list[need_count - i - 1] = pScoreItem.score;
+
         if (customRanker)
         {
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
+        }
+
+        if (geoLocationRanker)
+        {
+            geo_distance_list[need_count - i - 1] = pScoreItem.geo_dist;
         }
     }
     if (pSorter && distSearchInfo.isDistributed_)
