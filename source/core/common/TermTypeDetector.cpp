@@ -44,26 +44,29 @@ bool TermTypeDetector::checkFloatFormat(const std::string & term)
     }
 }
 
+bool TermTypeDetector::checkDoubleFormat(const std::string & term)
+{
+    try
+    {
+        propertyValue_ = boost::lexical_cast<double>(term);
+        return true;
+    }
+    catch (boost::bad_lexical_cast& e)
+    {
+        return false;
+    }
+}
+
 bool TermTypeDetector::isTypeMatch(const std::string& term, const sf1r::PropertyDataType& dataType)
 {
     switch (dataType)
     {
-        case INT32_PROPERTY_TYPE:
-            if (checkInt32Format(term))
-                return true;
-            break;
-        case FLOAT_PROPERTY_TYPE:
-            if (checkFloatFormat(term))
-                return true;
-            break;
-        case INT64_PROPERTY_TYPE:
-            if (checkInt64Format(term))
-                return true;
-            break;
-        default:
-            break;
+        case INT32_PROPERTY_TYPE: return checkInt32Format(term);
+        case FLOAT_PROPERTY_TYPE: return checkFloatFormat(term);
+        case INT64_PROPERTY_TYPE: return checkInt64Format(term);
+        case DOUBLE_PROPERTY_TYPE: return checkDoubleFormat(term);
+        default: return false;
     }
-    return false;
 }
 
 }// namespace sf1r

@@ -34,6 +34,9 @@ public:
     /// @brief  Checks if a given string can be converted to float form
     static bool checkFloatFormat(const string & term);
 
+    /// @brief  Checks if a given string can be converted to double form
+    static bool checkDoubleFormat(const string & term);
+
     static bool isTypeMatch(const std::string & term, const sf1r::PropertyDataType& dataType);
 
 public:

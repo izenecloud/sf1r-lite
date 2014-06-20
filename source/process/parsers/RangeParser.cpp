@@ -48,6 +48,7 @@ bool RangeParser::parse(const Value& rangeValue)
             && (propertyConfig.propertyType_ == INT32_PROPERTY_TYPE
                 || propertyConfig.propertyType_ == DATETIME_PROPERTY_TYPE
                 || propertyConfig.propertyType_ == FLOAT_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == DOUBLE_PROPERTY_TYPE
                 || propertyConfig.propertyType_ == INT8_PROPERTY_TYPE
                 || propertyConfig.propertyType_ == INT16_PROPERTY_TYPE
                 || propertyConfig.propertyType_ == INT64_PROPERTY_TYPE))

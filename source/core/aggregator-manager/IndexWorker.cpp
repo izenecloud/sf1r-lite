@@ -103,7 +103,7 @@ IndexWorker::IndexWorker(
     createPropertyList_();
     scd_writer_->SetFlushLimit(500);
     scheduleOptimizeTask();
-    
+
     index_thread_status_ = new bool[INDEX_THREAD];
     asynchronousTasks_.resize(INDEX_THREAD);
     for(size_t i = 0; i < INDEX_THREAD; ++i)
@@ -710,7 +710,7 @@ void IndexWorker::lazyOptimizeIndex(int calltype)
             }
             return;
         }
-        
+
         DISTRIBUTE_WRITE_BEGIN;
         DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
@@ -1049,13 +1049,11 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 {
                     if (inplace_type == 0)
                     {
-                        int64_t newv = boost::lexical_cast<int64_t>(oldvalue_str) + boost::lexical_cast<int64_t>(opvalue);
-                        new_propvalue = boost::lexical_cast<std::string>(newv);
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<int64_t>(oldvalue_str) + boost::lexical_cast<int64_t>(opvalue));
                     }
                     else if (inplace_type == 1)
                     {
-                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue_str) +
-                                boost::lexical_cast<float>(opvalue));
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue_str) + boost::lexical_cast<float>(opvalue));
                     }
                     else if (inplace_type == 2)
                     {
@@ -1370,7 +1368,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         //use sharding in sharding or not in sharding ...
         if (DistributeFileSys::get()->isEnabled() && scdSharder_)
         {
-            if (scdSharder_->sharding(*docptr) != 
+            if (scdSharder_->sharding(*docptr) !=
                 MasterManagerBase::get()->getMyShardId())
             {
                 continue;
@@ -1383,7 +1381,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         UpdateType updateType = INSERT;
 
         std::string source = "";
-        SCDDoc::const_iterator p = docptr->begin(); 
+        SCDDoc::const_iterator p = docptr->begin();
         for (; p != docptr->end(); p++) // find DOCID;
         {
             if (boost::iequals(p->first, DOCID)) // DOCID
@@ -1409,7 +1407,7 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         if (is_real_time_)
         {
-            // real time can not using multi thread because of the inverted index in 
+            // real time can not using multi thread because of the inverted index in
             // the real time can not handle the out-of-order docid list.
             time_t new_timestamp = timestamp;
             document.clear();
@@ -1421,7 +1419,7 @@ bool IndexWorker::insertOrUpdateSCD_(
 
             if (scdType == INSERT_SCD || oldId == 0)
             {
-                insertDoc_(0, document, new_timestamp, true); 
+                insertDoc_(0, document, new_timestamp, true);
             }
             else
             {
@@ -1859,7 +1857,7 @@ bool IndexWorker::prepareDocIdAndUpdateType_(const uint128_t& scdDocId,
     return true;
 }
 /*
- *@brief prepareDocumenet need to support all the index schema 
+ *@brief prepareDocumenet need to support all the index schema
  *
  */
 bool IndexWorker::prepareDocument_(
@@ -1888,7 +1886,7 @@ bool IndexWorker::prepareDocument_(
 
     PropertyConfig tempPropertyConfig;
     for (; p != doc.end(); p++)
-    {    
+    {
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
         bool isIndexSchema = false;
@@ -1996,7 +1994,7 @@ bool IndexWorker::prepareDocument_(
                     std::string rtypevalue;
                     numericPropertyTable->getStringValue(docId, rtypevalue);
                     old_rtype_doc.property(fieldStr) = str_to_propstr(rtypevalue);
-                    
+
                     numericPropertyTable->setStringValue(docId, fieldValue);
                 }
                 else
@@ -2039,7 +2037,7 @@ bool IndexWorker::prepareDocument_(
     if (dateExistInSCD)
     {
         // using the timestamp in the doc.
-        //timestamp = -1; 
+        //timestamp = -1;
     }
     else
     {

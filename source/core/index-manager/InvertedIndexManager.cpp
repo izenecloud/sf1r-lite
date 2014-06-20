@@ -577,7 +577,6 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
             }
             break;
 
-		case DOUBLE_PROPERTY_TYPE:
         case FLOAT_PROPERTY_TYPE:
             if (iter->getIsRange())
             {
@@ -613,6 +612,43 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
+
+        case DOUBLE_PROPERTY_TYPE:
+            if (iter->getIsRange())
+            {
+                std::pair<double, double> value;
+                NumericRangePropertyTable<double>* numericPropertyTable = static_cast<NumericRangePropertyTable<double> *>(it->second.get());
+                if (!numericPropertyTable->getValue(docId, value))
+                {
+                    ret = false;
+                    break;
+                }
+
+                if (value.first == value.second)
+                {
+                    indexDocument.insertProperty(indexerPropertyConfig, value.first);
+                }
+                else
+                {
+                    indexerPropertyConfig.setIsMultiValue(true);
+                    MultiValuePropertyType multiProps;
+                    multiProps.push_back(value.first);
+                    multiProps.push_back(value.second);
+                    indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+                }
+            }
+            else
+            {
+                double value;
+                if (!it->second->getDoubleValue(docId, value))
+                {
+                    ret = false;
+                    break;
+                }
+                indexDocument.insertProperty(indexerPropertyConfig, value);
+            }
+            break;
+
         case DATETIME_PROPERTY_TYPE:
         case INT64_PROPERTY_TYPE:
             if (iter->getIsRange())
@@ -649,6 +685,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
                 indexDocument.insertProperty(indexerPropertyConfig, value);
             }
             break;
+
         default:
             break;
         }
@@ -891,7 +928,7 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
         }
         break;
     }
-	case DOUBLE_PROPERTY_TYPE:
+
     case FLOAT_PROPERTY_TYPE:
     {
         if (iter->getIsMultiValue())
@@ -923,6 +960,39 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
         }
         break;
     }
+
+    case DOUBLE_PROPERTY_TYPE:
+    {
+        if (iter->getIsMultiValue())
+        {
+            MultiValuePropertyType props;
+            split_float(prop_str, props, ",;");
+            indexDocument.insertProperty(indexerPropertyConfig, props);
+        }
+        else
+        {
+            double value = 0;
+            try
+            {
+                value = boost::lexical_cast<double>(prop_str);
+                indexDocument.insertProperty(indexerPropertyConfig, value);
+            }
+            catch (const boost::bad_lexical_cast &)
+            {
+                MultiValuePropertyType multiProps;
+                if (checkSeparatorType_(propertyValueU, encoding, '-'))
+                    split_float(prop_str, multiProps, "-");
+                else if (checkSeparatorType_(propertyValueU, encoding, '~'))
+                    split_float(prop_str, multiProps, "~");
+                else if (checkSeparatorType_(propertyValueU, encoding, ','))
+                    split_float(prop_str, multiProps, ",");
+                indexerPropertyConfig.setIsMultiValue(true);
+                indexDocument.insertProperty(indexerPropertyConfig, multiProps);
+            }
+        }
+        break;
+    }
+
     case DATETIME_PROPERTY_TYPE:
     {
         if (iter->getIsMultiValue())
@@ -938,6 +1008,7 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
         }
         break;
     }
+
     case INT64_PROPERTY_TYPE:
     {
         if (iter->getIsMultiValue())
@@ -991,6 +1062,7 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
         }
         break;
     }
+
     default:
         break;
     }
