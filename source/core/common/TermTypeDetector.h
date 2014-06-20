@@ -25,17 +25,20 @@ public:
     TermTypeDetector() {}
     ~TermTypeDetector() {}
 public:
-    /// @brief  Checks if a given string can be converted to 32-bit integer form
-    static bool checkInt32Format(const string & term);
-
-    /// @brief  Checks if a given string can be converted to 64-bit integer form
-    static bool checkInt64Format(const string & term);
-
-    /// @brief  Checks if a given string can be converted to float form
-    static bool checkFloatFormat(const string & term);
-
     /// @brief  Checks if a given string can be converted to double form
-    static bool checkDoubleFormat(const string & term);
+    template <typename T>
+    static bool checkNumericFormat(const string & term)
+    {
+        try
+        {
+            propertyValue_ = boost::lexical_cast<T>(term);
+            return true;
+        }
+        catch (boost::bad_lexical_cast& e)
+        {
+            return false;
+        }
+    }
 
     static bool isTypeMatch(const std::string & term, const sf1r::PropertyDataType& dataType);
 
