@@ -42,7 +42,7 @@ bool GeoLocationRankingParser::parse(const Value& geoLocationValue)
     double latitude = asDouble(geoLocationValue[Keys::latitude]);
     double longitude = asDouble(geoLocationValue[Keys::longitude]);
 
-    reference_ = std::make_pair(latitude, longitude);
+    reference_ = std::make_pair(longitude, latitude);
 
     return true;
 }

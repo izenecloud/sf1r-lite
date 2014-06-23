@@ -290,12 +290,13 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
-        identity.filterTree_ = item.filterTree_;
+        identity.filterTree = item.filterTree_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
+        identity.geoLocation = item.geoLocation_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
@@ -304,12 +305,13 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::ZAMBEZI:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
-        identity.filterTree_ = item.filterTree_;
+        identity.filterTree = item.filterTree_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
+        identity.geoLocation = item.geoLocation_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
@@ -328,8 +330,9 @@ void SearchWorker::makeQueryIdentity(
         identity.properties = item.searchPropertyList_;
         identity.counterList = item.counterList_;
         identity.sortInfo = item.sortPriorityList_;
-        identity.filterTree_ = item.filterTree_;
+        identity.filterTree = item.filterTree_;
         identity.groupParam = item.groupParam_;
+        identity.geoLocation = item.geoLocation_;
         identity.removeDuplicatedDocs = item.removeDuplicatedDocs_;
         identity.rangeProperty = item.rangePropertyName_;
         identity.strExp = item.strExp_;

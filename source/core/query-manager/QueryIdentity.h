@@ -49,10 +49,12 @@ struct QueryIdentity
 
     std::vector<std::pair<std::string , bool> > sortInfo;
 
-    ConditionsNode filterTree_;
+    ConditionsNode filterTree;
 
     /// @brief param for group filter
     faceted::GroupParam groupParam;
+
+    std::pair<double, double> geoLocation;
 
     /// @brief remove duplicate
     bool removeDuplicatedDocs;
@@ -75,10 +77,10 @@ struct QueryIdentity
 
     /// @brief whether rank randomly
     bool isRandomRank;
-    
+
     /// @brief whether use synonym in search
     bool isSynonym;
-    
+
     /// @brief If true, return "analyzer_result" in fuzzy search response,
     /// which contains the tokenized result of the query
     bool isAnalyzeResult;
@@ -98,8 +100,9 @@ struct QueryIdentity
             && properties == other.properties
             && counterList == other.counterList
             && sortInfo == other.sortInfo
-            && filterTree_ == other.filterTree_
+            && filterTree == other.filterTree
             && groupParam == other.groupParam
+            && geoLocation == other.geoLocation
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
             && strExp == other.strExp
@@ -119,7 +122,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo & groupParam & removeDuplicatedDocs 
+            & properties & counterList & sortInfo & groupParam & geoLocation & removeDuplicatedDocs
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType & isRandomRank & isSynonym & isAnalyzeResult & querySource);
 };
