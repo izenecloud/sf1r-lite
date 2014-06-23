@@ -228,6 +228,10 @@ bool DocumentsSearchHandler::parse()
     if (customRankingValue.type() != Value::kNullType) {
         sortParser.validateCustomRank(true);
     }
+    Value& geoLocationValue = request_[Keys::geolocation];
+    if (geoLocationValue.type() != Value::kNullType) {
+        sortParser.validateGeoRank(true);
+    }
     parsers.push_back(&sortParser);
     values.push_back(&request_[Keys::sort]);
 

@@ -64,7 +64,7 @@ void getDefaultZambeziSearchPropertyNames(
     {
         result.push_back(i->name);
     }
-    result.swap(names);   
+    result.swap(names);
 }
 
 void getDefaultSearchPropertyNames(
@@ -118,9 +118,7 @@ bool isPropertySortable(
         propertyConfig.setName(property);
 
         IndexBundleSchema::iterator it = schema.find(propertyConfig);
-        if (it == schema.end() || 
-            (!it->isRTypeNumeric() && 
-            !it->isRTypeString()))
+        if (it == schema.end() || (!it->isRTypeNumeric() && !it->isRTypeString()))
             return false;
     }
 
@@ -145,8 +143,7 @@ bool isPropertyFilterable(
         }
         propertyConfig = *it;
 
-        if (!propertyConfig.bIndex_ ||
-            !propertyConfig.bFilter_)
+        if (!propertyConfig.bIndex_ || !propertyConfig.bFilter_)
         {
             return false;
         }

@@ -75,6 +75,18 @@ DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResu
                 }
                 if (found) break;
 
+                std::vector<std::pair<std::string, std::vector<double> > >::const_iterator itd;
+                for (itd = distSearchInfo.sortPropertyDoubleDataList_.begin(); itd != distSearchInfo.sortPropertyDoubleDataList_.end(); ++itd)
+                {
+                    if (itd->first == property)
+                    {
+                        dataList = (void*)(itd->second.data());
+                        pPropertyComparator->setDataType(SortPropertyData::DATA_TYPE_FLOAT);
+                        found = true;
+                    }
+                }
+                if (found) break;
+
                 std::vector<std::pair<std::string, std::vector<std::string> > >::const_iterator itstr;
                 for (itstr = distSearchInfo.sortPropertyStrDataList_.begin(); itstr != distSearchInfo.sortPropertyStrDataList_.end(); ++itstr)
                 {

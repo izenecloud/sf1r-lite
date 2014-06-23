@@ -51,6 +51,7 @@ public:
     std::vector<std::pair<std::string, std::vector<int32_t> > > sortPropertyInt32DataList_;
     std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyInt64DataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
+    std::vector<std::pair<std::string, std::vector<double> > > sortPropertyDoubleDataList_;
     std::vector<std::pair<std::string, std::vector<std::string> > > sortPropertyStrDataList_;
 
     /// the number of major tokens matched in fuzzy search
@@ -81,13 +82,14 @@ public:
         sortPropertyInt32DataList_.swap(other.sortPropertyInt32DataList_);
         sortPropertyInt64DataList_.swap(other.sortPropertyInt64DataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
+        sortPropertyDoubleDataList_.swap(other.sortPropertyDoubleDataList_);
         sortPropertyStrDataList_.swap(other.sortPropertyStrDataList_);
         swap(majorTokenNum_, other.majorTokenNum_);
     }
 
     MSGPACK_DEFINE(isDistributed_, effective_, include_summary_data_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
-                   sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyStrDataList_,
-                   majorTokenNum_);
+                   sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_, sortPropertyDoubleDataList_,
+                   sortPropertyStrDataList_, majorTokenNum_);
 };
 
 class DistSummaryMiningResult : public ErrorInfo

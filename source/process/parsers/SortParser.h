@@ -22,13 +22,14 @@ namespace sf1r {
 /**
  * @brief Order array parser with schema validation.
  */
-using namespace izenelib::driver; 
+using namespace izenelib::driver;
 class SortParser : public OrderArrayParser
 {
 public:
     explicit SortParser(const IndexBundleSchema& indexSchema)
-    : indexSchema_(indexSchema)
-    , bCustomRank_(false)
+        : indexSchema_(indexSchema)
+        , bCustomRank_(false)
+        , bGeoRank_(false)
     {}
 
     bool parse(const Value& orders);
@@ -50,10 +51,16 @@ public:
         bCustomRank_ = valid;
     }
 
+    void validateGeoRank(bool valid = true)
+    {
+        bGeoRank_ = valid;
+    }
+
 private:
     const IndexBundleSchema& indexSchema_;
 
     bool bCustomRank_;
+    bool bGeoRank_;
 
     std::vector<std::pair<std::string , bool> > sortPriorityList_;
 };

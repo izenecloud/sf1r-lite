@@ -50,6 +50,13 @@ bool SortParser::parse(const Value& orders)
                 return false;
             }
         }
+        else if (parsedOrders(i).property() == "geo_rank")
+        {
+            if (!bGeoRank_) {
+                error() = "Please make sure \"geolocation\" field is available, which is set as a sort property.";
+                return false;
+            }
+        }
         else if (!isPropertySortable(indexSchema_, parsedOrders(i).property()))
         {
             error() = "Property is not sortable: " + parsedOrders(i).property();
@@ -78,5 +85,3 @@ bool SortParser::parse(const Value& orders)
 }
 
 } // namespace sf1r
-
-

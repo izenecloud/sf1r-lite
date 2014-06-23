@@ -66,6 +66,7 @@ static void emptyWorkerResult(KeywordSearchResult& wresult)
     wresult.distSearchInfo_.sortPropertyInt32DataList_.clear();
     wresult.distSearchInfo_.sortPropertyInt64DataList_.clear();
     wresult.distSearchInfo_.sortPropertyFloatDataList_.clear();
+    wresult.distSearchInfo_.sortPropertyDoubleDataList_.clear();
     wresult.distSearchInfo_.sortPropertyStrDataList_.clear();
 
 }
@@ -374,10 +375,10 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         mergeResult.topKWorkerIds_[cnt] = workerid;
         mergeResult.topKRankScoreList_[cnt] = wResult.topKRankScoreList_[iter[maxi]];
 
-        if (hasCustomRankScore && !wResult.topKCustomRankScoreList_.empty())
+        if (!wResult.topKCustomRankScoreList_.empty())
             mergeResult.topKCustomRankScoreList_[cnt] = wResult.topKCustomRankScoreList_[iter[maxi]];
 
-        if (hasGeoDistance && !wResult.topKGeoDistanceList_.empty())
+        if (!wResult.topKGeoDistanceList_.empty())
             mergeResult.topKGeoDistanceList_[cnt] = wResult.topKGeoDistanceList_[iter[maxi]];
 
         // next

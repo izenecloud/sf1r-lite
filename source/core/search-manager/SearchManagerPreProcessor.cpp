@@ -20,6 +20,7 @@ using namespace sf1r;
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
+const std::string GEO_RANK_PROPERTY("geo_rank");
 
 SearchManagerPreProcessor::SearchManagerPreProcessor(const IndexBundleSchema& indexSchema)
     : productScorerFactory_(NULL)
@@ -109,20 +110,19 @@ void SearchManagerPreProcessor::prepareSorter(
                 continue;
             }
             // sort by geo distance
-            else if (fieldNameL == actionOperation.actionItem_.geoLocationProperty_)
+            else if (fieldNameL == GEO_RANK_PROPERTY)
             {
                 geoLocationRanker = actionOperation.actionItem_.geoLocationRanker_;
                 if (!geoLocationRanker)
                 {
-                    std::pair<double, double> reference = actionOperation.actionItem_.geoLocation_;
                     boost::shared_ptr<NumericPropertyTableBase> propertyTable
-                        = numericTableBuilder_->createPropertyTable(iter->first);
+                        = numericTableBuilder_->createPropertyTable(actionOperation.actionItem_.geoLocationProperty_);
                     if (!propertyTable) continue;
 
-                    geoLocationRanker.reset(new GeoLocationRanker(reference, propertyTable));
+                    geoLocationRanker.reset(new GeoLocationRanker(actionOperation.actionItem_.geoLocation_, propertyTable));
                 }
 
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_, rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     "GEO_DIST",
                     GEOLOCATION_PROPERTY_TYPE,
@@ -156,7 +156,7 @@ void SearchManagerPreProcessor::prepareSorter(
             case DOUBLE_PROPERTY_TYPE:
             case NOMINAL_PROPERTY_TYPE:
             {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_, rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     propertyType,
@@ -235,12 +235,12 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
 
         if (pSortProperty->getPropertyDataType() == STRING_PROPERTY_TYPE)
         {
-            if (!rtypeStringPropTableBuilder_)
-                continue;
+            if (!rtypeStringPropTableBuilder_) continue;
+
             boost::shared_ptr<RTypeStringPropTable>& strPropertyTable =
                 rtypeStringPropTableBuilder_->createPropertyTable(sortPropertyName);
-            if (!strPropertyTable)
-                continue;
+            if (!strPropertyTable) continue;
+
             propSharedLockSet.insertSharedLock(strPropertyTable.get());
             distSearchInfo.sortPropertyStrDataList_.push_back(std::make_pair(sortPropertyName, std::vector<std::string>()));
             std::vector<std::string>& dataList = distSearchInfo.sortPropertyStrDataList_.back().second;
@@ -251,13 +251,12 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
             }
             continue;
         }
-        if (!numericTableBuilder_)
-            continue;
+
+        if (!numericTableBuilder_) continue;
 
         boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable =
             numericTableBuilder_->createPropertyTable(sortPropertyName);
-        if (!numericPropertyTable)
-            continue;
+        if (!numericPropertyTable) continue;
 
         propSharedLockSet.insertSharedLock(numericPropertyTable.get());
         switch (numericPropertyTable->getType())
@@ -300,12 +299,12 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
         break;
         case DOUBLE_PROPERTY_TYPE:
         {
-            distSearchInfo.sortPropertyFloatDataList_.push_back(std::make_pair(sortPropertyName, std::vector<float>()));
-            std::vector<float>& dataList = distSearchInfo.sortPropertyFloatDataList_.back().second;
+            distSearchInfo.sortPropertyDoubleDataList_.push_back(std::make_pair(sortPropertyName, std::vector<double>()));
+            std::vector<double>& dataList = distSearchInfo.sortPropertyDoubleDataList_.back().second;
             dataList.resize(docNum);
             for (size_t i = 0; i < docNum; i++)
             {
-                numericPropertyTable->getFloatValue(docIdList[i], dataList[i], false);
+                numericPropertyTable->getDoubleValue(docIdList[i], dataList[i], false);
             }
         }
         break;
