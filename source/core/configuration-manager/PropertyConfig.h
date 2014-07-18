@@ -72,6 +72,7 @@ public:
         , bStoreDocLen_(false)
         , rankWeight_(0.0f)
         , brtype_(false)
+        , usePerFilter_(false)
     {}
 
     PropertyConfig(const PropertyConfigBase& base)
@@ -89,6 +90,7 @@ public:
         , bStoreDocLen_(false)
         , rankWeight_(0.0f)
         , brtype_(false)
+        , usePerFilter_(false)
     {}
 
 public:
@@ -209,6 +211,16 @@ public:
     inline void setRType(bool rtype) 
     {
         brtype_ = rtype;
+    }
+
+    inline void setusePerFilter(const bool use)
+    {
+        usePerFilter_ = use;
+    }
+
+    inline bool getusePerFilter() const
+    {
+        return usePerFilter_;
     }
 
     inline bool isRTypeNumeric() const
@@ -487,6 +499,7 @@ public:
         swap(rankWeight_, rhs.rankWeight_);
         swap(subProperties_,rhs.subProperties_);
         swap(brtype_, rhs.brtype_);
+        swap(usePerFilter_, rhs.usePerFilter_);
     }
 
 private:
@@ -515,6 +528,7 @@ private:
         ar & rankWeight_;
         ar & subProperties_;
         ar & brtype_;
+        ar & usePerFilter_;
     }
 
 public:
@@ -567,6 +581,9 @@ public:
 
     /// @brief If this property is rtype string. rtype string can update efficient.
     bool brtype_;
+
+    /// @brief If use Bitset Bucket to support high performance filter, 
+    bool usePerFilter_;
 };
 
 struct PropertyComp

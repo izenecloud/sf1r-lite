@@ -2261,12 +2261,14 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     bool bStoreDocLen = true;
     float rankWeight = 0.0f;
     bool rtype = false;
+    bool usePerFilter = false;
 
     // read XML
     //
     getAttribute(indexing, "alias", alias, false);
     getAttribute(indexing, "analyzer", analyzer, false);
     getAttribute(indexing, "filter", bFilter, false);
+    getAttribute(indexing, "usePerFilter", usePerFilter, false);
     getAttribute(indexing, "multivalue", bMultiValue, false);
     getAttribute(indexing, "range", bRange, false);
     getAttribute(indexing, "doclen", bStoreDocLen, false);
@@ -2357,6 +2359,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     propertyConfig.setAnalysisInfo(analysisInfo);
     propertyConfig.setRankWeight(rankWeight);
     propertyConfig.setRType(rtype);
+    propertyConfig.setusePerFilter(usePerFilter);
 
     // push to the list of all analysis Information in the configuration file.
     SF1Config::get()->analysisPairList_.insert(analysisInfo);

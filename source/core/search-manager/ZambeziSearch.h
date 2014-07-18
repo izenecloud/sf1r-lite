@@ -66,7 +66,9 @@ private:
     //     std::vector<float>& scores,
     //     std::vector<float>& productScores,
     //     PropSharedLockSet &sharedLockSet);
-    
+    static bool compareTokenScore_(const std::pair<std::string, float>& x,
+        const std::pair<std::string, float>& y);
+
     void normalizeTopDocs_(
         const boost::scoped_ptr<ProductScorer>& productScorer, 
         boost::scoped_ptr<HitQueue>& scoreItemQueue,

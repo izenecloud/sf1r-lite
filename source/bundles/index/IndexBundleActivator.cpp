@@ -14,6 +14,7 @@
 #include <la-manager/LAManager.h>
 #include <la-manager/LAPool.h>
 #include <la-manager/AttrTokenizeWrapper.h>
+#include <la-manager/TitlePCAWrapper.h>
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
@@ -454,7 +455,8 @@ IndexBundleActivator::createInvertedIndexManager_() const
                 iter->getPropertyId(),
                 iter->getName(),
                 iter->isIndex(),
-                iter->isAnalyzed()
+                iter->isAnalyzed(),
+                iter->getusePerFilter()
             );
             indexerPropertyConfig.setIsFilter(iter->getIsFilter());
             indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
@@ -507,8 +509,17 @@ bool IndexBundleActivator::createZambeziManager_()
 {
     if (config_->zambeziConfig_.hasAttrtoken && 
         !AttrTokenizeWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/" + config_->zambeziConfig_.tokenPath))
+    {
+        LOG(ERROR) << "failed in AttrTokenizeWrapper load";
         return false;
+    }
 
+    if (!TitlePCAWrapper::get()->loadDictFiles(config_->zambeziConfig_.system_resource_path_ + "/dict/title_pca/"))
+    {
+        LOG(ERROR) << "failed in TitlePCAWrapper load";
+        return false;
+    }
+ 
     std::string dir = getCurrentCollectionDataPath_()+"/zambezi/";
     const bfs::path zambeziDir(dir);
 

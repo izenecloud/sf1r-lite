@@ -6,6 +6,7 @@
 #include "QueryBuilder.h"
 #include "HitQueue.h"
 #include <la-manager/AttrTokenizeWrapper.h>
+#include <la-manager/TitlePCAWrapper.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/QueryTypeDef.h> // FilteringType
 #include <common/ResultType.h>
@@ -36,6 +37,7 @@ namespace
 const std::size_t kAttrTopDocNum = 200;
 const std::size_t kZambeziTopKNum = 5e5;
 
+const std::size_t kMajTerNum = 3;
 const std::string kTopLabelPropName = "Category";
 const size_t kRootCateNum = 10;
 
@@ -504,29 +506,37 @@ void ZambeziSearch::getTopAttrs_(
     LOG(INFO) << "attrGroupFilter costs :" << timer.elapsed() << " seconds";
 }
 
+bool ZambeziSearch::compareTokenScore_(const std::pair<std::string, float>& x, const std::pair<std::string, float>& y)
+{
+    if (x.second == y.second)
+        return x.first > y.first;
+
+    return x.second > y.second;
+}
+
 void ZambeziSearch::getAnalyzedQuery_(
     const std::string& rawQuery,
     izenelib::util::UString& analyzedQuery)
 {
-    //TODO 2014-03-24
-    typedef std::pair<izenelib::util::UString, double> TokenScore;
-    typedef std::list<TokenScore> TokenScoreList;
-    TokenScoreList majorTokens;
-    TokenScoreList minorTokens;
-    std::list<izenelib::util::UString> leftTokens;
-    izenelib::util::UString queryUStr(rawQuery, izenelib::util::UString::UTF_8);
+    std::vector<std::pair<std::string, float> > tokens, subTokens;
+    std::string brand;
+    std::string model;
 
-    //matcher->GetSearchKeywords(queryUStr, majorTokens, minorTokens, leftTokens);
+    TitlePCAWrapper* titlePCA = TitlePCAWrapper::get();
+    titlePCA->pca(rawQuery, tokens, brand, model, subTokens, false);
 
-    for (TokenScoreList::const_iterator it = majorTokens.begin();
-         it != majorTokens.end(); ++it)
-    {
-        const izenelib::util::UString& token = it->first;
+    std::sort(tokens.begin(), tokens.end(), compareTokenScore_);
+    const std::size_t refineNum = std::min(tokens.size(), kMajTerNum);
 
-        if (queryUStr.find(token) == izenelib::util::UString::npos)
+    std::string tmp;
+    for (unsigned int i = 0; i < refineNum; i++)
+    {   
+        if (tmp == tokens[i].first)
             continue;
-
-        analyzedQuery.append(token);
+        
+        tmp = tokens[i].first;
+        izenelib::util::UString term(tokens[i].first, izenelib::util::UString::UTF_8);
+        analyzedQuery.append(term);
         analyzedQuery.push_back(kUCharSpace);
     }
 }
