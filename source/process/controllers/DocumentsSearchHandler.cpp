@@ -345,6 +345,7 @@ bool DocumentsSearchHandler::parse()
     //);
     actionItem_.geoLocation_ = geoLocationParser.getReference();
     actionItem_.geoLocationProperty_ = geoLocationParser.getPropertyName();
+	actionItem_.scope_ = geoLocationParser.getScope();
 
     // orderArrayParser
     swap(

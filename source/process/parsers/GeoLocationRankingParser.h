@@ -30,11 +30,16 @@ public:
         return property_;
     }
 
+    double getScope() const
+	{
+		return scope_;
+	}
+
 private:
     const IndexBundleSchema& indexSchema_;
-
     std::string property_;
     std::pair<double, double> reference_;
+	double					  scope_;
 };
 
 } // namespace sf1r

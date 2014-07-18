@@ -21,6 +21,7 @@
 #include <util/driver/Request.h>
 #include <aggregator-manager/MasterNotifier.h>
 #include <query-manager/QueryTypeDef.h>
+#include <search-manager/GeoHashEncoder.h>
 
 namespace sf1r
 {
@@ -285,6 +286,19 @@ void SearchWorker::makeQueryIdentity(
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
     identity.isSynonym = item.languageAnalyzerInfo_.synonymExtension_;
+
+	//using geohash-encode string as part of cache-key
+	//geohash 7bytes represents about 70m scope, 8bytes represents about 20m
+	//if the center coordinate in the same geohash grid we can approximatly consider they are same.
+	//Maybe 70m is not reasonable, we can do some adjustment. 
+	if(!item.geoLocationProperty_.empty()){
+		GeoHashEncoder encoder;
+		identity.geoLocation = item.geoLocation_;
+		identity.geohash = encoder.Encoder(item.geoLocation_.first, 
+										   item.geoLocation_.second, 
+										   7);
+	}
+
     switch (item.searchingMode_.mode_)
     {
     case SearchingMode::SUFFIX_MATCH:
@@ -296,7 +310,6 @@ void SearchWorker::makeQueryIdentity(
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
-        identity.geoLocation = item.geoLocation_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
@@ -311,10 +324,10 @@ void SearchWorker::makeQueryIdentity(
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
-        identity.geoLocation = item.geoLocation_;
         identity.isRandomRank = item.isRandomRank_;
         identity.querySource = item.env_.querySource_;
         identity.distActionType = distActionType;
+		identity.scope = item.scope_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -332,7 +345,6 @@ void SearchWorker::makeQueryIdentity(
         identity.sortInfo = item.sortPriorityList_;
         identity.filterTree = item.filterTree_;
         identity.groupParam = item.groupParam_;
-        identity.geoLocation = item.geoLocation_;
         identity.removeDuplicatedDocs = item.removeDuplicatedDocs_;
         identity.rangeProperty = item.rangePropertyName_;
         identity.strExp = item.strExp_;

@@ -287,6 +287,11 @@ bool ZambeziSearch::search(
             if (geoLocationRanker)
             {
                 scoreItem.geo_dist = geoLocationRanker->evaluate(docId);
+				//remove docs which out of scope
+				//add by wangbaobao@b5m.com
+				if(false == geoLocationRanker->checkScope(scoreItem.geo_dist)){
+					continue;
+				}
             }
 
             scoreItemQueue->insert(scoreItem);

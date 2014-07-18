@@ -16,6 +16,7 @@ class GeoLocationRanker
 {
 public:
     GeoLocationRanker(
+			double							 scope,
             const std::pair<double, double>& reference,
             const boost::shared_ptr<NumericPropertyTableBase>& propertyTable);
 
@@ -23,7 +24,17 @@ public:
 
     double evaluate(docid_t& docid);
 
+	inline bool checkScope(double distance) const {
+		if(scope_ <= 0.0) return true;
+			return distance <= scope_ ? true : false;
+	}
+
+	inline double getScope() const {
+		return scope_;
+	}
+
 private:
+	double					  scope_;
     std::pair<double, double> reference_;
     boost::shared_ptr<NumericPropertyTableBase> propertyTable_;
 };

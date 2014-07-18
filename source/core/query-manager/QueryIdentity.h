@@ -22,6 +22,7 @@ struct QueryIdentity
         , isRandomRank(false)
         , isSynonym(false)
         , isAnalyzeResult(false)
+		, scope(0.0)
     {
     }
 
@@ -55,6 +56,8 @@ struct QueryIdentity
     faceted::GroupParam groupParam;
 
     std::pair<double, double> geoLocation;
+	double					  scope;
+	std::string				  geohash;
 
     /// @brief remove duplicate
     bool removeDuplicatedDocs;
@@ -102,7 +105,8 @@ struct QueryIdentity
             && sortInfo == other.sortInfo
             && filterTree == other.filterTree
             && groupParam == other.groupParam
-            && geoLocation == other.geoLocation
+			&& scope == other.scope
+			&& geohash == other.geohash
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
             && strExp == other.strExp
@@ -122,7 +126,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo & groupParam & geoLocation & removeDuplicatedDocs
+            & properties & counterList & sortInfo & groupParam & scope & geohash & removeDuplicatedDocs
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType & isRandomRank & isSynonym & isAnalyzeResult & querySource);
 };

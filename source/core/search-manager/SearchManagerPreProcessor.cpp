@@ -119,7 +119,7 @@ void SearchManagerPreProcessor::prepareSorter(
                         = numericTableBuilder_->createPropertyTable(actionOperation.actionItem_.geoLocationProperty_);
                     if (!propertyTable) continue;
 
-                    geoLocationRanker.reset(new GeoLocationRanker(actionOperation.actionItem_.geoLocation_, propertyTable));
+                    geoLocationRanker.reset(new GeoLocationRanker(actionOperation.actionItem_.scope_,actionOperation.actionItem_.geoLocation_, propertyTable));
                 }
 
                 if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_, rtypeStringPropTableBuilder_));

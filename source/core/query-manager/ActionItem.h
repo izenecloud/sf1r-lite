@@ -556,6 +556,7 @@ public:
     CustomRankerPtr customRanker_;
 
     std::pair<double, double> geoLocation_;
+	double					  scope_;
     std::string geoLocationProperty_;
     GeoLocationRankerPtr geoLocationRanker_;
 
