@@ -127,6 +127,8 @@ IF(USE_DOT)
   SET(USE_DOT_YESNO YES)
 ENDIF(USE_DOT)
 
+FIND_PACKAGE(ICUUC)
+
 set(SYS_LIBS
   m rt dl z crypto ssl
 )
