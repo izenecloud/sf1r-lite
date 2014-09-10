@@ -6,7 +6,6 @@
 
 #include <map>
 #include <fstream>
-#include <3rdparty/udt/md5.h>
 #include <boost/filesystem.hpp>
 
 //#define MAX_INDEX  0xFFFF
