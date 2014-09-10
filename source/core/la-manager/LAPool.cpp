@@ -270,141 +270,6 @@ void setOptions( const std::string & option, JapaneseAnalyzer * ka, bool outputL
     }
 }
 
-void setOptions( const std::string & option, KoreanAnalyzer * ka, bool outputLog = true )
-{
-    const char* o = option.c_str();
-    set<char> hisSet;
-    while (*o)
-    {
-        char origChar = *o;
-        char upperType = toupper( origChar );
-
-        bool checkDupl = true;
-        bool errorVal = false;
-        switch (*o)
-        {
-            case 'R': case 'r':
-                ++o;
-                if (*o == '+')
-                {
-                    ka->setNBest( 2 );
-                }
-                else if (*o == '0' || *o == '-')
-                {
-                    ka->setNBest( 0 );
-                }
-                else if (*o == '1')
-                {
-                  ka->setNBest( 1 );
-                }
-                else if ((*o >= '2') && (*o <= '9'))
-                {
-                    ka->setNBest( boost::lexical_cast<int>(o) );
-                }
-                else
-                {
-                    if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'R'"<<*o<<endl;
-                    errorVal = true;
-                }
-                break;
-            case 'N': case 'n':
-                ++o;
-                if (*o == '0')
-                {
-                    ka->setLowDigitBound( 0 );
-                }
-                else if ((*o >= '1') && (*o <= '9'))
-                {
-                    ka->setLowDigitBound( boost::lexical_cast<int>(o) );
-                }
-                else
-                {
-                    if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'N'"<<*o<<endl;
-                    errorVal = true;
-                }
-                break;
-            case 'B': case 'b':
-                ++o;
-                if (*o == '+')
-                {
-                    ka->setCombineBoundNoun( true );
-                }
-                else if (*o == '-')
-                {
-                    ka->setCombineBoundNoun( false );
-                }
-                else
-                {
-                    if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'B'"<<*o<<endl;
-                    errorVal = true;
-                }
-                break;
-
-            case 'V': case 'v':
-                ++o;
-                if (*o == '+')
-                {
-                    ka->setVerbAdjStems( true );
-                }
-                else if (*o == '-')
-                {
-                    ka->setVerbAdjStems( false );
-                }
-                else
-                {
-                    if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'V'"<<*o<<endl;
-                    errorVal = true;
-                }
-                break;
-            case 'S': case 's':
-                ++o;
-                if (*o == '+')
-                {
-                    ka->setExtractEngStem( true );
-                }
-                else if (*o == '-')
-                {
-                    ka->setExtractEngStem( false );
-                }
-                else
-                {
-                    if( outputLog )
-                        DLOG(WARNING)<<"Invalid LanguageLA option value for Option 'S'"<<*o<<endl;
-                    errorVal = true;
-                }
-                break;
-            case ' ':
-                checkDupl = false;
-                break;
-            default:
-                if( outputLog )
-                    DLOG(WARNING)<<"Invalid LanguageLA option value for Option "<<*o<<endl;
-                checkDupl = false;
-                break;
-        }
-        if( checkDupl )
-        {
-            if( hisSet.find( upperType ) != hisSet.end() )
-            {
-                if( !errorVal && outputLog )
-                    DLOG(WARNING)<<"Duplicated LanguageLA option "<<origChar <<", it would overwrite the previous setting."<<endl;
-
-            }
-            else
-                hisSet.insert( upperType );
-        }
-
-        if( *o == 0 )
-            break;
-        o++;
-    }
-
-} // end - setOptions( const std::string & option, LanguageAnalyzer * ka )
-
 
 #ifdef DEBUG_LAPOOL_ANALYZER
 
@@ -808,77 +673,6 @@ namespace sf1r
             }
             setOptions( laConfigUnitIter->second.getOption(), static_cast<EnglishAnalyzer*>(analyzer.get()) );
         }
-#ifdef USE_WISEKMA
-        else if( analysis == "korean" )
-        {
-            analyzer.reset( new NKoreanAnalyzer( laConfigUnitIter->second.getDictionaryPath() ) );
-            //static_cast<NKoreanAnalyzer*>(analyzer.get())->setGenerateCompNoun( true );
-
-            std::string restrictDictPath = laConfigUnitIter->second.getDictionaryPath() + "/restrict.txt";
-            boost::shared_ptr<UpdatableRestrictDict> urd;
-            unsigned int lastModifiedTime = static_cast<unsigned int>(
-                la::getFileLastModifiedTime( restrictDictPath.c_str() ) );
-            urd.reset( new UpdatableRestrictDict( lastModifiedTime ) );
-            la::UpdateDictThread::staticUDT.addRelatedDict( restrictDictPath, urd );
-
-            if( laConfigUnitIter->second.getMode() == "all" )
-            {
-//                static_cast<NKoreanAnalyzer*>(analyzer.get())->setRetFlag_index( Analyzer::ANALYZE_ALL_ );
-            }
-            else if( laConfigUnitIter->second.getMode() == "noun" )
-            {
-//                static_cast<NKoreanAnalyzer*>(analyzer.get())->setRetFlag_index( Analyzer::ANALYZE_SECOND_ );
-            }
-            else if( laConfigUnitIter->second.getMode() == "label" )
-            {
-                static_cast<NKoreanAnalyzer*>(analyzer.get())->setLabelMode();
-//                static_cast<NKoreanAnalyzer*>(analyzer.get())->setRetFlag_index( Analyzer::ANALYZE_ALL_ );
-            }
-
-            if(mode) {
-                static_cast<NChineseAnalyzer*>(analyzer.get())->setCaseSensitive(
-                    laConfigUnitIter->second.getCaseSensitive(), laConfigUnitIter->second.getLower());
-            } else {
-                static_cast<NChineseAnalyzer*>(analyzer.get())->setCaseSensitive(
-                    laConfigUnitIter->second.getCaseSensitive(), false);
-            }
-
-            setOptions( laConfigUnitIter->second.getOption(), static_cast<NKoreanAnalyzer*>(analyzer.get()) );
-
-            if(mode) {
-                static_cast<NKoreanAnalyzer*>(analyzer.get())->setAnalyzePrime(true);
-            } else {
-                static_cast<NKoreanAnalyzer*>(analyzer.get())->setAnalyzePrime(false);
-                static_cast<NKoreanAnalyzer*>(analyzer.get())->setNBest(1);
-            }
-
-            //check the special char here, only accept 0x0000 to 0x007F in ucs encoding
-            UString::EncodingType defEncoding = UString::UTF_8;
-            UString origSpeU( laConfigUnitIter->second.getSpecialChar().c_str(), defEncoding );
-            string speU; // after remove invalid characters
-            for( size_t i = 0; i < origSpeU.length(); ++i )
-            {
-                unsigned int c = static_cast<unsigned int>( origSpeU.at(i) );
-                if( c > 0x007F )
-                {
-                    string invalidStr;
-                    origSpeU.substr( i, 1 ).convertString( invalidStr, defEncoding );
-                    if( outputLog )
-                    {
-                        DLOG(WARNING)<<"Invalid special char "<<invalidStr<<" for analyzer  "<<analysisInfo.analyzerId_
-                                <<" (accept 0x0000 to 0x007F)"<<endl;
-
-                    }
-                }
-                else
-                    speU.append( 1, static_cast<char>(c) );
-            }
-
-            // need to adjust tokenizer settings if there is "specialchar" settings
-            tokenConfig.addAllows( speU );
-//            static_cast<NKoreanAnalyzer*>(analyzer.get())->setSpecialChars( speU );
-        }
-#endif
 
 #ifdef USE_IZENECMA
         else if( analysis == "chinese" )
@@ -1028,25 +822,6 @@ namespace sf1r
         }
 #endif
 
-//        else if( analysis == "danish"
-//                || analysis == "dutch"
-//                || analysis == "english"
-//                || analysis == "finnish"
-//                || analysis == "french"
-//                || analysis == "german"
-//                || analysis == "hungarian"
-//                || analysis == "italian"
-//                || analysis == "norwegian"
-//                || analysis == "portuguese"
-//                || analysis == "romanian"
-//                || analysis == "russian"
-//                || analysis == "spanish"
-//                || analysis == "swedish"
-//                || analysis == "turkish"
-//               )
-//        {
-//            analyzer.reset( new StemAnalyzer(analysis) );
-//        }
         else if( analysis == "multilang" )
         {
             analyzer.reset( new MultiLanguageAnalyzer() );
@@ -1087,8 +862,6 @@ namespace sf1r
                     language = MultiLanguageAnalyzer::CHINESE;
                 else if( langname == "jp" )
                     language = MultiLanguageAnalyzer::JAPANESE;
-                else if( langname == "kr" )
-                    language = MultiLanguageAnalyzer::KOREAN;
                 else if( langname == "en" )
                     language = MultiLanguageAnalyzer::ENGLISH;
                 else
@@ -1145,10 +918,6 @@ namespace sf1r
                     boost::shared_ptr<la::Analyzer> innerAN = laan->getAnalyzer();
                     if( language == MultiLanguageAnalyzer::OTHER )
                     {
-                        if( multi_label )
-                        {
-                          static_cast<NKoreanAnalyzer*>(innerAN.get())->setAnalyzePrime(true);
-                        }
                         mla->setDefaultAnalyzer( innerAN );
                         setDef = true;
                     }

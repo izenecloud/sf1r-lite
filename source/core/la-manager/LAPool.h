@@ -1,18 +1,6 @@
-/// @file LAPool.h
-/// @brief header file of LAPool
-/// @author JunHui
-/// @date 2008-08-19
-/// @details
-/// - Log
-///     - 2009.07.10 Replace extractor to new LA object.
-
 #if !defined(_LA_Pool_)
 #define _LA_Pool_
 
-//#include <la-manager/NGramExtractor.h>
-//#include <la-manager/LikeExtractor.h>
-//#include <la-manager/StemExtractor.h>
-//#include <la-manager/KoreanLanguageExtractor.h>
 #include "AnalysisInformation.h"
 #include <configuration-manager/LAManagerConfig.h>
 
@@ -42,10 +30,6 @@ class Factory;
 
 namespace sf1r
 {
-
-#ifdef USE_WISEKMA
-    typedef la::KoreanAnalyzer NKoreanAnalyzer;
-#endif
 
 #ifdef USE_IZENECMA
     typedef la::ChineseAnalyzer NChineseAnalyzer;

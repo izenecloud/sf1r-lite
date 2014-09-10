@@ -124,24 +124,6 @@
       <Method id="la_eng" analysis="english" casesensitive="no">
         <settings mode="all" option="S+" dictionarypath=""/>
       </Method>
-      <!--
-      <Method id="la_korall" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
-      </Method>
-      <Method id="la_kornoun" analysis="korean">
-        <settings mode="all" option="R+S+" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
-      </Method>
-      <Method id="inner_la_korall_mia" analysis="korean" casesensitive="yes" >
-        <settings mode="label" option="R1S-" specialchar="#" dictionarypath="@wisekma_KNOWLEDGE@"/>
-      </Method>
-      <Method id="la_bi_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_bigram" casesensitive="yes" lower="no"/>
-      <Method id="la_mia" analysis="multilang" advoption="default,inner_la_korall_mia;cn,la_char" casesensitive="yes" lower="no">
-        <settings mode="label"/>
-      </Method>
-      -->
-      <Method id="inner_la_korall_sia" analysis="korean" casesensitive="no" >
-        <settings mode="label" option="R+S+" specialchar="#" dictionarypath=""/>
-      </Method>
 
       <Method id="inner_la_cnall_sia_2" analysis="chinese" casesensitive="no" >
         <!-- T2: maximum match (without overlapped segments) -->
@@ -159,16 +141,16 @@
         <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa"/>
-      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
-      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
+      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_cnall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa"/>
+      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_cnall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
+      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_cnall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 
       <!--
       <Method id="inner_la_jpall_sia" analysis="japanese" casesensitive="no" >
         <settings mode="label" option="R+S+" specialchar="#" dictionarypath="@izenejma_KNOWLEDGE@"/>
       </Method>
-      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_sia;jp,inner_la_jpall_sia"/>
-      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,la_eng;cn,inner_la_cnall_index;jp,inner_la_jpall_sia"/>
+      <Method id="la_sia" analysis="multilang" advoption="default,inner_la_cnall_sia;en,la_eng;cn,inner_la_cnall_sia;jp,inner_la_jpall_sia"/>
+      <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_cnall_sia;en,la_eng;cn,inner_la_cnall_index;jp,inner_la_jpall_sia"/>
       -->
     </LanguageAnalyzer>
 
