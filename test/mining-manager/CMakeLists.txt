@@ -4,7 +4,6 @@ INCLUDE_DIRECTORIES(
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
-  ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
   ${izenejma_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -37,7 +36,6 @@ SET(libs
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
-  ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}

@@ -5,7 +5,6 @@ INCLUDE_DIRECTORIES(
     ${izenecma_INCLUDE_DIRS}
     ${izenejma_INCLUDE_DIRS}
     ${izenelib_INCLUDE_DIRS}
-    ${wiselib_INCLUDE_DIRS}
     ${idmlib_INCLUDE_DIRS}
     ${TokyoCabinet_INCLUDE_DIRS}
     ${Glog_INCLUDE_DIRS}
@@ -39,7 +38,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       sf1r_index_manager
       sf1r_net
       ${ilplib_LIBRARIES}
-      ${wisekma_LIBRARIES}
       ${izenecma_LIBRARIES}
       ${izenejma_LIBRARIES}
       ${izenelib_LIBRARIES}

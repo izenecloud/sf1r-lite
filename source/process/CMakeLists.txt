@@ -61,7 +61,6 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
-  ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
