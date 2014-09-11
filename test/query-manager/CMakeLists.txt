@@ -1,7 +1,6 @@
 INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}/core/
     ${ilplib_INCLUDE_DIRS}
-    ${wisekma_INCLUDE_DIRS}
     ${izenecma_INCLUDE_DIRS}
     ${izenejma_INCLUDE_DIRS}
     ${izenelib_INCLUDE_DIRS}
@@ -42,7 +41,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${izenejma_LIBRARIES}
       ${izenelib_LIBRARIES}
       ${idmlib_LIBRARIES}
-      ${imllib_LIBRARIES}
       ${XML2_LIBRARIES}
       #external
       ${Boost_LIBRARIES}

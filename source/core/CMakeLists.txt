@@ -3,7 +3,6 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}
 
   ${izenelib_INCLUDE_DIRS}
-  ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
   ${izenejma_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}

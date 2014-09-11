@@ -4,7 +4,7 @@ GET_FILENAME_COMPONENT(SF1RENGINE_ROOT "${CMAKE_SOURCE_DIR}" PATH)
 ##################################################
 # Find extra cmake modules dirs
 #
-# You can clone all modules from https://ssl.izenesoft.cn/projects/cmake
+# You can clone all modules from https://github.com/izenecloud/cmake
 #
 # Clone it and set environment variable EXTRA_CMAKE_MODULES_DIRS point to it.
 #
@@ -15,7 +15,7 @@ ENDIF(ENV_EXTRA_CMAKE_MODULES_DIRS)
 IF(NOT EXTRA_CMAKE_MODULES_DIRS)
   MESSAGE(FATAL_ERROR
     "Cannot find EXTRA_CMAKE_MODULES_DIRS.
-1. Please clone it from https://ssl.izenesoft.cn/cmake.
+1. Please clone it from https://github.com/izenecloud/cmake.
 2. Then set EXTRA_CMAKE_MODULES_DIRS through environment variable
 
        export EXTRA_CMAKE_MODULES_DIRS=/path/to/cmake
@@ -54,20 +54,13 @@ ENDIF( NOT MODE )
 STRING(TOUPPER ${MODE} UPPER_MODE)
 IF( ${UPPER_MODE} STREQUAL "CN" )
     SET( USE_IZENECMA TRUE )
-    SET( USE_WISEKMA FALSE )
     MESSAGE( STATUS "CN mode: uses iCMA.")
-ELSEIF( ${UPPER_MODE} STREQUAL "KR" )
-    SET( USE_IZENECMA FALSE )
-    SET( USE_WISEKMA TRUE)
-    MESSAGE( STATUS "KR mode: uses KMA")
 ELSEIF( ${UPPER_MODE} STREQUAL "MULTI" )
     SET( USE_IZENECMA TRUE )
-    SET( USE_IISE FALSE )
-	SET( USE_WISEKMA TRUE)
     SET( USE_IZENEJMA TRUE)
     MESSAGE( STATUS "MULTI mode: uses iCMA ,iJMA and KMA." )
 ELSE( ${UPPER_MODE} STREQUAL "CN" )
-    MESSAGE( FATAL_ERROR "Invalid parameter mode: ${MODE}, should be one of CN, KR and MULTI")
+    MESSAGE( FATAL_ERROR "Invalid parameter mode: ${MODE}, should be one of CN, and MULTI")
 ENDIF( ${UPPER_MODE} STREQUAL "CN" )
 
 ##################################################
@@ -280,14 +273,6 @@ IF(VERBOSE)
   ELSE(idmlib_FOUND)
     MESSAGE(STATUS "idmlib: not found")
   ENDIF(idmlib_FOUND)
-
-  IF(imllib_FOUND)
-    MESSAGE(STATUS "imllib:")
-    MESSAGE(STATUS "  header: ${imllib_INCLUDE_DIRS}")
-    MESSAGE(STATUS "  lib: ${imllib_LIBRARIES}")
-  ELSE(imllib_FOUND)
-    MESSAGE(STATUS "imllib: not found")
-  ENDIF(imllib_FOUND)
 
   IF(XML2_FOUND)
     MESSAGE(STATUS "XML2:")

@@ -18,8 +18,6 @@ require "izenesoft/project-finder"
 finder = IZENESOFT::ProjectFinder.new(File.dirname(__FILE__))
 finder.find_izenelib
 finder.find_ilplib
-finder.find_imllib
-finder.find_kma
 finder.find_icma
 finder.find_ijma
 finder.find_idmlib

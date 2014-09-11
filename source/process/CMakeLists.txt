@@ -7,7 +7,6 @@ INCLUDE_DIRECTORIES(
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
-  ${wisekma_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
   ${izenejma_INCLUDE_DIRS}
   ${izenelib_INCLUDE_DIRS}
@@ -59,7 +58,6 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_bundle_mining
 
   ${idmlib_LIBRARIES}
-  ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}

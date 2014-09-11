@@ -492,9 +492,6 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
             laUnit.setSuffix(bSuffix);
         }
         else if (analysis == "english"
-#ifdef USE_WISEKMA
-                || analysis == "korean"
-#endif
 #ifdef USE_IZENECMA
                 || analysis == "chinese"
 #endif
@@ -608,9 +605,6 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
 #endif
 #ifdef USE_IZENEJMA
                 << "\"japanese\", "
-#endif
-#ifdef USE_WISEKMA
-                << "\"korean\", "
 #endif
                 << "\"token\", \"char\", \"ngram\", \"matrix\", or \"english\". (currently:"
                 << analysis << ")";

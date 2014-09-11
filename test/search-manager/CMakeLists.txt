@@ -38,7 +38,6 @@ SET(libs
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
-  ${imllib_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
