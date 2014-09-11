@@ -16,13 +16,13 @@ struct QueryIdentity
 {
     QueryIdentity()
         : rankingType(RankingType::DefaultTextRanker)
+        , scope(0.0)
         , removeDuplicatedDocs(false)
         , start(0)
         , distActionType(0)
         , isRandomRank(false)
         , isSynonym(false)
         , isAnalyzeResult(false)
-		, scope(0.0)
     {
     }
 
@@ -55,9 +55,10 @@ struct QueryIdentity
     /// @brief param for group filter
     faceted::GroupParam groupParam;
 
+    /// @brief geo-location
     std::pair<double, double> geoLocation;
-	double					  scope;
-	std::string				  geohash;
+    double scope;
+    std::string geohash;
 
     /// @brief remove duplicate
     bool removeDuplicatedDocs;
@@ -105,8 +106,8 @@ struct QueryIdentity
             && sortInfo == other.sortInfo
             && filterTree == other.filterTree
             && groupParam == other.groupParam
-			&& scope == other.scope
-			&& geohash == other.geohash
+            && geohash == other.geohash
+            && scope == other.scope
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
             && strExp == other.strExp

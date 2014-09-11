@@ -27,7 +27,6 @@
 #define _RANKINGMANAGER_H_
 
 #include "RankingEnumerator.h"
-#include "RankingScoreItem.h"
 #include "PropertyRankerPrototypeFactory.h"
 #include "MultiplePropertiesRanker.h"
 
