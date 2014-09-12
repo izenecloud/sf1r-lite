@@ -32,8 +32,6 @@
 #include <util/driver/DriverConnectionFirewall.h>
 #include <util/singleton.h>
 
-#include <question-answering/QuestionAnalysis.h>
-
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -147,19 +145,10 @@ bool CobraProcess::initLAManager()
 
 void CobraProcess::initQuery()
 {
-    ilplib::qa::QuestionAnalysis* pQA = Singleton<ilplib::qa::QuestionAnalysis>::get();
-    const std::string& qahome = SF1Config::get()->getResourceDir();
-    bfs::path path(bfs::path(qahome) / "qa" / "questionwords.txt");
-    std::string qaPath = path.string();
-    if( boost::filesystem::exists(qaPath) )
-    {
-        pQA->load(qaPath);
-    }
     RecommendEngineWrapper::system_resource_path_ = SF1Config::get()->getResourceDir();
     RecommendEngineWrapper::system_working_path_ = SF1Config::get()->getWorkingDir();
     RecommendEngineWrapper::getInstance();
     QA::AbbrEngine::get()->init(SF1Config::get()->getWorkingDir(), SF1Config::get()->getResourceDir());
-
 }
 
 bool CobraProcess::initFireWall()

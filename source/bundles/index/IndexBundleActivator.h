@@ -16,14 +16,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
-namespace ilplib
-{
-namespace qa
-{
-class QuestionAnalysis;
-}
-}
-
 namespace sf1r
 {
 using namespace izenelib::osgi;
@@ -70,7 +62,6 @@ private:
     boost::shared_ptr<IndexAggregator> indexAggregator_;
     boost::scoped_ptr<IndexMerger> indexMerger_;
     boost::shared_ptr<IndexWorker> indexWorker_;
-    ilplib::qa::QuestionAnalysis* pQA_;
     DirectoryRotator directoryRotator_;
 
     bool init_();

@@ -15,7 +15,6 @@
 
 #include <util/get.h>
 #include <net/aggregator/Typedef.h>
-#include <question-answering/QuestionAnalysis.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -162,7 +161,6 @@ private:
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<MiningManager> miningManager_;
     boost::shared_ptr<SearchCache> searchCache_;
-    ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;
     boost::shared_ptr<QueryPruneFactory> queryPruneFactory_;

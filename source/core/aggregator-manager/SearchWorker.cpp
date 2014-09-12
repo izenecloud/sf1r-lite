@@ -31,7 +31,6 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_,
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
-    , pQA_(NULL)
     , queryPruneFactory_(new QueryPruneFactory())
 {
     ///LA can only be got from a pool because it is not thread safe
@@ -397,17 +396,7 @@ bool SearchWorker::getSearchResult_(
 
     std::vector<izenelib::util::UString> keywords;
     std::string newQuery;
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::VERBOSE)
-    {
-        if (pQA_->isQuestion(actionOperation.actionItem_.env_.queryString_))
-        {
-            analyze_(actionOperation.actionItem_.env_.queryString_, keywords, true);
-            assembleConjunction(keywords, newQuery);
-            //cout<<"new Query "<<newQuery<<endl;
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-        }
-    }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
         assembleDisjunction(keywords, newQuery);
@@ -678,21 +667,7 @@ void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util:
     for (la::TermList::iterator iter = termList.begin(); iter != termList.end(); ++iter)
     {
         iter->text_.convertString(str, izenelib::util::UString::UTF_8);
-        if (isQA)
-        {
-            if (!pQA_->isQuestionTerm(iter->text_))
-            {
-                if (pQA_->isCandidateTerm(iter->pos_))
-                {
-                    results.push_back(iter->text_);
-                    cout<<" la-> "<<str<<endl;
-                }
-            }
-        }
-        else
-        {
-            results.push_back(iter->text_);
-        }
+        results.push_back(iter->text_);
     }
 }
 
