@@ -3,11 +3,9 @@ INCLUDE_DIRECTORIES(
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
-  ${imllib_INCLUDE_DIRS}
   ${izenecma_INCLUDE_DIRS}
   ${izenejma_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   )
 
@@ -47,7 +45,6 @@ SET(libs
   ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
-  ${ImageMagick_LIBRARIES}
   )
 
 SET(Boost_USE_STATIC_LIBS OFF)

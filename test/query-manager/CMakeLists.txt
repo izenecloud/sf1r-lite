@@ -5,7 +5,6 @@ INCLUDE_DIRECTORIES(
     ${izenejma_INCLUDE_DIRS}
     ${izenelib_INCLUDE_DIRS}
     ${idmlib_INCLUDE_DIRS}
-    ${TokyoCabinet_INCLUDE_DIRS}
     ${Glog_INCLUDE_DIRS}
     )
 
@@ -49,7 +48,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${SQLITE3_LIBRARIES}
       ${MYSQL_LIBRARIES}
       ${LibCURL_LIBRARIES}
-      ${ImageMagick_LIBRARIES}
       )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
