@@ -624,7 +624,7 @@ namespace sf1r
         }
 
         const string & analysis  = laConfigUnitIter->second.getAnalysis();
-        shared_ptr<la::Analyzer> analyzer;
+		boost::shared_ptr<la::Analyzer> analyzer;
 
         LA * la = NULL;
         la = new LA();

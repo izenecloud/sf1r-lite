@@ -170,6 +170,19 @@ izenelib::util::UString::EncodingType XmlConfigParser::parseEncodingType(const s
 
 // ------------------------- SF1Config-------------------------
 
+/// @brief  Rank value representing "light" setting
+const float  SF1Config::RANK_LIGHT  = 0.5f;
+    /// @brief  Rank value representing "normal" setting
+const float  SF1Config::RANK_NORMAL = 1.0f;
+    /// @brief  Rank value representing "heavy" setting
+const float  SF1Config::RANK_HEAVY  = 2.0f;
+    /// @brief  Rank value representing "max" setting
+const float  SF1Config::RANK_MAX    = 4.0f;
+
+    /// @brief  Max length for <Date> field
+const int SF1Config::DATE_MAXLEN = 1024;
+
+
 SF1Config::SF1Config()
 {
 }
@@ -789,6 +802,22 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
 }
 
 // ------------------------- CollectionConfig-------------------------
+//
+
+    /// @brief  Rank value representing "light" setting
+    const float  CollectionConfig::RANK_LIGHT  = 0.5f;
+    /// @brief  Rank value representing "normal" setting
+    const float  CollectionConfig::RANK_NORMAL = 1.0f;
+    /// @brief  Rank value representing "heavy" setting
+    const float  CollectionConfig::RANK_HEAVY  = 2.0f;
+    /// @brief  Rank value representing "max" setting
+    const float  CollectionConfig::RANK_MAX    = 4.0f;
+
+    /// @brief  Max length for <Date> field
+    const int CollectionConfig::DATE_MAXLEN = 1024;
+
+
+
 CollectionConfig::CollectionConfig()
 {
 }

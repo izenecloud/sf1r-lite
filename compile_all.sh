@@ -22,7 +22,7 @@ if [ -d $PROJECT_CMAKE_PATH ];then
   export EXTRA_CMAKE_MODULES_DIRS=$PROJECT_CMAKE_PATH
 
   cd $PROJECT_CMAKE_PATH
-  git pull
+ # git pull
 else
   echo "ERROR: $PROJECT_CMAKE_PATH doesn't exist."
   exit 1
@@ -47,7 +47,7 @@ do
   fi
   cd $BUILD_PATH
 
-  git pull
+ # git pull
 
   if [ $? -ne 0 ];then
       exit $?

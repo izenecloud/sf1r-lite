@@ -79,27 +79,27 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-march=native -mtune=native -fopenmp -O2 -g -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -O2 -g -Wno-deprecated -DNDEBUG -std=c++11"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
-    "-march=native -mtune=native -fopenmp -O3 -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -O3 -Wno-deprecated -DNDEBUG -std=c++11"
     "Flags used by the compiler during release builds"
 
     MinSizeRel
-    "-march=native -mtune=native -fopenmp -Os -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -Os -Wno-deprecated -DNDEBUG -std=c++11"
     "Flags used by the compiler during release minsize builds."
 
     Debug
-    "-march=native -mtune=native -fopenmp -g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
+    "-march=native -mtune=native -fopenmp -g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated -std=c++11 "
     "Flags used by the compiler during debug builds."
 
     Profile
-    "-march=native -mtune=native -fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
+    "-march=native -mtune=native -fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated -std=c++11 "
     "Profile build type"
 
     SF1TIMECHECK
-    "-march=native -mtune=native -fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
+    "-march=native -mtune=native -fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK -std=c++11 "
     "Sf1 time check build type"
     )
 ENDIF (CMAKE_COMPILER_IS_GNUCXX)

@@ -679,16 +679,16 @@ public:
     // STATIC VALUES -----------------
 
     /// @brief  Rank value representing "light" setting
-    static const float  RANK_LIGHT  = 0.5f;
+    static const float  RANK_LIGHT;
     /// @brief  Rank value representing "normal" setting
-    static const float  RANK_NORMAL = 1.0f;
+    static const float  RANK_NORMAL;
     /// @brief  Rank value representing "heavy" setting
-    static const float  RANK_HEAVY  = 2.0f;
+    static const float  RANK_HEAVY;
     /// @brief  Rank value representing "max" setting
-    static const float  RANK_MAX    = 4.0f;
+    static const float  RANK_MAX;
 
     /// @brief  Max length for <Date> field
-    static const int DATE_MAXLEN = 1024;
+    static const int DATE_MAXLEN;
 
     // CONFIGURATION ITEMS ---------------
 
@@ -869,16 +869,16 @@ private:
     // STATIC VALUES -----------------
 
     /// @brief  Rank value representing "light" setting
-    static const float  RANK_LIGHT  = 0.5f;
+    static const float  RANK_LIGHT;
     /// @brief  Rank value representing "normal" setting
-    static const float  RANK_NORMAL = 1.0f;
+    static const float  RANK_NORMAL;
     /// @brief  Rank value representing "heavy" setting
-    static const float  RANK_HEAVY  = 2.0f;
+    static const float  RANK_HEAVY;
     /// @brief  Rank value representing "max" setting
-    static const float  RANK_MAX    = 4.0f;
+    static const float  RANK_MAX;
 
     /// @brief  Max length for <Date> field
-    static const int DATE_MAXLEN = 1024;
+    static const int DATE_MAXLEN;
 };
 
 } // namespace sf1r
