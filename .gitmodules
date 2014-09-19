@@ -1,0 +1,3 @@
+[submodule "package/resource"]
+	path = package/resource
+	url = https://github.com/izenecloud/resource
