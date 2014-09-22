@@ -113,7 +113,7 @@
 
     <!-- ** NEED TO EDIT DICTIONARY PATH ** -->
     <!-- analysis types: token, ngram, like, all, noun, label -->
-    <LanguageAnalyzer dictionarypath="@wisekma_KNOWLEDGE@" updatedictinterval="300">
+    <LanguageAnalyzer dictionarypath="@izenecma_KNOWLEDGE@" updatedictinterval="300">
 
       <Method id="la_token" analysis="token"/>
       <Method id="la_char" analysis="char"/>
