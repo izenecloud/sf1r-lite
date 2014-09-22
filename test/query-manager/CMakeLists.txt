@@ -42,6 +42,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${idmlib_LIBRARIES}
       ${XML2_LIBRARIES}
       #external
+      ${OpenSSL_LIBRARIES}
       ${Boost_LIBRARIES}
       ${TokyoCabinet_LIBRARIES}
       ${Glog_LIBRARIES}

@@ -38,6 +38,9 @@ ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
 
 TARGET_LINK_LIBRARIES(CobraProcess
+  sf1r_bundle_index
+  sf1r_bundle_mining
+
   sf1r_mining_manager
   sf1r_log_manager
   sf1r_document_manager
@@ -53,16 +56,13 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_node_manager
   sf1r_net
 
-  sf1r_bundle_index
-  sf1r_bundle_mining
-
   ${idmlib_LIBRARIES}
   ${ilplib_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
-
   #external
+  ${OpenSSL_LIBRARIES}
   ${XML2_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}

@@ -17,32 +17,33 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 #if a depends b, a must precede b
 SET(libs
-  sf1r_search_manager
-  sf1r_mining_manager
-  sf1r_query_manager
-  sf1r_ranking_manager
-  sf1r_document_manager
-  sf1r_directory_manager
-
-  sf1r_log_manager
-  sf1r_la_manager
-  sf1r_configuration_manager
-  sf1r_index_manager
-  sf1r_node_manager
-  sf1r_common
-  sf1r_aggregator_manager
-  sf1r_net
-
   sf1r_bundle_index
   sf1r_bundle_mining
 
-  ${ilplib_LIBRARIES}
+  sf1r_search_manager
+  sf1r_mining_manager
+  sf1r_document_manager
+  sf1r_search_manager
+  sf1r_ranking_manager
+  sf1r_query_manager
+  sf1r_la_manager
+  sf1r_configuration_manager
+  sf1r_index_manager
+  sf1r_directory_manager
+  sf1r_common
+  sf1r_aggregator_manager
+  sf1r_log_manager
+  sf1r_node_manager
+  sf1r_net
+
   ${idmlib_LIBRARIES}
+  ${ilplib_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
 
   #external
+  ${OpenSSL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}

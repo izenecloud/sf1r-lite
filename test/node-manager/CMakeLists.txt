@@ -39,28 +39,28 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_node_manager_manual.cpp
     )
   TARGET_LINK_LIBRARIES(t_node_manager_manual      
-      sf1r_node_manager
       sf1r_common    
+      sf1r_node_manager
       sf1r_net
-      ${izenelib_LIBRARIES}      
       #external
       ${Boost_LIBRARIES}
       ${Glog_LIBRARIES}
-      ${SYS_LIBS}
+      ${izenelib_LIBRARIES} 
+      ${OpenSSL_LIBRARIES}
       )
       
   ADD_EXECUTABLE(t_scd_sharding
     t_scd_sharding.cpp
     )
   TARGET_LINK_LIBRARIES(t_scd_sharding      
-      sf1r_node_manager
       sf1r_common    
+      sf1r_node_manager
       sf1r_net
-      ${izenelib_LIBRARIES}      
       #external
       ${Boost_LIBRARIES}
       ${Glog_LIBRARIES}
-      ${SYS_LIBS}
+      ${izenelib_LIBRARIES} 
+      ${OpenSSL_LIBRARIES}
       )
 
   ADD_EXECUTABLE(t_request_log
