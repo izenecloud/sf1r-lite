@@ -16,6 +16,7 @@ public:
     virtual bool isCorrect(const std::string& result) const = 0;
     virtual const std::string& userQuery() const = 0;
     virtual bool isNeedCorrect() const = 0;
+    virtual ~EvaluateItem() {};
 };
 
 class Evaluator
