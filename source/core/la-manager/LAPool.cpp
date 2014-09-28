@@ -8,7 +8,6 @@
 
 using namespace std;
 using namespace la;
-using namespace boost;
 using namespace izenelib::util;
 using namespace izenelib::util;
 
@@ -405,7 +404,7 @@ namespace sf1r
             }
         }
 
-        boost::unordered_map<AnalysisInfo, la::LA*>::iterator it2;
+        unordered_map<AnalysisInfo, la::LA*>::iterator it2;
 
         for( it2 = laIndexMap_.begin(); it2 != laIndexMap_.end(); it2++ )
         {

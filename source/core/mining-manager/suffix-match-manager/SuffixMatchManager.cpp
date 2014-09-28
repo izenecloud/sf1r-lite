@@ -168,10 +168,10 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
             refine_tokens.push_back(tmp_tokens);
             continue;
         }
-           
+
 
         double tmp_score = 0;
-            
+
         for (size_t i = 0; i < tokens.size(); ++i)
         {
             int tmp_id = -1;
@@ -192,10 +192,10 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
         for (size_t i = 0; i < synonym_set.size(); ++i)
             if (is_add.find(synonym_set[i]) == is_add.end())
                 tmp_tokens.push_back(std::make_pair(synonym_set[i], tmp_score * 0.95));
-            
+
         refine_tokens.push_back(tmp_tokens);
     }
-/*                    
+/*
             for (size_t i = 0; i < synonym_set.size(); ++i)
             {
                 if (synonym_set[i] == tokens[j].first)
@@ -204,7 +204,7 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
                 }
                 else
                 {
-                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second * 0.8));                    
+                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second * 0.8));
                 }
             }
             refine_tokens.push_back(tmp_tokens);
@@ -220,7 +220,7 @@ void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, dou
                 }
         }
     }
-*/    
+*/
 }
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
@@ -241,8 +241,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> score_list;
     std::vector<vector<std::pair<UString, double> > > synonym_tokens;
-    size_t major_size = 0;    
-   
+    size_t major_size = 0;
+
 
     if (use_synonym)
     {
@@ -251,9 +251,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         for (std::list<std::pair<UString, double> >::const_iterator it = major_tokens.begin(); it != major_tokens.end(); ++it, ++major_size)
             tmp_tokens.push_back((*it));
         for (std::list<std::pair<UString, double> >::const_iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
-            tmp_tokens.push_back((*it));       
+            tmp_tokens.push_back((*it));
         ExpandSynonym_(tmp_tokens, synonym_tokens, major_size);
-/*        
+/*
         for (size_t i = 0; i < synonym_tokens.size(); ++i)
             for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
             {
@@ -261,7 +261,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 synonym_tokens[i][j].first.convertString(s, UString::UTF_8);
                 LOG(INFO)<<i<<' '<<j<<' '<<s<<' '<<synonym_tokens[i][j].second;
             }
-*/            
+*/
     }
 
     size_t total_match = 0;
@@ -287,29 +287,29 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         }
 
         std::pair<size_t, size_t> sub_match_range;
-        
+
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
             size_t thres = 0;
             const std::string& search_property = search_in_properties[prop_i];
             range_list.reserve(major_tokens.size() + minor_tokens.size());
             score_list.reserve(range_list.size());
-            std::vector<std::vector<boost::tuple<size_t, size_t, double> > > synonym_range_list;             
+            std::vector<std::vector<std::tuple<size_t, size_t, double> > > synonym_range_list;
             if (use_synonym)
-            {            
+            {
 
-                boost::tuple<size_t, size_t, double> tmp_tuple;            
+                std::tuple<size_t, size_t, double> tmp_tuple;
                 for (size_t i = 0; i < synonym_tokens.size(); ++i)
                 {
-                    std::vector<boost::tuple<size_t, size_t, double> > synonym_match_range;
+                    std::vector<std::tuple<size_t, size_t, double> > synonym_match_range;
                     for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
-                    {    
+                    {
                         fuzzyNormalizer_->normalizeToken(synonym_tokens[i][j].first);
                         if (fmi_manager_->backwardSearch(search_property, synonym_tokens[i][j].first, sub_match_range) == synonym_tokens[i][j].first.length())
                         {
-                            tmp_tuple.get<0>() = sub_match_range.first;
-                            tmp_tuple.get<1>() = sub_match_range.second;
-                            tmp_tuple.get<2>() = synonym_tokens[i][j].second;                        
+                            std::get<0>(tmp_tuple) = sub_match_range.first;
+                            std::get<1>(tmp_tuple) = sub_match_range.second;
+                            std::get<2>(tmp_tuple) = synonym_tokens[i][j].second;
                             synonym_match_range.push_back(tmp_tuple);
                         }
                     }
@@ -339,7 +339,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 }
 
                 thres = range_list.size();
-    
+
                 for (std::list<std::pair<UString, double> >::const_iterator pit = minor_tokens.begin();
                         pit != minor_tokens.end(); ++pit)
                 {
@@ -360,8 +360,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             {
                 if (use_synonym)
                 {
-                    fmi_manager_->getTopKDocIdListByFilter(search_property, prop_id_list, filter_range_list, synonym_range_list, thres,max_docs, single_res_list);                        
-                }    
+                    fmi_manager_->getTopKDocIdListByFilter(search_property, prop_id_list, filter_range_list, synonym_range_list, thres,max_docs, single_res_list);
+                }
                 else
                 {
                     fmi_manager_->getTopKDocIdListByFilter(
@@ -373,7 +373,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                             thres,
                             max_docs,
                             single_res_list);
-                }                             
+                }
             }
             else if (filter_mode == SearchingMode::AND_Filter)
             {
@@ -392,11 +392,11 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             single_res_list.clear();
 
-            if (use_synonym)  
+            if (use_synonym)
             {
                 for (size_t i = 0; i < synonym_range_list.size(); ++i)
                     for (size_t j = 0; j < synonym_range_list[i].size(); ++j)
-                        total_match += synonym_range_list[i][j].get<1>() - synonym_range_list[i][j].get<0>();
+                        total_match += std::get<1>(synonym_range_list[i][j]) - std::get<0>(synonym_range_list[i][j]);
             }
             else
             {
@@ -405,7 +405,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             range_list.clear();
             score_list.clear();
-            
+
             LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
@@ -421,11 +421,11 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
     if (res_list.empty())
         return total_match;
-    
+
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
-        
+
     LOG(INFO) << "all property fuzzy search finished, answer is: "<<res_list.size();
 
     return total_match;

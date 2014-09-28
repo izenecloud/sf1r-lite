@@ -385,7 +385,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
             {
                 const std::string& prop_name = it->first;
                 Document::property_const_iterator dit = doc.findProperty(prop_name);
-                if (prop_name != virtualProperty_.virtualName && dit == doc.propertyEnd() ) 
+                if (prop_name != virtualProperty_.virtualName && dit == doc.propertyEnd())
                 {
                     it->second.fmi->addDoc(NULL, 0);
                 }
@@ -690,7 +690,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
         const std::string& property,
         const std::vector<size_t> &prop_id_list,
         const std::vector<RangeListT> &filter_ranges,
-        const std::vector<std::vector<boost::tuple<size_t, size_t, double> > > &synonym_range_list,
+        const std::vector<std::vector<std::tuple<size_t, size_t, double> > > &synonym_range_list,
         size_t thres,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> > &res_list) const

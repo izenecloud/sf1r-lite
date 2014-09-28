@@ -9,8 +9,7 @@
 #include <util/ThreadModel.h>
 #include <util/singleton.h>
 
-#include <boost/unordered_map.hpp>
-
+#include <unordered_map>
 #include <deque>
 #include <map>
 
@@ -152,12 +151,12 @@ namespace sf1r
             ///
             /// @brief Holds the map of LAs for indexing, which is not multi-threaded
             ///
-            boost::unordered_map<AnalysisInfo, la::LA*> laIndexMap_;
+            unordered_map<AnalysisInfo, la::LA*> laIndexMap_;
 
             ///
             /// @brief Holds the map of LAs for searching, has a pool(deque) for multithread
             ///
-            boost::unordered_map<AnalysisInfo, std::deque<la::LA*> > laSearchPool_;
+            unordered_map<AnalysisInfo, std::deque<la::LA*> > laSearchPool_;
 
             /// @brief  LA unit ID mapped to its configuration
             std::map<std::string, LAConfigUnit> laConfigUnitMap_;

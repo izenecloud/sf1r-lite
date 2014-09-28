@@ -46,7 +46,7 @@ namespace sf1r
         std::string toString() const
         {
             std::stringstream ss;
-            ss << "analyzer:[" << analyzerId_ 
+            ss << "analyzer:[" << analyzerId_
                 << "] tokenizer(s):[";
 
             for( std::set<std::string>::const_iterator i = tokenizerNameList_.begin();
@@ -96,5 +96,28 @@ namespace sf1r
     };
 
 } // namespace sf1r
+
+namespace std
+{
+
+template <>
+struct hash<sf1r::AnalysisInfo>
+{
+    size_t operator()(const sf1r::AnalysisInfo& obj) const
+    {
+        size_t seed = 0;
+        boost::hash_combine(seed, obj.analyzerId_);
+
+        for (set<string>::const_iterator it = obj.tokenizerNameList_.begin();
+                it != obj.tokenizerNameList_.end(); ++it)
+        {
+            boost::hash_combine(seed, *it);
+        }
+
+        return seed;
+    }
+};
+
+}
 
 #endif // _Analysis_Information_
