@@ -42,11 +42,11 @@ Besides, there are some third party repositores required:
 * __[Google Glog](https://github.com/izenecloud/thirdparty/tree/master/glog)__: The logging library provided by Google.
 
 
-* __[Thrift](https://github.com/izenecloud/thirdparty/tree/master/thrift)__: This is optional, if you want to have SF1R being able to connect to [Cassandra](cassandra.apache.org), Thrift is required, and we have prepared C++ `Cassandra` client in [izenelib](https://github.com/izenecloud/izenelib/tree/master/include/3rdparty/libcassandra).
+* __[Thrift](https://github.com/izenecloud/thirdparty/tree/master/thrift)__: This is optional, if you want to have SF1R being able to connect to [Cassandra](http://cassandra.apache.org), Thrift is required, and we have prepared C++ `Cassandra` client in [izenelib](https://github.com/izenecloud/izenelib/tree/master/include/3rdparty/libcassandra).
 
 
 Additionally, there are two extra projects:
-* __[nginx](https://github.com/izenecloud/nginx)__: The nginx based reverse proxy for SF1R. This is the first nginx project to be able to connect with [Zookeeper](zookeeper.apache.org/
+* __[nginx](https://github.com/izenecloud/nginx)__: The nginx based reverse proxy for SF1R. This is the first nginx project to be able to connect with [Zookeeper](http://zookeeper.apache.org/
 ) to get aware of SF1R's node topology. 
 
 
