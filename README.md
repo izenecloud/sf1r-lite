@@ -57,7 +57,7 @@ Additionally, there are two extra projects:
 To use SF1R, you should have configuration files located in the `config` directory. After that:
 ```bash
 $ cd bin
-$ CobraProcess -F config
+$ ./CobraProcess -F config
 ```
 Please see the [documents](http://izenecloud.github.io/sf1r/) for further usage.
 
